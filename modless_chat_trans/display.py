@@ -1,0 +1,85 @@
+# Copyright (C) 2024 LiJiaHua1024
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import tkinter as tk
+from tkinter import scrolledtext
+from tkinter import ttk
+import pyttsx3
+import threading
+
+
+def initialization(output_method):
+    if output_method == "print":
+        pass
+    if output_method == "graphical":
+        print("Starting GUI...")
+        start_gui_thread()
+    elif output_method == "speech":
+        global voice_engine
+        voice_engine = pyttsx3.init()
+
+
+def start_gui():
+    global text_widget
+
+    main_window = tk.Tk()
+    main_window.title("Translated Message")
+    main_window.geometry("700x400")
+
+    style = ttk.Style()
+    style.theme_use("clam")
+
+    text_widget = scrolledtext.ScrolledText(main_window, wrap=tk.WORD, font=("SimSun", 16))
+    text_widget.pack(expand=True, fill="both")
+    text_widget.config(state=tk.DISABLED)
+
+    main_window.mainloop()
+
+
+def start_gui_thread():
+    gui_thread = threading.Thread(target=start_gui)
+    gui_thread.daemon = True
+    gui_thread.start()
+
+
+def _graphical_display(message):
+    text_widget.config(state=tk.NORMAL)
+    text_widget.insert(tk.END, message + "\n")
+    text_widget.see(tk.END)
+    text_widget.config(state=tk.DISABLED)
+
+
+def _speech_display(message):
+    voice_engine.say(message)
+    voice_engine.runAndWait()
+
+
+def display_message(message, output_method):
+    """
+    呈现消息
+
+    :param message: 需要呈现的文字
+    :param output_method: 呈现方式，目前支持print/graphical/speech
+    """
+
+    if output_method == "print":
+        print(message)
+    elif output_method == "graphical":
+        if text_widget:
+            _graphical_display(message)
+    elif output_method == "speech":
+        _speech_display(message)
+    else:
+        raise ValueError("Unsupported output method")
