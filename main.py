@@ -13,11 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from modless_chat_trans.log_monitor import monitor_log_file
-from modless_chat_trans.translator import Translator
-from modless_chat_trans.process_message import process_message
+import sys
+
 from modless_chat_trans.display import initialization, display_message
-import msvcrt
+from modless_chat_trans.log_monitor import monitor_log_file
+from modless_chat_trans.process_message import process_message
+from modless_chat_trans.translator import Translator
 
 """
 Currently, it can translate messages sent by other players into various languages, significantly saving time. 
@@ -30,6 +31,29 @@ Next, I will develop this program in the following areas:
 - ...
 """
 
+if sys.platform.startswith("win"):
+    import msvcrt
+
+    getch = msvcrt.getch
+elif sys.platform.startswith("linux"):
+    import tty
+    import termios
+
+
+    def getch():
+        file_descriptor = sys.stdin.fileno()
+        old_terminal_settings = termios.tcgetattr(file_descriptor)
+        try:
+            tty.setraw(file_descriptor)
+            key_pressed = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(file_descriptor, termios.TCSADRAIN, old_terminal_settings)
+        return key_pressed.encode()
+else:
+    print("Sorry, so far we don't support the operating system you are using.")
+    input("Press Enter to exit.")
+    sys.exit(0)
+
 
 def callback(line):
     if processed_message := process_message(line, translator, model=model or "gpt-3.5-turbo", source_language="en-US"):
@@ -41,9 +65,9 @@ def callback(line):
 
 file_directory = input("Where is your Minecraft log folder? ")
 print("What output method would you like? \n1.print\t2.graphical\t3.speech\nPlease press 1 - 3 to choose.")
-while not ((output_method := {b'1': "print", b'2': "graphical", b'3': "speech"}[msvcrt.getch()]) in ["print",
-                                                                                                     "graphical",
-                                                                                                     "speech"]):
+while not ((output_method := {b'1': "print", b'2': "graphical", b'3': "speech"}[getch()]) in ["print",
+                                                                                              "graphical",
+                                                                                              "speech"]):
     print("Incorrect number")
 print(f"You chose [{output_method}].")
 api_url = input("Please enter the OpenAI API address (leave blank to use the official one): ")
