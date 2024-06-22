@@ -18,6 +18,7 @@ from tkinter import scrolledtext
 from tkinter import ttk
 import pyttsx3
 import threading
+from flask import Flask, render_template_string
 
 
 def initialization(output_method):
@@ -29,6 +30,9 @@ def initialization(output_method):
     elif output_method == "speech":
         global voice_engine
         voice_engine = pyttsx3.init()
+    elif output_method == "httpserver":
+        print("Starting HTTP server...")
+        start_httpserver_thread()
 
 
 def start_gui():
@@ -61,6 +65,46 @@ def _graphical_display(message):
     text_widget.config(state=tk.DISABLED)
 
 
+def start_httpserver():
+    global http_messages
+    flask_app = Flask(__name__)
+    http_messages = []
+
+    @flask_app.route('/')
+    def home():
+        return render_template_string('''
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Messages</title>
+                        <meta http-equiv="refresh" content="1">
+                    </head>
+                    <body>
+                        <h1>Messages:</h1>
+                        <ul>
+                        {% for message in messages %}
+                            <li>{{ message }}</li>
+                        {% endfor %}
+                        </ul>
+                    </body>
+                    </html>
+                ''', messages=http_messages)
+
+    flask_app.run(debug=False, host='0.0.0.0', port=5000)
+
+
+def start_httpserver_thread():
+    server_thread = threading.Thread(target=start_httpserver)
+    server_thread.daemon = True
+    server_thread.start()
+    print("HTTP server started on http://localhost:5000")
+
+
+def _httpserver_display(message):
+    global http_messages
+    http_messages.append(message)
+
+
 def _speech_display(message):
     voice_engine.say(message)
     voice_engine.runAndWait()
@@ -81,5 +125,7 @@ def display_message(message, output_method):
             _graphical_display(message)
     elif output_method == "speech":
         _speech_display(message)
+    elif output_method == "httpserver":
+        _httpserver_display(message)
     else:
         raise ValueError("Unsupported output method")

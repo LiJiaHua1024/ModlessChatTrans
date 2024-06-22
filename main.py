@@ -64,11 +64,16 @@ def callback(line):
 
 
 file_directory = input("Where is your Minecraft log folder? ")
-print("What output method would you like? \n1.print\t2.graphical\t3.speech\nPlease press 1 - 3 to choose.")
-while not ((output_method := {b'1': "print", b'2': "graphical", b'3': "speech"}[getch()]) in ["print",
-                                                                                              "graphical",
-                                                                                              "speech"]):
+print("What output method would you like?\n1.print\n2.graphical\n3.speech\n4.httpserver\nPlease press 1 - 4 to choose.")
+OUTPUT_METHOD_MAPPING = {
+    b'1': "print",
+    b'2': "graphical",
+    b'3': "speech",
+    b'4': "httpserver"
+}
+while not ((output_method := OUTPUT_METHOD_MAPPING[getch()]) in OUTPUT_METHOD_MAPPING.values()):
     print("Incorrect number")
+
 print(f"You chose [{output_method}].")
 api_url = input("Please enter the OpenAI API address (leave blank to use the official one): ")
 api_key = input("Please enter your OpenAI Key: ")
