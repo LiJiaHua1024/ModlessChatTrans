@@ -56,7 +56,8 @@ else:
 
 
 def callback(line):
-    if processed_message := process_message(line, translator, model=model or "gpt-3.5-turbo", source_language="en-US"):
+    if processed_message := process_message(line, translator, model=model or "gpt-3.5-turbo",
+                                            source_language=source_language, target_language=target_language):
         try:
             display_message(processed_message, output_method)
         except ValueError as error:
@@ -75,6 +76,25 @@ while not ((output_method := OUTPUT_METHOD_MAPPING[getch()]) in OUTPUT_METHOD_MA
     print("Incorrect number")
 
 print(f"You chose [{output_method}].")
+
+http_port = 0
+
+if output_method == "httpserver":
+    while True:
+        if http_port := input("Please enter the HTTP server port number (leave blank to use 5000): "):
+            try:
+                if 1 <= (http_port := int(http_port)) <= 65535:
+                    break
+                else:
+                    print("Port number must be between 1 and 65535. Please enter a valid port number.")
+            except ValueError:
+                print("Invalid input. Please enter a valid port number.")
+        else:
+            http_port = 5000
+            break
+
+source_language = input("Please enter the language of the text you want to translate: ")
+target_language = input("Please enter the language for the translation: ")
 api_url = input("Please enter the OpenAI API address (leave blank to use the official one): ")
 api_key = input("Please enter your OpenAI Key: ")
 
@@ -83,6 +103,6 @@ translator = Translator(api_key=api_key,
 
 model = input("Please enter the model name to be used for translation (leave blank to use gpt-3.5-turbo by default): ")
 
-initialization(output_method)
+initialization(output_method, http_port=http_port)
 
 monitor_log_file(file_directory, callback)

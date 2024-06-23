@@ -21,7 +21,7 @@ import threading
 from flask import Flask, render_template_string
 
 
-def initialization(output_method):
+def initialization(output_method, **kwargs):
     if output_method == "print":
         pass
     if output_method == "graphical":
@@ -32,7 +32,7 @@ def initialization(output_method):
         voice_engine = pyttsx3.init()
     elif output_method == "httpserver":
         print("Starting HTTP server...")
-        start_httpserver_thread()
+        start_httpserver_thread(kwargs["http_port"])
 
 
 def start_gui():
@@ -65,7 +65,7 @@ def _graphical_display(message):
     text_widget.config(state=tk.DISABLED)
 
 
-def start_httpserver():
+def start_httpserver(port):
     global http_messages
     flask_app = Flask(__name__)
     http_messages = []
@@ -90,14 +90,14 @@ def start_httpserver():
                     </html>
                 ''', messages=http_messages)
 
-    flask_app.run(debug=False, host='0.0.0.0', port=5000)
+    flask_app.run(debug=False, host='0.0.0.0', port=port)
 
 
-def start_httpserver_thread():
-    server_thread = threading.Thread(target=start_httpserver)
+def start_httpserver_thread(port):
+    server_thread = threading.Thread(target=start_httpserver, args=(port, ))
     server_thread.daemon = True
     server_thread.start()
-    print("HTTP server started on http://localhost:5000")
+    print(f"HTTP server started on http://localhost:{port}")
 
 
 def _httpserver_display(message):
