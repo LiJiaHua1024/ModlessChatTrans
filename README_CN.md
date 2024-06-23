@@ -27,7 +27,6 @@
   - 支持自己的消息翻译后发送
   - 支持更多翻译结果的呈现方式
   - 支持更多翻译服务
-  - 支持Linux平台
 
   ### 使用方法
 
@@ -38,7 +37,7 @@
 
   ### 开发
 
-  ModlessChatTrans 使用纯 Python 编写。由于当前版本使用了 msvcrt 库，因此仅支持 Windows 平台。预计下一版本将支持 Linux 平台。
+  ModlessChatTrans 使用纯 Python 编写。
 
   ### 许可证
 

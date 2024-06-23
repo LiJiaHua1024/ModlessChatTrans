@@ -27,7 +27,6 @@ Tired of not understanding foreign language messages from other players in Minec
 - Support translating your own messages before sending.
 - Support more ways to present translation results.
 - Support more translation services.
-- Support for Linux platform.
 
 ### Usage
 
@@ -38,7 +37,7 @@ Tired of not understanding foreign language messages from other players in Minec
 
 ### Development
 
-ModlessChatTrans is written in pure Python. Since the current version uses the msvcrt library, it only supports the Windows platform. The next version is expected to support the Linux platform.
+ModlessChatTrans is written in pure Python. 
 
 ### License
 
