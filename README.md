@@ -8,13 +8,14 @@ Tired of not understanding foreign language messages from other players in Minec
 
 ### Features
 
-- **Modless:** No need to install any mods. ModlessChatTrans works by reading Minecraft log files to capture chat messages, making it safe and convenient.
-- **Real-time Translation:** Translates chat messages at lightning speed, so you can communicate effortlessly even during intense PvP.
-- **High-quality Translations:** Utilizes advanced LLM models to ensure accuracy and fluency, accurately translating even gaming abbreviations and slang.
-- **Multiple Presentation Methods:** Supports three ways to present translation results:
-  - **Direct Print:** Prints the translation results directly to the console.
-  - **Tkinter GUI Interface:** Uses the Tkinter library to create a simple GUI interface to display translation results.
-  - **Speech Synthesis Broadcast:** Uses a speech synthesis engine to broadcast the translation results.
+- **Modless**: No need to install any mods. ModlessChatTrans works by reading Minecraft log files to capture chat messages, making it safe and convenient.
+- **Real-time Translation**: Translates chat messages at lightning speed, so you can communicate effortlessly even during intense PvP.
+- **High-quality Translations**: Utilizes advanced LLM models to ensure accuracy and fluency, accurately translating even gaming abbreviations and slang.
+- **Multiple Presentation Methods**: Supports three ways to present translation results:
+  - **Direct Print**: Prints the translation results directly to the console.
+  - **Tkinter GUI Interface**: Uses the Tkinter library to create a simple GUI interface to display translation results.
+  - **Speech Synthesis Broadcast**: Uses a speech synthesis engine to broadcast the translation results.
+  - **HTTP Server**: Utilizes the Flask module to launch an HTTP server, enabling easier cross-platform result presentation. Most electronic devices with a browser can now serve as display terminals for the translation content.
 - **Easy to Use:** Simply download and run the .exe file.
 
 ### Functionality
