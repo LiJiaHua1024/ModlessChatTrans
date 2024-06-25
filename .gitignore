@@ -1,0 +1,8 @@
+__pycache__/
+.idea/
+
+build/
+dist/
+
+main.spec
+logo.ico
