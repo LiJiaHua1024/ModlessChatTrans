@@ -1,3 +1,4 @@
 pyttsx3==2.90
 requests==2.31.0
 Flask==3.0.3
+customtkinter==5.2.2

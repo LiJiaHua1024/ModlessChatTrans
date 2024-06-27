@@ -13,9 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import tkinter as tk
-from tkinter import scrolledtext
-from tkinter import ttk
+import customtkinter as ctk
 import pyttsx3
 import threading
 from flask import Flask, render_template_string
@@ -38,16 +36,15 @@ def initialization(output_method, **kwargs):
 def start_gui():
     global text_widget
 
-    main_window = tk.Tk()
+    main_window = ctk.CTk()
     main_window.title("Translated Message")
     main_window.geometry("700x400")
 
-    style = ttk.Style()
-    style.theme_use("clam")
-
-    text_widget = scrolledtext.ScrolledText(main_window, wrap=tk.WORD, font=("SimSun", 16))
+    text_widget = ctk.CTkTextbox(main_window, font=("SimSun", 20))
     text_widget.pack(expand=True, fill="both")
-    text_widget.config(state=tk.DISABLED)
+    # test font
+    text_widget.insert(ctk.END, "你好，世界！")
+    text_widget.configure(state=ctk.DISABLED)
 
     main_window.mainloop()
 
@@ -59,10 +56,10 @@ def start_gui_thread():
 
 
 def _graphical_display(message):
-    text_widget.config(state=tk.NORMAL)
-    text_widget.insert(tk.END, message + "\n")
-    text_widget.see(tk.END)
-    text_widget.config(state=tk.DISABLED)
+    text_widget.configure(state=ctk.NORMAL)
+    text_widget.insert(ctk.END, message + "\n")
+    text_widget.see(ctk.END)
+    text_widget.configure(state=ctk.DISABLED)
 
 
 def start_httpserver(port):
