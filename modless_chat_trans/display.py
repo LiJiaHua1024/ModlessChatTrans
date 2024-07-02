@@ -20,33 +20,27 @@ from flask import Flask, render_template_string
 
 
 def initialization(output_method, **kwargs):
-    if output_method == "print":
-        pass
     if output_method == "graphical":
-        print("Starting GUI...")
         start_gui_thread()
     elif output_method == "speech":
         global voice_engine
         voice_engine = pyttsx3.init()
     elif output_method == "httpserver":
-        print("Starting HTTP server...")
         start_httpserver_thread(kwargs["http_port"])
 
 
 def start_gui():
-    global text_widget
+    global translation_result_box
 
-    main_window = ctk.CTk()
-    main_window.title("Translated Message")
-    main_window.geometry("700x400")
+    translation_display_window = ctk.CTk()
+    translation_display_window.title("Translated Message")
+    translation_display_window.geometry("700x400")
 
-    text_widget = ctk.CTkTextbox(main_window, font=("SimSun", 20))
-    text_widget.pack(expand=True, fill="both")
-    # test font
-    text_widget.insert(ctk.END, "你好，世界！")
-    text_widget.configure(state=ctk.DISABLED)
+    translation_result_box = ctk.CTkTextbox(translation_display_window, font=("SimSun", 20))
+    translation_result_box.pack(expand=True, fill="both")
+    translation_result_box.configure(state=ctk.DISABLED)
 
-    main_window.mainloop()
+    translation_display_window.mainloop()
 
 
 def start_gui_thread():
@@ -56,10 +50,10 @@ def start_gui_thread():
 
 
 def _graphical_display(message):
-    text_widget.configure(state=ctk.NORMAL)
-    text_widget.insert(ctk.END, message + "\n")
-    text_widget.see(ctk.END)
-    text_widget.configure(state=ctk.DISABLED)
+    translation_result_box.configure(state=ctk.NORMAL)
+    translation_result_box.insert(ctk.END, message + "\n")
+    translation_result_box.see(ctk.END)
+    translation_result_box.configure(state=ctk.DISABLED)
 
 
 def start_httpserver(port):
@@ -91,10 +85,9 @@ def start_httpserver(port):
 
 
 def start_httpserver_thread(port):
-    server_thread = threading.Thread(target=start_httpserver, args=(port, ))
+    server_thread = threading.Thread(target=start_httpserver, args=(port,))
     server_thread.daemon = True
     server_thread.start()
-    print(f"HTTP server started on http://localhost:{port}")
 
 
 def _httpserver_display(message):
@@ -112,13 +105,11 @@ def display_message(message, output_method):
     呈现消息
 
     :param message: 需要呈现的文字
-    :param output_method: 呈现方式，目前支持print/graphical/speech
+    :param output_method: 呈现方式，目前支持 print（已弃用）/graphical/speech/httpserver
     """
 
-    if output_method == "print":
-        print(message)
-    elif output_method == "graphical":
-        if text_widget:
+    if output_method == "graphical":
+        if translation_result_box:
             _graphical_display(message)
     elif output_method == "speech":
         _speech_display(message)

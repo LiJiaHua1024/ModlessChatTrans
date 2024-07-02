@@ -89,7 +89,6 @@ class Translator:
             translated_message = response.json().get("choices", [])[0].get("message", {}).get("content", "")
             return translated_message
         else:
-            print(f"Error: {response.status_code} - {response.text}")
             return None
 
     def deepl_translate(self, text, source_language=None, target_language=None):

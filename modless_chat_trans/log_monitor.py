@@ -41,6 +41,5 @@ def monitor_log_file(file_directory, callback):
                         break
                     time.sleep(0.1)
         else:
-            print("未找到日志文件")
             time.sleep(1)
             continue
