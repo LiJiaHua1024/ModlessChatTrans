@@ -14,6 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import customtkinter as ctk
+from CTkMessagebox import CTkMessagebox
 import hPyT
 import webbrowser
 from dataclasses import dataclass
