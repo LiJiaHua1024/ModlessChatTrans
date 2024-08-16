@@ -23,8 +23,11 @@ from dataclasses import dataclass
 class Config:
     minecraft_log_folder: str
     output_method: str
-    source_language: str
-    target_language: str
+    op_src_lang: str  # other player source language
+    op_tgt_lang: str  # other player target language
+    self_trans_enabled: bool  # self translation enabled
+    self_src_lang: str  # self source language
+    self_tgt_lang: str  # self target language
     api_url: str
     api_key: str
     model: str
@@ -33,8 +36,11 @@ class Config:
 
 DEFAULT_CONFIG = Config(minecraft_log_folder="",
                         output_method="graphical",
-                        source_language="",
-                        target_language="zh-CN",
+                        op_src_lang="",
+                        op_tgt_lang="zh-CN",
+                        self_trans_enabled=True,
+                        self_src_lang="zh-CN",
+                        self_tgt_lang="en-US",
                         api_url="https://api.openai.com/v1/chat/completions",
                         api_key="",
                         model="gpt-3.5-turbo",
@@ -67,16 +73,24 @@ def read_config():
     :return: Config 对象
     """
 
-    # 判断文件是否存在，如果不存在则创建一个空文件
-    if not os.path.exists('ModlessChatTrans-config.json'):
+    def create_default_config():
         with open('ModlessChatTrans-config.json', 'w') as config_file:
             # 将默认配置写入文件
             json.dump(vars(DEFAULT_CONFIG), config_file)
 
-    # 读取配置文件中的配置
-    with open('ModlessChatTrans-config.json', 'r') as config_file:
-        config_dict = json.load(config_file)
-        return Config(**config_dict)
+    # 判断文件是否存在，如果不存在则创建一个空文件
+    if not os.path.exists('ModlessChatTrans-config.json'):
+        create_default_config()
+
+    # 重试一次
+    for _ in range(2):
+        try:
+            # 读取配置文件中的配置
+            with open('ModlessChatTrans-config.json', 'r') as config_file:
+                config_dict = json.load(config_file)
+                return Config(**config_dict)
+        except TypeError:
+            create_default_config()
 
 
 def save_config(**config_changes):

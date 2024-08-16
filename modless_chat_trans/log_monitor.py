@@ -35,7 +35,7 @@ def monitor_log_file(file_directory, callback):
                     line = log_file.readline()
                     # 当有新内容时
                     if line:
-                        callback(line)
+                        callback(line, data_type="log")
                     if find_latest_log(file_directory) != file_path:
                         # 文件被重命名并重新创建
                         break

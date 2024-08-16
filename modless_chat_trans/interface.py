@@ -41,22 +41,21 @@ def create_main_window(info, start_translation):
     # 创建主窗口
     main_window = ctk.CTk()
     main_window.title(f"Modless Chat Trans {info.version}")
-    main_window.geometry("670x400")
-    # main_window.geometry("1000x800")
+    main_window.geometry("700x630")
     main_window.resizable(False, False)
 
-    main_window.rowconfigure(8, weight=1)
+    main_window.rowconfigure(10, weight=1)
     main_window.columnconfigure(9, weight=1)
 
     create_config_widgets(main_window)
 
-    start_button = ctk.CTkButton(main_window, text="Start",
+    start_button = ctk.CTkButton(main_window, text="Start", font=("default", 60),
                                  command=lambda: prepare_translation_config(start_translation))
-    start_button.grid(row=7, column=0, columnspan=2, padx=20, pady=10)
+    start_button.grid(row=10, column=0, columnspan=2, padx=20, pady=10)
 
     about_button = ctk.CTkButton(main_window, text="关于", width=50, height=25,
                                  command=lambda: show_about_window(main_window, info))
-    about_button.grid(row=7, column=2, padx=0, pady=15)
+    about_button.grid(row=11, column=2, padx=0, pady=15)
 
     hPyT.maximize_minimize_button.hide(main_window)
 
@@ -104,14 +103,20 @@ def prepare_translation_config(start_translation):
 
     minecraft_log_folder = minecraft_log_folder_entry.get()
     output_method = output_method_var.get()
-    source_language = source_language_entry.get()
-    target_language = target_language_entry.get()
+    op_src_lang = source_language_entry.get()
+    op_tgt_lang = target_language_entry.get()
     api_url = api_url_entry.get()
     api_key = api_key_entry.get()
     model = model_entry.get()
 
-    save_config(minecraft_log_folder=minecraft_log_folder, output_method=output_method, source_language=source_language,
-                target_language=target_language, api_url=api_url, api_key=api_key, model=model)
+    # 获取自翻译选项
+    self_translation_enabled = self_translation_var.get()
+    self_src_lang = self_src_lang_entry.get() if self_translation_enabled else ""
+    self_tgt_lang = self_tgt_lang_entry.get() if self_translation_enabled else ""
+
+    save_config(minecraft_log_folder=minecraft_log_folder, output_method=output_method, op_src_lang=op_src_lang,
+                op_tgt_lang=op_tgt_lang, self_trans_enabled=self_translation_enabled, self_src_lang=self_src_lang,
+                self_tgt_lang=self_tgt_lang, api_url=api_url, api_key=api_key, model=model)
 
     if output_method == "httpserver":
         http_port = int(http_port_entry.get())
@@ -129,10 +134,15 @@ def create_config_widgets(main_window):
     """
 
     global minecraft_log_folder_entry, output_method_var, source_language_entry, target_language_entry, api_url_entry, \
-        api_key_entry, model_entry, http_port_entry, http_port_label
+        api_key_entry, model_entry, http_port_entry, http_port_label, self_translation_var, \
+        self_src_lang_entry, self_tgt_lang_entry, self_src_lang_label, self_tgt_lang_label
 
     http_port_entry = None
     http_port_label = None
+    self_src_lang_entry = None
+    self_tgt_lang_entry = None
+    self_src_lang_label = None
+    self_tgt_lang_label = None
 
     def on_output_method_change(choice):
         """
@@ -156,6 +166,39 @@ def create_config_widgets(main_window):
                 http_port_entry.grid_remove()
                 http_port_label = None
                 http_port_entry = None
+
+    def on_self_translation_toggle():
+        """
+        自翻译开关切换时的回调函数
+        """
+
+        global self_src_lang_entry, self_tgt_lang_entry, self_src_lang_label, self_tgt_lang_label
+        if self_translation_var.get():
+            if not self_src_lang_entry:
+                self_src_lang_label = ctk.CTkLabel(main_window, text="Self Source Language:")
+                self_src_lang_label.grid(row=8, column=0, padx=20, pady=10, sticky="w")
+                self_src_lang_entry = ctk.CTkEntry(main_window, width=400)
+                self_src_lang_entry.grid(row=8, column=1, padx=20, pady=10, sticky="w")
+                self_src_lang_entry.insert(0, config.self_src_lang)
+
+            if not self_tgt_lang_entry:
+                self_tgt_lang_label = ctk.CTkLabel(main_window, text="Self Target Language:")
+                self_tgt_lang_label.grid(row=9, column=0, padx=20, pady=10, sticky="w")
+                self_tgt_lang_entry = ctk.CTkEntry(main_window, width=400)
+                self_tgt_lang_entry.grid(row=9, column=1, padx=20, pady=10, sticky="w")
+                self_tgt_lang_entry.insert(0, config.self_tgt_lang)
+        else:
+            if self_src_lang_entry:
+                self_src_lang_label.grid_remove()
+                self_src_lang_entry.grid_remove()
+                self_src_lang_label = None
+                self_src_lang_entry = None
+
+            if self_tgt_lang_entry:
+                self_tgt_lang_label.grid_remove()
+                self_tgt_lang_entry.grid_remove()
+                self_tgt_lang_label = None
+                self_tgt_lang_entry = None
 
     # 读取配置文件
     config = read_config()
@@ -183,14 +226,14 @@ def create_config_widgets(main_window):
     source_language_label = ctk.CTkLabel(main_window, text="Source Language:")
     source_language_label.grid(row=2, column=0, padx=20, pady=10, sticky="w")
     source_language_entry = ctk.CTkEntry(main_window, width=400)
-    source_language_entry.insert(0, config.source_language)
+    source_language_entry.insert(0, config.op_src_lang)
     source_language_entry.grid(row=2, column=1, padx=20, pady=10, sticky="w")
 
     # Target Language
     target_language_label = ctk.CTkLabel(main_window, text="Target Language:")
     target_language_label.grid(row=3, column=0, padx=20, pady=10, sticky="w")
     target_language_entry = ctk.CTkEntry(main_window, width=400)
-    target_language_entry.insert(0, config.target_language)
+    target_language_entry.insert(0, config.op_tgt_lang)
     target_language_entry.grid(row=3, column=1, padx=20, pady=10, sticky="w")
 
     # API URL
@@ -213,6 +256,15 @@ def create_config_widgets(main_window):
     model_entry = ctk.CTkEntry(main_window, width=400)
     model_entry.insert(0, config.model)
     model_entry.grid(row=6, column=1, padx=20, pady=10, sticky="w")
+
+    # Self Translation Toggle
+    self_translation_var = ctk.BooleanVar(value=config.self_src_lang != "" and config.self_tgt_lang != "")
+    self_translation_toggle = ctk.CTkCheckBox(main_window, text="Enable Self Translation",
+                                              variable=self_translation_var,
+                                              command=on_self_translation_toggle)
+    self_translation_toggle.grid(row=7, column=0, padx=20, pady=10, sticky="w")
+
+    on_self_translation_toggle()
 
 
 def normalize_port_number(http_port_entry):

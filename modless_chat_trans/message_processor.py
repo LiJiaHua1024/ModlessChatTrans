@@ -18,17 +18,18 @@ def process_decorator(function):
     为process_message添加翻译步骤
     """
 
-    def wrapper(line, translator, model=None, source_language=None, target_language=None):
+    def wrapper(data, data_type, translator, model=None, source_language=None, target_language=None):
         """
         处理日志文件中的一行（包括翻译）
 
-        :param line: 需要处理的行
+        :param data: 需要处理的数据
+        :param data_type: 数据类型
         :param translator: Translator类的实例
         :param model: 模型名称
         :return: 处理完的消息
         """
 
-        original_chat_message = function(line)
+        original_chat_message = function(data, data_type)
         translated_chat_message: str = ""
         if original_chat_message:
             translated_chat_message = translator.llm_translate(original_chat_message, model=model,
@@ -40,18 +41,22 @@ def process_decorator(function):
 
 
 @process_decorator
-def process_message(line):
+def process_message(data, data_type):
     """
     处理日志文件中的一行
 
-    :param line: 需要处理的行
+    :param data: 需要处理的数据
+    :param data_type: 数据类型
     :return: 处理完的消息
     """
 
-    if "[CHAT]" in line:
-        chat_message = line.split("[CHAT]")[1].strip()
-    # if "[GAME]" in line:
-        # chat_message = line.split("[GAME]")[1].strip()
-        return chat_message
+    if data_type == "log":
+        if "[CHAT]" in data:
+            chat_message = data.split("[CHAT]")[1].strip()
+            # if "[GAME]" in line:
+            # chat_message = line.split("[GAME]")[1].strip()
+            return chat_message
+    elif data_type == "clipboard":
+        return data
 
     return None
