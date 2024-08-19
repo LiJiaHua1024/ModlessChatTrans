@@ -1,0 +1,88 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-08-18 13:41+0800\n"
+"PO-Revision-Date: 2024-08-18 14:30+0800\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ko_KR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.4.4\n"
+
+msgid "Chat messages translated, translation results in clipboard"
+msgstr "채팅 메시지가 번역되었으며, 번역 결과가 클립보드에 복사되었습니다"
+
+msgid "Translated Message"
+msgstr "번역된 메시지"
+
+msgid "Messages"
+msgstr "메시지"
+
+msgid "Start"
+msgstr "시작"
+
+msgid "About"
+msgstr "정보"
+
+msgid "Version"
+msgstr "버전"
+
+msgid "Author"
+msgstr "저자"
+
+msgid "Email"
+msgstr "이메일"
+
+msgid "License"
+msgstr "라이선스"
+
+msgid "Graphical"
+msgstr "그래픽 인터페이스"
+
+msgid "Speech"
+msgstr "음성"
+
+msgid "Httpserver"
+msgstr "HTTP 서버"
+
+msgid "HTTP Port:"
+msgstr "HTTP 포트:"
+
+msgid "Self Source Language:"
+msgstr "자신의 메시지 원본 언어:"
+
+msgid "Self Target Language:"
+msgstr "자신의 메시지 대상 언어:"
+
+msgid "Minecraft Log Folder:"
+msgstr "Minecraft 로그 폴더:"
+
+msgid "Output Method:"
+msgstr "출력 방법:"
+
+msgid "Source Language(Auto if blank):"
+msgstr "원본 언어 (공란 시 자동 감지):"
+
+msgid "Target Language:"
+msgstr "대상 언어:"
+
+msgid "API URL:"
+msgstr "API URL:"
+
+msgid "API Key:"
+msgstr "API 키:"
+
+msgid "Model:"
+msgstr "모델 코드:"
+
+msgid "Translate Player's Own Message"
+msgstr "플레이어 자신의 메시지 번역"

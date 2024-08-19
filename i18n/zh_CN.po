@@ -1,0 +1,88 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-08-18 13:41+0800\n"
+"PO-Revision-Date: 2024-08-18 14:30+0800\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.4.4\n"
+
+msgid "Chat messages translated, translation results in clipboard"
+msgstr "聊天消息已翻译，翻译结果已复制到剪贴板"
+
+msgid "Translated Message"
+msgstr "消息翻译结果"
+
+msgid "Messages"
+msgstr "消息"
+
+msgid "Start"
+msgstr "启动"
+
+msgid "About"
+msgstr "关于"
+
+msgid "Version"
+msgstr "版本"
+
+msgid "Author"
+msgstr "作者"
+
+msgid "Email"
+msgstr "邮箱"
+
+msgid "License"
+msgstr "许可证"
+
+msgid "Graphical"
+msgstr "图形界面"
+
+msgid "Speech"
+msgstr "语音"
+
+msgid "Httpserver"
+msgstr "HTTP服务器"
+
+msgid "HTTP Port:"
+msgstr "HTTP 端口："
+
+msgid "Self Source Language:"
+msgstr "自己消息源语言："
+
+msgid "Self Target Language:"
+msgstr "自己消息目标语言："
+
+msgid "Minecraft Log Folder:"
+msgstr "Minecraft 日志文件夹："
+
+msgid "Output Method:"
+msgstr "翻译结果呈现方式："
+
+msgid "Source Language(Auto if blank):"
+msgstr "源语言（留空自动）："
+
+msgid "Target Language:"
+msgstr "目标语言："
+
+msgid "API URL:"
+msgstr "API 地址："
+
+msgid "API Key:"
+msgstr "API 密钥："
+
+msgid "Model:"
+msgstr "模型代号："
+
+msgid "Translate Player's Own Message"
+msgstr "翻译玩家自己的消息"

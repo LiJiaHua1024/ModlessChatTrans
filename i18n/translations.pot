@@ -1,0 +1,86 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-08-18 13:41+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Chat messages translated, translation results in clipboard"
+msgstr ""
+
+msgid "Translated Message"
+msgstr ""
+
+msgid "Messages"
+msgstr ""
+
+msgid "Start"
+msgstr ""
+
+msgid "About"
+msgstr ""
+
+msgid "Version"
+msgstr ""
+
+msgid "Author"
+msgstr ""
+
+msgid "Email"
+msgstr ""
+
+msgid "License"
+msgstr ""
+
+msgid "Graphical"
+msgstr ""
+
+msgid "Speech"
+msgstr ""
+
+msgid "Httpserver"
+msgstr ""
+
+msgid "HTTP Port:"
+msgstr ""
+
+msgid "Self Source Language:"
+msgstr ""
+
+msgid "Self Target Language:"
+msgstr ""
+
+msgid "Minecraft Log Folder:"
+msgstr ""
+
+msgid "Output Method:"
+msgstr ""
+
+msgid "Source Language(Auto if blank):"
+msgstr ""
+
+msgid "Target Language:"
+msgstr ""
+
+msgid "API URL:"
+msgstr ""
+
+msgid "API Key:"
+msgstr ""
+
+msgid "Model:"
+msgstr ""
+
+msgid "Translate Player's Own Message"
+msgstr ""

@@ -21,6 +21,7 @@ from dataclasses import dataclass
 
 @dataclass
 class Config:
+    interface_lang: str
     minecraft_log_folder: str
     output_method: str
     op_src_lang: str  # other player source language
@@ -34,7 +35,8 @@ class Config:
     http_port: int
 
 
-DEFAULT_CONFIG = Config(minecraft_log_folder="",
+DEFAULT_CONFIG = Config(interface_lang="zh_CN",
+                        minecraft_log_folder="",
                         output_method="graphical",
                         op_src_lang="",
                         op_tgt_lang="zh-CN",
@@ -74,7 +76,7 @@ def read_config():
     """
 
     def create_default_config():
-        with open('ModlessChatTrans-config.json', 'w') as config_file:
+        with open("ModlessChatTrans-config.json", "w", encoding="utf-8") as config_file:
             # 将默认配置写入文件
             json.dump(vars(DEFAULT_CONFIG), config_file)
 
@@ -103,5 +105,5 @@ def save_config(**config_changes):
     config = read_config()
     for key, value in config_changes.items():
         setattr(config, key, value)
-    with open('ModlessChatTrans-config.json', 'w') as config_file:
+    with open("ModlessChatTrans-config.json", "w", encoding="utf-8") as config_file:
         json.dump(vars(config), config_file)

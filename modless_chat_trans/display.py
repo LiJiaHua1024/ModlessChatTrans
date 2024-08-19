@@ -17,15 +17,16 @@ import customtkinter as ctk
 import pyttsx3
 import threading
 from flask import Flask, render_template_string
+from modless_chat_trans.i18n import _
 
 
 def initialization(output_method, **kwargs):
-    if output_method == "graphical":
+    if output_method == "Graphical":
         start_gui_thread()
-    elif output_method == "speech":
+    elif output_method == "Speech":
         global voice_engine
         voice_engine = pyttsx3.init()
-    elif output_method == "httpserver":
+    elif output_method == "Httpserver":
         start_httpserver_thread(kwargs["http_port"])
 
 
@@ -33,7 +34,7 @@ def start_gui():
     global translation_result_box
 
     translation_display_window = ctk.CTk()
-    translation_display_window.title("Translated Message")
+    translation_display_window.title(_("Translated Message"))
     translation_display_window.geometry("700x400")
 
     translation_result_box = ctk.CTkTextbox(translation_display_window, font=("SimSun", 20))
@@ -63,15 +64,15 @@ def start_httpserver(port):
 
     @flask_app.route('/')
     def home():
-        return render_template_string('''
+        return render_template_string("""
                     <!DOCTYPE html>
                     <html>
                     <head>
-                        <title>Messages</title>
+                        <title>"""+_("Messages")+"""</title>
                         <meta http-equiv="refresh" content="1">
                     </head>
                     <body>
-                        <h1>Messages:</h1>
+                        <h1>"""+_("Messages")+""":</h1>
                         <ul>
                         {% for message in messages %}
                             <li>{{ message }}</li>
@@ -79,7 +80,7 @@ def start_httpserver(port):
                         </ul>
                     </body>
                     </html>
-                ''', messages=http_messages)
+                """, messages=http_messages)
 
     flask_app.run(debug=False, host='0.0.0.0', port=port)
 
@@ -108,12 +109,12 @@ def display_message(message, output_method):
     :param output_method: 呈现方式，目前支持 print（已弃用）/graphical/speech/httpserver
     """
 
-    if output_method == "graphical":
+    if output_method == "Graphical":
         if translation_result_box:
             _graphical_display(message)
-    elif output_method == "speech":
+    elif output_method == "Speech":
         _speech_display(message)
-    elif output_method == "httpserver":
+    elif output_method == "Httpserver":
         _httpserver_display(message)
     else:
         raise ValueError("Unsupported output method")

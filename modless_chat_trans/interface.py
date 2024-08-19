@@ -13,11 +13,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import tkinter as tk
 import customtkinter as ctk
 import hPyT
 import webbrowser
 from dataclasses import dataclass
 from modless_chat_trans.file_utils import read_config, save_config
+from modless_chat_trans.i18n import _, supported_languages, lang_window_size_map
 
 
 @dataclass
@@ -41,19 +43,40 @@ def create_main_window(info, start_translation):
     # 创建主窗口
     main_window = ctk.CTk()
     main_window.title(f"Modless Chat Trans {info.version}")
-    main_window.geometry("700x630")
+
+    main_window.geometry(lang_window_size_map[read_config().interface_lang])
+
     main_window.resizable(False, False)
 
     main_window.rowconfigure(10, weight=1)
     main_window.columnconfigure(9, weight=1)
 
+    language_menu = tk.Menu(main_window, tearoff=0)
+
+    language_menu.add_command(label="* Changes take effect after reboot")
+    for lang, lang_code in supported_languages:
+        language_menu.add_command(label=lang, command=lambda lang_code=lang_code: save_config(interface_lang=lang_code))
+
+    def show_language_menu(event):
+        nonlocal language_menu
+        try:
+            language_menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            language_menu.grab_release()
+
     create_config_widgets(main_window)
 
-    start_button = ctk.CTkButton(main_window, text="Start", font=("default", 60),
+    start_button = ctk.CTkButton(main_window, text=_("Start"), font=("default", 60),
                                  command=lambda: prepare_translation_config(start_translation))
     start_button.grid(row=10, column=0, columnspan=2, padx=20, pady=10)
 
-    about_button = ctk.CTkButton(main_window, text="关于", width=50, height=25,
+    choose_language_photo = tk.PhotoImage(file="choose_language.png")
+    choose_language_button = ctk.CTkButton(main_window, image=choose_language_photo, text="",
+                                           width=50, height=50, fg_color="transparent", hover_color="white")
+    choose_language_button.bind("<Button-1>", show_language_menu)
+    choose_language_button.grid(row=11, column=0, padx=(0, 150))
+
+    about_button = ctk.CTkButton(main_window, text=_("About"), width=50, height=25,
                                  command=lambda: show_about_window(main_window, info))
     about_button.grid(row=11, column=2, padx=0, pady=15)
 
@@ -72,7 +95,7 @@ def show_about_window(main_window, info):
 
     # 创建关于窗口
     about_window = ctk.CTkToplevel(main_window)
-    about_window.title("关于")
+    about_window.title(_("About"))
     about_window.geometry("350x200")
     about_window.grab_set()
     about_window.resizable(False, False)
@@ -80,13 +103,13 @@ def show_about_window(main_window, info):
 
     # 添加关于窗口的内容
     ctk.CTkLabel(about_window, text="Modless Chat Trans", font=("Arial", 20, "bold")).pack()
-    ctk.CTkLabel(about_window, text=f"版本: {info.version}").pack()
-    ctk.CTkLabel(about_window, text=f"作者: {info.author}").pack()
-    ctk.CTkLabel(about_window, text=f"邮箱: {info.email}").pack()
+    ctk.CTkLabel(about_window, text=f"{_("Version")}: {info.version}").pack()
+    ctk.CTkLabel(about_window, text=f"{_("Author")}: {info.author}").pack()
+    ctk.CTkLabel(about_window, text=f"{_("Email")}: {info.email}").pack()
     github_url_label = ctk.CTkLabel(about_window, text=f"GitHub: {info.github}", cursor="hand2")
     github_url_label.bind("<Button-1>", lambda event: webbrowser.open_new(info.github))
     github_url_label.pack()
-    license_label = ctk.CTkLabel(about_window, text=f"协议: {info.license[0]}", cursor="hand2")
+    license_label = ctk.CTkLabel(about_window, text=f"{_("License")}: {info.license[0]}", cursor="hand2")
     license_label.bind("<Button-1>", lambda event: webbrowser.open_new(info.license[1]))
     license_label.pack()
 
@@ -102,12 +125,14 @@ def prepare_translation_config(start_translation):
     start_button.configure(state="disabled")
 
     minecraft_log_folder = minecraft_log_folder_entry.get()
-    output_method = output_method_var.get()
     op_src_lang = source_language_entry.get()
     op_tgt_lang = target_language_entry.get()
     api_url = api_url_entry.get()
     api_key = api_key_entry.get()
     model = model_entry.get()
+
+    output_method_map = {_("Graphical"): "Graphical", _("Speech"): "Speech", _("Httpserver"): "Httpserver"}
+    output_method = output_method_map[output_method_var.get()]
 
     # 获取自翻译选项
     self_translation_enabled = self_translation_var.get()
@@ -118,7 +143,7 @@ def prepare_translation_config(start_translation):
                 op_tgt_lang=op_tgt_lang, self_trans_enabled=self_translation_enabled, self_src_lang=self_src_lang,
                 self_tgt_lang=self_tgt_lang, api_url=api_url, api_key=api_key, model=model)
 
-    if output_method == "httpserver":
+    if output_method == "Httpserver":
         http_port = int(http_port_entry.get())
         save_config(http_port=http_port)
         webbrowser.open_new(f"http://localhost:{http_port}")
@@ -152,9 +177,9 @@ def create_config_widgets(main_window):
         """
 
         global http_port_entry, http_port_label
-        if choice == "httpserver":
+        if choice == _("Httpserver"):
             if not http_port_entry:
-                http_port_label = ctk.CTkLabel(main_window, text="HTTP Port:")
+                http_port_label = ctk.CTkLabel(main_window, text=_("HTTP Port:"))
                 http_port_label.grid(row=1, column=1, padx=(200, 0), pady=10, sticky="w")
                 http_port_entry = ctk.CTkEntry(main_window, width=100)
                 http_port_entry.grid(row=1, column=1, padx=(270, 0), pady=10, sticky="w")
@@ -175,14 +200,14 @@ def create_config_widgets(main_window):
         global self_src_lang_entry, self_tgt_lang_entry, self_src_lang_label, self_tgt_lang_label
         if self_translation_var.get():
             if not self_src_lang_entry:
-                self_src_lang_label = ctk.CTkLabel(main_window, text="Self Source Language:")
+                self_src_lang_label = ctk.CTkLabel(main_window, text=_("Self Source Language:"))
                 self_src_lang_label.grid(row=8, column=0, padx=20, pady=10, sticky="w")
                 self_src_lang_entry = ctk.CTkEntry(main_window, width=400)
                 self_src_lang_entry.grid(row=8, column=1, padx=20, pady=10, sticky="w")
                 self_src_lang_entry.insert(0, config.self_src_lang)
 
             if not self_tgt_lang_entry:
-                self_tgt_lang_label = ctk.CTkLabel(main_window, text="Self Target Language:")
+                self_tgt_lang_label = ctk.CTkLabel(main_window, text=_("Self Target Language:"))
                 self_tgt_lang_label.grid(row=9, column=0, padx=20, pady=10, sticky="w")
                 self_tgt_lang_entry = ctk.CTkEntry(main_window, width=400)
                 self_tgt_lang_entry.grid(row=9, column=1, padx=20, pady=10, sticky="w")
@@ -203,11 +228,11 @@ def create_config_widgets(main_window):
     # 读取配置文件
     config = read_config()
 
-    if config.output_method not in {"graphical", "speech", "httpserver"}:
-        config.output_method = "graphical"
+    if config.output_method not in {"Graphical", "Speech", "Httpserver"}:
+        config.output_method = "Graphical"
 
     # Minecraft Log Folder
-    minecraft_log_folder_label = ctk.CTkLabel(main_window, text="Minecraft Log Folder:")
+    minecraft_log_folder_label = ctk.CTkLabel(main_window, text=_("Minecraft Log Folder:"))
     minecraft_log_folder_label.grid(row=0, column=0, padx=20, pady=10, sticky="w")
     minecraft_log_folder_entry = ctk.CTkEntry(main_window, width=400)
     minecraft_log_folder_entry.insert(0, config.minecraft_log_folder)
@@ -215,43 +240,44 @@ def create_config_widgets(main_window):
 
     # Output Method
     on_output_method_change(config.output_method)
-    output_method_label = ctk.CTkLabel(main_window, text="Output Method:")
+    output_method_label = ctk.CTkLabel(main_window, text=_("Output Method:"))
     output_method_label.grid(row=1, column=0, padx=20, pady=10, sticky="w")
-    output_method_var = ctk.StringVar(value=config.output_method)
-    output_method_optionmenu = ctk.CTkOptionMenu(main_window, values=["graphical", "speech", "httpserver"],
+    output_method_var = ctk.StringVar(value=_(config.output_method))
+    output_method_optionmenu = ctk.CTkOptionMenu(main_window,
+                                                 values=[_("Graphical"), _("Speech"), _("Httpserver")],
                                                  variable=output_method_var, command=on_output_method_change)
     output_method_optionmenu.grid(row=1, column=1, padx=20, pady=10, sticky="w")
 
     # Source Language
-    source_language_label = ctk.CTkLabel(main_window, text="Source Language:")
+    source_language_label = ctk.CTkLabel(main_window, text=_("Source Language(Auto if blank):"))
     source_language_label.grid(row=2, column=0, padx=20, pady=10, sticky="w")
     source_language_entry = ctk.CTkEntry(main_window, width=400)
     source_language_entry.insert(0, config.op_src_lang)
     source_language_entry.grid(row=2, column=1, padx=20, pady=10, sticky="w")
 
     # Target Language
-    target_language_label = ctk.CTkLabel(main_window, text="Target Language:")
+    target_language_label = ctk.CTkLabel(main_window, text=_("Target Language:"))
     target_language_label.grid(row=3, column=0, padx=20, pady=10, sticky="w")
     target_language_entry = ctk.CTkEntry(main_window, width=400)
     target_language_entry.insert(0, config.op_tgt_lang)
     target_language_entry.grid(row=3, column=1, padx=20, pady=10, sticky="w")
 
     # API URL
-    api_url_label = ctk.CTkLabel(main_window, text="API URL:")
+    api_url_label = ctk.CTkLabel(main_window, text=_("API URL:"))
     api_url_label.grid(row=4, column=0, padx=20, pady=10, sticky="w")
     api_url_entry = ctk.CTkEntry(main_window, width=400)
     api_url_entry.insert(0, config.api_url)
     api_url_entry.grid(row=4, column=1, padx=20, pady=10, sticky="w")
 
     # API Key
-    api_key_label = ctk.CTkLabel(main_window, text="API Key:")
+    api_key_label = ctk.CTkLabel(main_window, text=_("API Key:"))
     api_key_label.grid(row=5, column=0, padx=20, pady=10, sticky="w")
     api_key_entry = ctk.CTkEntry(main_window, width=400)
     api_key_entry.insert(0, config.api_key)
     api_key_entry.grid(row=5, column=1, padx=20, pady=10, sticky="w")
 
     # Model
-    model_label = ctk.CTkLabel(main_window, text="Model:")
+    model_label = ctk.CTkLabel(main_window, text=_("Model:"))
     model_label.grid(row=6, column=0, padx=20, pady=10, sticky="w")
     model_entry = ctk.CTkEntry(main_window, width=400)
     model_entry.insert(0, config.model)
@@ -259,10 +285,10 @@ def create_config_widgets(main_window):
 
     # Self Translation Toggle
     self_translation_var = ctk.BooleanVar(value=config.self_src_lang != "" and config.self_tgt_lang != "")
-    self_translation_toggle = ctk.CTkCheckBox(main_window, text="Enable Self Translation",
+    self_translation_toggle = ctk.CTkCheckBox(main_window, text=_("Translate Player's Own Message"),
                                               variable=self_translation_var,
                                               command=on_self_translation_toggle)
-    self_translation_toggle.grid(row=7, column=0, padx=20, pady=10, sticky="w")
+    self_translation_toggle.grid(row=7, column=1, padx=20, pady=10, sticky="w")
 
     on_self_translation_toggle()
 

@@ -1,0 +1,88 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-08-18 13:41+0800\n"
+"PO-Revision-Date: 2024-08-18 14:30+0800\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: de_DE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.4.4\n"
+
+msgid "Chat messages translated, translation results in clipboard"
+msgstr "Chat-Nachrichten übersetzt, Übersetzungsergebnisse in die Zwischenablage kopiert"
+
+msgid "Translated Message"
+msgstr "Übersetzte Nachricht"
+
+msgid "Messages"
+msgstr "Nachrichten"
+
+msgid "Start"
+msgstr "Starten"
+
+msgid "About"
+msgstr "Über"
+
+msgid "Version"
+msgstr "Version"
+
+msgid "Author"
+msgstr "Autor"
+
+msgid "Email"
+msgstr "E-Mail"
+
+msgid "License"
+msgstr "Lizenz"
+
+msgid "Graphical"
+msgstr "Grafische Oberfläche"
+
+msgid "Speech"
+msgstr "Sprache"
+
+msgid "Httpserver"
+msgstr "HTTP-Server"
+
+msgid "HTTP Port:"
+msgstr "HTTP-Port:"
+
+msgid "Self Source Language:"
+msgstr "Eigene Nachrichtenquellensprache:"
+
+msgid "Self Target Language:"
+msgstr "Eigene Nachrichtenzielsprache:"
+
+msgid "Minecraft Log Folder:"
+msgstr "Minecraft-Protokollordner:"
+
+msgid "Output Method:"
+msgstr "Ausgabemethode:"
+
+msgid "Source Language(Auto if blank):"
+msgstr "Quellsprache (automatisch bei leer):"
+
+msgid "Target Language:"
+msgstr "Zielsprache:"
+
+msgid "API URL:"
+msgstr "API-URL:"
+
+msgid "API Key:"
+msgstr "API-Schlüssel:"
+
+msgid "Model:"
+msgstr "Modell:"
+
+msgid "Translate Player's Own Message"
+msgstr "Eigene Nachrichten des Spielers übersetzen"
