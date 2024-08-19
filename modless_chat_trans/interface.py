@@ -18,7 +18,7 @@ import customtkinter as ctk
 import hPyT
 import webbrowser
 from dataclasses import dataclass
-from modless_chat_trans.file_utils import read_config, save_config
+from modless_chat_trans.file_utils import read_config, save_config, get_path
 from modless_chat_trans.i18n import _, supported_languages, lang_window_size_map
 
 
@@ -70,7 +70,7 @@ def create_main_window(info, start_translation):
                                  command=lambda: prepare_translation_config(start_translation))
     start_button.grid(row=10, column=0, columnspan=2, padx=20, pady=10)
 
-    choose_language_photo = tk.PhotoImage(file="choose_language.png")
+    choose_language_photo = tk.PhotoImage(file=get_path("choose_language.png"))
     choose_language_button = ctk.CTkButton(main_window, image=choose_language_photo, text="",
                                            width=50, height=50, fg_color="transparent", hover_color="white")
     choose_language_button.bind("<Button-1>", show_language_menu)

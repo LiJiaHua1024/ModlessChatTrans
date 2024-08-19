@@ -1,4 +1,5 @@
 import gettext
+from modless_chat_trans.file_utils import get_path
 
 current_language = None
 _ = None
@@ -23,7 +24,7 @@ lang_window_size_map = {
 def set_language(language):
     global current_language, _
     try:
-        current_language = gettext.translation("translations", localedir="locales", languages=[language])
+        current_language = gettext.translation("translations", localedir=get_path("locales"), languages=[language])
         current_language.install()
     finally:
         _ = current_language.gettext if current_language else gettext.gettext

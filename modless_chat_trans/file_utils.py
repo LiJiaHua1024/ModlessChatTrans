@@ -14,9 +14,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import sys
 import glob
 import json
 from dataclasses import dataclass
+
+base_path = sys.path[1]
+
+
+def get_path(path):
+    return os.path.join(base_path, path)
 
 
 @dataclass
