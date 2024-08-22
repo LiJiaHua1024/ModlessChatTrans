@@ -8,51 +8,48 @@ Tired of not understanding foreign language messages from other players in Minec
 
 ### Features
 
-- **Modless**: No need to install any mods. ModlessChatTrans works by reading Minecraft log files to capture chat messages, making it safe and convenient.
+- **Modless**: No need to install any mods. ModlessChatTrans extracts chat messages from the Minecraft log files for other players’ messages and reads your own chat messages from the clipboard.
 - **Real-time Translation**: Translates chat messages at lightning speed, so you can communicate effortlessly even during intense PvP.
-- **High-quality Translations**: Utilizes advanced LLM models to ensure accuracy and fluency, accurately translating even gaming abbreviations and slang.
+- **High-quality Translations**: Powered by an advanced LLM (Language Learning Model), ensuring accuracy and fluency, even for gaming abbreviations and slang.
 - **Multiple Presentation Methods**: Supports three ways to present translation results:
-  - **Direct Print**: Prints the translation results directly to the console.
-  - **Tkinter GUI Interface**: Uses the Tkinter library to create a simple GUI interface to display translation results.
-  - **Speech Synthesis Broadcast**: Uses a speech synthesis engine to broadcast the translation results.
-  - **HTTP Server**: Utilizes the Flask module to launch an HTTP server, enabling easier cross-platform result presentation. Most electronic devices with a browser can now serve as display terminals for the translation content.
+  - **CustomTkinter GUI**: Uses the CustomTkinter library to create a simple GUI interface to display translation results.
+  - **Text-to-Speech Output**: Uses a TTS engine to read out the translation results.
+  - **HTTP Server**: Launches an HTTP server using Flask, making it easy to display translations across platforms. Any device with a browser can now serve as a translation display terminal.
 - **Easy to Use:** Simply download and run the .exe file.
 
 ### Functionality
 
 - Translates messages from other players into your language.
+- Translates your own messages before sending them.
 - Supports translations in multiple languages.
 
-### Future Plans
+### How to Use
 
-- Support translating your own messages before sending.
-- Support more ways to present translation results.
-- Support more translation services.
-
-### Usage
-
-1. Download the latest .exe file from the release page.
+**Windows Platform**:
+1. Download the [latest version](https://github.com/LiJiaHua1024/ModlessChatTrans/releases/latest) .exe file from the release page.
 2. Run the .exe file.
-3. Enter the Minecraft log file directory, translation result presentation method, API address, API key, and translation model to use.
-4. Launch Minecraft and join a game.
+3. Choose the interface language in the bottom left corner of the program.
+4. Enter the necessary information as prompted (you can choose whether to have your own messages translated before sending).
+5. Click "Start" and begin playing Minecraft.
+6. When other players send you messages, the program will show the translated result (depending on the "Output method" you selected). To send a message, enter it into the Minecraft chat box, then press `Ctrl + A` followed by `Ctrl + C` (or `Ctrl + X`) to copy (or cut) the content to your clipboard (**Note: Do not send the message yet!**). The program will capture your message and write the translated result back to your clipboard. When the program prompts “Chat messages translated, translation results in clipboard” press `Ctrl + V` to paste the content back into the chat box. Then press `Enter` to send the message.
 
-### Development Status Update
+**Linux Platform**:
+1. Download the [latest version](https://github.com/LiJiaHua1024/ModlessChatTrans/releases/latest) "Source code" archive from the release page.
+2. Extract the downloaded archive and enter the extracted folder.
+3. Run `pip install -r requirements.txt` to install the dependencies.
+4. Run `python3 ./main.py` to start the program.
+5. Follow steps 3 to 6 from the Windows platform instructions.
 
-Thank you all for your continuous support and attention to this project. Since the release of version 1.1.1, I have been diligently working on the next major update (2.0.0). This version will bring many exciting new features and improvements, including a brand new graphical user interface and support for saving configuration files.
+### Project Development Updates
+I have been continuously working on this program; however, I encountered some challenges while transitioning from version 1.1.1 to 2.0.0 (see the README in branch `2.0.0-legacy` for details).
 
-As of July 2, 2024, I have implemented all features except for the "transparent proxy".
+Due to these difficulties, development stalled. After consideration, I decided to temporarily abandon this feature and aim to implement it later when conditions allow. As a temporary alternative, I chose to use a clipboard monitoring method for translating my own messages.
 
-However, during development, I encountered some technical challenges, particularly in implementing network-related features. These challenges require more time to resolve and test. The planned transparent proxy feature will allow us to capture and modify chat messages directly from network packets without relying on log file monitoring. It might also resolve message garbling issues in lower versions. Furthermore, by modifying network packets, we can achieve a near-perfect translation presentation method—displaying translated messages directly on the original Minecraft message screen. However, implementing this feature requires an in-depth understanding of Minecraft's network protocol.
-
-Due to personal reasons and these technical challenges, the project is currently progressing slowly. I am striving to learn the necessary knowledge to overcome these obstacles, but the progress is slower than expected.
-
-Here, I sincerely invite developers with network programming experience, especially those familiar with Minecraft's network protocol, to join this project. If you are interested in implementing the transparent proxy feature or have relevant experience, please do not hesitate to contact me through Issues or directly submit a Pull Request. Your contribution will significantly advance the project. By the way, [wiki.vg](https://wiki.vg) is a great place to learn about Minecraft's network protocol.
-
-I will continue to work hard to bring this major update to everyone as soon as possible. If you are interested in contributing to the development, please work on the dev-2.0.0 branch.
+The transparent proxy attempt branch has been renamed `2.0.0-legacy`, and the new `dev-2.0.0` branch is under rapid development and will be merged into the `main` branch as soon as possible, releasing version 2.0.0.
 
 ### Development
 
-ModlessChatTrans is written in pure Python. 
+ModlessChatTrans is developed entirely in Python.
 
 ### License
 
