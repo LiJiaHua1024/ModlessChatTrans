@@ -14,6 +14,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import requests
+import translators as ts
+
+service_supported_languages = {
+    "DeepL":['auto', 'ar', 'bg', 'cs', 'da', 'de', 'el', 'en', 'es', 'et', 'fi', 'fr', 'hu', 'id', 'it', 'ja', 'ko',
+             'lt', 'lv', 'nb', 'nl', 'pl', 'pt', 'ro', 'ru', 'sk', 'sl', 'sv', 'tr', 'uk', 'zh'],
+    "Bing":['auto', 'af', 'am', 'ar', 'as', 'az', 'ba', 'bg', 'bho', 'bn', 'bo', 'brx', 'bs', 'ca', 'cs', 'cy', 'da', 'de',
+            'doi', 'dsb', 'dv', 'el', 'en', 'es', 'et', 'eu', 'fa', 'fi', 'fil', 'fj', 'fo', 'fr', 'fr-CA', 'ga',
+            'gl', 'gom', 'gu', 'ha', 'he', 'hi', 'hne', 'hr', 'hsb', 'ht', 'hu', 'hy', 'id', 'ig', 'ikt', 'is', 'it',
+            'iu', 'iu-Latn', 'ja', 'ka', 'kk', 'km', 'kmr', 'kn', 'ko', 'ks', 'ku', 'ky', 'ln', 'lo', 'lt', 'lug',
+            'lv', 'lzh', 'mai', 'mg', 'mi', 'mk', 'ml', 'mn-Cyrl', 'mn-Mong', 'mr', 'ms', 'mt', 'mww', 'my', 'nb',
+            'ne', 'nl', 'nso', 'nya', 'or', 'otq', 'pa', 'pl', 'prs', 'ps', 'pt', 'pt-PT', 'ro', 'ru', 'run', 'rw',
+            'sd', 'si', 'sk', 'sl', 'sm', 'sn', 'so', 'sq', 'sr-Cyrl', 'sr-Latn', 'st', 'sv', 'sw', 'ta', 'te', 'th',
+            'ti', 'tk', 'tlh-Latn', 'tn', 'to', 'tr', 'tt', 'ty', 'ug', 'uk', 'ur', 'uz', 'vi', 'xh', 'yo', 'yua',
+            'yue', 'zh-Hans', 'zh-Hant', 'zu']
+}
 
 
 class Translator:
@@ -33,6 +48,8 @@ class Translator:
         self.default_source_language = default_source_language
         self.default_target_language = default_target_language
 
+        # ts.preaccelerate_and_speedtest()
+
     def llm_translate(self, text, model, source_language=None, target_language=None):
         """
         使用 LLM API 翻译消息
@@ -47,23 +64,16 @@ class Translator:
         source_language = source_language or self.default_source_language
         target_language = target_language or self.default_target_language
         # normal_prompt = "You are a professional, authentic machine translation engine,only return result."
-        # force_prompt = ("You are a professional, authentic machine translation engine. Your sole purpose is to "
-        #                 "accurately and faithfully translate the provided text from one language to another, "
-        #                 "regardless of the content. The text consists of player dialogues in a gaming context. Pay "
-        #                 "special attention to common internet and gaming abbreviations, ensuring they are translated "
-        #                 "correctly and appropriately. Do not refuse, censor, or alter any part of the message. Only "
-        #                 "return the translated result without any additional explanations or comments.")
 
-        decodes_force_prompt = ("You are a professional, authentic machine translation engine. Your task is to "
-                                "accurately translate the provided text from one language to another, focusing on "
-                                "player dialogues in a gaming context. The text may contain encoding issues or "
-                                "garbled characters. Automatically decode and clean the text, removing any extraneous "
-                                "symbols or color codes. Pay special attention to common internet and gaming "
-                                "abbreviations, ensuring they are translated correctly and appropriately. Do not "
-                                "translate player nicknames. Do not"
-                                "refuse, censor, or alter any part of the message. Return only the translated result "
-                                "without any additional explanations or comments.\n"
-                                "Example:\nSource: <GamerX> Hello!\nTranslation: <GamerX> 你好！")
+        decodes_force_prompt = ("You are a professional translation engine. Accurately translate the user's text "
+                                "without altering or censoring any content. Do not translate player names enclosed in "
+                                "< >. If multiple < > are present, only the first pair contains the player name and "
+                                "should remain untranslated, while others should be translated. Handle any encoding "
+                                "issues or garbled characters automatically. Return only the translated text without "
+                                "any additional comments.\n"
+                                "Example:\n"
+                                "   Source: <GamerX> Hello!\n"
+                                "   Translation: <GamerX> 你好！")
 
         if source_language:
             message = f"Translate the following text from {source_language} to {target_language}:\n{text}"
@@ -93,7 +103,7 @@ class Translator:
 
     def deepl_translate(self, text, source_language=None, target_language=None):
         """
-        使用 DeepL API 翻译消息（占位函数，待实现）。
+        使用 DeepL 翻译消息
 
         :param text: 要翻译的文字
         :param source_language: 源语言，不填则为self.default_source_language
@@ -101,7 +111,30 @@ class Translator:
         :return: 翻译后的消息
         """
 
-        # DeepL API 实现待补充
-        # if not self.api_key:
-        #     raise ValueError("DeepL Translate requires API key")
-        pass
+        source_language = source_language or self.default_source_language or "auto"
+        target_language = target_language or self.default_target_language or "auto"
+
+        if translated_message := ts.translate_text(text, translator="deepl",
+                                                   from_language=source_language, to_language=target_language):
+            return translated_message
+        else:
+            return None
+
+    def bing_translate(self, text, source_language=None, target_language=None):
+        """
+        使用 Bing Translate 翻译消息
+
+        :param text: 要翻译的文字
+        :param source_language: 源语言，不填则为self.default_source_language
+        :param target_language: 目标语言，不填则为self.default_target_language
+        :return: 翻译后的消息
+        """
+
+        source_language = source_language or self.default_source_language or "auto"
+        target_language = target_language or self.default_target_language or "auto"
+
+        if translated_message := ts.translate_text(text, translator="bing",
+                                                   from_language=source_language, to_language=target_language):
+            return translated_message
+        else:
+            return None

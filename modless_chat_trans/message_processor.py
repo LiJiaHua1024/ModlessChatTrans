@@ -18,23 +18,37 @@ def process_decorator(function):
     为process_message添加翻译步骤
     """
 
-    def wrapper(data, data_type, translator, model=None, source_language=None, target_language=None):
+    def wrapper(data, data_type, translator, translation_service,
+                model=None, source_language=None, target_language=None):
         """
         处理日志文件中的一行（包括翻译）
 
         :param data: 需要处理的数据
         :param data_type: 数据类型
         :param translator: Translator类的实例
+        :param translation_service: 翻译服务
         :param model: 模型名称
+        :param source_language: 源语言
+        :param target_language: 目标语言
         :return: 处理完的消息
         """
 
         original_chat_message = function(data, data_type)
         translated_chat_message: str = ""
         if original_chat_message:
-            translated_chat_message = translator.llm_translate(original_chat_message, model=model,
-                                                               source_language=source_language,
-                                                               target_language=target_language)
+            if translation_service == "LLM":
+                translated_chat_message = translator.llm_translate(original_chat_message, model=model,
+                                                                   source_language=source_language,
+                                                                   target_language=target_language)
+            elif translation_service == "Bing":
+                translated_chat_message = translator.bing_translate(original_chat_message,
+                                                                    source_language=source_language,
+                                                                    target_language=target_language)
+            elif translation_service == "DeepL":
+                translated_chat_message = translator.deepl_translate(original_chat_message,
+                                                                     source_language=source_language,
+                                                                     target_language=target_language)
+
         return translated_chat_message
 
     return wrapper

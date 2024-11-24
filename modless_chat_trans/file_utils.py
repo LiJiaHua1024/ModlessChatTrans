@@ -31,6 +31,7 @@ class Config:
     interface_lang: str
     minecraft_log_folder: str
     output_method: str
+    trans_service: str
     op_src_lang: str  # other player source language
     op_tgt_lang: str  # other player target language
     self_trans_enabled: bool  # self translation enabled
@@ -45,6 +46,7 @@ class Config:
 DEFAULT_CONFIG = Config(interface_lang="zh_CN",
                         minecraft_log_folder="",
                         output_method="graphical",
+                        trans_service="LLM",
                         op_src_lang="",
                         op_tgt_lang="zh-CN",
                         self_trans_enabled=True,
