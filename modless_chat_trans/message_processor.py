@@ -33,7 +33,7 @@ def process_decorator(function):
         :return: 处理完的消息
         """
 
-        original_chat_message = function(data, data_type)
+        name, original_chat_message = function(data, data_type)
         translated_chat_message: str = ""
         if original_chat_message:
             if translation_service == "LLM":
@@ -49,7 +49,9 @@ def process_decorator(function):
                                                                      source_language=source_language,
                                                                      target_language=target_language)
 
-        return translated_chat_message
+            if name:
+                return f"{name}: {translated_chat_message}"
+            return translated_chat_message
 
     return wrapper
 
@@ -61,16 +63,24 @@ def process_message(data, data_type):
 
     :param data: 需要处理的数据
     :param data_type: 数据类型
-    :return: 处理完的消息
+    :return: 元组 (玩家名称, 聊天内容)
     """
 
+    chat_message: str = ""
     if data_type == "log":
         if "[CHAT]" in data:
             chat_message = data.split("[CHAT]")[1].strip()
-            # if "[GAME]" in line:
-            # chat_message = line.split("[GAME]")[1].strip()
-            return chat_message
     elif data_type == "clipboard":
-        return data
+        chat_message = data
+    else:
+        return "", ""
 
-    return None
+    if ":" not in chat_message:
+        return "", chat_message.strip()
+
+    name, text = chat_message.split(":", 1)
+
+    name = name.strip()
+    text = text.strip()
+
+    return name, text

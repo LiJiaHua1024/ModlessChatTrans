@@ -63,22 +63,17 @@ class Translator:
 
         source_language = source_language or self.default_source_language
         target_language = target_language or self.default_target_language
+        system_prompt = "You are a professional translation engine specializing in game translations."
         # normal_prompt = "You are a professional, authentic machine translation engine,only return result."
 
-        decodes_force_prompt = ("You are a professional translation engine. Accurately translate the user's text "
-                                "without altering or censoring any content. Do not translate player names enclosed in "
-                                "< >. If multiple < > are present, only the first pair contains the player name and "
-                                "should remain untranslated, while others should be translated. Handle any encoding "
-                                "issues or garbled characters automatically. Return only the translated text without "
-                                "any additional comments.\n"
-                                "Example:\n"
-                                "   Source: <GamerX> Hello!\n"
-                                "   Translation: <GamerX> 你好！")
-
         if source_language:
-            message = f"Translate the following text from {source_language} to {target_language}:\n{text}"
+            message = (f"Translate from {source_language} to {target_language}. "
+                       f"Do not translate player names, proper nouns, or garbled text. "
+                       f"No explanations. No notes. Text: {text}")
         else:
-            message = f"Translate the following text to {target_language}:\n{text}"
+            message = (f"Translate to {target_language}. "
+                       f"Do not translate player names, proper nouns, or garbled text. "
+                       f"No explanations. No notes. Text: {text}")
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -87,7 +82,7 @@ class Translator:
         data = {
             "model": model,
             "messages": [
-                {"role": "system", "content": decodes_force_prompt},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": message}
             ],
             "temperature": 0
