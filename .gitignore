@@ -12,3 +12,5 @@ main.spec
 logo.ico
 
 ModlessChatTrans-config.json
+
+update_requirements.py
