@@ -15,6 +15,7 @@
 
 import os
 import time
+import threading
 from modless_chat_trans.file_utils import find_latest_log
 
 
@@ -35,7 +36,8 @@ def monitor_log_file(file_directory, callback):
                     line = log_file.readline()
                     # 当有新内容时
                     if line:
-                        callback(line, data_type="log")
+                        threading.Thread(target=callback, daemon=True, args=(line,), kwargs={"data_type": "log"}).start()
+                        continue
                     if find_latest_log(file_directory) != file_path:
                         # 文件被重命名并重新创建
                         break
