@@ -192,14 +192,13 @@ class InterfaceManager:
             save_config(op_src_lang=op_src_lang, op_tgt_lang=op_tgt_lang)
 
             if (
-                self_translation_enabled
-                and hasattr(self.services[1]["self_source_language_menu"], "get")
-                and hasattr(self.services[1]["self_target_language_menu"], "get")
+                    self_translation_enabled
+                    and hasattr(self.services[1]["self_source_language_menu"], "get")
+                    and hasattr(self.services[1]["self_target_language_menu"], "get")
             ):
                 self_src_lang = self.services[1]["self_source_language_menu"].get()
                 self_tgt_lang = self.services[1]["self_target_language_menu"].get()
                 save_config(self_src_lang=self_src_lang, self_tgt_lang=self_tgt_lang)
-
 
         save_config(minecraft_log_folder=minecraft_log_folder, output_method=output_method, trans_service=trans_service,
                     self_trans_enabled=self_translation_enabled)
@@ -456,6 +455,28 @@ class InterfaceManager:
         self.create_service_widgets()
 
         # self.on_self_translation_toggle()
+
+
+class TranslationInterfaceManager:
+    def __init__(self, main_window):
+        self.main_window = main_window
+        self.translation_display_window = None
+        self.translation_result_box = None
+
+    def start(self):
+        self.translation_display_window = ctk.CTkToplevel(self.main_window)
+        self.translation_display_window.title(_("Translated Message"))
+        self.translation_display_window.geometry("700x400")
+
+        self.translation_result_box = ctk.CTkTextbox(self.translation_display_window, font=("SimSun", 20))
+        self.translation_result_box.pack(expand=True, fill="both")
+        self.translation_result_box.configure(state=ctk.DISABLED)
+
+    def display(self, message):
+        self.translation_result_box.configure(state=ctk.NORMAL)
+        self.translation_result_box.insert(ctk.END, message + "\n")
+        self.translation_result_box.see(ctk.END)
+        self.translation_result_box.configure(state=ctk.DISABLED)
 
 
 def normalize_port_number(http_port_entry):

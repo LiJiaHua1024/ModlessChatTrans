@@ -28,7 +28,7 @@ from modless_chat_trans.clipboard_monitor import monitor_clipboard, modify_clipb
 from modless_chat_trans.i18n import _
 
 
-program_info = ProgramInfo(version="Dev-24.12.22",
+program_info = ProgramInfo(version="Dev-25.1.2",
                            author="LiJiaHua1024",
                            email="minecraft_benli@163.com",
                            github="https://github.com/LiJiaHua1024/ModlessChatTrans",
@@ -60,7 +60,7 @@ def start_translation():
 
     translator = Translator(api_key=config.api_key, api_url=config.api_url)
 
-    initialization(config.output_method, http_port=config.http_port)
+    initialization(config.output_method, main_window=interface_manager.main_window, http_port=config.http_port)
 
     monitor_thread = threading.Thread(target=monitor_log_file, args=(config.minecraft_log_folder, callback))
     monitor_thread.daemon = True
