@@ -28,7 +28,7 @@ from modless_chat_trans.clipboard_monitor import monitor_clipboard, modify_clipb
 from modless_chat_trans.i18n import _
 
 
-program_info = ProgramInfo(version="Dev-25.1.2",
+program_info = ProgramInfo(version="Dev-25.1.3",
                            author="LiJiaHua1024",
                            email="minecraft_benli@163.com",
                            github="https://github.com/LiJiaHua1024/ModlessChatTrans",
@@ -46,7 +46,7 @@ def start_translation():
                                                         model=config.model,
                                                         source_language=config.op_src_lang,
                                                         target_language=config.op_tgt_lang):
-                    display_message(processed_message, config.output_method)
+                    display_message(*processed_message, config.output_method)
                     break
             elif data_type == "clipboard":
                 if processed_message := process_message(data, data_type, translator, config.trans_service,
@@ -54,7 +54,7 @@ def start_translation():
                                                         source_language=config.self_src_lang,
                                                         target_language=config.self_tgt_lang):
                     modify_clipboard(processed_message)
-                    display_message(_("Chat messages translated, translation results in clipboard"),
+                    display_message("[INFO]", _("Chat messages translated, translation results in clipboard"),
                                     config.output_method)
                     return processed_message
 

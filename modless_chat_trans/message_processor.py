@@ -30,7 +30,7 @@ def process_decorator(function):
         :param model: 模型名称
         :param source_language: 源语言
         :param target_language: 目标语言
-        :return: 处理完的消息
+        :return: 元组 (玩家名称, 消息内容) 或 消息内容
         """
 
         name, original_chat_message = function(data, data_type)
@@ -50,8 +50,10 @@ def process_decorator(function):
                                                                      target_language=target_language)
 
             if name:
-                return f"{name}: {translated_chat_message}"
-            return translated_chat_message
+                return name, translated_chat_message
+            if data_type == "clipboard":
+                return translated_chat_message
+            return "", translated_chat_message
 
     return wrapper
 
@@ -71,7 +73,7 @@ def process_message(data, data_type):
         if "[CHAT]" in data:
             chat_message = data.split("[CHAT]")[1].strip()
     elif data_type == "clipboard":
-        chat_message = data
+        return "", data
     else:
         return "", ""
 

@@ -17,14 +17,14 @@ import pyttsx3
 import threading
 from flask import Flask, render_template_string
 from modless_chat_trans.i18n import _
-from modless_chat_trans.interface import TranslationInterfaceManager
+from modless_chat_trans.interface import ChatInterfaceManager
 
 
 def initialization(output_method, **kwargs):
     if output_method == "Graphical":
-        global translation_interface_manager
-        translation_interface_manager = TranslationInterfaceManager(main_window=kwargs["main_window"])
-        translation_interface_manager.start()
+        global chat_interface_manager
+        chat_interface_manager = ChatInterfaceManager(main_window=kwargs["main_window"])
+        chat_interface_manager.start()
     elif output_method == "Speech":
         global voice_engine
         voice_engine = pyttsx3.init()
@@ -76,19 +76,25 @@ def _speech_display(message):
     voice_engine.runAndWait()
 
 
-def display_message(message, output_method):
+def display_message(name, message, output_method):
     """
     呈现消息
 
-    :param message: 需要呈现的文字
+    :param name: 名称
+    :param message: 消息内容
     :param output_method: 呈现方式，目前支持 graphical/speech/httpserver
     """
 
+    if name:
+        text = f"{name}: {message}"
+    else:
+        text = message
+
     if output_method == "Graphical":
-            translation_interface_manager.display(message)
+        chat_interface_manager.display(name, message)
     elif output_method == "Speech":
-        _speech_display(message)
+        _speech_display(text)
     elif output_method == "Httpserver":
-        _httpserver_display(message)
+        _httpserver_display(text)
     else:
         raise ValueError("Unsupported output method")

@@ -457,26 +457,92 @@ class InterfaceManager:
         # self.on_self_translation_toggle()
 
 
-class TranslationInterfaceManager:
+class ChatInterfaceManager:
     def __init__(self, main_window):
         self.main_window = main_window
-        self.translation_display_window = None
-        self.translation_result_box = None
+        self.chat_window = None
+        self.chat_frame = None
+        self.canvas = None
+        self.scrollbar = None
 
     def start(self):
-        self.translation_display_window = ctk.CTkToplevel(self.main_window)
-        self.translation_display_window.title(_("Translated Message"))
-        self.translation_display_window.geometry("700x400")
+        self.chat_window = ctk.CTkToplevel(self.main_window)
+        self.chat_window.title(_("Translated Message"))
+        self.chat_window.geometry("700x400")
 
-        self.translation_result_box = ctk.CTkTextbox(self.translation_display_window, font=("SimSun", 20))
-        self.translation_result_box.pack(expand=True, fill="both")
-        self.translation_result_box.configure(state=ctk.DISABLED)
+        self.canvas = ctk.CTkCanvas(self.chat_window, bg="#EAF6FF", highlightthickness=0)
+        self.scrollbar = ctk.CTkScrollbar(self.chat_window, command=self.canvas.yview)
+        self.chat_frame = ctk.CTkFrame(self.canvas, fg_color="#EAF6FF")
 
-    def display(self, message):
-        self.translation_result_box.configure(state=ctk.NORMAL)
-        self.translation_result_box.insert(ctk.END, message + "\n")
-        self.translation_result_box.see(ctk.END)
-        self.translation_result_box.configure(state=ctk.DISABLED)
+        self.canvas.create_window((0, 0), window=self.chat_frame, anchor="nw")
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.scrollbar.pack(side="right", fill="y")
+
+        self.chat_frame.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+        self.chat_window.bind("<MouseWheel>", self._on_mouse_wheel)
+
+    def display(self, name, message):
+        """
+        显示消息，使用聊天气泡样式，并添加逐字展开的动画效果
+        :param name: 发送者名称
+        :param message: 消息内容
+        """
+
+        message_frame = ctk.CTkFrame(
+            self.chat_frame,
+            fg_color="#FFFFFF",
+            corner_radius=10,
+            border_width=1,
+            border_color="#D0E8FF",
+        )
+        message_frame.pack(fill="x", pady=5, padx=10, anchor="w")
+
+        # 显示昵称
+        if name:
+            name_label = ctk.CTkLabel(
+                message_frame,
+                text=name,
+                font=("SimSun", 12, "bold"),
+                text_color="#007ACC",
+            )
+            name_label.pack(anchor="w", padx=10, pady=(5, 0))
+
+        message_label = ctk.CTkLabel(
+            message_frame,
+            text="",  # 初始内容为空
+            font=("SimSun", 14),
+            text_color="#333333",
+            wraplength=500,  # 自动换行
+            justify="left",
+        )
+        message_label.pack(anchor="w", padx=10, pady=(0, 5))
+
+        # 开始逐字展开动画
+        self._animate_text(message_label, message)
+
+        # 自动滚动到最新消息
+        self.canvas.update_idletasks()
+        self.canvas.yview_moveto(1.0)
+
+    def _animate_text(self, label, full_text, index=0, delay=5):
+        """
+        动画效果：逐字展开消息内容。
+        :param label: 消息标签
+        :param full_text: 完整的消息内容
+        :param index: 当前显示到的字符索引
+        :param delay: 每帧的延迟时间（毫秒）
+        """
+        if index <= len(full_text):
+            label.configure(text=full_text[:index])  # 更新标签内容
+            label.after(delay, self._animate_text, label, full_text, index + 1, delay)
+
+    def _on_mouse_wheel(self, event):
+        """
+        鼠标滚轮事件处理函数，用于滚动聊天窗口。
+        """
+        self.canvas.yview_scroll(-1 * (event.delta // 120), "units")
 
 
 def normalize_port_number(http_port_entry):
