@@ -89,9 +89,10 @@ def read_config():
     """
 
     def create_default_config():
-        with open("ModlessChatTrans-config.json", "w", encoding="utf-8") as config_file:
+        with open("ModlessChatTrans-config.json", "w", encoding="utf-8") as _config_file:
             # 将默认配置写入文件
-            json.dump(vars(DEFAULT_CONFIG), config_file)
+            # noinspection PyTypeChecker
+            json.dump(vars(DEFAULT_CONFIG), _config_file, indent=4, ensure_ascii=False)
 
     # 判断文件是否存在，如果不存在则创建一个空文件
     if not os.path.exists('ModlessChatTrans-config.json'):
@@ -101,10 +102,12 @@ def read_config():
     for _ in range(2):
         try:
             # 读取配置文件中的配置
-            with open('ModlessChatTrans-config.json', 'r') as config_file:
+            with open('ModlessChatTrans-config.json', 'r', encoding="utf-8") as config_file:
                 config_dict = json.load(config_file)
-                return Config(**config_dict)
-        except TypeError:
+            merged_config = {key: config_dict.get(key, default) for key, default in vars(DEFAULT_CONFIG).items()}
+            return Config(**merged_config)
+        except json.JSONDecodeError:
+            os.rename("ModlessChatTrans-config.json", "ModlessChatTrans-config.json.bak")
             create_default_config()
 
 
@@ -119,4 +122,5 @@ def save_config(**config_changes):
     for key, value in config_changes.items():
         setattr(config, key, value)
     with open("ModlessChatTrans-config.json", "w", encoding="utf-8") as config_file:
-        json.dump(vars(config), config_file)
+        # noinspection PyTypeChecker
+        json.dump(vars(config), config_file, indent=4, ensure_ascii=False)
