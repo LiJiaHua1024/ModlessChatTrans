@@ -15,6 +15,8 @@
 
 import os
 import threading
+import chardet
+import time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from modless_chat_trans.file_utils import find_latest_log
@@ -31,6 +33,9 @@ class LogMonitorHandler(FileSystemEventHandler):
         self.callback = callback
         self.current_file = find_latest_log(directory)
         self.file_pointer = None
+        while not self.current_file:
+            time.sleep(5)
+            self.current_file = find_latest_log(directory)
 
     def open_file(self, file_path):
         """
@@ -38,8 +43,19 @@ class LogMonitorHandler(FileSystemEventHandler):
         """
         if self.file_pointer:
             self.file_pointer.close()
-        self.file_pointer = open(file_path, 'r', encoding='utf-8')
+        encoding = self._detect_file_encoding(file_path)
+        self.file_pointer = open(file_path, 'r', encoding=encoding)
         self.file_pointer.seek(0, os.SEEK_END)
+
+    @staticmethod
+    def _detect_file_encoding(file_path):
+        """
+        检测文件的编码
+        """
+        with open(file_path, 'rb') as f:
+            raw_data = f.read(1024)
+            result = chardet.detect(raw_data)
+            return result.get("encoding", "utf-8")
 
     def _read_new_lines(self):
         """
