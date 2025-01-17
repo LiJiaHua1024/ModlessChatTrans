@@ -18,6 +18,7 @@ import customtkinter as ctk
 import hPyT
 import webbrowser
 from dataclasses import dataclass
+from collections import deque
 from modless_chat_trans.file_utils import read_config, save_config, get_path
 from modless_chat_trans.i18n import _, supported_languages, lang_window_size_map
 from modless_chat_trans.translator import service_supported_languages
@@ -54,6 +55,8 @@ class InterfaceManager:
         self.start_button = None
         self.http_port_entry = None
         self.http_port_label = None
+        self.max_messages_entry = None
+        self.max_messages_label = None
 
         self.llm_widgets = None
         self.traditional_widgets = None
@@ -163,6 +166,9 @@ class InterfaceManager:
             http_port = int(self.http_port_entry.get())
             save_config(http_port=http_port)
             webbrowser.open_new(f"http://localhost:{http_port}")
+        elif output_method == "Graphical":
+            max_messages = int(self.max_messages_entry.get())
+            save_config(max_messages=max_messages)
 
         self_translation_enabled = self.self_translation_var.get()
 
@@ -315,17 +321,27 @@ class InterfaceManager:
         :param choice: 选择的输出方式
         """
 
+        if self.http_port_entry:
+            self.http_port_label, self.http_port_entry = destroy_widgets(self.http_port_label,
+                                                                         self.http_port_entry)
+        if self.max_messages_entry:
+            self.max_messages_label, self.max_messages_entry = destroy_widgets(self.max_messages_label,
+                                                                               self.max_messages_entry)
+
         if choice == _("Httpserver"):
-            if not self.http_port_entry:
-                self.http_port_label = ctk.CTkLabel(self.main_window, text=_("HTTP Port:"))
-                self.http_port_label.grid(row=1, column=1, padx=(200, 0), pady=10, sticky="w")
-                self.http_port_entry = ctk.CTkEntry(self.main_window, width=100)
-                self.http_port_entry.grid(row=1, column=1, padx=(270, 0), pady=10, sticky="w")
-                self.http_port_entry.insert(0, self.config.http_port)
-                self.http_port_entry.bind("<FocusOut>", lambda event: normalize_port_number(self.http_port_entry))
-        else:
-            if self.http_port_entry:
-                self.http_port_label, self.http_port_entry = destroy_widgets(self.http_port_label, self.http_port_entry)
+            self.http_port_label = ctk.CTkLabel(self.main_window, text=_("HTTP Port:"))
+            self.http_port_label.grid(row=1, column=1, padx=(200, 0), pady=10, sticky="w")
+            self.http_port_entry = ctk.CTkEntry(self.main_window, width=100)
+            self.http_port_entry.grid(row=1, column=1, padx=(270, 0), pady=10, sticky="w")
+            self.http_port_entry.insert(0, self.config.http_port)
+            self.http_port_entry.bind("<FocusOut>", lambda event: normalize_port_number(self.http_port_entry))
+        elif choice == _("Graphical"):
+            self.max_messages_label = ctk.CTkLabel(self.main_window, text="Max Messages:")
+            self.max_messages_label.grid(row=1, column=1, padx=(170, 0), pady=10, sticky="w")
+            self.max_messages_entry = ctk.CTkEntry(self.main_window, width=100)
+            self.max_messages_entry.grid(row=1, column=1, padx=(270, 0), pady=10, sticky="w")
+            self.max_messages_entry.insert(0, self.config.max_messages)
+            self.max_messages_entry.bind("<FocusOut>", lambda event: normalize_max_messages(self.max_messages_entry))
 
     def on_self_translation_toggle(self):
         """
@@ -427,7 +443,7 @@ class InterfaceManager:
         self.minecraft_log_folder_entry.grid(row=0, column=1, padx=20, pady=10, sticky="w")
 
         # Output Method
-        self.on_output_method_change(self.config.output_method)
+        self.on_output_method_change(_(self.config.output_method))
         output_method_label = ctk.CTkLabel(main_window, text=_("Output Method:"))
         output_method_label.grid(row=1, column=0, padx=20, pady=10, sticky="w")
         self.output_method_var = ctk.StringVar(value=_(self.config.output_method))
@@ -458,12 +474,14 @@ class InterfaceManager:
 
 
 class ChatInterfaceManager:
-    def __init__(self, main_window):
+    def __init__(self, main_window, max_messages=150):
         self.main_window = main_window
         self.chat_window = None
         self.chat_frame = None
         self.canvas = None
         self.scrollbar = None
+        self.messages = deque(maxlen=max_messages)
+        self.displayed_messages = []
 
     def start(self):
         self.chat_window = ctk.CTkToplevel(self.main_window)
@@ -482,6 +500,7 @@ class ChatInterfaceManager:
 
         self.chat_frame.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
         self.chat_window.bind("<MouseWheel>", self._on_mouse_wheel)
+        self.canvas.bind("<MouseWheel>", self._on_mouse_wheel)
 
     def display(self, name, message):
         """
@@ -489,7 +508,17 @@ class ChatInterfaceManager:
         :param name: 发送者名称
         :param message: 消息内容
         """
+        self.messages.append((name, message))
+        self._append_message(name, message)
 
+        # 自动滚动到最新消息
+        self.canvas.update_idletasks()
+        self.canvas.yview_moveto(1.0)
+
+    def _append_message(self, name, message):
+        """
+        追加单条消息到显示区域，并添加逐字展开动画
+        """
         message_frame = ctk.CTkFrame(
             self.chat_frame,
             fg_color="#FFFFFF",
@@ -498,6 +527,13 @@ class ChatInterfaceManager:
             border_color="#D0E8FF",
         )
         message_frame.pack(fill="x", pady=5, padx=10, anchor="w")
+
+        # 当显示的message_frame数量大于等于消息的最大限制数量时，移除最旧的message_frame
+        if len(self.displayed_messages) >= self.messages.maxlen:
+            oldest_message_frame = self.displayed_messages.pop(0)
+            oldest_message_frame.destroy()
+
+        self.displayed_messages.append(message_frame)
 
         # 显示昵称
         if name:
@@ -522,21 +558,19 @@ class ChatInterfaceManager:
         # 开始逐字展开动画
         self._animate_text(message_label, message)
 
-        # 自动滚动到最新消息
-        self.canvas.update_idletasks()
-        self.canvas.yview_moveto(1.0)
-
-    def _animate_text(self, label, full_text, index=0, delay=5):
+    def _animate_text(self, label, full_text, index=0, delay=5, step=5):
         """
-        动画效果：逐字展开消息内容。
+        动画效果：按 step 个字符为单位逐步展开消息内容
         :param label: 消息标签
         :param full_text: 完整的消息内容
         :param index: 当前显示到的字符索引
         :param delay: 每帧的延迟时间（毫秒）
+        :param step: 每次更新的字符数量
         """
-        if index <= len(full_text):
-            label.configure(text=full_text[:index])  # 更新标签内容
-            label.after(delay, self._animate_text, label, full_text, index + 1, delay)
+        if index < len(full_text):
+            new_index = min(index + step, len(full_text))
+            label.configure(text=full_text[:new_index])
+            label.after(delay, self._animate_text, label, full_text, new_index, delay, step)
 
     def _on_mouse_wheel(self, event):
         """
@@ -568,3 +602,27 @@ def normalize_port_number(http_port_entry):
 
     http_port_entry.delete(0, ctk.END)
     http_port_entry.insert(0, str(http_port))
+
+
+def normalize_max_messages(max_messages_entry):
+    """
+    规范化最大消息数，确保其为正整数。
+    如果输入为浮点数，将其四舍五入到最近的整数
+    如果输入小于10，将其设置为10
+    如果输入无法转换为数字，则设置一个默认值（100）
+
+    :param max_messages_entry: 最大消息数输入框
+    """
+
+    max_messages_str = max_messages_entry.get()
+    try:
+        max_messages = float(max_messages_str)
+        max_messages = int(max_messages + 0.5)
+    except ValueError:
+        max_messages = 100
+
+    if max_messages < 10:
+        max_messages = 10
+
+    max_messages_entry.delete(0, ctk.END)
+    max_messages_entry.insert(0, str(max_messages))

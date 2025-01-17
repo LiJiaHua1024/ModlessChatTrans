@@ -23,7 +23,8 @@ from modless_chat_trans.interface import ChatInterfaceManager
 def initialization(output_method, **kwargs):
     if output_method == "Graphical":
         global chat_interface_manager
-        chat_interface_manager = ChatInterfaceManager(main_window=kwargs["main_window"])
+        chat_interface_manager = ChatInterfaceManager(main_window=kwargs["main_window"],
+                                                      max_messages=kwargs["max_messages"])
         chat_interface_manager.start()
     elif output_method == "Speech":
         global voice_engine

@@ -41,11 +41,12 @@ class Config:
     api_key: str
     model: str
     http_port: int
+    max_messages: int
 
 
 DEFAULT_CONFIG = Config(interface_lang="zh_CN",
                         minecraft_log_folder="",
-                        output_method="graphical",
+                        output_method="Graphical",
                         trans_service="LLM",
                         op_src_lang="",
                         op_tgt_lang="zh-CN",
@@ -55,7 +56,8 @@ DEFAULT_CONFIG = Config(interface_lang="zh_CN",
                         api_url="https://api.openai.com/v1/chat/completions",
                         api_key="",
                         model="gpt-3.5-turbo",
-                        http_port=5000)
+                        http_port=5000,
+                        max_messages=150)
 
 
 def find_latest_log(directory: str) -> str:
