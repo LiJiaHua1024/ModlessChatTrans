@@ -42,6 +42,7 @@ class Config:
     model: str
     http_port: int
     max_messages: int
+    always_on_top: bool
 
 
 DEFAULT_CONFIG = Config(interface_lang="zh_CN",
@@ -57,7 +58,8 @@ DEFAULT_CONFIG = Config(interface_lang="zh_CN",
                         api_key="",
                         model="gpt-3.5-turbo",
                         http_port=5000,
-                        max_messages=150)
+                        max_messages=150,
+                        always_on_top=False)
 
 
 def find_latest_log(directory: str) -> str:

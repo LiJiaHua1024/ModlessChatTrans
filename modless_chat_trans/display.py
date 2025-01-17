@@ -24,7 +24,8 @@ def initialization(output_method, **kwargs):
     if output_method == "Graphical":
         global chat_interface_manager
         chat_interface_manager = ChatInterfaceManager(main_window=kwargs["main_window"],
-                                                      max_messages=kwargs["max_messages"])
+                                                      max_messages=kwargs["max_messages"],
+                                                      always_on_top=kwargs["always_on_top"])
         chat_interface_manager.start()
     elif output_method == "Speech":
         global voice_engine

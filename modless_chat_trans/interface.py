@@ -69,6 +69,7 @@ class InterfaceManager:
         self.minecraft_log_folder_entry = None
         self.output_method_var = None
         self.self_translation_var = None
+        self.always_on_top_var = None
 
     def create_main_window(self, start_translation):
         """
@@ -115,6 +116,11 @@ class InterfaceManager:
                                                width=50, height=50, fg_color="transparent", hover_color="white")
         choose_language_button.bind("<Button-1>", show_language_menu)
         choose_language_button.grid(row=11, column=0, padx=(0, 150))
+
+        self.always_on_top_var = ctk.BooleanVar(value=self.config.always_on_top)
+        always_on_top_button = ctk.CTkSwitch(self.main_window, text="Always on top", font=("Arial", 15),
+                                             variable=self.always_on_top_var, onvalue=True, offvalue=False)
+        always_on_top_button.grid(row=11, column=1, padx=(0, 200), pady=15)
 
         about_button = ctk.CTkButton(self.main_window, text=_("About"), width=50, height=25,
                                      command=self.show_about_window)
@@ -172,6 +178,8 @@ class InterfaceManager:
 
         self_translation_enabled = self.self_translation_var.get()
 
+        always_on_top = self.always_on_top_var.get()
+
         trans_service = self.service_var.get()
 
         if trans_service == "LLM":
@@ -207,7 +215,7 @@ class InterfaceManager:
                 save_config(self_src_lang=self_src_lang, self_tgt_lang=self_tgt_lang)
 
         save_config(minecraft_log_folder=minecraft_log_folder, output_method=output_method, trans_service=trans_service,
-                    self_trans_enabled=self_translation_enabled)
+                    self_trans_enabled=self_translation_enabled, always_on_top=always_on_top)
 
         start_translation()
 
@@ -474,7 +482,7 @@ class InterfaceManager:
 
 
 class ChatInterfaceManager:
-    def __init__(self, main_window, max_messages=150):
+    def __init__(self, main_window, max_messages=150, always_on_top=False):
         self.main_window = main_window
         self.chat_window = None
         self.chat_frame = None
@@ -482,11 +490,14 @@ class ChatInterfaceManager:
         self.scrollbar = None
         self.messages = deque(maxlen=max_messages)
         self.displayed_messages = []
+        self.always_on_top = always_on_top
 
     def start(self):
         self.chat_window = ctk.CTkToplevel(self.main_window)
         self.chat_window.title(_("Translated Message"))
         self.chat_window.geometry("700x400")
+
+        self.chat_window.attributes("-topmost", self.always_on_top)
 
         self.canvas = ctk.CTkCanvas(self.chat_window, bg="#EAF6FF", highlightthickness=0)
         self.scrollbar = ctk.CTkScrollbar(self.chat_window, command=self.canvas.yview)
