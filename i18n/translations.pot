@@ -84,3 +84,24 @@ msgstr ""
 
 msgid "Translate Player's Own Message"
 msgstr ""
+
+msgid "Always on top"
+msgstr ""
+
+msgid "Translation failed: Too many requests. Please try again later."
+msgstr ""
+
+msgid "Translation failed: Server error. Please try again later."
+msgstr ""
+
+msgid "Translation failed: HTTP error occurred."
+msgstr ""
+
+msgid "Translation failed: Network issue or HTTP error occurred."
+msgstr ""
+
+msgid "Translation failed: Invalid response from server. Please check your network connection."
+msgstr ""
+
+msgid "Translation failed, error:"
+msgstr ""

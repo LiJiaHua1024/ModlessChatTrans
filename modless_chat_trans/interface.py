@@ -95,7 +95,7 @@ class InterfaceManager:
         for lang, lang_code in supported_languages:
             language_menu.add_command(
                 label=lang,
-                command=lambda lang_code=lang_code: save_config(interface_lang=lang_code)
+                command=lambda lc=lang_code: save_config(interface_lang=lc)
             )
 
         def show_language_menu(event):
@@ -118,7 +118,7 @@ class InterfaceManager:
         choose_language_button.grid(row=11, column=0, padx=(0, 150))
 
         self.always_on_top_var = ctk.BooleanVar(value=self.config.always_on_top)
-        always_on_top_button = ctk.CTkSwitch(self.main_window, text="Always on top", font=("Arial", 15),
+        always_on_top_button = ctk.CTkSwitch(self.main_window, text=_("Always on top"), font=("Arial", 15),
                                              variable=self.always_on_top_var, onvalue=True, offvalue=False)
         always_on_top_button.grid(row=11, column=1, padx=(0, 200), pady=15)
 

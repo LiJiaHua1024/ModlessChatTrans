@@ -9,14 +9,14 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-08-18 13:41+0800\n"
-"PO-Revision-Date: 2024-08-18 14:30+0800\n"
+"PO-Revision-Date: 2025-01-18 13:32+0800\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 3.4.4\n"
+"X-Generator: Poedit 3.5\n"
 
 msgid "Chat messages translated, translation results in clipboard"
 msgstr "聊天消息已翻译，翻译结果已复制到剪贴板"
@@ -86,3 +86,26 @@ msgstr "模型代号："
 
 msgid "Translate Player's Own Message"
 msgstr "翻译玩家自己的消息"
+
+msgid "Always on top"
+msgstr "始终置顶"
+
+msgid "Translation failed: Too many requests. Please try again later."
+msgstr "翻译失败：请求次数过多。请稍后重试。"
+
+msgid "Translation failed: Server error. Please try again later."
+msgstr "翻译失败：服务器错误。请稍后重试。"
+
+msgid "Translation failed: HTTP error occurred."
+msgstr "翻译失败：发生HTTP错误。"
+
+msgid "Translation failed: Network issue or HTTP error occurred."
+msgstr "翻译失败：网络问题或发生HTTP错误。"
+
+msgid ""
+"Translation failed: Invalid response from server. Please check your network "
+"connection."
+msgstr "翻译失败：服务器响应无效。请检查网络连接。"
+
+msgid "Translation failed, error:"
+msgstr "翻译失败，错误："

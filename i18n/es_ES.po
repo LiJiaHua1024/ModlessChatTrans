@@ -9,14 +9,14 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-08-18 13:41+0800\n"
-"PO-Revision-Date: 2024-08-18 14:30+0800\n"
+"PO-Revision-Date: 2025-01-18 12:26+0800\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es_ES\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 3.4.4\n"
+"X-Generator: Poedit 3.5\n"
 
 msgid "Chat messages translated, translation results in clipboard"
 msgstr "Mensajes de chat traducidos, resultados de la traducción en el portapapeles"
@@ -86,3 +86,24 @@ msgstr "Modelo:"
 
 msgid "Translate Player's Own Message"
 msgstr "Traducir el mensaje propio del jugador"
+
+msgid "Always on top"
+msgstr "Siempre visible"
+
+msgid "Translation failed: Too many requests. Please try again later."
+msgstr "Error de traducción: Demasiadas solicitudes. Por favor, inténtelo de nuevo más tarde."
+
+msgid "Translation failed: Server error. Please try again later."
+msgstr "Error de traducción: Error del servidor. Por favor, inténtelo de nuevo más tarde."
+
+msgid "Translation failed: HTTP error occurred."
+msgstr "Error de traducción: Se produjo un error HTTP."
+
+msgid "Translation failed: Network issue or HTTP error occurred."
+msgstr "Error de traducción: Se produjo un problema de red o un error HTTP."
+
+msgid "Translation failed: Invalid response from server. Please check your network connection."
+msgstr "Error de traducción: Respuesta no válida del servidor. Por favor, compruebe su conexión de red."
+
+msgid "Translation failed, error:"
+msgstr "Error de traducción, error:"
