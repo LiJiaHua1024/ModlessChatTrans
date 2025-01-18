@@ -15,10 +15,10 @@
 
 import tkinter as tk
 import customtkinter as ctk
-import hPyT
 import webbrowser
 from dataclasses import dataclass
 from collections import deque
+from typing import Tuple
 from modless_chat_trans.file_utils import read_config, save_config, get_path
 from modless_chat_trans.i18n import _, supported_languages, lang_window_size_map
 from modless_chat_trans.translator import service_supported_languages
@@ -30,7 +30,7 @@ class ProgramInfo:
     author: str
     email: str
     github: str
-    license: tuple[str, str]
+    license: Tuple[str, str]
 
 
 def destroy_widgets(*widgets):
@@ -71,6 +71,8 @@ class InterfaceManager:
         self.self_translation_var = None
         self.always_on_top_var = None
 
+        self.hPyT = None
+
     def create_main_window(self, start_translation):
         """
         创建程序主窗口
@@ -88,6 +90,13 @@ class InterfaceManager:
 
         self.main_window.rowconfigure(10, weight=1)
         self.main_window.columnconfigure(9, weight=1)
+
+        try:
+            import hPyT
+            self.hPyT = hPyT
+            self.hPyT.maximize_minimize_button.hide(self.main_window)
+        except ImportError:
+            pass
 
         language_menu = tk.Menu(self.main_window, tearoff=0)
 
@@ -126,8 +135,6 @@ class InterfaceManager:
                                      command=self.show_about_window)
         about_button.grid(row=11, column=2, padx=0, pady=15)
 
-        hPyT.maximize_minimize_button.hide(self.main_window)
-
         self.main_window.mainloop()
 
     def show_about_window(self):
@@ -139,19 +146,22 @@ class InterfaceManager:
         about_window = ctk.CTkToplevel(self.main_window)
         about_window.title(_("About"))
         about_window.geometry("350x200")
-        about_window.grab_set()
+        # noinspection PyTypeChecker
+        about_window.after(50, about_window.grab_set)
         about_window.resizable(False, False)
-        hPyT.maximize_minimize_button.hide(about_window)
+        if self.hPyT:
+            self.hPyT.maximize_minimize_button.hide(about_window)
+            self.hPyT.window_frame.center_relative(self.main_window, about_window)
 
         # 添加关于窗口的内容
         ctk.CTkLabel(about_window, text="Modless Chat Trans", font=("Arial", 20, "bold")).pack()
-        ctk.CTkLabel(about_window, text=f"{_("Version")}: {self.info.version}").pack()
-        ctk.CTkLabel(about_window, text=f"{_("Author")}: {self.info.author}").pack()
-        ctk.CTkLabel(about_window, text=f"{_("Email")}: {self.info.email}").pack()
+        ctk.CTkLabel(about_window, text=f"{_('Version')}: {self.info.version}").pack()
+        ctk.CTkLabel(about_window, text=f"{_('Author')}: {self.info.author}").pack()
+        ctk.CTkLabel(about_window, text=f"{_('Email')}: {self.info.email}").pack()
         github_url_label = ctk.CTkLabel(about_window, text=f"GitHub: {self.info.github}", cursor="hand2")
         github_url_label.bind("<Button-1>", lambda event: webbrowser.open_new(self.info.github))
         github_url_label.pack()
-        license_label = ctk.CTkLabel(about_window, text=f"{_("License")}: {self.info.license[0]}", cursor="hand2")
+        license_label = ctk.CTkLabel(about_window, text=f"{_('License')}: {self.info.license[0]}", cursor="hand2")
         license_label.bind("<Button-1>", lambda event: webbrowser.open_new(self.info.license[1]))
         license_label.pack()
 
