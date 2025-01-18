@@ -59,8 +59,8 @@ DEFAULT_CONFIG = Config(interface_lang="zh_CN",
                         self_tgt_lang="en-US",
                         api_url="https://api.openai.com/v1/chat/completions",
                         api_key="",
-                        model="gpt-3.5-turbo",
-                        http_port=5000,
+                        model="gpt-4o-mini",
+                        http_port=56552,
                         max_messages=150,
                         always_on_top=False)
 
