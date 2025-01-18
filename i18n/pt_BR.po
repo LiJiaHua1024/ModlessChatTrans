@@ -107,3 +107,6 @@ msgstr "Falha na tradução: Resposta inválida do servidor. Verifique sua conex
 
 msgid "Translation failed, error:"
 msgstr "Falha na tradução, erro:"
+
+msgid "Max Messages:"
+msgstr "Mensagens Máximas:"

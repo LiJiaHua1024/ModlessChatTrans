@@ -107,3 +107,6 @@ msgstr "翻訳に失敗しました：サーバーからの応答が無効です
 
 msgid "Translation failed, error:"
 msgstr "翻訳に失敗しました、エラー："
+
+msgid "Max Messages:"
+msgstr "最大メッセージ数："

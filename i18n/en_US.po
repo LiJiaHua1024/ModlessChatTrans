@@ -111,3 +111,6 @@ msgstr ""
 
 msgid "Translation failed, error:"
 msgstr "Translation failed, error:"
+
+msgid "Max Messages:"
+msgstr "Max Messages:"

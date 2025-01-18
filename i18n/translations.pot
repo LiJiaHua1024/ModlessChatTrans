@@ -105,3 +105,6 @@ msgstr ""
 
 msgid "Translation failed, error:"
 msgstr ""
+
+msgid "Max Messages:"
+msgstr ""

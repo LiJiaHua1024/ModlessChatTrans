@@ -107,3 +107,6 @@ msgstr "Échec de la traduction : Réponse invalide du serveur. Veuillez vérifi
 
 msgid "Translation failed, error:"
 msgstr "Échec de la traduction, erreur :"
+
+msgid "Max Messages:"
+msgstr "Messages Maximum :"

@@ -354,10 +354,10 @@ class InterfaceManager:
             self.http_port_entry.insert(0, self.config.http_port)
             self.http_port_entry.bind("<FocusOut>", lambda event: normalize_port_number(self.http_port_entry))
         elif choice == _("Graphical"):
-            self.max_messages_label = ctk.CTkLabel(self.main_window, text="Max Messages:")
-            self.max_messages_label.grid(row=1, column=1, padx=(170, 0), pady=10, sticky="w")
+            self.max_messages_label = ctk.CTkLabel(self.main_window, text=_("Max Messages:"))
+            self.max_messages_label.grid(row=1, column=1, padx=(190, 0), pady=10, sticky="w")
             self.max_messages_entry = ctk.CTkEntry(self.main_window, width=100)
-            self.max_messages_entry.grid(row=1, column=1, padx=(270, 0), pady=10, sticky="w")
+            self.max_messages_entry.grid(row=1, column=1, padx=(320, 0), pady=10, sticky="w")
             self.max_messages_entry.insert(0, self.config.max_messages)
             self.max_messages_entry.bind("<FocusOut>", lambda event: normalize_max_messages(self.max_messages_entry))
 

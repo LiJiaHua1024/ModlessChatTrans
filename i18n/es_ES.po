@@ -107,3 +107,6 @@ msgstr "Error de traducción: Respuesta no válida del servidor. Por favor, comp
 
 msgid "Translation failed, error:"
 msgstr "Error de traducción, error:"
+
+msgid "Max Messages:"
+msgstr "Mensajes Máximos:"

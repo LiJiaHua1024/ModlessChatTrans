@@ -109,3 +109,6 @@ msgstr "翻译失败：服务器响应无效。请检查网络连接。"
 
 msgid "Translation failed, error:"
 msgstr "翻译失败，错误："
+
+msgid "Max Messages:"
+msgstr "最大消息数："

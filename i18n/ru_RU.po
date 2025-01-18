@@ -109,3 +109,6 @@ msgstr "Ошибка перевода: некорректный ответ от 
 
 msgid "Translation failed, error:"
 msgstr "Ошибка перевода:"
+
+msgid "Max Messages:"
+msgstr "Максимум сообщений:"

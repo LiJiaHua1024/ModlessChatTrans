@@ -107,3 +107,6 @@ msgstr "번역 실패: 서버로부터 잘못된 응답을 받았습니다. 네�
 
 msgid "Translation failed, error:"
 msgstr "번역 실패, 오류:"
+
+msgid "Max Messages:"
+msgstr "최대 메시지 수:"
