@@ -12,6 +12,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from json import JSONDecodeError
+from requests.exceptions import HTTPError
+from modless_chat_trans.i18n import _
+
 
 def process_decorator(function):
     """
@@ -36,18 +40,40 @@ def process_decorator(function):
         name, original_chat_message = function(data, data_type)
         translated_chat_message: str = ""
         if original_chat_message:
-            if translation_service == "LLM":
-                translated_chat_message = translator.llm_translate(original_chat_message, model=model,
-                                                                   source_language=source_language,
-                                                                   target_language=target_language)
-            elif translation_service == "Bing":
-                translated_chat_message = translator.bing_translate(original_chat_message,
-                                                                    source_language=source_language,
-                                                                    target_language=target_language)
-            elif translation_service == "DeepL":
-                translated_chat_message = translator.deepl_translate(original_chat_message,
-                                                                     source_language=source_language,
-                                                                     target_language=target_language)
+            try:
+                if translation_service == "LLM":
+                    translated_chat_message = translator.llm_translate(original_chat_message, model=model,
+                                                                       source_language=source_language,
+                                                                       target_language=target_language)
+                elif translation_service == "Bing":
+                    translated_chat_message = translator.bing_translate(original_chat_message,
+                                                                        source_language=source_language,
+                                                                        target_language=target_language)
+                elif translation_service == "DeepL":
+                    translated_chat_message = translator.deepl_translate(original_chat_message,
+                                                                         source_language=source_language,
+                                                                         target_language=target_language)
+            except HTTPError as http_err:
+                response = getattr(http_err, "response", None)
+                if response:
+                    if response.status_code == 429:
+                        # 请求过多
+                        return "[ERROR]", _("Translation failed: Too many requests. Please try again later.")
+                    elif 500 <= response.status_code < 600:
+                        # 服务器错误
+                        return "[ERROR]", _("Translation failed: Server error. Please try again later.")
+                    else:
+                        # 其他 HTTP 错误
+                        return "[ERROR]", _("Translation failed: HTTP error occurred.")
+                else:
+                    # 无法获取响应对象，可能是网络问题
+                    return "[ERROR]", _("Translation failed: Network issue or HTTP error occurred.")
+            except JSONDecodeError:
+                # JSON 解码错误，可能是网络问题或服务器返回了非 JSON 数据
+                return "[ERROR]", _("Translation failed: Invalid response from server. Please check your network connection.")
+            except Exception as e:
+                # 捕获其他未知错误
+                return "[ERROR]", f"{_('Translation failed, error:')} {e}"
 
             if name:
                 return name, translated_chat_message
