@@ -23,7 +23,10 @@ base_path = sys.path[1]
 
 
 def get_path(path):
-    return os.path.join(base_path, path)
+    if getattr(sys, "frozen", False):
+        return os.path.join(base_path, path)
+    else:
+        return path
 
 
 @dataclass
