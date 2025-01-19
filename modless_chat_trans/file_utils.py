@@ -14,19 +14,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import sys
 import glob
 import json
 from dataclasses import dataclass
 
-base_path = sys.path[1]
+base_path = os.path.dirname(os.path.dirname(__file__))
 
 
 def get_path(path):
-    if getattr(sys, "frozen", False):
-        return os.path.join(base_path, path)
-    else:
-        return path
+    return os.path.join(base_path, path)
 
 
 @dataclass
