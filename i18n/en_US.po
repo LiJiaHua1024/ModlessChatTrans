@@ -46,7 +46,7 @@ msgid "License"
 msgstr "License"
 
 msgid "Graphical"
-msgstr "User Interface"
+msgstr "Window Interface"
 
 msgid "Speech"
 msgstr "Voice"

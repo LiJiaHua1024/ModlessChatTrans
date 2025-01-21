@@ -10,7 +10,7 @@ supported_languages = [("简体中文", "zh_CN"), ("English", "en_US"), ("日本
 
 lang_window_size_map = {
     "zh_CN": "750x620",
-    "en_US": "750x620",
+    "en_US": "780x620",
     "ja_JP": "750x620",
     "fr_FR": "780x620",
     "de_DE": "750x620",
