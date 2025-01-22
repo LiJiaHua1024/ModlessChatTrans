@@ -1,0 +1,112 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-08-18 13:41+0800\n"
+"PO-Revision-Date: 2025-01-18 12:28+0800\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ja_JP\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.5\n"
+
+msgid "Chat messages translated, translation results in clipboard"
+msgstr "チャットメッセージが翻訳され、翻訳結果がクリップボードにコピーされました"
+
+msgid "Translated Message"
+msgstr "翻訳されたメッセージ"
+
+msgid "Messages"
+msgstr "メッセージ"
+
+msgid "Start"
+msgstr "開始"
+
+msgid "About"
+msgstr "概要"
+
+msgid "Version"
+msgstr "バージョン"
+
+msgid "Author"
+msgstr "作者"
+
+msgid "Email"
+msgstr "メール"
+
+msgid "License"
+msgstr "ライセンス"
+
+msgid "Graphical"
+msgstr "グラフィカル"
+
+msgid "Speech"
+msgstr "スピーチ"
+
+msgid "Httpserver"
+msgstr "HTTPサーバー"
+
+msgid "HTTP Port:"
+msgstr "HTTPポート："
+
+msgid "Self Source Language:"
+msgstr "自分のメッセージの元言語："
+
+msgid "Self Target Language:"
+msgstr "自分のメッセージの目標言語："
+
+msgid "Minecraft Log Folder:"
+msgstr "Minecraftログフォルダ："
+
+msgid "Output Method:"
+msgstr "出力方法："
+
+msgid "Source Language(Auto if blank):"
+msgstr "元言語（空白の場合は自動）："
+
+msgid "Target Language:"
+msgstr "目標言語："
+
+msgid "API URL:"
+msgstr "API アドレス："
+
+msgid "API Key:"
+msgstr "APIキー："
+
+msgid "Model:"
+msgstr "モデル："
+
+msgid "Translate Player's Own Message"
+msgstr "プレイヤー自身のメッセージを翻訳"
+
+msgid "Always on top"
+msgstr "常に最前面に表示"
+
+msgid "Translation failed: Too many requests. Please try again later."
+msgstr "翻訳に失敗しました：リクエストが多すぎます。後でもう一度お試しください。"
+
+msgid "Translation failed: Server error. Please try again later."
+msgstr "翻訳に失敗しました：サーバーエラー。後でもう一度お試しください。"
+
+msgid "Translation failed: HTTP error occurred."
+msgstr "翻訳に失敗しました：HTTPエラーが発生しました。"
+
+msgid "Translation failed: Network issue or HTTP error occurred."
+msgstr "翻訳に失敗しました：ネットワークの問題またはHTTPエラーが発生しました。"
+
+msgid "Translation failed: Invalid response from server. Please check your network connection."
+msgstr "翻訳に失敗しました：サーバーからの応答が無効です。ネットワーク接続を確認してください。"
+
+msgid "Translation failed, error:"
+msgstr "翻訳に失敗しました、エラー："
+
+msgid "Max Messages:"
+msgstr "最大メッセージ数："

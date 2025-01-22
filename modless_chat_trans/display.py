@@ -13,56 +13,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import tkinter as tk
-from tkinter import scrolledtext
-from tkinter import ttk
 import pyttsx3
 import threading
 from flask import Flask, render_template_string
+from modless_chat_trans.i18n import _
+from modless_chat_trans.interface import ChatInterfaceManager
 
 
 def initialization(output_method, **kwargs):
-    if output_method == "print":
-        pass
-    if output_method == "graphical":
-        print("Starting GUI...")
-        start_gui_thread()
-    elif output_method == "speech":
+    if output_method == "Graphical":
+        global chat_interface_manager
+        chat_interface_manager = ChatInterfaceManager(main_window=kwargs["main_window"],
+                                                      max_messages=kwargs["max_messages"],
+                                                      always_on_top=kwargs["always_on_top"])
+        chat_interface_manager.start()
+    elif output_method == "Speech":
         global voice_engine
         voice_engine = pyttsx3.init()
-    elif output_method == "httpserver":
-        print("Starting HTTP server...")
+    elif output_method == "Httpserver":
         start_httpserver_thread(kwargs["http_port"])
-
-
-def start_gui():
-    global text_widget
-
-    main_window = tk.Tk()
-    main_window.title("Translated Message")
-    main_window.geometry("700x400")
-
-    style = ttk.Style()
-    style.theme_use("clam")
-
-    text_widget = scrolledtext.ScrolledText(main_window, wrap=tk.WORD, font=("SimSun", 16))
-    text_widget.pack(expand=True, fill="both")
-    text_widget.config(state=tk.DISABLED)
-
-    main_window.mainloop()
-
-
-def start_gui_thread():
-    gui_thread = threading.Thread(target=start_gui)
-    gui_thread.daemon = True
-    gui_thread.start()
-
-
-def _graphical_display(message):
-    text_widget.config(state=tk.NORMAL)
-    text_widget.insert(tk.END, message + "\n")
-    text_widget.see(tk.END)
-    text_widget.config(state=tk.DISABLED)
 
 
 def start_httpserver(port):
@@ -72,15 +41,15 @@ def start_httpserver(port):
 
     @flask_app.route('/')
     def home():
-        return render_template_string('''
+        return render_template_string("""
                     <!DOCTYPE html>
                     <html>
                     <head>
-                        <title>Messages</title>
+                        <title>"""+_("Messages")+"""</title>
                         <meta http-equiv="refresh" content="1">
                     </head>
                     <body>
-                        <h1>Messages:</h1>
+                        <h1>"""+_("Messages")+""":</h1>
                         <ul>
                         {% for message in messages %}
                             <li>{{ message }}</li>
@@ -88,16 +57,15 @@ def start_httpserver(port):
                         </ul>
                     </body>
                     </html>
-                ''', messages=http_messages)
+                """, messages=http_messages)
 
     flask_app.run(debug=False, host='0.0.0.0', port=port)
 
 
 def start_httpserver_thread(port):
-    server_thread = threading.Thread(target=start_httpserver, args=(port, ))
+    server_thread = threading.Thread(target=start_httpserver, args=(port,))
     server_thread.daemon = True
     server_thread.start()
-    print(f"HTTP server started on http://localhost:{port}")
 
 
 def _httpserver_display(message):
@@ -110,22 +78,25 @@ def _speech_display(message):
     voice_engine.runAndWait()
 
 
-def display_message(message, output_method):
+def display_message(name, message, output_method):
     """
     呈现消息
 
-    :param message: 需要呈现的文字
-    :param output_method: 呈现方式，目前支持print/graphical/speech
+    :param name: 名称
+    :param message: 消息内容
+    :param output_method: 呈现方式，目前支持 graphical/speech/httpserver
     """
 
-    if output_method == "print":
-        print(message)
-    elif output_method == "graphical":
-        if text_widget:
-            _graphical_display(message)
-    elif output_method == "speech":
-        _speech_display(message)
-    elif output_method == "httpserver":
-        _httpserver_display(message)
+    if name:
+        text = f"{name}: {message}"
+    else:
+        text = message
+
+    if output_method == "Graphical":
+        chat_interface_manager.display(name, message)
+    elif output_method == "Speech":
+        _speech_display(text)
+    elif output_method == "Httpserver":
+        _httpserver_display(text)
     else:
         raise ValueError("Unsupported output method")

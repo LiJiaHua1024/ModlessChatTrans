@@ -1,0 +1,112 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-08-18 13:41+0800\n"
+"PO-Revision-Date: 2025-01-18 12:26+0800\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: es_ES\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.5\n"
+
+msgid "Chat messages translated, translation results in clipboard"
+msgstr "Mensajes de chat traducidos, resultados de la traducción en el portapapeles"
+
+msgid "Translated Message"
+msgstr "Mensaje traducido"
+
+msgid "Messages"
+msgstr "Mensajes"
+
+msgid "Start"
+msgstr "Iniciar"
+
+msgid "About"
+msgstr "Acerca de"
+
+msgid "Version"
+msgstr "Versión"
+
+msgid "Author"
+msgstr "Autor"
+
+msgid "Email"
+msgstr "Correo electrónico"
+
+msgid "License"
+msgstr "Licencia"
+
+msgid "Graphical"
+msgstr "Gráfico"
+
+msgid "Speech"
+msgstr "Voz"
+
+msgid "Httpserver"
+msgstr "Servidor HTTP"
+
+msgid "HTTP Port:"
+msgstr "Puerto HTTP:"
+
+msgid "Self Source Language:"
+msgstr "Idioma de origen propio:"
+
+msgid "Self Target Language:"
+msgstr "Idioma de destino propio:"
+
+msgid "Minecraft Log Folder:"
+msgstr "Carpeta de registros de Minecraft:"
+
+msgid "Output Method:"
+msgstr "Método de salida:"
+
+msgid "Source Language(Auto if blank):"
+msgstr "Idioma de origen (Automático si está en blanco):"
+
+msgid "Target Language:"
+msgstr "Idioma de destino:"
+
+msgid "API URL:"
+msgstr "URL de la API:"
+
+msgid "API Key:"
+msgstr "Clave de la API:"
+
+msgid "Model:"
+msgstr "Modelo:"
+
+msgid "Translate Player's Own Message"
+msgstr "Traducir el mensaje propio del jugador"
+
+msgid "Always on top"
+msgstr "Siempre visible"
+
+msgid "Translation failed: Too many requests. Please try again later."
+msgstr "Error de traducción: Demasiadas solicitudes. Por favor, inténtelo de nuevo más tarde."
+
+msgid "Translation failed: Server error. Please try again later."
+msgstr "Error de traducción: Error del servidor. Por favor, inténtelo de nuevo más tarde."
+
+msgid "Translation failed: HTTP error occurred."
+msgstr "Error de traducción: Se produjo un error HTTP."
+
+msgid "Translation failed: Network issue or HTTP error occurred."
+msgstr "Error de traducción: Se produjo un problema de red o un error HTTP."
+
+msgid "Translation failed: Invalid response from server. Please check your network connection."
+msgstr "Error de traducción: Respuesta no válida del servidor. Por favor, compruebe su conexión de red."
+
+msgid "Translation failed, error:"
+msgstr "Error de traducción, error:"
+
+msgid "Max Messages:"
+msgstr "Mensajes Máximos:"

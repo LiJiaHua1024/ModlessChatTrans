@@ -4,5 +4,13 @@ __pycache__/
 build/
 dist/
 
+main.build/
+main.dist/
+main.onefile-build/
+
 main.spec
 logo.ico
+
+ModlessChatTrans-config.json
+
+update_requirements.py
