@@ -103,10 +103,13 @@ def process_message(data, data_type):
     else:
         return "", ""
 
-    if ":" not in chat_message:
-        return "", chat_message.strip()
+    if chat_message.startswith("<"):
+        name, text = chat_message[1:].split(">", 1)
+    else:  # Hypixel Chat
+        if ":" not in chat_message:
+            return "", chat_message.strip()
 
-    name, text = chat_message.split(":", 1)
+        name, text = chat_message.split(":", 1)
 
     name = name.strip()
     text = text.strip()
