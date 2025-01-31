@@ -26,6 +26,7 @@ from modless_chat_trans.translator import Translator
 from modless_chat_trans.interface import ProgramInfo, InterfaceManager
 from modless_chat_trans.clipboard_monitor import monitor_clipboard, modify_clipboard
 from modless_chat_trans.i18n import _
+from modless_chat_trans.updater import Updater
 
 
 program_info = ProgramInfo(version="v2.0.0",
@@ -33,6 +34,10 @@ program_info = ProgramInfo(version="v2.0.0",
                            email="minecraft_benli@163.com",
                            github="https://github.com/LiJiaHua1024/ModlessChatTrans",
                            license=("GNU General Public License v3.0", "https://www.gnu.org/licenses/gpl-3.0.html"))
+
+updater = Updater(program_info.version, program_info.author, "ModlessChatTrans")
+if new_version := updater.check_update():
+    program_info.version += f" [New version available: {new_version}]"
 
 
 def start_translation():
