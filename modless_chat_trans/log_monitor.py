@@ -27,11 +27,12 @@ class LogMonitorHandler(FileSystemEventHandler):
     监控日志文件的变化
     """
 
-    def __init__(self, directory, callback):
+    def __init__(self, directory, callback, use_high_version_fix):
         super().__init__()
         self.directory = directory
         self.callback = callback
-        self.current_file = find_latest_log(directory)
+        self.use_high_version_fix = use_high_version_fix
+        self.current_file = os.path.join(directory, "latest.log") if use_high_version_fix else find_latest_log(directory)
         self.file_pointer = None
         self.line_number = 0
         while not self.current_file:
@@ -44,8 +45,30 @@ class LogMonitorHandler(FileSystemEventHandler):
         """
         if self.file_pointer:
             self.file_pointer.close()
-        self.file_pointer = open(file_path, 'r', encoding="utf-8")
-        self.file_pointer.seek(0, os.SEEK_END)
+        try:
+            self.file_pointer = open(file_path, 'r', encoding="utf-8")
+            self.file_pointer.seek(0, os.SEEK_END)
+        except (PermissionError, FileNotFoundError):
+            time.sleep(5)
+            if not self.use_high_version_fix:
+                self.current_file = find_latest_log(self.directory)
+            self.open_file(self.current_file)
+
+    def activate_file(self):
+        """
+        激活 log 文件，解决高版本 Minecraft 优化导致的问题
+        """
+
+        def _read():
+            while True:
+                try:
+                    with open(self.current_file, 'rb'):
+                        pass
+                    time.sleep(0.2)
+                except (PermissionError, FileNotFoundError):
+                    time.sleep(2)
+
+        threading.Thread(target=_read, daemon=True).start()
 
     @staticmethod
     def _detect_file_encoding(file_path):
@@ -100,21 +123,26 @@ class LogMonitorHandler(FileSystemEventHandler):
             self._read_new_lines()
 
     def on_created(self, event):
+        if self.use_high_version_fix:
+            return
         if event.src_path.endswith('.log'):
             # 切换到新文件
             self.current_file = event.src_path
             self.open_file(self.current_file)
 
 
-def monitor_log_file(directory, callback):
+def monitor_log_file(directory, callback, use_high_version_fix=False):
     """
     启动日志文件监控
 
     :param directory: 要监控的日志文件目录
     :param callback: 检测到新内容的回调函数
+    :param use_high_version_fix: 是否使用高版本 Minecraft 修复
     """
-    event_handler = LogMonitorHandler(directory, callback)
+    event_handler = LogMonitorHandler(directory, callback, use_high_version_fix)
     event_handler.open_file(event_handler.current_file)
+    if use_high_version_fix:
+        event_handler.activate_file()
     observer = Observer()
     observer.schedule(event_handler, directory, recursive=False)
     observer.start()
