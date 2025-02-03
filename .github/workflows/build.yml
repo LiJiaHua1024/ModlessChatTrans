@@ -1,0 +1,42 @@
+name: Windows Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number'
+        required: true
+        default: '2.0.0'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install nuitka
+
+    - name: Build with Nuitka
+      run: |
+        nuitka --onefile --standalone --msvc=latest --lto=yes --noinclude-pytest-mode=nofollow --windows-icon-from-ico=icon.ico --enable-plugin=tk-inter --windows-console-mode=disable --noinclude-pytest-mode=nofollow --include-data-dir=locales=./locales --include-data-file=choose_language.png=./choose_language.png --output-filename=ModlessChatTrans --file-description="ModlessChatTrans" --file-version="${{ github.event.inputs.version }}" --product-version="${{ github.event.inputs.version }}" --product-name="ModlessChatTrans" --copyright="Copyright © 2024-2025 LiJiaHua1024" main.py
+
+    - name: Rename executable
+      run: |
+        ren ModlessChatTrans.exe ModlessChatTrans_v${{ github.event.inputs.version }}.exe
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ModlessChatTrans
+        path: ./ModlessChatTrans_v${{ github.event.inputs.version }}.exe
