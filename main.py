@@ -17,27 +17,27 @@ import threading
 
 from modless_chat_trans.file_utils import read_config
 from modless_chat_trans.i18n import set_language
-set_language(read_config().interface_lang)
+conf = read_config()
+set_language(conf.interface_lang)
 
 from modless_chat_trans.display import initialization, display_message
 from modless_chat_trans.log_monitor import monitor_log_file
 from modless_chat_trans.message_processor import process_message
 from modless_chat_trans.translator import Translator
-from modless_chat_trans.interface import ProgramInfo, InterfaceManager
+from modless_chat_trans.interface import ProgramInfo, MainInterfaceManager, MoreSettingsManager
 from modless_chat_trans.clipboard_monitor import monitor_clipboard, modify_clipboard
 from modless_chat_trans.i18n import _
 from modless_chat_trans.updater import Updater
 
 
-program_info = ProgramInfo(version="v2.0.1",
+program_info = ProgramInfo(version="v2.0.2",
                            author="LiJiaHua1024",
                            email="minecraft_benli@163.com",
                            github="https://github.com/LiJiaHua1024/ModlessChatTrans",
                            license=("GNU General Public License v3.0", "https://www.gnu.org/licenses/gpl-3.0.html"))
 
-updater = Updater(program_info.version, program_info.author, "ModlessChatTrans")
-if new_version := updater.check_update():
-    program_info.version += f" [New version available: {new_version}]"
+updater = Updater(program_info.version, program_info.author, "ModlessChatTrans",
+                  include_prerelease=conf.include_prerelease)
 
 
 def start_translation():
@@ -65,7 +65,7 @@ def start_translation():
 
     translator = Translator(api_key=config.api_key, api_url=config.api_url)
 
-    initialization(config.output_method, main_window=interface_manager.main_window,
+    initialization(config.output_method, main_window=main_interface_manager.main_window,
                    http_port=config.http_port, max_messages=config.max_messages, always_on_top=config.always_on_top)
 
     monitor_thread = threading.Thread(target=monitor_log_file, args=(config.minecraft_log_folder, callback))
@@ -78,5 +78,7 @@ def start_translation():
         clipboard_thread.start()
 
 
-interface_manager = InterfaceManager(program_info)
-interface_manager.create_main_window(start_translation)
+main_interface_manager = MainInterfaceManager(program_info, updater)
+more_settings_manager = MoreSettingsManager(main_interface_manager.main_window, main_interface_manager.config)
+main_interface_manager.create_main_window(start_translation=start_translation,
+                                          more_settings=more_settings_manager.create_more_settings_window)

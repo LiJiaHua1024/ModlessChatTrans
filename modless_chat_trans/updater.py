@@ -14,7 +14,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import requests
+import shutil
 from packaging.version import Version, InvalidVersion
+from modless_chat_trans.file_utils import get_path, get_platform
 
 
 class Updater:
@@ -32,9 +34,41 @@ class Updater:
             try:
                 latest_version = Version(latest_version_str)
                 if latest_version > self.current_version:
-                    return latest_release.get("tag_name")
+                    return latest_release
             except InvalidVersion:
                 return None
+
+    @staticmethod
+    def download_update(latest_release):
+        assets = latest_release.get("assets", [])
+        if assets:
+            if get_platform() == 0:
+                asset = next((asset for asset in assets if asset.get("name").endswith(".exe")), None)
+            elif get_platform() == 1:
+                asset = next((asset for asset in assets if asset.get("name").endswith(".tar.gz")), None)
+            else:
+                return None
+
+            if asset:
+                download_url = asset.get("browser_download_url")
+                try:
+                    response = requests.get(download_url, stream=True)
+                    file_path = get_path(asset.get("name"))
+                    final_path = get_path(asset.get("name"), temp_path=False)
+
+                    with open(file_path, 'wb') as f:
+                        for chunk in response.iter_content(chunk_size=8192):
+                            f.write(chunk)
+
+                    shutil.move(file_path, final_path)
+
+                    return final_path
+                except requests.exceptions.RequestException:
+                    return None
+            else:
+                return None
+        else:
+            return None
 
     def _get_latest_release(self):
         releases = self._get_all_releases()

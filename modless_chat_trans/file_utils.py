@@ -21,9 +21,14 @@ from dataclasses import dataclass
 base_path = os.path.dirname(os.path.dirname(__file__))
 
 
-def get_path(path):
-    return os.path.join(base_path, path)
+def get_path(path, temp_path=True):
+    if temp_path:
+        return os.path.join(base_path, path)
+    else:
+        return os.path.join(os.getcwd(), path)
 
+def get_platform():
+    return {"nt": 0, "posix": 1}.get(os.name, 2)
 
 @dataclass
 class Config:
@@ -42,6 +47,9 @@ class Config:
     http_port: int
     max_messages: int
     always_on_top: bool
+    update_check_frequency: str
+    last_check_time: str
+    include_prerelease: bool
 
 
 DEFAULT_CONFIG = Config(interface_lang="zh_CN",
@@ -58,7 +66,10 @@ DEFAULT_CONFIG = Config(interface_lang="zh_CN",
                         model="gpt-4o-mini",
                         http_port=56552,
                         max_messages=150,
-                        always_on_top=False)
+                        always_on_top=False,
+                        update_check_frequency="Daily",
+                        last_check_time="1970-01-01T00:00:00",
+                        include_prerelease=False)
 
 
 def find_latest_log(directory: str) -> str:

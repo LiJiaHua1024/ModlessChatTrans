@@ -16,12 +16,16 @@
 import tkinter as tk
 import customtkinter as ctk
 import webbrowser
+import datetime
 from dataclasses import dataclass
 from collections import deque
 from typing import Tuple
-from modless_chat_trans.file_utils import read_config, save_config, get_path
+from tkinter import messagebox
+from modless_chat_trans.file_utils import read_config, save_config, get_path, get_platform
 from modless_chat_trans.i18n import _, supported_languages, lang_window_size_map
 from modless_chat_trans.translator import service_supported_languages
+
+updater = None
 
 
 @dataclass
@@ -46,8 +50,77 @@ def destroy_widgets(*widgets):
     return destroyed_widgets
 
 
-class InterfaceManager:
-    def __init__(self, info: ProgramInfo):
+def normalize_port_number(http_port_entry):
+    """
+    规范化端口号，确保端口号在0到65535之间。
+    如果端口号为浮点数，将其四舍五入到最近的整数
+    如果端口号>65535，将其设置为65535；如果端口号<1，将其设置为1
+
+    :param http_port_entry: 端口号输入框
+    """
+
+    http_port = http_port_entry.get()
+    try:
+        http_port = float(http_port)
+        http_port = int(round(http_port))
+    except ValueError:
+        http_port = 5000
+
+    if http_port > 65535:
+        http_port = 65535
+    elif http_port < 1:
+        http_port = 1
+
+    http_port_entry.delete(0, ctk.END)
+    http_port_entry.insert(0, str(http_port))
+
+
+def normalize_max_messages(max_messages_entry):
+    """
+    规范化最大消息数，确保其为正整数。
+    如果输入为浮点数，将其四舍五入到最近的整数
+    如果输入小于10，将其设置为10
+    如果输入无法转换为数字，则设置一个默认值（100）
+
+    :param max_messages_entry: 最大消息数输入框
+    """
+
+    max_messages_str = max_messages_entry.get()
+    try:
+        max_messages = float(max_messages_str)
+        max_messages = int(max_messages + 0.5)
+    except ValueError:
+        max_messages = 100
+
+    if max_messages < 10:
+        max_messages = 10
+
+    max_messages_entry.delete(0, ctk.END)
+    max_messages_entry.insert(0, str(max_messages))
+
+
+# noinspection PyUnresolvedReferences
+def check_and_update(manual_check=False):
+    if new_release := updater.check_update():
+        if messagebox.askyesno(_("Update available"),
+                               f"{_('A new version of ModlessChatTrans is available:')} "
+                               f"{new_release.get('tag_name')}\n"
+                               f"{_('Do you want to download it now?')}"):
+            if file_path := updater.download_update(new_release):
+                messagebox.showinfo(_("Update downloaded"),
+                                    f"{_('Update downloaded')}: {file_path}")
+            else:
+                messagebox.showerror(_("Update download failed"),
+                                     _("Failed to download the update. "
+                                       "Please check your internet connection and try again."))
+    elif manual_check:
+        messagebox.showinfo(_("No update available"), _("No update available."))
+
+    save_config(last_check_time=datetime.datetime.now().isoformat())
+
+
+class MainInterfaceManager:
+    def __init__(self, info: ProgramInfo, updater_object):
         self.info = info
         self.config = read_config()
 
@@ -71,9 +144,12 @@ class InterfaceManager:
         self.self_translation_var = None
         self.always_on_top_var = None
 
-        self.hPyT = None
+        self.platform = get_platform()
 
-    def create_main_window(self, start_translation):
+        global updater
+        updater = updater_object
+
+    def create_main_window(self, **functions):
         """
         创建程序主窗口
 
@@ -91,12 +167,10 @@ class InterfaceManager:
         self.main_window.rowconfigure(10, weight=1)
         self.main_window.columnconfigure(9, weight=1)
 
-        try:
+        if self.platform == 0:
+            global hPyT
             import hPyT
-            self.hPyT = hPyT
-            self.hPyT.maximize_minimize_button.hide(self.main_window)
-        except ImportError:
-            pass
+            hPyT.maximize_minimize_button.hide(self.main_window)
 
         language_menu = tk.Menu(self.main_window, tearoff=0)
 
@@ -116,8 +190,14 @@ class InterfaceManager:
 
         self.create_config_widgets(self.main_window)
 
-        self.start_button = ctk.CTkButton(self.main_window, text=_("Start"), font=("default", 60),
-                                          command=lambda: self.prepare_translation_config(start_translation))
+        self.start_button = ctk.CTkButton(
+            self.main_window,
+            text=_("Start"),
+            font=("default", 60),
+            command=lambda: self.prepare_translation_config(
+                functions["start_translation"]
+            )
+        )
         self.start_button.grid(row=10, column=0, columnspan=2, padx=20, pady=10)
 
         choose_language_photo = tk.PhotoImage(file=get_path("choose_language.png"))
@@ -131,9 +211,28 @@ class InterfaceManager:
                                              variable=self.always_on_top_var, onvalue=True, offvalue=False)
         always_on_top_button.grid(row=11, column=1, padx=(0, 200), pady=15)
 
+        more_settings_button = ctk.CTkButton(self.main_window, text="\u2699\uFE0F", font=("default", 36),
+                                             width=50, height=60, fg_color="transparent", text_color="black",
+                                             hover_color="white", command=functions["more_settings"])
+        more_settings_button.grid(row=10, column=0, pady=10, sticky="w")
+
         about_button = ctk.CTkButton(self.main_window, text=_("About"), width=50, height=25,
                                      command=self.show_about_window)
         about_button.grid(row=11, column=2, padx=0, pady=15)
+
+        # --------------- Check for updates ---------------
+        ucf = self.config.update_check_frequency
+        lct = self.config.last_check_time
+        now = datetime.datetime.now()
+        lct_date = datetime.datetime.fromisoformat(lct)
+
+        if (
+                (ucf == "Daily" and now.date() > lct_date.date()) or
+                (ucf == "Weekly" and (now - lct_date).days >= 7) or
+                (ucf == "Monthly" and (now - lct_date).days >= 30)
+        ):
+            check_and_update()
+        # -------------------------------------------------
 
         self.main_window.mainloop()
 
@@ -149,9 +248,9 @@ class InterfaceManager:
         # noinspection PyTypeChecker
         about_window.after(50, about_window.grab_set)
         about_window.resizable(False, False)
-        if self.hPyT:
-            self.hPyT.maximize_minimize_button.hide(about_window)
-            self.hPyT.window_frame.center_relative(self.main_window, about_window)
+        if self.platform == 0:
+            hPyT.maximize_minimize_button.hide(about_window)
+            hPyT.window_frame.center_relative(self.main_window, about_window)
 
         # 添加关于窗口的内容
         ctk.CTkLabel(about_window, text="Modless Chat Trans", font=("Arial", 20, "bold")).pack()
@@ -491,6 +590,72 @@ class InterfaceManager:
         # self.on_self_translation_toggle()
 
 
+class MoreSettingsManager:
+    def __init__(self, main_window, config):
+        self.main_window = main_window
+        self.config = config
+        self.more_settings_window = None
+        self.variables = {}
+
+    def create_more_settings_window(self):
+        self.more_settings_window = ctk.CTkToplevel(self.main_window)
+        self.more_settings_window.title(_("More Settings"))
+        self.more_settings_window.geometry("400x170")
+        self.more_settings_window.resizable(False, False)
+
+        self.create_additional_widgets()
+
+    def create_additional_widgets(self):
+        ctk.CTkLabel(
+            self.more_settings_window,
+            text=_("Automatic Update Frequency")
+        ).grid(row=0, column=0, padx=20, pady=10, sticky="w")
+
+        self.variables["update_check_frequency"] = ctk.StringVar(
+            value=_(self.config.update_check_frequency if self.config.update_check_frequency in
+            {"On Startup", "Daily", "Weekly", "Monthly", "Never"} else "Daily")
+        )
+
+        ctk.CTkOptionMenu(
+            self.more_settings_window,
+            values=[_("On Startup"), _("Daily"), _("Weekly"), _("Monthly"), _("Never")],
+            variable=self.variables["update_check_frequency"]
+        ).grid(row=0, column=1, padx=20, pady=10, sticky="w")
+
+        ctk.CTkButton(
+            self.more_settings_window,
+            text=_("Check for Updates"),
+            command=lambda: check_and_update(manual_check=True)
+        ).grid(row=1, column=1, padx=20, pady=10, sticky="w")
+
+        self.variables["include_prerelease"] = ctk.BooleanVar(value=self.config.include_prerelease)
+
+        ctk.CTkCheckBox(
+            self.more_settings_window,
+            text=_("Include Pre-release"),
+            variable=self.variables["include_prerelease"]
+        ).grid(row=1, column=0, padx=20, pady=10, sticky="w")
+
+        ctk.CTkButton(
+            self.more_settings_window,
+            text=_("Save Settings"),
+            command=self.save_more_settings
+        ).grid(row=2, column=0, columnspan=2, padx=20, pady=20)
+
+    def save_more_settings(self):
+        update_check_frequency_map = {
+            _("On Startup"): "On Startup",
+            _("Daily"): "Daily",
+            _("Weekly"): "Weekly",
+            _("Monthly"): "Monthly",
+            _("Never"): "Never"
+        }
+        update_check_frequency = update_check_frequency_map[self.variables["update_check_frequency"].get()]
+        include_prerelease = self.variables["include_prerelease"].get()
+        save_config(update_check_frequency=update_check_frequency, include_prerelease=include_prerelease)
+        self.more_settings_window.destroy()
+
+
 class ChatInterfaceManager:
     def __init__(self, main_window, max_messages=150, always_on_top=False):
         self.main_window = main_window
@@ -598,52 +763,3 @@ class ChatInterfaceManager:
         鼠标滚轮事件处理函数，用于滚动聊天窗口。
         """
         self.canvas.yview_scroll(-1 * (event.delta // 120), "units")
-
-
-def normalize_port_number(http_port_entry):
-    """
-    规范化端口号，确保端口号在0到65535之间。
-    如果端口号为浮点数，将其四舍五入到最近的整数
-    如果端口号>65535，将其设置为65535；如果端口号<1，将其设置为1
-
-    :param http_port_entry: 端口号输入框
-    """
-
-    http_port = http_port_entry.get()
-    try:
-        http_port = float(http_port)
-        http_port = int(round(http_port))
-    except ValueError:
-        http_port = 5000
-
-    if http_port > 65535:
-        http_port = 65535
-    elif http_port < 1:
-        http_port = 1
-
-    http_port_entry.delete(0, ctk.END)
-    http_port_entry.insert(0, str(http_port))
-
-
-def normalize_max_messages(max_messages_entry):
-    """
-    规范化最大消息数，确保其为正整数。
-    如果输入为浮点数，将其四舍五入到最近的整数
-    如果输入小于10，将其设置为10
-    如果输入无法转换为数字，则设置一个默认值（100）
-
-    :param max_messages_entry: 最大消息数输入框
-    """
-
-    max_messages_str = max_messages_entry.get()
-    try:
-        max_messages = float(max_messages_str)
-        max_messages = int(max_messages + 0.5)
-    except ValueError:
-        max_messages = 100
-
-    if max_messages < 10:
-        max_messages = 10
-
-    max_messages_entry.delete(0, ctk.END)
-    max_messages_entry.insert(0, str(max_messages))
