@@ -110,3 +110,51 @@ msgstr "翻訳に失敗しました、エラー："
 
 msgid "Max Messages:"
 msgstr "最大メッセージ数："
+
+msgid "Update available"
+msgstr "アップデートが利用可能です"
+
+msgid "Update downloaded"
+msgstr "アップデートをダウンロードしました"
+
+msgid "Update download failed"
+msgstr "アップデートのダウンロードに失敗しました"
+
+msgid "Failed to download the update. Please check your internet connection and try again."
+msgstr "アップデートのダウンロードに失敗しました。インターネット接続を確認して、もう一度お試しください。"
+
+msgid "No update available"
+msgstr "利用可能なアップデートはありません"
+
+msgid "No update available."
+msgstr "利用可能なアップデートはありません。"
+
+msgid "More Settings"
+msgstr "その他の設定"
+
+msgid "Automatic Update Frequency"
+msgstr "自動アップデートの頻度"
+
+msgid "On Startup"
+msgstr "起動時"
+
+msgid "Daily"
+msgstr "毎日"
+
+msgid "Weekly"
+msgstr "毎週"
+
+msgid "Monthly"
+msgstr "毎月"
+
+msgid "Never"
+msgstr "なし"
+
+msgid "Check for Updates"
+msgstr "アップデートを確認"
+
+msgid "Include Pre-release"
+msgstr "プレリリースを含める"
+
+msgid "Save Settings"
+msgstr "設定を保存"

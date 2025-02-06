@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-18 13:41+0800\n"
+"POT-Creation-Date: 2025-02-06 17:52+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -107,4 +107,52 @@ msgid "Translation failed, error:"
 msgstr ""
 
 msgid "Max Messages:"
+msgstr ""
+
+msgid "Update available"
+msgstr ""
+
+msgid "Update downloaded"
+msgstr ""
+
+msgid "Update download failed"
+msgstr ""
+
+msgid "Failed to download the update. Please check your internet connection and try again."
+msgstr ""
+
+msgid "No update available"
+msgstr ""
+
+msgid "No update available."
+msgstr ""
+
+msgid "More Settings"
+msgstr ""
+
+msgid "Automatic Update Frequency"
+msgstr ""
+
+msgid "On Startup"
+msgstr ""
+
+msgid "Daily"
+msgstr ""
+
+msgid "Weekly"
+msgstr ""
+
+msgid "Monthly"
+msgstr ""
+
+msgid "Never"
+msgstr ""
+
+msgid "Check for Updates"
+msgstr ""
+
+msgid "Include Pre-release"
+msgstr ""
+
+msgid "Save Settings"
 msgstr ""

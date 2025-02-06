@@ -112,3 +112,51 @@ msgstr "Ошибка перевода:"
 
 msgid "Max Messages:"
 msgstr "Максимум сообщений:"
+
+msgid "Update available"
+msgstr "Доступно обновление"
+
+msgid "Update downloaded"
+msgstr "Обновление загружено"
+
+msgid "Update download failed"
+msgstr "Ошибка загрузки обновления"
+
+msgid "Failed to download the update. Please check your internet connection and try again."
+msgstr "Не удалось загрузить обновление. Проверьте подключение к интернету и повторите попытку."
+
+msgid "No update available"
+msgstr "Нет доступных обновлений"
+
+msgid "No update available."
+msgstr "Нет доступных обновлений."
+
+msgid "More Settings"
+msgstr "Дополнительные настройки"
+
+msgid "Automatic Update Frequency"
+msgstr "Частота автоматического обновления"
+
+msgid "On Startup"
+msgstr "При запуске"
+
+msgid "Daily"
+msgstr "Ежедневно"
+
+msgid "Weekly"
+msgstr "Еженедельно"
+
+msgid "Monthly"
+msgstr "Ежемесячно"
+
+msgid "Never"
+msgstr "Никогда"
+
+msgid "Check for Updates"
+msgstr "Проверить обновления"
+
+msgid "Include Pre-release"
+msgstr "Включая предварительные версии"
+
+msgid "Save Settings"
+msgstr "Сохранить настройки"

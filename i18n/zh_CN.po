@@ -112,3 +112,51 @@ msgstr "翻译失败，错误："
 
 msgid "Max Messages:"
 msgstr "最大消息数："
+
+msgid "Update available"
+msgstr "有可用更新"
+
+msgid "Update downloaded"
+msgstr "更新已下载"
+
+msgid "Update download failed"
+msgstr "下载更新失败"
+
+msgid "Failed to download the update. Please check your internet connection and try again."
+msgstr "下载更新失败。请检查网络连接后重试。"
+
+msgid "No update available"
+msgstr "无可用更新"
+
+msgid "No update available."
+msgstr "无可用更新。"
+
+msgid "More Settings"
+msgstr "更多设置"
+
+msgid "Automatic Update Frequency"
+msgstr "自动检查更新频率"
+
+msgid "On Startup"
+msgstr "启动时"
+
+msgid "Daily"
+msgstr "每天"
+
+msgid "Weekly"
+msgstr "每周"
+
+msgid "Monthly"
+msgstr "每月"
+
+msgid "Never"
+msgstr "从不"
+
+msgid "Check for Updates"
+msgstr "检查更新"
+
+msgid "Include Pre-release"
+msgstr "包含预发布版本"
+
+msgid "Save Settings"
+msgstr "保存设置"

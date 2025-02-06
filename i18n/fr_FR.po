@@ -110,3 +110,51 @@ msgstr "Échec de la traduction, erreur :"
 
 msgid "Max Messages:"
 msgstr "Messages Maximum :"
+
+msgid "Update available"
+msgstr "Mise à jour disponible"
+
+msgid "Update downloaded"
+msgstr "Mise à jour téléchargée"
+
+msgid "Update download failed"
+msgstr "Échec du téléchargement de la mise à jour"
+
+msgid "Failed to download the update. Please check your internet connection and try again."
+msgstr "Échec du téléchargement de la mise à jour. Veuillez vérifier votre connexion Internet et réessayer."
+
+msgid "No update available"
+msgstr "Aucune mise à jour disponible"
+
+msgid "No update available."
+msgstr "Aucune mise à jour disponible."
+
+msgid "More Settings"
+msgstr "Plus de paramètres"
+
+msgid "Automatic Update Frequency"
+msgstr "Fréquence de mise à jour automatique"
+
+msgid "On Startup"
+msgstr "Au démarrage"
+
+msgid "Daily"
+msgstr "Quotidienne"
+
+msgid "Weekly"
+msgstr "Hebdomadaire"
+
+msgid "Monthly"
+msgstr "Mensuelle"
+
+msgid "Never"
+msgstr "Jamais"
+
+msgid "Check for Updates"
+msgstr "Vérifier les mises à jour"
+
+msgid "Include Pre-release"
+msgstr "Inclure les versions préliminaires"
+
+msgid "Save Settings"
+msgstr "Enregistrer les paramètres"

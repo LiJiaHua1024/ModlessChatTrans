@@ -110,3 +110,51 @@ msgstr "번역 실패, 오류:"
 
 msgid "Max Messages:"
 msgstr "최대 메시지 수:"
+
+msgid "Update available"
+msgstr "업데이트 가능"
+
+msgid "Update downloaded"
+msgstr "업데이트 다운로드 완료"
+
+msgid "Update download failed"
+msgstr "업데이트 다운로드 실패"
+
+msgid "Failed to download the update. Please check your internet connection and try again."
+msgstr "업데이트 다운로드에 실패했습니다. 인터넷 연결을 확인하고 다시 시도해주세요."
+
+msgid "No update available"
+msgstr "사용 가능한 업데이트 없음"
+
+msgid "No update available."
+msgstr "사용 가능한 업데이트가 없습니다."
+
+msgid "More Settings"
+msgstr "추가 설정"
+
+msgid "Automatic Update Frequency"
+msgstr "자동 업데이트 주기"
+
+msgid "On Startup"
+msgstr "시작할 때"
+
+msgid "Daily"
+msgstr "매일"
+
+msgid "Weekly"
+msgstr "매주"
+
+msgid "Monthly"
+msgstr "매월"
+
+msgid "Never"
+msgstr "없음"
+
+msgid "Check for Updates"
+msgstr "업데이트 확인"
+
+msgid "Include Pre-release"
+msgstr "프리릴리스 포함"
+
+msgid "Save Settings"
+msgstr "설정 저장"

@@ -600,7 +600,9 @@ class MoreSettingsManager:
     def create_more_settings_window(self):
         self.more_settings_window = ctk.CTkToplevel(self.main_window)
         self.more_settings_window.title(_("More Settings"))
-        self.more_settings_window.geometry("400x170")
+        self.more_settings_window.geometry(
+            "460x170" if self.config.interface_lang in {"fr_FR", "es_ES", "ru_RU", "pt_BR"} else "400x170"
+        )
         self.more_settings_window.resizable(False, False)
 
         self.create_additional_widgets()
