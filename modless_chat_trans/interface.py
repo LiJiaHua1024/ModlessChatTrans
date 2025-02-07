@@ -167,6 +167,8 @@ class MainInterfaceManager:
         self.main_window.rowconfigure(10, weight=1)
         self.main_window.columnconfigure(9, weight=1)
 
+        self.main_window.protocol("WM_DELETE_WINDOW", self.on_closing)
+
         if self.platform == 0:
             global hPyT
             import hPyT
@@ -588,6 +590,12 @@ class MainInterfaceManager:
         self.create_service_widgets()
 
         # self.on_self_translation_toggle()
+
+    def on_closing(self):
+        self.main_window.title(f"Modless Chat Trans {self.info.version} - Exiting...")
+        from modless_chat_trans.file_utils import cache
+        cache.close()
+        self.main_window.destroy()
 
 
 class MoreSettingsManager:

@@ -16,9 +16,11 @@
 import os
 import glob
 import json
+import shelve
 from dataclasses import dataclass
 
 base_path = os.path.dirname(os.path.dirname(__file__))
+cache = shelve.open("MCT_cache")
 
 
 def get_path(path, temp_path=True):
@@ -27,8 +29,10 @@ def get_path(path, temp_path=True):
     else:
         return os.path.join(os.getcwd(), path)
 
+
 def get_platform():
     return {"nt": 0, "posix": 1}.get(os.name, 2)
+
 
 @dataclass
 class Config:

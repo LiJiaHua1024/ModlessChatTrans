@@ -15,6 +15,7 @@
 from json import JSONDecodeError
 from requests.exceptions import HTTPError
 from modless_chat_trans.i18n import _
+from modless_chat_trans.file_utils import cache
 
 
 def process_decorator(function):
@@ -40,41 +41,46 @@ def process_decorator(function):
         name, original_chat_message = function(data, data_type)
         translated_chat_message: str = ""
         if original_chat_message:
-            try:
-                if translation_service == "LLM":
-                    translated_chat_message = translator.llm_translate(original_chat_message, model=model,
-                                                                       source_language=source_language,
-                                                                       target_language=target_language)
-                elif translation_service == "Bing":
-                    translated_chat_message = translator.bing_translate(original_chat_message,
-                                                                        source_language=source_language,
-                                                                        target_language=target_language)
-                elif translation_service == "DeepL":
-                    translated_chat_message = translator.deepl_translate(original_chat_message,
-                                                                         source_language=source_language,
-                                                                         target_language=target_language)
-            except HTTPError as http_err:
-                response = getattr(http_err, "response", None)
-                if response:
-                    if response.status_code == 429:
-                        # 请求过多
-                        return "[ERROR]", _("Translation failed: Too many requests. Please try again later.")
-                    elif 500 <= response.status_code < 600:
-                        # 服务器错误
-                        return "[ERROR]", _("Translation failed: Server error. Please try again later.")
+            if original_chat_message in cache:
+                translated_chat_message = cache[original_chat_message]
+            else:
+                try:
+                    if translation_service == "LLM":
+                        translated_chat_message = translator.llm_translate(original_chat_message, model=model,
+                                                                           source_language=source_language,
+                                                                           target_language=target_language)
+                    elif translation_service == "Bing":
+                        translated_chat_message = translator.bing_translate(original_chat_message,
+                                                                            source_language=source_language,
+                                                                            target_language=target_language)
+                    elif translation_service == "DeepL":
+                        translated_chat_message = translator.deepl_translate(original_chat_message,
+                                                                             source_language=source_language,
+                                                                             target_language=target_language)
+                except HTTPError as http_err:
+                    response = getattr(http_err, "response", None)
+                    if response:
+                        if response.status_code == 429:
+                            # 请求过多
+                            return "[ERROR]", _("Translation failed: Too many requests. Please try again later.")
+                        elif 500 <= response.status_code < 600:
+                            # 服务器错误
+                            return "[ERROR]", _("Translation failed: Server error. Please try again later.")
+                        else:
+                            # 其他 HTTP 错误
+                            return "[ERROR]", _("Translation failed: HTTP error occurred.")
                     else:
-                        # 其他 HTTP 错误
-                        return "[ERROR]", _("Translation failed: HTTP error occurred.")
-                else:
-                    # 无法获取响应对象，可能是网络问题
-                    return "[ERROR]", _("Translation failed: Network issue or HTTP error occurred.")
-            except JSONDecodeError:
-                # JSON 解码错误，可能是网络问题或服务器返回了非 JSON 数据
-                return "[ERROR]", _("Translation failed: Invalid response from server. Please check your network connection.")
-            except Exception as e:
-                # 捕获其他未知错误
-                return "[ERROR]", f"{_('Translation failed, error:')} {e}"
+                        # 无法获取响应对象，可能是网络问题
+                        return "[ERROR]", _("Translation failed: Network issue or HTTP error occurred.")
+                except JSONDecodeError:
+                    # JSON 解码错误，可能是网络问题或服务器返回了非 JSON 数据
+                    return "[ERROR]", _("Translation failed: Invalid response from server. Please check your network connection.")
+                except Exception as e:
+                    # 捕获其他未知错误
+                    return "[ERROR]", f"{_('Translation failed, error:')} {e}"
 
+                if translated_chat_message:
+                    cache[original_chat_message] = translated_chat_message
             if name:
                 return name, translated_chat_message
             if data_type == "clipboard":
@@ -99,7 +105,7 @@ def process_message(data, data_type):
         if "[CHAT]" in data:
             chat_message = data.split("[CHAT]")[1].strip()
     elif data_type == "clipboard":
-        return "", data
+        return "", data.strip()
     else:
         return "", ""
 
