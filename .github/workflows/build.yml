@@ -29,7 +29,12 @@ jobs:
 
     - name: Build with Nuitka
       run: |
-        nuitka --onefile --standalone --msvc=latest --lto=yes --noinclude-pytest-mode=nofollow --windows-icon-from-ico=icon.ico --enable-plugin=tk-inter --windows-console-mode=disable --noinclude-pytest-mode=nofollow --include-data-dir=locales=./locales --include-data-file=choose_language.png=./choose_language.png --output-filename=ModlessChatTrans --file-description="ModlessChatTrans" --file-version="${{ github.event.inputs.version }}" --product-version="${{ github.event.inputs.version }}" --product-name="ModlessChatTrans" --copyright="Copyright © 2024-2025 LiJiaHua1024" --assume-yes-for-downloads main.py
+        if ("${{ github.event.inputs.version }}" -like "*debug*") {
+          nuitka --onefile --standalone --msvc=latest --lto=yes --noinclude-pytest-mode=nofollow --windows-icon-from-ico=icon.ico --enable-plugin=tk-inter --noinclude-pytest-mode=nofollow --include-module=dbm.dumb --include-data-dir=locales=./locales --include-data-file=choose_language.png=./choose_language.png --output-filename=ModlessChatTrans --file-description="ModlessChatTrans" --file-version="0.0.0.0" --product-version="0.0.0.0" --product-name="ModlessChatTrans" --copyright="Copyright © 2024-2025 LiJiaHua1024" --assume-yes-for-downloads main.py
+        } else {
+          nuitka --onefile --standalone --msvc=latest --lto=yes --noinclude-pytest-mode=nofollow --windows-icon-from-ico=icon.ico --enable-plugin=tk-inter --windows-console-mode=disable --noinclude-pytest-mode=nofollow --include-module=dbm.dumb --include-data-dir=locales=./locales --include-data-file=choose_language.png=./choose_language.png --output-filename=ModlessChatTrans --file-description="ModlessChatTrans" --file-version="${{ github.event.inputs.version }}" --product-version="${{ github.event.inputs.version }}" --product-name="ModlessChatTrans" --copyright="Copyright © 2024-2025 LiJiaHua1024" --assume-yes-for-downloads main.py
+        }
+      shell: pwsh
 
     - name: Rename executable
       run: |
