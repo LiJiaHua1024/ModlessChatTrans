@@ -51,8 +51,12 @@ def start_translation():
                                                         model=config.model,
                                                         source_language=config.op_src_lang,
                                                         target_language=config.op_tgt_lang):
-                    display_message(*processed_message, config.output_method)
-                    break
+                    if processed_message[1]:
+                        display_message(*processed_message, config.output_method)
+                        if processed_message[0] != "[ERROR]":
+                            break
+                else:
+                    break  # 不是聊天消息，跳过
             elif data_type == "clipboard":
                 if processed_message := process_message(data, data_type, translator, config.trans_service,
                                                         model=config.model,
