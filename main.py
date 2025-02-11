@@ -67,7 +67,8 @@ def start_translation():
                                     config.output_method)
                     return processed_message
 
-    translator = Translator(api_key=config.api_key, api_url=config.api_url)
+    translator = Translator(api_key=config.api_key, api_url=config.api_url,
+                            enable_optimization=config.enable_optimization)
 
     initialization(config.output_method, main_window=main_interface_manager.main_window,
                    http_port=config.http_port, max_messages=config.max_messages, always_on_top=config.always_on_top)

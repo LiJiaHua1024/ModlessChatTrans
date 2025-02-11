@@ -609,7 +609,7 @@ class MoreSettingsManager:
         self.more_settings_window = ctk.CTkToplevel(self.main_window)
         self.more_settings_window.title(_("More Settings"))
         self.more_settings_window.geometry(
-            "460x170" if self.config.interface_lang in {"fr_FR", "es_ES", "ru_RU", "pt_BR"} else "400x170"
+            "460x200" if self.config.interface_lang in {"fr_FR", "es_ES", "ru_RU", "pt_BR"} else "400x200"
         )
         self.more_settings_window.resizable(False, False)
 
@@ -646,11 +646,20 @@ class MoreSettingsManager:
             variable=self.variables["include_prerelease"]
         ).grid(row=1, column=0, padx=20, pady=10, sticky="w")
 
+        self.variables["enable_optimization"] = ctk.BooleanVar(value=self.config.enable_optimization)
+
+        enable_optimization_checkbox = ctk.CTkCheckBox(
+            self.more_settings_window,
+            text=_("Enable Translation Quality Optimization"),
+            variable=self.variables["enable_optimization"]
+        )
+        enable_optimization_checkbox.grid(row=2, column=0, columnspan=2, padx=20, pady=10, sticky="w")
+
         ctk.CTkButton(
             self.more_settings_window,
             text=_("Save Settings"),
             command=self.save_more_settings
-        ).grid(row=2, column=0, columnspan=2, padx=20, pady=20)
+        ).grid(row=3, column=0, columnspan=2, padx=20, pady=20)
 
     def save_more_settings(self):
         update_check_frequency_map = {
@@ -662,7 +671,9 @@ class MoreSettingsManager:
         }
         update_check_frequency = update_check_frequency_map[self.variables["update_check_frequency"].get()]
         include_prerelease = self.variables["include_prerelease"].get()
-        save_config(update_check_frequency=update_check_frequency, include_prerelease=include_prerelease)
+        enable_optimization = self.variables["enable_optimization"].get()
+        save_config(update_check_frequency=update_check_frequency, include_prerelease=include_prerelease,
+                    enable_optimization=enable_optimization)
         self.more_settings_window.destroy()
 
 

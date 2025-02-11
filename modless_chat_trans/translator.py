@@ -15,6 +15,8 @@
 
 import requests
 import translators as ts
+import json
+import re
 
 service_supported_languages = {
     "DeepL":['auto', 'ar', 'bg', 'cs', 'da', 'de', 'el', 'en', 'es', 'et', 'fi', 'fr', 'hu', 'id', 'it', 'ja', 'ko',
@@ -33,7 +35,7 @@ service_supported_languages = {
 
 class Translator:
     def __init__(self, api_key=None, api_url=None, default_source_language=None,
-                 default_target_language="zh-CN"):
+                 default_target_language="zh-CN", enable_optimization=False):
         """
         初始化翻译器
 
@@ -47,6 +49,7 @@ class Translator:
         self.api_url = api_url
         self.default_source_language = default_source_language
         self.default_target_language = default_target_language
+        self.enable_optimization = enable_optimization
 
         # ts.preaccelerate_and_speedtest()
 
@@ -63,17 +66,62 @@ class Translator:
 
         source_language = source_language or self.default_source_language
         target_language = target_language or self.default_target_language
-        system_prompt = "You are a professional translation engine specializing in game translations."
-        # normal_prompt = "You are a professional, authentic machine translation engine,only return result."
 
-        if source_language:
-            message = (f"Translate from {source_language} to {target_language}. "
-                       f"Do not translate player names, proper nouns, or garbled text. "
-                       f"No explanations. No notes. Text: {text}")
+        if self.enable_optimization:
+            # scene = "Hypixel Bedwars"
+            system_prompt = (
+                "You are a Minecraft-specific intelligent translation engine, "
+                "focused on providing high-quality localization transformations "
+                "in terms of cultural adaptation and language naturalization.\n"
+                "\n"
+                # f"Your translation scenario is: {scene}.\n"
+                # "\n"
+                "[Translation Guidelines]\n"
+                "\n"
+                "1. Cultural Adaptability: Identify culture-specific elements in the "
+                "source text (memes, allusions, puns, etc.) and find culturally "
+                "equivalent expressions in the target language.\n"
+                "2. Language Modernization: Use the latest slang in the target language.\n"
+                "3. Natural Language Processing:\n"
+                "    - Maintain spoken sentence structures.\n"
+                "    - Consider that player messages during gameplay will not be too "
+                "long or have complex grammatical structures.\n"
+                "    - Avoid formal language structures such as capitalization of "
+                "initial letters/proper nouns and ending punctuation marks.\n"
+                "    - Simulate human conversation characteristics (add appropriate "
+                "filler words, reasonable repetition).\n"
+                "\n"
+                "[Output Specifications]\n"
+                "\n"
+                "Strictly follow the JSON structure below. Do not use Markdown code "
+                "block markers:\n"
+                "\n"
+                "{\n"
+                "  \"terms\": [\n"
+                "    {\"term\": \"Original term\", \"meaning\": \"Definition\"} // "
+                "Include game terms, slang, abbreviations, memes, puns, and other "
+                "vocabulary requiring special handling.\n"
+                "  ],\n"
+                "  \"result\": \"Final translation result\" // Natural translation "
+                "after cultural adaptation and colloquial processing.\n"
+                "}"
+            )
+
+            if source_language:
+                message = f"Translate this sentence from {source_language} to {target_language}: {text}"
+            else:
+                message = f"Translate this sentence to {target_language}: {text}"
         else:
-            message = (f"Translate to {target_language}. "
-                       f"Do not translate player names, proper nouns, or garbled text. "
-                       f"No explanations. No notes. Text: {text}")
+            system_prompt = "You are a professional translation engine specializing in game translations."
+
+            if source_language:
+                message = (f"Translate from {source_language} to {target_language}. "
+                           f"Do not translate player names, proper nouns, or garbled text. "
+                           f"No explanations. No notes. Text: {text}")
+            else:
+                message = (f"Translate to {target_language}. "
+                           f"Do not translate player names, proper nouns, or garbled text. "
+                           f"No explanations. No notes. Text: {text}")
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -91,7 +139,20 @@ class Translator:
         response = requests.post(self.api_url, headers=headers, json=data)
 
         if response.status_code == 200:
-            translated_message = response.json().get("choices", [])[0].get("message", {}).get("content", "")
+            content_str = response.json().get("choices", [])[0].get("message", {}).get("content", "")
+            if self.enable_optimization:
+                try:
+                    content_dict = json.loads(content_str)
+                except json.JSONDecodeError:
+                    try:
+                        content_dict = json.loads(re.sub(r"^```json\s*([\s\S]*?)\s*```$", r"\1", content_str))
+                    except json.JSONDecodeError:
+                        return None
+
+                translated_message = content_dict.get("result", None)
+            else:
+                translated_message = content_str
+
             return translated_message
         else:
             return None

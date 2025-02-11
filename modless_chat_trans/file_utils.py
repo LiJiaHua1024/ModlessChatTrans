@@ -54,6 +54,7 @@ class Config:
     update_check_frequency: str
     last_check_time: str
     include_prerelease: bool
+    enable_optimization: bool
 
 
 DEFAULT_CONFIG = Config(interface_lang="zh_CN",
@@ -73,7 +74,8 @@ DEFAULT_CONFIG = Config(interface_lang="zh_CN",
                         always_on_top=False,
                         update_check_frequency="Daily",
                         last_check_time="1970-01-01T00:00:00",
-                        include_prerelease=False)
+                        include_prerelease=False,
+                        enable_optimization=False)
 
 
 def find_latest_log(directory: str) -> str:
