@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from collections import deque
 from typing import Tuple
 from tkinter import messagebox
+from tktooltip import ToolTip
 from modless_chat_trans.file_utils import read_config, save_config, get_path, get_platform
 from modless_chat_trans.i18n import _, supported_languages, lang_window_size_map
 from modless_chat_trans.translator import service_supported_languages
@@ -654,6 +655,10 @@ class MoreSettingsManager:
             variable=self.variables["enable_optimization"]
         )
         enable_optimization_checkbox.grid(row=2, column=0, columnspan=2, padx=20, pady=10, sticky="w")
+
+        ToolTip(enable_optimization_checkbox,
+                _("Enabling this will improve translation quality, but will increase latency and consume more tokens"),
+                delay=0.3)
 
         ctk.CTkButton(
             self.more_settings_window,
