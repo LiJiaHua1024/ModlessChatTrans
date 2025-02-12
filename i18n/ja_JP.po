@@ -52,10 +52,10 @@ msgid "Speech"
 msgstr "スピーチ"
 
 msgid "Httpserver"
-msgstr "HTTPサーバー"
+msgstr "ウェブページ"
 
 msgid "HTTP Port:"
-msgstr "HTTPポート："
+msgstr "ウェブポート："
 
 msgid "Self Source Language:"
 msgstr "自分のメッセージの元言語："
@@ -158,3 +158,9 @@ msgstr "プレリリースを含める"
 
 msgid "Save Settings"
 msgstr "設定を保存"
+
+msgid "Enable Translation Quality Optimization"
+msgstr "翻訳品質の最適化を有効化"
+
+msgid "Enabling this will improve translation quality, but will increase latency and consume more tokens"
+msgstr "有効にすると翻訳品質が向上しますが、待ち時間が増加しトークンの消費も増えます"

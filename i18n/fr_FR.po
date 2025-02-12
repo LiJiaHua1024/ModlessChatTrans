@@ -52,10 +52,10 @@ msgid "Speech"
 msgstr "Parole"
 
 msgid "Httpserver"
-msgstr "Serveur HTTP"
+msgstr "Page Web"
 
 msgid "HTTP Port:"
-msgstr "Port HTTP :"
+msgstr "Port Web :"
 
 msgid "Self Source Language:"
 msgstr "Langue source personnelle :"
@@ -158,3 +158,9 @@ msgstr "Inclure les versions préliminaires"
 
 msgid "Save Settings"
 msgstr "Enregistrer les paramètres"
+
+msgid "Enable Translation Quality Optimization"
+msgstr "Activer l'Optimisation de la Qualité de Traduction"
+
+msgid "Enabling this will improve translation quality, but will increase latency and consume more tokens"
+msgstr "L'activation améliorera la qualité de la traduction, mais augmentera la latence et consommera plus de tokens"

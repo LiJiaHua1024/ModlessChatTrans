@@ -52,10 +52,10 @@ msgid "Speech"
 msgstr "语音"
 
 msgid "Httpserver"
-msgstr "HTTP服务器"
+msgstr "网页"
 
 msgid "HTTP Port:"
-msgstr "HTTP 端口："
+msgstr "网页端口："
 
 msgid "Self Source Language:"
 msgstr "自己消息源语言："
@@ -160,3 +160,9 @@ msgstr "包含预发布版本"
 
 msgid "Save Settings"
 msgstr "保存设置"
+
+msgid "Enable Translation Quality Optimization"
+msgstr "启用翻译质量优化"
+
+msgid "Enabling this will improve translation quality, but will increase latency and consume more tokens"
+msgstr "启用此功能将提高翻译质量，但会增加延迟并消耗更多令牌"

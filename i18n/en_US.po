@@ -52,10 +52,10 @@ msgid "Speech"
 msgstr "Voice"
 
 msgid "Httpserver"
-msgstr "HTTP Server"
+msgstr "Web Page"
 
 msgid "HTTP Port:"
-msgstr "HTTP Port:"
+msgstr "Web Port:"
 
 msgid "Self Source Language:"
 msgstr "Source Language for Your Sent Messages:"
@@ -162,3 +162,9 @@ msgstr "Include Pre-release"
 
 msgid "Save Settings"
 msgstr "Save Settings"
+
+msgid "Enable Translation Quality Optimization"
+msgstr "Enable Translation Quality Optimization"
+
+msgid "Enabling this will improve translation quality, but will increase latency and consume more tokens"
+msgstr "Enabling this will improve translation quality, but will increase latency and consume more tokens"

@@ -52,10 +52,10 @@ msgid "Speech"
 msgstr "Речь"
 
 msgid "Httpserver"
-msgstr "HTTP сервер"
+msgstr "Веб-страница"
 
 msgid "HTTP Port:"
-msgstr "Порт HTTP:"
+msgstr "Веб-порт:"
 
 msgid "Self Source Language:"
 msgstr "Исходный язык для собственных сообщений:"
@@ -160,3 +160,9 @@ msgstr "Включая предварительные версии"
 
 msgid "Save Settings"
 msgstr "Сохранить настройки"
+
+msgid "Enable Translation Quality Optimization"
+msgstr "Включить оптимизацию качества перевода"
+
+msgid "Enabling this will improve translation quality, but will increase latency and consume more tokens"
+msgstr "Включение улучшит качество перевода, но увеличит задержку и потребление токенов"

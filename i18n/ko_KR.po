@@ -52,10 +52,10 @@ msgid "Speech"
 msgstr "음성"
 
 msgid "Httpserver"
-msgstr "HTTP 서버"
+msgstr "웹 페이지"
 
 msgid "HTTP Port:"
-msgstr "HTTP 포트:"
+msgstr "웹 포트:"
 
 msgid "Self Source Language:"
 msgstr "자신의 메시지 원본 언어:"
@@ -158,3 +158,9 @@ msgstr "프리릴리스 포함"
 
 msgid "Save Settings"
 msgstr "설정 저장"
+
+msgid "Enable Translation Quality Optimization"
+msgstr "번역 품질 최적화 활성화"
+
+msgid "Enabling this will improve translation quality, but will increase latency and consume more tokens"
+msgstr "활성화하면 번역 품질이 향상되지만, 대기 시간이 증가하고 더 많은 토큰을 사용합니다"
