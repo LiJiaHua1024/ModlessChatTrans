@@ -7,6 +7,9 @@ on:
         description: 'Version number'
         required: true
         default: '2.0.0'
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -14,7 +17,7 @@ jobs:
 
     steps:
     - name: Check out repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -27,21 +30,38 @@ jobs:
         pip install -r requirements.txt
         pip install nuitka
 
+    - name: Determine version
+      id: determine_version
+      run: |
+        if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $version = "${{ github.event.inputs.version }}"
+        } else {
+            $version = "${{ github.ref_name }}"
+            if ($version -match "^v") {
+              $version = $version.Substring(1)
+            }
+        }
+        echo "version=$version" >> $env:GITHUB_OUTPUT
+      shell: pwsh
+
     - name: Build with Nuitka
       run: |
-        if ("${{ github.event.inputs.version }}" -like "*debug*") {
-          nuitka --onefile --standalone --msvc=latest --lto=yes --noinclude-pytest-mode=nofollow --windows-icon-from-ico=icon.ico --enable-plugin=tk-inter --noinclude-pytest-mode=nofollow --include-module=dbm.dumb --include-package=urllib3 --include-data-dir=locales=./locales --include-data-file=choose_language.png=./choose_language.png --output-filename=ModlessChatTrans --file-description="ModlessChatTrans" --file-version="0.0.0.0" --product-version="0.0.0.0" --product-name="ModlessChatTrans" --copyright="Copyright © 2024-2025 LiJiaHua1024" --assume-yes-for-downloads main.py
+        $version = "${{ steps.determine_version.outputs.version }}"
+        if ($version -like "*debug*") {
+          nuitka --onefile --standalone --msvc=latest --lto=yes --noinclude-pytest-mode=nofollow --windows-icon-from-ico=icon.ico --enable-plugin=tk-inter --include-module=dbm.dumb --include-package=urllib3 --include-data-dir=locales=./locales --include-data-file=choose_language.png=./choose_language.png --output-filename=ModlessChatTrans --file-description="ModlessChatTrans" --file-version="0.0.0.0" --product-version="0.0.0.0" --product-name="ModlessChatTrans" --copyright="Copyright © 2024-2025 LiJiaHua1024" --assume-yes-for-downloads main.py
         } else {
-          nuitka --onefile --standalone --msvc=latest --lto=yes --noinclude-pytest-mode=nofollow --windows-icon-from-ico=icon.ico --enable-plugin=tk-inter --windows-console-mode=disable --noinclude-pytest-mode=nofollow --include-module=dbm.dumb --include-package=urllib3 --include-data-dir=locales=./locales --include-data-file=choose_language.png=./choose_language.png --output-filename=ModlessChatTrans --file-description="ModlessChatTrans" --file-version="${{ github.event.inputs.version }}" --product-version="${{ github.event.inputs.version }}" --product-name="ModlessChatTrans" --copyright="Copyright © 2024-2025 LiJiaHua1024" --assume-yes-for-downloads main.py
+          nuitka --onefile --standalone --msvc=latest --lto=yes --noinclude-pytest-mode=nofollow --windows-icon-from-ico=icon.ico --enable-plugin=tk-inter --windows-console-mode=disable --include-module=dbm.dumb --include-package=urllib3 --include-data-dir=locales=./locales --include-data-file=choose_language.png=./choose_language.png --output-filename=ModlessChatTrans --file-description="ModlessChatTrans" --file-version="$version" --product-version="$version" --product-name="ModlessChatTrans" --copyright="Copyright © 2024-2025 LiJiaHua1024" --assume-yes-for-downloads main.py
         }
       shell: pwsh
 
     - name: Rename executable
       run: |
-        ren ModlessChatTrans.exe ModlessChatTrans_v${{ github.event.inputs.version }}.exe
+        $version = "${{ steps.determine_version.outputs.version }}"
+        ren ModlessChatTrans.exe ModlessChatTrans_v$version.exe
+      shell: pwsh
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: ModlessChatTrans
-        path: ./ModlessChatTrans_v${{ github.event.inputs.version }}.exe
+        path: ./ModlessChatTrans_v${{ steps.determine_version.outputs.version }}.exe
