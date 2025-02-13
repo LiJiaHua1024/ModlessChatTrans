@@ -15,9 +15,8 @@
 
 import pyttsx3
 import threading
-from flask import Flask, render_template_string
-from modless_chat_trans.i18n import _
 from modless_chat_trans.interface import ChatInterfaceManager
+from modless_chat_trans.web_display import start_httpserver, httpserver_display
 
 
 def initialization(output_method, **kwargs):
@@ -34,43 +33,10 @@ def initialization(output_method, **kwargs):
         start_httpserver_thread(kwargs["http_port"])
 
 
-def start_httpserver(port):
-    global http_messages
-    flask_app = Flask(__name__)
-    http_messages = []
-
-    @flask_app.route('/')
-    def home():
-        return render_template_string("""
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <title>"""+_("Messages")+"""</title>
-                        <meta http-equiv="refresh" content="1">
-                    </head>
-                    <body>
-                        <h1>"""+_("Messages")+""":</h1>
-                        <ul>
-                        {% for message in messages %}
-                            <li>{{ message }}</li>
-                        {% endfor %}
-                        </ul>
-                    </body>
-                    </html>
-                """, messages=http_messages)
-
-    flask_app.run(debug=False, host='0.0.0.0', port=port)
-
-
 def start_httpserver_thread(port):
     server_thread = threading.Thread(target=start_httpserver, args=(port,))
     server_thread.daemon = True
     server_thread.start()
-
-
-def _httpserver_display(message):
-    global http_messages
-    http_messages.append(message)
 
 
 def _speech_display(message):
@@ -97,6 +63,6 @@ def display_message(name, message, output_method):
     elif output_method == "Speech":
         _speech_display(text)
     elif output_method == "Httpserver":
-        _httpserver_display(text)
+        httpserver_display(name, message)
     else:
         raise ValueError("Unsupported output method")
