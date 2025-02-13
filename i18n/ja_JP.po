@@ -164,3 +164,9 @@ msgstr "翻訳品質の最適化を有効化"
 
 msgid "Enabling this will improve translation quality, but will increase latency and consume more tokens"
 msgstr "有効にすると翻訳品質が向上しますが、待ち時間が増加しトークンの消費も増えます"
+
+msgid "Enable High Version Fix"
+msgstr "高バージョン修正を有効化"
+
+msgid "Enabling this will temporarily fix the issue of logs not being captured in high versions of Minecraft\nIf it doesn't work, restart this program"
+msgstr "これを有効にすると、高バージョンのMinecraftでログが取得されない問題を一時的に修正します\n機能しない場合は、このプログラムを再起動してください"

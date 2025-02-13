@@ -166,3 +166,9 @@ msgstr "启用翻译质量优化"
 
 msgid "Enabling this will improve translation quality, but will increase latency and consume more tokens"
 msgstr "启用此功能将提高翻译质量，但会增加延迟并消耗更多令牌"
+
+msgid "Enable High Version Fix"
+msgstr "启用高版本修复"
+
+msgid "Enabling this will temporarily fix the issue of logs not being captured in high versions of Minecraft\nIf it doesn't work, restart this program"
+msgstr "启用此功能将临时修复在高版本Minecraft中无法捕获日志的问题\n如果不起作用，请重启此程序"

@@ -164,3 +164,9 @@ msgstr "Activar Optimización de Calidad de Traducción"
 
 msgid "Enabling this will improve translation quality, but will increase latency and consume more tokens"
 msgstr "Activar esto mejorará la calidad de la traducción, pero aumentará la latencia y consumirá más tokens"
+
+msgid "Enable High Version Fix"
+msgstr "Activar corrección para versiones altas"
+
+msgid "Enabling this will temporarily fix the issue of logs not being captured in high versions of Minecraft\nIf it doesn't work, restart this program"
+msgstr "Al activar esto se solucionará temporalmente el problema de los registros que no se capturan en versiones altas de Minecraft\nSi no funciona, reinicie este programa"

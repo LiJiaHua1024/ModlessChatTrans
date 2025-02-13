@@ -168,3 +168,9 @@ msgstr "Enable Translation Quality Optimization"
 
 msgid "Enabling this will improve translation quality, but will increase latency and consume more tokens"
 msgstr "Enabling this will improve translation quality, but will increase latency and consume more tokens"
+
+msgid "Enable High Version Fix"
+msgstr "Enable High Version Fix"
+
+msgid "Enabling this will temporarily fix the issue of logs not being captured in high versions of Minecraft\nIf it doesn't work, restart this program"
+msgstr "Enabling this will temporarily fix the issue of logs not being captured in high versions of Minecraft\nIf it doesn't work, restart this program"
