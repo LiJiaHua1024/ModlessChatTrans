@@ -154,7 +154,7 @@ class MainInterfaceManager:
         """
         创建程序主窗口
 
-        :param start_translation: 启动翻译流程的函数
+        :param functions: 函数字典
         """
 
         # 创建主窗口
@@ -610,7 +610,7 @@ class MoreSettingsManager:
         self.more_settings_window = ctk.CTkToplevel(self.main_window)
         self.more_settings_window.title(_("More Settings"))
         self.more_settings_window.geometry(
-            "460x200" if self.config.interface_lang in {"fr_FR", "es_ES", "ru_RU", "pt_BR"} else "400x200"
+            "460x250" if self.config.interface_lang in {"fr_FR", "es_ES", "ru_RU", "pt_BR"} else "400x250"
         )
         self.more_settings_window.resizable(False, False)
 
@@ -660,11 +660,26 @@ class MoreSettingsManager:
                 _("Enabling this will improve translation quality, but will increase latency and consume more tokens"),
                 delay=0.3)
 
+        self.variables["use_high_version_fix"] = ctk.BooleanVar(value=self.config.use_high_version_fix)
+
+        use_high_version_fix_checkbox = ctk.CTkCheckBox(
+            self.more_settings_window,
+            text=_("Enable High Version Fix"),
+            variable=self.variables["use_high_version_fix"]
+        )
+        use_high_version_fix_checkbox.grid(row=3, column=0, columnspan=2, padx=20, pady=10, sticky="w")
+
+        ToolTip(use_high_version_fix_checkbox,
+                _("Enabling this will temporarily fix the issue of logs not being captured in high versions of Minecraft"
+                  "\n"
+                  "If it doesn't work, restart this program"),
+                delay=0.3)
+
         ctk.CTkButton(
             self.more_settings_window,
             text=_("Save Settings"),
             command=self.save_more_settings
-        ).grid(row=3, column=0, columnspan=2, padx=20, pady=20)
+        ).grid(row=4, column=0, columnspan=2, padx=20, pady=20)
 
     def save_more_settings(self):
         update_check_frequency_map = {
@@ -677,8 +692,9 @@ class MoreSettingsManager:
         update_check_frequency = update_check_frequency_map[self.variables["update_check_frequency"].get()]
         include_prerelease = self.variables["include_prerelease"].get()
         enable_optimization = self.variables["enable_optimization"].get()
+        use_high_version_fix = self.variables["use_high_version_fix"].get()
         save_config(update_check_frequency=update_check_frequency, include_prerelease=include_prerelease,
-                    enable_optimization=enable_optimization)
+                    enable_optimization=enable_optimization, use_high_version_fix=use_high_version_fix)
         self.more_settings_window.destroy()
 
 

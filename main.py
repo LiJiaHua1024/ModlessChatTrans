@@ -30,7 +30,7 @@ from modless_chat_trans.i18n import _
 from modless_chat_trans.updater import Updater
 
 
-program_info = ProgramInfo(version="v2.0.2",
+program_info = ProgramInfo(version="v2.0.3",
                            author="LiJiaHua1024",
                            email="minecraft_benli@163.com",
                            github="https://github.com/LiJiaHua1024/ModlessChatTrans",
@@ -73,7 +73,11 @@ def start_translation():
     initialization(config.output_method, main_window=main_interface_manager.main_window,
                    http_port=config.http_port, max_messages=config.max_messages, always_on_top=config.always_on_top)
 
-    monitor_thread = threading.Thread(target=monitor_log_file, args=(config.minecraft_log_folder, callback))
+    monitor_thread = threading.Thread(
+        target=monitor_log_file,
+        args=(config.minecraft_log_folder, callback),
+        kwargs={"use_high_version_fix": config.use_high_version_fix}
+    )
     monitor_thread.daemon = True
     monitor_thread.start()
 
