@@ -174,3 +174,6 @@ msgstr "Enable High Version Fix"
 
 msgid "Enabling this will temporarily fix the issue of logs not being captured in high versions of Minecraft\nIf it doesn't work, restart this program"
 msgstr "Enabling this will temporarily fix the issue of logs not being captured in high versions of Minecraft\nIf it doesn't work, restart this program"
+
+msgid "Loading supported languages"
+msgstr "Loading supported languages"

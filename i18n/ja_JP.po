@@ -170,3 +170,6 @@ msgstr "高バージョン修正を有効化"
 
 msgid "Enabling this will temporarily fix the issue of logs not being captured in high versions of Minecraft\nIf it doesn't work, restart this program"
 msgstr "これを有効にすると、高バージョンのMinecraftでログが取得されない問題を一時的に修正します\n機能しない場合は、このプログラムを再起動してください"
+
+msgid "Loading supported languages"
+msgstr "対応言語を読み込み中"

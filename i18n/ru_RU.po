@@ -172,3 +172,6 @@ msgstr "Включить исправление для высоких верси
 
 msgid "Enabling this will temporarily fix the issue of logs not being captured in high versions of Minecraft\nIf it doesn't work, restart this program"
 msgstr "Включение этой опции временно исправит проблему с отсутствием захвата логов в высоких версиях Minecraft\nЕсли не работает, перезапустите программу"
+
+msgid "Loading supported languages"
+msgstr "Загрузка поддерживаемых языков"

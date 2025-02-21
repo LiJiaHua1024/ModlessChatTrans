@@ -170,3 +170,6 @@ msgstr "상위 버전 수정 활성화"
 
 msgid "Enabling this will temporarily fix the issue of logs not being captured in high versions of Minecraft\nIf it doesn't work, restart this program"
 msgstr "이 옵션을 활성화하면 상위 버전의 Minecraft에서 로그가 캡처되지 않는 문제를 임시로 해결합니다\n작동하지 않는 경우 이 프로그램을 재시작하세요"
+
+msgid "Loading supported languages"
+msgstr "지원되는 언어를 불러오는 중"

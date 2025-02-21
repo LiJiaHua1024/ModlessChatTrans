@@ -170,3 +170,6 @@ msgstr "Ativar Correção para Versões Altas"
 
 msgid "Enabling this will temporarily fix the issue of logs not being captured in high versions of Minecraft\nIf it doesn't work, restart this program"
 msgstr "Ativar isso corrigirá temporariamente o problema dos logs não serem capturados em versões altas do Minecraft\nSe não funcionar, reinicie este programa"
+
+msgid "Loading supported languages"
+msgstr "Carregando idiomas suportados"

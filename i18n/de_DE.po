@@ -174,3 +174,6 @@ msgstr "Höhere-Version-Fehlerbehebung aktivieren"
 
 msgid "Enabling this will temporarily fix the issue of logs not being captured in high versions of Minecraft\nIf it doesn't work, restart this program"
 msgstr "Die Aktivierung behebt vorübergehend das Problem, dass Protokolle in höheren Minecraft-Versionen nicht erfasst werden\nWenn es nicht funktioniert, starten Sie das Programm neu"
+
+msgid "Loading supported languages"
+msgstr "Unterstützte Sprachen werden geladen"
