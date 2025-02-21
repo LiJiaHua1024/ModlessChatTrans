@@ -16,6 +16,7 @@ from json import JSONDecodeError
 from requests.exceptions import HTTPError
 from modless_chat_trans.i18n import _
 from modless_chat_trans.file_utils import cache
+from modless_chat_trans.translator import services
 
 
 def process_decorator(function):
@@ -49,14 +50,11 @@ def process_decorator(function):
                         translated_chat_message = translator.llm_translate(original_chat_message, model=model,
                                                                            source_language=source_language,
                                                                            target_language=target_language)
-                    elif translation_service == "Bing":
-                        translated_chat_message = translator.bing_translate(original_chat_message,
-                                                                            source_language=source_language,
-                                                                            target_language=target_language)
-                    elif translation_service == "DeepL":
-                        translated_chat_message = translator.deepl_translate(original_chat_message,
-                                                                             source_language=source_language,
-                                                                             target_language=target_language)
+                    elif translation_service in services:
+                        translated_chat_message = translator.traditional_translate(original_chat_message,
+                                                                                   translation_service,
+                                                                                   source_language=source_language,
+                                                                                   target_language=target_language)
                 except HTTPError as http_err:
                     response = getattr(http_err, "response", None)
                     if response:

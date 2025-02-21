@@ -18,19 +18,25 @@ import translators as ts
 import json
 import re
 
-service_supported_languages = {
-    "DeepL":['auto', 'ar', 'bg', 'cs', 'da', 'de', 'el', 'en', 'es', 'et', 'fi', 'fr', 'hu', 'id', 'it', 'ja', 'ko',
-             'lt', 'lv', 'nb', 'nl', 'pl', 'pt', 'ro', 'ru', 'sk', 'sl', 'sv', 'tr', 'uk', 'zh'],
-    "Bing":['auto', 'af', 'am', 'ar', 'as', 'az', 'ba', 'bg', 'bho', 'bn', 'bo', 'brx', 'bs', 'ca', 'cs', 'cy', 'da', 'de',
-            'doi', 'dsb', 'dv', 'el', 'en', 'es', 'et', 'eu', 'fa', 'fi', 'fil', 'fj', 'fo', 'fr', 'fr-CA', 'ga',
-            'gl', 'gom', 'gu', 'ha', 'he', 'hi', 'hne', 'hr', 'hsb', 'ht', 'hu', 'hy', 'id', 'ig', 'ikt', 'is', 'it',
-            'iu', 'iu-Latn', 'ja', 'ka', 'kk', 'km', 'kmr', 'kn', 'ko', 'ks', 'ku', 'ky', 'ln', 'lo', 'lt', 'lug',
-            'lv', 'lzh', 'mai', 'mg', 'mi', 'mk', 'ml', 'mn-Cyrl', 'mn-Mong', 'mr', 'ms', 'mt', 'mww', 'my', 'nb',
-            'ne', 'nl', 'nso', 'nya', 'or', 'otq', 'pa', 'pl', 'prs', 'ps', 'pt', 'pt-PT', 'ro', 'ru', 'run', 'rw',
-            'sd', 'si', 'sk', 'sl', 'sm', 'sn', 'so', 'sq', 'sr-Cyrl', 'sr-Latn', 'st', 'sv', 'sw', 'ta', 'te', 'th',
-            'ti', 'tk', 'tlh-Latn', 'tn', 'to', 'tr', 'tt', 'ty', 'ug', 'uk', 'ur', 'uz', 'vi', 'xh', 'yo', 'yua',
-            'yue', 'zh-Hans', 'zh-Hant', 'zu']
-}
+services = ["LLM", "DeepL", "Bing", "Google", "Yandex", "Alibaba", "Caiyun", "Youdao"]
+
+
+def get_supported_languages(service):
+    return sorted(ts.get_languages(service.lower()).keys())
+
+
+class _LazyLanguageDict(dict):
+    def __getitem__(self, key):
+        if key not in self:
+            try:
+                lang_list = get_supported_languages(key)
+            except Exception as e:
+                lang_list = ["[ERROR]", str(e)]
+            super().__setitem__(key, lang_list)
+        return super().__getitem__(key)
+
+
+service_supported_languages = _LazyLanguageDict()
 
 
 class Translator:
@@ -157,39 +163,21 @@ class Translator:
         else:
             return None
 
-    def deepl_translate(self, text, source_language=None, target_language=None):
+    def traditional_translate(self, text, service, source_language=None, target_language=None):
         """
-        使用 DeepL 翻译消息
+        使用传统翻译服务翻译消息
 
         :param text: 要翻译的文字
+        :param service: 翻译服务
         :param source_language: 源语言，不填则为self.default_source_language
         :param target_language: 目标语言，不填则为self.default_target_language
         :return: 翻译后的消息
         """
 
-        source_language = source_language or self.default_source_language or "auto"
-        target_language = target_language or self.default_target_language or "auto"
+        source_language = source_language or self.default_source_language
+        target_language = target_language or self.default_target_language
 
-        if translated_message := ts.translate_text(text, translator="deepl",
-                                                   from_language=source_language, to_language=target_language):
-            return translated_message
-        else:
-            return None
-
-    def bing_translate(self, text, source_language=None, target_language=None):
-        """
-        使用 Bing Translate 翻译消息
-
-        :param text: 要翻译的文字
-        :param source_language: 源语言，不填则为self.default_source_language
-        :param target_language: 目标语言，不填则为self.default_target_language
-        :return: 翻译后的消息
-        """
-
-        source_language = source_language or self.default_source_language or "auto"
-        target_language = target_language or self.default_target_language or "auto"
-
-        if translated_message := ts.translate_text(text, translator="bing",
+        if translated_message := ts.translate_text(text, translator=service.lower(),
                                                    from_language=source_language, to_language=target_language):
             return translated_message
         else:

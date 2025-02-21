@@ -24,7 +24,7 @@ from tkinter import messagebox
 from tktooltip import ToolTip
 from modless_chat_trans.file_utils import read_config, save_config, get_path, get_platform
 from modless_chat_trans.i18n import _, supported_languages, lang_window_size_map
-from modless_chat_trans.translator import service_supported_languages
+from modless_chat_trans.translator import services, service_supported_languages
 
 updater = None
 
@@ -134,7 +134,7 @@ class MainInterfaceManager:
 
         self.llm_widgets = None
         self.traditional_widgets = None
-        self.services = None
+        self.widgets = None
         self.service_var = None
 
         self.self_src_lang_var = None
@@ -295,35 +295,35 @@ class MainInterfaceManager:
         trans_service = self.service_var.get()
 
         if trans_service == "LLM":
-            op_src_lang = self.services[0]["source_language_entry"].get()
-            op_tgt_lang = self.services[0]["target_language_entry"].get()
-            api_url = self.services[0]["api_url_entry"].get()
-            api_key = self.services[0]["api_key_entry"].get()
-            model = self.services[0]["model_entry"].get()
+            op_src_lang = self.widgets[0]["source_language_entry"].get()
+            op_tgt_lang = self.widgets[0]["target_language_entry"].get()
+            api_url = self.widgets[0]["api_url_entry"].get()
+            api_key = self.widgets[0]["api_key_entry"].get()
+            model = self.widgets[0]["model_entry"].get()
 
             save_config(op_src_lang=op_src_lang, op_tgt_lang=op_tgt_lang, api_url=api_url, api_key=api_key, model=model)
 
             if (
                     self_translation_enabled
-                    and hasattr(self.services[0]["self_source_language_entry"], "get")
-                    and hasattr(self.services[0]["self_target_language_entry"], "get")
+                    and hasattr(self.widgets[0]["self_source_language_entry"], "get")
+                    and hasattr(self.widgets[0]["self_target_language_entry"], "get")
             ):
-                self_src_lang = self.services[0]["self_source_language_entry"].get()
-                self_tgt_lang = self.services[0]["self_target_language_entry"].get()
+                self_src_lang = self.widgets[0]["self_source_language_entry"].get()
+                self_tgt_lang = self.widgets[0]["self_target_language_entry"].get()
                 save_config(self_src_lang=self_src_lang, self_tgt_lang=self_tgt_lang)
 
-        elif trans_service in ["Bing", "DeepL"]:
-            op_src_lang = self.services[1]["source_language_menu"].get()
-            op_tgt_lang = self.services[1]["target_language_menu"].get()
+        elif trans_service in services:
+            op_src_lang = self.widgets[1]["source_language_menu"].get()
+            op_tgt_lang = self.widgets[1]["target_language_menu"].get()
             save_config(op_src_lang=op_src_lang, op_tgt_lang=op_tgt_lang)
 
             if (
                     self_translation_enabled
-                    and hasattr(self.services[1]["self_source_language_menu"], "get")
-                    and hasattr(self.services[1]["self_target_language_menu"], "get")
+                    and hasattr(self.widgets[1]["self_source_language_menu"], "get")
+                    and hasattr(self.widgets[1]["self_target_language_menu"], "get")
             ):
-                self_src_lang = self.services[1]["self_source_language_menu"].get()
-                self_tgt_lang = self.services[1]["self_target_language_menu"].get()
+                self_src_lang = self.widgets[1]["self_source_language_menu"].get()
+                self_tgt_lang = self.widgets[1]["self_target_language_menu"].get()
                 save_config(self_src_lang=self_src_lang, self_tgt_lang=self_tgt_lang)
 
         save_config(minecraft_log_folder=minecraft_log_folder, output_method=output_method, trans_service=trans_service,
@@ -335,12 +335,12 @@ class MainInterfaceManager:
     def update_service_widgets(self, choice):
         """根据选择的翻译服务更新控件"""
 
-        for i in range(len(self.services)):
-            widgets = self.services[i]
+        for i in range(len(self.widgets)):
+            widgets = self.widgets[i]
             keys_to_destroy = [key for key in widgets if hasattr(widgets[key], "destroy")]
             widgets_to_destroy = [widgets[key] for key in keys_to_destroy]
             destroyed_dict = dict(zip(keys_to_destroy, destroy_widgets(*widgets_to_destroy)))
-            self.services[i].update(destroyed_dict)
+            self.widgets[i].update(destroyed_dict)
 
         if choice == "LLM":
             self.llm_widgets["source_language_entry"] = ctk.CTkEntry(self.main_window, width=400)
@@ -369,7 +369,9 @@ class MainInterfaceManager:
             self.llm_widgets["model_entry"].insert(0, self.config.model)
             self.llm_widgets["model_entry"].grid(row=6, column=1, padx=20, pady=10, sticky="w")
 
-        elif choice in {"DeepL", "Bing"}:
+        elif choice in services:
+            self.main_window.title(f"Modless Chat Trans {self.info.version} - {_('Loading supported languages')}...")
+
             src_lang_var = ctk.StringVar(
                 value=self.config.op_src_lang if self.config.op_src_lang in service_supported_languages[choice]
                 else service_supported_languages[choice][0]
@@ -389,6 +391,8 @@ class MainInterfaceManager:
                 variable=tgt_lang_var
             )
             self.traditional_widgets["target_language_menu"].grid(row=3, column=1, padx=20, pady=10, sticky="w")
+
+            self.main_window.title(f"Modless Chat Trans {self.info.version}")
 
         self.on_self_translation_toggle()
 
@@ -423,11 +427,11 @@ class MainInterfaceManager:
             "self_target_language_label": None
         }
 
-        self.services = [self.llm_widgets, self.traditional_widgets]
+        self.widgets = [self.llm_widgets, self.traditional_widgets]
         self.service_var = ctk.StringVar(
-            value=service if (service := self.config.trans_service) in {"LLM", "DeepL", "Bing"} else "LLM")
+            value=service if (service := self.config.trans_service) in services else "LLM")
         service_option_menu = ctk.CTkOptionMenu(self.main_window,
-                                                values=["LLM", "DeepL", "Bing"],
+                                                values=services,
                                                 variable=self.service_var,
                                                 command=self.update_service_widgets)
         service_option_menu.grid(row=7, column=0, padx=20, pady=10, sticky="w")
@@ -473,74 +477,74 @@ class MainInterfaceManager:
         if self.self_translation_var.get():
 
             if service == "LLM":
-                if not self.services[0]["self_source_language_entry"]:
-                    self.services[0]["self_source_language_label"] = ctk.CTkLabel(self.main_window,
-                                                                                  text=_("Self Source Language:"))
-                    self.services[0]["self_source_language_label"].grid(row=8, column=0, padx=20, pady=10, sticky="w")
-                    self.services[0]["self_source_language_entry"] = ctk.CTkEntry(self.main_window, width=400)
-                    self.services[0]["self_source_language_entry"].grid(row=8, column=1, padx=20, pady=10, sticky="w")
-                    self.services[0]["self_source_language_entry"].insert(0, self.config.self_src_lang)
-                if not self.services[0]["self_target_language_entry"]:
-                    self.services[0]["self_target_language_label"] = ctk.CTkLabel(self.main_window,
-                                                                                  text=_("Self Target Language:"))
-                    self.services[0]["self_target_language_label"].grid(row=9, column=0, padx=20, pady=10, sticky="w")
-                    self.services[0]["self_target_language_entry"] = ctk.CTkEntry(self.main_window, width=400)
-                    self.services[0]["self_target_language_entry"].grid(row=9, column=1, padx=20, pady=10, sticky="w")
-                    self.services[0]["self_target_language_entry"].insert(0, self.config.self_tgt_lang)
-            elif service in {"DeepL", "Bing"}:
-                if not self.services[1]["self_source_language_menu"]:
-                    self.services[1]["self_source_language_label"] = ctk.CTkLabel(self.main_window,
-                                                                                  text=_("Self Source Language:"))
-                    self.services[1]["self_source_language_label"].grid(row=8, column=0, padx=20, pady=10, sticky="w")
+                if not self.widgets[0]["self_source_language_entry"]:
+                    self.widgets[0]["self_source_language_label"] = ctk.CTkLabel(self.main_window,
+                                                                                 text=_("Self Source Language:"))
+                    self.widgets[0]["self_source_language_label"].grid(row=8, column=0, padx=20, pady=10, sticky="w")
+                    self.widgets[0]["self_source_language_entry"] = ctk.CTkEntry(self.main_window, width=400)
+                    self.widgets[0]["self_source_language_entry"].grid(row=8, column=1, padx=20, pady=10, sticky="w")
+                    self.widgets[0]["self_source_language_entry"].insert(0, self.config.self_src_lang)
+                if not self.widgets[0]["self_target_language_entry"]:
+                    self.widgets[0]["self_target_language_label"] = ctk.CTkLabel(self.main_window,
+                                                                                 text=_("Self Target Language:"))
+                    self.widgets[0]["self_target_language_label"].grid(row=9, column=0, padx=20, pady=10, sticky="w")
+                    self.widgets[0]["self_target_language_entry"] = ctk.CTkEntry(self.main_window, width=400)
+                    self.widgets[0]["self_target_language_entry"].grid(row=9, column=1, padx=20, pady=10, sticky="w")
+                    self.widgets[0]["self_target_language_entry"].insert(0, self.config.self_tgt_lang)
+            elif service in services:
+                if not self.widgets[1]["self_source_language_menu"]:
+                    self.widgets[1]["self_source_language_label"] = ctk.CTkLabel(self.main_window,
+                                                                                 text=_("Self Source Language:"))
+                    self.widgets[1]["self_source_language_label"].grid(row=8, column=0, padx=20, pady=10, sticky="w")
                     self.self_src_lang_var = ctk.StringVar(
                         value=self.config.self_src_lang if self.config.self_src_lang in service_supported_languages[
                             service]
                         else service_supported_languages[service][0]
                     )
-                    self.services[1]["self_source_language_menu"] = ctk.CTkOptionMenu(
+                    self.widgets[1]["self_source_language_menu"] = ctk.CTkOptionMenu(
                         self.main_window, values=service_supported_languages[service], variable=self.self_src_lang_var)
-                    self.services[1]["self_source_language_menu"].grid(row=8, column=1, padx=20, pady=10, sticky="w")
-                if not self.services[1]["self_target_language_menu"]:
-                    self.services[1]["self_target_language_label"] = ctk.CTkLabel(self.main_window,
-                                                                                  text=_("Self Target Language:"))
-                    self.services[1]["self_target_language_label"].grid(row=9, column=0, padx=20, pady=10, sticky="w")
+                    self.widgets[1]["self_source_language_menu"].grid(row=8, column=1, padx=20, pady=10, sticky="w")
+                if not self.widgets[1]["self_target_language_menu"]:
+                    self.widgets[1]["self_target_language_label"] = ctk.CTkLabel(self.main_window,
+                                                                                 text=_("Self Target Language:"))
+                    self.widgets[1]["self_target_language_label"].grid(row=9, column=0, padx=20, pady=10, sticky="w")
                     self.self_tgt_lang_var = ctk.StringVar(
                         value=self.config.self_tgt_lang if self.config.self_tgt_lang in service_supported_languages[
                             service]
                         else service_supported_languages[service][0]
                     )
-                    self.services[1]["self_target_language_menu"] = ctk.CTkOptionMenu(
+                    self.widgets[1]["self_target_language_menu"] = ctk.CTkOptionMenu(
                         self.main_window,
                         values=[l for l in service_supported_languages[service] if l != 'auto'],
                         variable=self.self_tgt_lang_var
                     )
-                    self.services[1]["self_target_language_menu"].grid(row=9, column=1, padx=20, pady=10, sticky="w")
+                    self.widgets[1]["self_target_language_menu"].grid(row=9, column=1, padx=20, pady=10, sticky="w")
         else:
             if service == "LLM":
-                if self.services[0]["self_source_language_entry"]:
-                    (self.services[0]["self_source_language_label"],
-                     self.services[0]["self_source_language_entry"]) = destroy_widgets(
-                        self.services[0]["self_source_language_label"],
-                        self.services[0]["self_source_language_entry"]
+                if self.widgets[0]["self_source_language_entry"]:
+                    (self.widgets[0]["self_source_language_label"],
+                     self.widgets[0]["self_source_language_entry"]) = destroy_widgets(
+                        self.widgets[0]["self_source_language_label"],
+                        self.widgets[0]["self_source_language_entry"]
                     )
-                if self.services[0]["self_target_language_entry"]:
-                    (self.services[0]["self_target_language_label"],
-                     self.services[0]["self_target_language_entry"]) = destroy_widgets(
-                        self.services[0]["self_target_language_label"],
-                        self.services[0]["self_target_language_entry"]
+                if self.widgets[0]["self_target_language_entry"]:
+                    (self.widgets[0]["self_target_language_label"],
+                     self.widgets[0]["self_target_language_entry"]) = destroy_widgets(
+                        self.widgets[0]["self_target_language_label"],
+                        self.widgets[0]["self_target_language_entry"]
                     )
-            elif service in {"DeepL", "Bing"}:
-                if self.services[1]["self_source_language_menu"]:
-                    (self.services[1]["self_source_language_label"],
-                     self.services[1]["self_source_language_menu"]) = destroy_widgets(
-                        self.services[1]["self_source_language_label"],
-                        self.services[1]["self_source_language_menu"]
+            elif service in services:
+                if self.widgets[1]["self_source_language_menu"]:
+                    (self.widgets[1]["self_source_language_label"],
+                     self.widgets[1]["self_source_language_menu"]) = destroy_widgets(
+                        self.widgets[1]["self_source_language_label"],
+                        self.widgets[1]["self_source_language_menu"]
                     )
-                if self.services[1]["self_target_language_menu"]:
-                    (self.services[1]["self_target_language_label"],
-                     self.services[1]["self_target_language_menu"]) = destroy_widgets(
-                        self.services[1]["self_target_language_label"],
-                        self.services[1]["self_target_language_menu"]
+                if self.widgets[1]["self_target_language_menu"]:
+                    (self.widgets[1]["self_target_language_label"],
+                     self.widgets[1]["self_target_language_menu"]) = destroy_widgets(
+                        self.widgets[1]["self_target_language_label"],
+                        self.widgets[1]["self_target_language_menu"]
                     )
 
         self.main_window.update()
