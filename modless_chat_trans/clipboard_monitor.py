@@ -29,7 +29,8 @@ def monitor_clipboard(callback):
         current_clipboard_content = pyperclip.paste()
         if current_clipboard_content != previous_clipboard_content:
             if previous_clipboard_content := current_clipboard_content:
-                previous_clipboard_content = callback(current_clipboard_content, data_type="clipboard")
+                if result := callback(current_clipboard_content, data_type="clipboard"):
+                    previous_clipboard_content = result
 
         time.sleep(0.3)
 

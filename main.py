@@ -62,10 +62,13 @@ def start_translation():
                                                         model=config.model,
                                                         source_language=config.self_src_lang,
                                                         target_language=config.self_tgt_lang):
-                    modify_clipboard(processed_message)
-                    display_message("[INFO]", _("Chat messages translated, translation results in clipboard"),
-                                    config.output_method)
-                    return processed_message
+                    if type(processed_message) == str:
+                        modify_clipboard(processed_message)
+                        display_message("[INFO]", _("Chat messages translated, translation results in clipboard"),
+                                        config.output_method)
+                        return processed_message
+                    elif type(processed_message) == tuple and processed_message[0] == "[ERROR]":
+                        display_message(*processed_message, config.output_method)
 
     translator = Translator(api_key=config.api_key, api_url=config.api_url,
                             enable_optimization=config.enable_optimization)
