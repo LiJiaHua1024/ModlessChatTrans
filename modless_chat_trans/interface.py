@@ -326,6 +326,12 @@ class MainInterfaceManager:
                 self_tgt_lang = self.widgets[1]["self_target_language_menu"].get()
                 save_config(self_src_lang=self_src_lang, self_tgt_lang=self_tgt_lang)
 
+            if self.widgets[1]["use_api_key_var"].get():
+                traditional_api_key = self.widgets[1]["api_key_entry"].get()
+            else:
+                traditional_api_key = ""
+            save_config(traditional_api_key=traditional_api_key)
+
         save_config(minecraft_log_folder=minecraft_log_folder, output_method=output_method, trans_service=trans_service,
                     self_trans_enabled=self_translation_enabled, always_on_top=always_on_top)
 
@@ -393,6 +399,17 @@ class MainInterfaceManager:
             )
             self.traditional_widgets["target_language_menu"].grid(row=3, column=1, padx=20, pady=10, sticky="w")
 
+            self.traditional_widgets["use_api_key_var"] = ctk.BooleanVar(value=bool(self.config.traditional_api_key))
+            self.traditional_widgets["use_api_key_checkbox"] = ctk.CTkCheckBox(
+                self.main_window,
+                text=_("I have an API Key"),
+                variable=self.traditional_widgets["use_api_key_var"],
+                command=self.on_use_api_key_toggle
+            )
+            self.traditional_widgets["use_api_key_checkbox"].grid(row=4, column=1, padx=20, pady=10, sticky="w")
+
+            self.on_use_api_key_toggle()
+
             self.main_window.title(f"Modless Chat Trans {self.info.version}")
 
         self.on_self_translation_toggle()
@@ -425,7 +442,11 @@ class MainInterfaceManager:
             "self_source_language_menu": None,
             "self_target_language_menu": None,
             "self_source_language_label": None,
-            "self_target_language_label": None
+            "self_target_language_label": None,
+            "use_api_key_var": None,
+            "use_api_key_checkbox": None,
+            "api_key_entry": None,
+            "api_key_label": None
         }
 
         self.widgets = [self.llm_widgets, self.traditional_widgets]
@@ -438,6 +459,26 @@ class MainInterfaceManager:
         service_option_menu.grid(row=7, column=0, padx=20, pady=10, sticky="w")
 
         self.update_service_widgets(self.service_var.get())  # 初始化控件
+
+    def on_use_api_key_toggle(self):
+        """
+        切换是否使用 API Key 的复选框时的回调函数
+        """
+        if self.traditional_widgets["use_api_key_var"].get():
+            if not self.traditional_widgets.get("api_key_entry"):
+                self.traditional_widgets["api_key_label"] = ctk.CTkLabel(self.main_window, text=_("API Key:"))
+                self.traditional_widgets["api_key_label"].grid(row=5, column=0, padx=20, pady=10, sticky="w")
+                self.traditional_widgets["api_key_entry"] = ctk.CTkEntry(self.main_window, width=400)
+                self.traditional_widgets["api_key_entry"].grid(row=5, column=1, padx=20, pady=10, sticky="w")
+                self.traditional_widgets["api_key_entry"].insert(0, self.config.traditional_api_key)
+
+        else:
+            if self.traditional_widgets.get("api_key_entry"):
+                (self.traditional_widgets["api_key_label"],
+                 self.traditional_widgets["api_key_entry"]) = destroy_widgets(
+                    self.traditional_widgets["api_key_label"],
+                    self.traditional_widgets["api_key_entry"]
+                )
 
     def on_output_method_change(self, choice):
         """
