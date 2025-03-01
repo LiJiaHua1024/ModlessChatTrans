@@ -173,3 +173,6 @@ msgstr "이 옵션을 활성화하면 상위 버전의 Minecraft에서 로그가
 
 msgid "Loading supported languages"
 msgstr "지원되는 언어를 불러오는 중"
+
+msgid "I have an API Key"
+msgstr "API 키가 있습니다"

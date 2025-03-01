@@ -173,3 +173,6 @@ msgstr "L'activation de cette option corrigera temporairement le problème de no
 
 msgid "Loading supported languages"
 msgstr "Chargement des langues prises en charge"
+
+msgid "I have an API Key"
+msgstr "J'ai une clé API"

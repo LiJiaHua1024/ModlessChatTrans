@@ -177,3 +177,6 @@ msgstr "Die Aktivierung behebt vorübergehend das Problem, dass Protokolle in h�
 
 msgid "Loading supported languages"
 msgstr "Unterstützte Sprachen werden geladen"
+
+msgid "I have an API Key"
+msgstr "Ich habe einen API-Schlüssel"

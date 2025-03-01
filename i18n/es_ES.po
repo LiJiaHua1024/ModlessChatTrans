@@ -173,3 +173,6 @@ msgstr "Al activar esto se solucionará temporalmente el problema de los registr
 
 msgid "Loading supported languages"
 msgstr "Cargando idiomas compatibles"
+
+msgid "I have an API Key"
+msgstr "Tengo una clave de la API"

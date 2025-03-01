@@ -173,3 +173,6 @@ msgstr "Ativar isso corrigirá temporariamente o problema dos logs não serem ca
 
 msgid "Loading supported languages"
 msgstr "Carregando idiomas suportados"
+
+msgid "I have an API Key"
+msgstr "Eu tenho uma chave de API"

@@ -177,3 +177,6 @@ msgstr "Enabling this will temporarily fix the issue of logs not being captured 
 
 msgid "Loading supported languages"
 msgstr "Loading supported languages"
+
+msgid "I have an API Key"
+msgstr "I have an API Key"

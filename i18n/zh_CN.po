@@ -175,3 +175,6 @@ msgstr "启用此功能将临时修复在高版本Minecraft中无法捕获日志
 
 msgid "Loading supported languages"
 msgstr "正在加载支持的语言"
+
+msgid "I have an API Key"
+msgstr "我有API密钥"

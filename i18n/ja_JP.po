@@ -173,3 +173,6 @@ msgstr "これを有効にすると、高バージョンのMinecraftでログが
 
 msgid "Loading supported languages"
 msgstr "対応言語を読み込み中"
+
+msgid "I have an API Key"
+msgstr "APIキーを持っています"

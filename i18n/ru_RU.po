@@ -175,3 +175,6 @@ msgstr "Включение этой опции временно исправит
 
 msgid "Loading supported languages"
 msgstr "Загрузка поддерживаемых языков"
+
+msgid "I have an API Key"
+msgstr "У меня есть ключ API"
