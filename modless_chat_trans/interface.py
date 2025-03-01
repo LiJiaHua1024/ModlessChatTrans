@@ -332,7 +332,7 @@ class MainInterfaceManager:
         start_translation()
 
     # noinspection PyUnresolvedReferences,PyTypedDict
-    def update_service_widgets(self, choice):
+    def update_service_widgets(self, service):
         """根据选择的翻译服务更新控件"""
 
         for i in range(len(self.widgets)):
@@ -342,7 +342,7 @@ class MainInterfaceManager:
             destroyed_dict = dict(zip(keys_to_destroy, destroy_widgets(*widgets_to_destroy)))
             self.widgets[i].update(destroyed_dict)
 
-        if choice == "LLM":
+        if service == "LLM":
             self.llm_widgets["source_language_entry"] = ctk.CTkEntry(self.main_window, width=400)
             self.llm_widgets["source_language_entry"].insert(0, self.config.op_src_lang)
             self.llm_widgets["source_language_entry"].grid(row=2, column=1, padx=20, pady=10, sticky="w")
@@ -369,25 +369,26 @@ class MainInterfaceManager:
             self.llm_widgets["model_entry"].insert(0, self.config.model)
             self.llm_widgets["model_entry"].grid(row=6, column=1, padx=20, pady=10, sticky="w")
 
-        elif choice in services:
+        elif service in services:
             self.main_window.title(f"Modless Chat Trans {self.info.version} - {_('Loading supported languages')}...")
 
             src_lang_var = ctk.StringVar(
-                value=self.config.op_src_lang if self.config.op_src_lang in service_supported_languages[choice]
-                else service_supported_languages[choice][0]
+                value=self.config.op_src_lang if self.config.op_src_lang in service_supported_languages[service]
+                else service_supported_languages[service][0]
             )
             tgt_lang_var = ctk.StringVar(
-                value=self.config.op_tgt_lang if self.config.op_tgt_lang in service_supported_languages[choice]
-                else service_supported_languages[choice][0]
+                value=self.config.op_tgt_lang
+                if self.config.op_tgt_lang in [l for l in service_supported_languages[service] if l != 'auto']
+                else [l for l in service_supported_languages[service] if l != 'auto'][0]
             )
 
             self.traditional_widgets["source_language_menu"] = ctk.CTkOptionMenu(
-                self.main_window, values=service_supported_languages[choice], variable=src_lang_var)
+                self.main_window, values=service_supported_languages[service], variable=src_lang_var)
             self.traditional_widgets["source_language_menu"].grid(row=2, column=1, padx=20, pady=10, sticky="w")
 
             self.traditional_widgets["target_language_menu"] = ctk.CTkOptionMenu(
                 self.main_window,
-                values=[l for l in service_supported_languages[choice] if l != 'auto'],
+                values=[l for l in service_supported_languages[service] if l != 'auto'],
                 variable=tgt_lang_var
             )
             self.traditional_widgets["target_language_menu"].grid(row=3, column=1, padx=20, pady=10, sticky="w")
@@ -509,9 +510,9 @@ class MainInterfaceManager:
                                                                                  text=_("Self Target Language:"))
                     self.widgets[1]["self_target_language_label"].grid(row=9, column=0, padx=20, pady=10, sticky="w")
                     self.self_tgt_lang_var = ctk.StringVar(
-                        value=self.config.self_tgt_lang if self.config.self_tgt_lang in service_supported_languages[
-                            service]
-                        else service_supported_languages[service][0]
+                        value=self.config.self_tgt_lang
+                        if self.config.self_tgt_lang in [l for l in service_supported_languages[service] if l != 'auto']
+                        else [l for l in service_supported_languages[service] if l != 'auto'][0]
                     )
                     self.widgets[1]["self_target_language_menu"] = ctk.CTkOptionMenu(
                         self.main_window,

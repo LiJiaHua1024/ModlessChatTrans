@@ -30,6 +30,7 @@ class _LazyLanguageDict(dict):
         if key not in self:
             try:
                 lang_list = get_supported_languages(key)
+                lang_list.insert(0, "auto")
             except Exception as e:
                 lang_list = ["[ERROR]", str(e)]
             super().__setitem__(key, lang_list)
