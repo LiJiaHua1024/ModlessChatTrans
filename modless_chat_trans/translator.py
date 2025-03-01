@@ -18,7 +18,8 @@ import translators as ts
 import json
 import re
 
-services = ["LLM", "DeepL", "Bing", "Google", "Yandex", "Alibaba", "Caiyun", "Youdao"]
+services = ["LLM", "DeepL", "Bing", "Google", "Yandex", "Alibaba", "Caiyun", "Youdao",
+            "Sogou", "Iflyrec"]
 
 
 def get_supported_languages(service):
