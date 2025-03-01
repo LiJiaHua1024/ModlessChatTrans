@@ -26,6 +26,9 @@ from modless_chat_trans.file_utils import read_config, save_config, get_path, ge
 from modless_chat_trans.i18n import _, supported_languages, lang_window_size_map
 from modless_chat_trans.translator import services, service_supported_languages
 
+if (platform := get_platform()) == 0:
+    import hPyT
+
 updater = None
 
 
@@ -145,8 +148,6 @@ class MainInterfaceManager:
         self.self_translation_var = None
         self.always_on_top_var = None
 
-        self.platform = get_platform()
-
         global updater
         updater = updater_object
 
@@ -169,11 +170,6 @@ class MainInterfaceManager:
         self.main_window.columnconfigure(9, weight=1)
 
         self.main_window.protocol("WM_DELETE_WINDOW", self.on_closing)
-
-        if self.platform == 0:
-            global hPyT
-            import hPyT
-            hPyT.maximize_minimize_button.hide(self.main_window)
 
         language_menu = tk.Menu(self.main_window, tearoff=0)
 
@@ -251,7 +247,7 @@ class MainInterfaceManager:
         # noinspection PyTypeChecker
         about_window.after(50, about_window.grab_set)
         about_window.resizable(False, False)
-        if self.platform == 0:
+        if platform == 0:
             hPyT.maximize_minimize_button.hide(about_window)
             hPyT.window_frame.center_relative(self.main_window, about_window)
 
@@ -658,7 +654,12 @@ class MoreSettingsManager:
         self.more_settings_window.geometry(
             "460x250" if self.config.interface_lang in {"fr_FR", "es_ES", "ru_RU", "pt_BR"} else "400x250"
         )
+        # noinspection PyTypeChecker
+        self.more_settings_window.after(50, self.more_settings_window.grab_set)
         self.more_settings_window.resizable(False, False)
+
+        if platform == 0:
+            hPyT.maximize_minimize_button.hide(self.more_settings_window)
 
         self.create_additional_widgets()
 
