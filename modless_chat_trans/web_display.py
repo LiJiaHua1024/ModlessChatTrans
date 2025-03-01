@@ -18,6 +18,7 @@ import json
 from flask import Flask, render_template, Response
 from modless_chat_trans.i18n import _
 from modless_chat_trans.file_utils import get_path
+from datetime import datetime
 
 http_messages = []
 sse_clients = []
@@ -50,10 +51,12 @@ def start_httpserver(port):
                             message_tuple = http_messages[message_index]
                             name = message_tuple[0]
                             message = message_tuple[1]
+                            timestamp = message_tuple[2]  # 获取时间戳
 
                             message_data = {
                                 "name": name,
-                                "message": message
+                                "message": message,
+                                "time": timestamp  # 添加时间信息到JSON数据中
                             }
                             json_message = json.dumps(message_data, ensure_ascii=False)
 
@@ -73,4 +76,5 @@ def start_httpserver(port):
 
 def httpserver_display(name, message):
     global http_messages
-    http_messages.append((name, message))
+    current_time = datetime.now().strftime("%H:%M")
+    http_messages.append((name, message, current_time))
