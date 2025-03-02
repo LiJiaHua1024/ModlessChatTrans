@@ -176,6 +176,30 @@
             font-weight: 300;
         }
 
+        /* 添加滚动到底部按钮样式 */
+        .scroll-to-bottom {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 100;
+            animation: fadeIn 0.3s ease;
+            transition: all 0.2s ease;
+        }
+
+        .scroll-to-bottom:hover {
+            transform: scale(1.1);
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 15px;
@@ -214,9 +238,52 @@
     <h1>{{ _("Messages") }}</h1>
     <ul id="message-list"></ul>
 
+    <!-- 添加滚动到底部的按钮 -->
+    <div id="scroll-bottom-btn" class="scroll-to-bottom">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="7 13 12 18 17 13"></polyline>
+            <polyline points="7 6 12 11 17 6"></polyline>
+        </svg>
+    </div>
+
     <script>
         var eventSource = new EventSource("/stream");
         var messageList = document.getElementById("message-list");
+        var scrollBottomBtn = document.getElementById("scroll-bottom-btn");
+        var isUserScrolling = false;
+        var isAtBottom = true;
+
+        // 检查是否在底部的函数
+        function checkIfAtBottom() {
+            // 添加20px的容差值
+            var tolerance = 20;
+            return (window.innerHeight + window.pageYOffset) >= (document.body.scrollHeight - tolerance);
+        }
+
+        // 滚动到底部的函数
+        function scrollToBottom() {
+            window.scrollTo({
+                top: document.body.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+        // 监听滚动事件
+        window.addEventListener('scroll', function() {
+            isAtBottom = checkIfAtBottom();
+
+            // 如果用户滚动到底部，隐藏按钮
+            if (isAtBottom) {
+                scrollBottomBtn.style.display = "none";
+            } else {
+                scrollBottomBtn.style.display = "flex";
+            }
+        });
+
+        // 按钮点击事件
+        scrollBottomBtn.addEventListener('click', function() {
+            scrollToBottom();
+        });
 
         eventSource.onmessage = function(event) {
             var jsonData = JSON.parse(event.data);
@@ -298,11 +365,13 @@
             newMessageItem.appendChild(bubbleDiv);
             messageList.appendChild(newMessageItem);
 
-            // 自动滚动到最新消息
-            window.scrollTo({
-                top: document.body.scrollHeight,
-                behavior: 'smooth'
-            });
+            // 只有当用户已经在底部时，才自动滚动
+            if (isAtBottom) {
+                scrollToBottom();
+            } else {
+                // 不在底部时显示滚动按钮
+                scrollBottomBtn.style.display = "flex";
+            }
         };
 
         eventSource.onerror = function(event) {
