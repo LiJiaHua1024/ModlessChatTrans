@@ -200,6 +200,59 @@
             transform: scale(1.1);
         }
 
+        /* 消息类型过滤器样式 */
+        .filter-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .filter-option {
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: #e0e0e0;
+            color: #757575;
+            box-shadow: var(--shadow-soft);
+            user-select: none;
+        }
+
+        .filter-option:hover {
+            transform: scale(1.1);
+        }
+
+        /* 激活状态的过滤按钮 */
+        .filter-option.active.user {
+            background-color: var(--user-accent);
+            color: white;
+        }
+
+        .filter-option.active.system {
+            background-color: var(--system-accent);
+            color: white;
+        }
+
+        .filter-option.active.error {
+            background-color: var(--error-accent);
+            color: white;
+        }
+
+        .filter-option.active.info {
+            background-color: var(--info-accent);
+            color: white;
+        }
+
+        /* 隐藏被过滤的消息 */
+        .message-bubble.hidden {
+            display: none;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 15px;
@@ -226,6 +279,15 @@
                 font-size: 1.3rem;
                 margin-bottom: 15px;
             }
+
+            .filter-container {
+                gap: 8px;
+            }
+
+            .filter-option {
+                padding: 5px 10px;
+                font-size: 0.8rem;
+            }
         }
 
         @keyframes fadeIn {
@@ -236,6 +298,15 @@
 </head>
 <body>
     <h1>{{ _("Messages") }}</h1>
+
+    <!-- 添加消息类型过滤器 -->
+    <div class="filter-container">
+        <div class="filter-option user active" data-type="user">User</div>
+        <div class="filter-option system active" data-type="system">System</div>
+        <div class="filter-option error active" data-type="error">Error</div>
+        <div class="filter-option info active" data-type="info">Info</div>
+    </div>
+
     <ul id="message-list"></ul>
 
     <!-- 添加滚动到底部的按钮 -->
@@ -253,11 +324,36 @@
         var isUserScrolling = false;
         var isAtBottom = true;
 
+        // 消息过滤状态
+        var messageFilters = {
+            user: true,
+            system: true,
+            error: true,
+            info: true
+        };
+
         // 检查是否在底部的函数
         function checkIfAtBottom() {
             // 添加20px的容差值
             var tolerance = 20;
             return (window.innerHeight + window.pageYOffset) >= (document.body.scrollHeight - tolerance);
+        }
+
+        // 检查是否需要滚动的函数
+        function needsScrolling() {
+            return document.body.scrollHeight > window.innerHeight;
+        }
+
+        // 更新滚动按钮状态的函数
+        function updateScrollButtonState() {
+            isAtBottom = checkIfAtBottom();
+
+            // 如果内容不足以滚动或者已经在底部，隐藏按钮
+            if (!needsScrolling() || isAtBottom) {
+                scrollBottomBtn.style.display = "none";
+            } else {
+                scrollBottomBtn.style.display = "flex";
+            }
         }
 
         // 滚动到底部的函数
@@ -266,24 +362,70 @@
                 top: document.body.scrollHeight,
                 behavior: 'smooth'
             });
+
+            // 滚动后更新按钮状态
+            setTimeout(updateScrollButtonState, 500);
         }
 
         // 监听滚动事件
         window.addEventListener('scroll', function() {
-            isAtBottom = checkIfAtBottom();
+            updateScrollButtonState();
+        });
 
-            // 如果用户滚动到底部，隐藏按钮
-            if (isAtBottom) {
-                scrollBottomBtn.style.display = "none";
-            } else {
-                scrollBottomBtn.style.display = "flex";
-            }
+        // 监听窗口大小变化事件
+        window.addEventListener('resize', function() {
+            updateScrollButtonState();
         });
 
         // 按钮点击事件
         scrollBottomBtn.addEventListener('click', function() {
             scrollToBottom();
         });
+
+        // 设置过滤器点击事件
+        document.querySelectorAll('.filter-option').forEach(function(filter) {
+            filter.addEventListener('click', function() {
+                var type = this.getAttribute('data-type');
+
+                // 切换选中状态
+                messageFilters[type] = !messageFilters[type];
+
+                if (messageFilters[type]) {
+                    this.classList.add('active');
+                } else {
+                    this.classList.remove('active');
+                }
+
+                // 应用过滤器
+                applyFilters();
+            });
+        });
+
+        // 应用过滤器到所有消息
+        function applyFilters() {
+            document.querySelectorAll('.message-bubble').forEach(function(bubble) {
+                var messageType = '';
+
+                if (bubble.classList.contains('user')) {
+                    messageType = 'user';
+                } else if (bubble.classList.contains('system')) {
+                    messageType = 'system';
+                } else if (bubble.classList.contains('error')) {
+                    messageType = 'error';
+                } else if (bubble.classList.contains('info')) {
+                    messageType = 'info';
+                }
+
+                if (messageFilters[messageType]) {
+                    bubble.classList.remove('hidden');
+                } else {
+                    bubble.classList.add('hidden');
+                }
+            });
+
+            // 过滤后更新滚动按钮状态
+            setTimeout(updateScrollButtonState, 50);
+        }
 
         eventSource.onmessage = function(event) {
             var jsonData = JSON.parse(event.data);
@@ -295,10 +437,14 @@
             var bubbleDiv = document.createElement('div');
             bubbleDiv.className = 'message-bubble';
 
+            // 消息类型变量
+            var messageType = '';
+
             // 根据消息类型应用不同样式
             if (!name) {
                 // 系统消息（无name）- 绿色
                 bubbleDiv.classList.add('system');
+                messageType = 'system';
 
                 var textDiv = document.createElement('div');
                 textDiv.className = 'message-text';
@@ -312,6 +458,7 @@
             } else if (name === "[ERROR]") {
                 // 错误消息 - 红色
                 bubbleDiv.classList.add('error');
+                messageType = 'error';
 
                 var nameSpan = document.createElement('span');
                 nameSpan.className = 'message-name';
@@ -329,6 +476,7 @@
             } else if (name === "[INFO]") {
                 // 信息消息 - 黄色
                 bubbleDiv.classList.add('info');
+                messageType = 'info';
 
                 var nameSpan = document.createElement('span');
                 nameSpan.className = 'message-name';
@@ -346,6 +494,7 @@
             } else {
                 // 普通用户消息 - 蓝色
                 bubbleDiv.classList.add('user');
+                messageType = 'user';
 
                 var nameSpan = document.createElement('span');
                 nameSpan.className = 'message-name';
@@ -362,15 +511,20 @@
                 bubbleDiv.append(nameSpan, textDiv, timeDiv);
             }
 
+            // 如果该消息类型被过滤掉，添加隐藏类
+            if (!messageFilters[messageType]) {
+                bubbleDiv.classList.add('hidden');
+            }
+
             newMessageItem.appendChild(bubbleDiv);
             messageList.appendChild(newMessageItem);
+
+            // 更新滚动按钮状态
+            updateScrollButtonState();
 
             // 只有当用户已经在底部时，才自动滚动
             if (isAtBottom) {
                 scrollToBottom();
-            } else {
-                // 不在底部时显示滚动按钮
-                scrollBottomBtn.style.display = "flex";
             }
         };
 
