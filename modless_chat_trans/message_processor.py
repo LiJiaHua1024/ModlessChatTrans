@@ -25,7 +25,7 @@ def process_decorator(function):
     """
 
     def wrapper(data, data_type, translator, translation_service,
-                model=None, source_language=None, target_language=None):
+                model=None, source_language=None, target_language=None, trans_sys_message=True):
         """
         处理日志文件中的一行（包括翻译）
 
@@ -36,11 +36,14 @@ def process_decorator(function):
         :param model: 模型名称
         :param source_language: 源语言
         :param target_language: 目标语言
+        :param trans_sys_message: 是否翻译系统（name为空）消息，仅对log类型有效
         :return: 元组 (玩家名称, 消息内容) 或 消息内容
         """
 
         name, original_chat_message = function(data, data_type)
         translated_chat_message: str = ""
+        if data_type == "log" and not trans_sys_message and not name:
+            return ""
         if original_chat_message:
             if original_chat_message in cache:
                 translated_chat_message = cache[original_chat_message]

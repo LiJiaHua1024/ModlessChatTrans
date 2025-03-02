@@ -57,6 +57,7 @@ class Config:
     enable_optimization: bool
     use_high_version_fix: bool
     traditional_api_key: str
+    trans_sys_message: bool
 
 
 DEFAULT_CONFIG = Config(interface_lang="zh_CN",
@@ -79,7 +80,8 @@ DEFAULT_CONFIG = Config(interface_lang="zh_CN",
                         include_prerelease=False,
                         enable_optimization=False,
                         use_high_version_fix=False,
-                        traditional_api_key="")
+                        traditional_api_key="",
+                        trans_sys_message=True)
 
 
 def find_latest_log(directory: str) -> str:

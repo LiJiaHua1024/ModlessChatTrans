@@ -652,7 +652,7 @@ class MoreSettingsManager:
         self.more_settings_window = ctk.CTkToplevel(self.main_window)
         self.more_settings_window.title(_("More Settings"))
         self.more_settings_window.geometry(
-            "460x250" if self.config.interface_lang in {"fr_FR", "es_ES", "ru_RU", "pt_BR"} else "400x250"
+            "460x290" if self.config.interface_lang in {"fr_FR", "es_ES", "ru_RU", "pt_BR"} else "400x290"
         )
         # noinspection PyTypeChecker
         self.more_settings_window.after(50, self.more_settings_window.grab_set)
@@ -722,11 +722,24 @@ class MoreSettingsManager:
                   "If it doesn't work, restart this program"),
                 delay=0.3)
 
+        self.variables["trans_sys_message"] = ctk.BooleanVar(value=self.config.trans_sys_message)
+
+        trans_sys_message_checkbox = ctk.CTkCheckBox(
+            self.more_settings_window,
+            text=_("Translate System Messages"),
+            variable=self.variables["trans_sys_message"]
+        )
+        trans_sys_message_checkbox.grid(row=4, column=0, columnspan=2, padx=20, pady=10, sticky="w")
+
+        ToolTip(trans_sys_message_checkbox,
+                _("Enable this will translate system messages (messages without names)"),
+                delay=0.3)
+
         ctk.CTkButton(
             self.more_settings_window,
             text=_("Save Settings"),
             command=self.save_more_settings
-        ).grid(row=4, column=0, columnspan=2, padx=20, pady=20)
+        ).grid(row=5, column=0, columnspan=2, padx=20, pady=20)
 
     def save_more_settings(self):
         update_check_frequency_map = {
@@ -740,8 +753,10 @@ class MoreSettingsManager:
         include_prerelease = self.variables["include_prerelease"].get()
         enable_optimization = self.variables["enable_optimization"].get()
         use_high_version_fix = self.variables["use_high_version_fix"].get()
+        trans_sys_message = self.variables["trans_sys_message"].get()
         save_config(update_check_frequency=update_check_frequency, include_prerelease=include_prerelease,
-                    enable_optimization=enable_optimization, use_high_version_fix=use_high_version_fix)
+                    enable_optimization=enable_optimization, use_high_version_fix=use_high_version_fix,
+                    trans_sys_message=trans_sys_message)
         self.more_settings_window.destroy()
 
 

@@ -50,7 +50,8 @@ def start_translation():
                 if processed_message := process_message(data, data_type, translator, config.trans_service,
                                                         model=config.model,
                                                         source_language=config.op_src_lang,
-                                                        target_language=config.op_tgt_lang):
+                                                        target_language=config.op_tgt_lang,
+                                                        trans_sys_message=config.trans_sys_message):
                     if processed_message[1]:
                         display_message(*processed_message, config.output_method)
                         if processed_message[0] != "[ERROR]":
