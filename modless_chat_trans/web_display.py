@@ -15,16 +15,16 @@
 
 import time
 import json
-from flask import Flask, render_template, Response
+from flask import Flask, render_template, Response, request, jsonify
+from datetime import datetime
 from modless_chat_trans.i18n import _
 from modless_chat_trans.file_utils import get_path
-from datetime import datetime
 
 http_messages = []
 sse_clients = []
 
 
-def start_httpserver(port):
+def start_httpserver(port, callback):
     global http_messages, sse_clients
     flask_app = Flask(__name__)
     flask_app.template_folder = get_path("templates")
@@ -34,6 +34,12 @@ def start_httpserver(port):
     @flask_app.route('/')
     def home():
         return render_template('index.html', _=_)
+
+    @flask_app.route('/send-message', methods=['POST'])
+    def handle_user_input():
+        data = request.json
+        translated = callback(data['message'], data_type="clipboard")  # 复用现有clipboard处理逻辑
+        return jsonify({'translated': translated})
 
     @flask_app.route('/stream')
     def stream():

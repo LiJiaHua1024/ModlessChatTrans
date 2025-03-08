@@ -76,7 +76,8 @@ def start_translation():
                             traditional_api_key=config.traditional_api_key)
 
     initialization(config.output_method, main_window=main_interface_manager.main_window,
-                   http_port=config.http_port, max_messages=config.max_messages, always_on_top=config.always_on_top)
+                   http_port=config.http_port, max_messages=config.max_messages,
+                   always_on_top=config.always_on_top, callback=callback)
 
     monitor_thread = threading.Thread(
         target=monitor_log_file,

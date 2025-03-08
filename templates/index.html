@@ -45,6 +45,7 @@
             padding: 20px;
             max-width: 900px;
             margin: 0 auto;
+            padding-bottom: 100px; /* 为输入框留出空间 */
         }
 
         h1 {
@@ -253,6 +254,126 @@
             display: none;
         }
 
+        .input-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 240px;
+            max-width: 800px;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            padding: 8px 16px;
+            /* 移动设备上较快的动画 */
+            transition:
+                width 0.8s cubic-bezier(0.25, 0.1, 0.25, 1),
+                box-shadow 0.6s cubic-bezier(0.23, 0.1, 0.32, 1);
+            z-index: 100;
+            border: 1px solid rgba(0,0,0,0.05);
+            height: 44px; /* 固定高度适合单行输入 */
+        }
+
+        .input-container:focus-within {
+            width: 90%; /* 移动设备上更宽 */
+            box-shadow: 0 6px 24px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06);
+            transition:
+                width 1s cubic-bezier(0.19, 0.5, 0.22, 1),
+                box-shadow 0.8s cubic-bezier(0.19, 0.6, 0.22, 1);
+        }
+
+        /* 桌面设备的适配 */
+        @media (min-width: 768px) {
+            .input-container {
+                transition:
+                    width 1.8s cubic-bezier(0.25, 0.1, 0.25, 1),
+                    box-shadow 1.4s cubic-bezier(0.23, 0.1, 0.32, 1);
+            }
+
+            .input-container:focus-within {
+                width: 80%;
+                box-shadow: 0 6px 28px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+                transition:
+                    width 2.2s cubic-bezier(0.19, 0.5, 0.22, 1),
+                    box-shadow 2s cubic-bezier(0.19, 0.6, 0.22, 1);
+            }
+        }
+
+        #message-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            padding: 0 6px;
+            height: 28px;
+            min-width: 0;
+        }
+
+        #message-input:focus {
+            height: 24px; /* 保持相同高度，不增加高度 */
+        }
+
+        #send-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            min-width: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-left: 8px;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        #send-button:hover {
+            transform: scale(1.1);
+        }
+
+        #send-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: scale(1);
+        }
+
+        /* 翻译中动画指示器 */
+        .translation-indicator {
+            display: none;
+            align-items: center;
+            margin-right: 10px;
+        }
+
+        .translation-indicator.active {
+            display: flex;
+        }
+
+        .dot {
+            height: 8px;
+            width: 8px;
+            margin: 0 2px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            display: inline-block;
+            animation: dot-pulse 1.5s infinite ease-in-out;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        .dot:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 15px;
@@ -294,6 +415,17 @@
             from { opacity: 0; transform: translateY(5px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        @keyframes dot-pulse {
+            0%, 100% {
+                transform: scale(0.8);
+                opacity: 0.6;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body>
@@ -315,6 +447,22 @@
             <polyline points="7 13 12 18 17 13"></polyline>
             <polyline points="7 6 12 11 17 6"></polyline>
         </svg>
+    </div>
+
+    <!-- 消息输入区域 -->
+    <div class="input-container">
+        <div class="translation-indicator">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+        </div>
+        <input type="text" id="message-input" placeholder="{{ _('Enter message...') }}">
+        <button id="send-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+        </button>
     </div>
 
     <script>
@@ -430,6 +578,65 @@
             setTimeout(updateScrollButtonState, 50);
         }
 
+        // 消息输入处理
+        var messageInput = document.getElementById("message-input");
+        var sendButton = document.getElementById("send-button");
+        var translationIndicator = document.querySelector(".translation-indicator");
+        var isTranslating = false;
+
+        // 处理消息发送
+        function sendMessage() {
+            var message = messageInput.value.trim();
+            if (message === "" || isTranslating) return;
+
+            // 禁用输入并显示翻译动画
+            isTranslating = true;
+            messageInput.disabled = true;
+            sendButton.disabled = true;
+            translationIndicator.classList.add("active");
+
+            // 向服务器发送消息
+            fetch('/send-message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("收到翻译:", data.translated);
+                // 实际翻译后的消息将通过SSE流接收
+            })
+            .catch(error => {
+                console.error('发送消息错误:', error);
+                // 发生错误时重置UI
+                resetTranslationUI();
+            });
+
+            // 清空输入框
+            messageInput.value = "";
+            messageInput.style.height = "auto";
+        }
+
+        // 接收到响应后重置翻译UI
+        function resetTranslationUI() {
+            isTranslating = false;
+            messageInput.disabled = false;
+            sendButton.disabled = false;
+            translationIndicator.classList.remove("active");
+        }
+
+        // 发送按钮点击处理
+        sendButton.addEventListener("click", sendMessage);
+
+        messageInput.addEventListener("keydown", function(e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
         eventSource.onmessage = function(event) {
             // 收到消息时先检查用户是否在底部，在添加消息之前进行检查
             var wasAtBottom = checkIfAtBottom();
@@ -439,6 +646,11 @@
             var name = jsonData.name;
             var messageText = jsonData.message;
             var messageTime = jsonData.time;
+
+            // 检查是否为翻译完成的INFO消息
+            if (name === "[INFO]" && isTranslating) {
+                setTimeout(resetTranslationUI, 500); // 稍微延迟以获得更好的用户体验
+            }
 
             var newMessageItem = document.createElement("li");
             var bubbleDiv = document.createElement('div');

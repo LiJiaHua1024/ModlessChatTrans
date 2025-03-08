@@ -30,11 +30,11 @@ def initialization(output_method, **kwargs):
         global voice_engine
         voice_engine = pyttsx3.init()
     elif output_method == "Httpserver":
-        start_httpserver_thread(kwargs["http_port"])
+        start_httpserver_thread(kwargs["http_port"], kwargs["callback"])
 
 
-def start_httpserver_thread(port):
-    server_thread = threading.Thread(target=start_httpserver, args=(port,))
+def start_httpserver_thread(port, callback):
+    server_thread = threading.Thread(target=start_httpserver, args=(port, callback))
     server_thread.daemon = True
     server_thread.start()
 

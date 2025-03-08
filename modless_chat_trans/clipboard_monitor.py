@@ -16,6 +16,8 @@
 import pyperclip
 import time
 
+previous_clipboard_content = pyperclip.paste()
+
 
 def monitor_clipboard(callback):
     """
@@ -24,7 +26,7 @@ def monitor_clipboard(callback):
     :param callback: 检测到新内容的回调函数
     """
 
-    previous_clipboard_content = pyperclip.paste()
+    global previous_clipboard_content
     while True:
         current_clipboard_content = pyperclip.paste()
         if current_clipboard_content != previous_clipboard_content:
@@ -36,4 +38,6 @@ def monitor_clipboard(callback):
 
 
 def modify_clipboard(data):
+    global previous_clipboard_content
     pyperclip.copy(data)
+    previous_clipboard_content = data
