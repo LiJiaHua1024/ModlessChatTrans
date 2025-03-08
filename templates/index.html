@@ -323,6 +323,8 @@
         var scrollBottomBtn = document.getElementById("scroll-bottom-btn");
         var isUserScrolling = false;
         var isAtBottom = true;
+        var lastScrollTime = Date.now();
+        var pendingMessages = 0;
 
         // 消息过滤状态
         var messageFilters = {
@@ -369,6 +371,7 @@
 
         // 监听滚动事件
         window.addEventListener('scroll', function() {
+            lastScrollTime = Date.now();
             updateScrollButtonState();
         });
 
@@ -428,6 +431,10 @@
         }
 
         eventSource.onmessage = function(event) {
+            // 收到消息时先检查用户是否在底部，在添加消息之前进行检查
+            var wasAtBottom = checkIfAtBottom();
+            pendingMessages++;
+
             var jsonData = JSON.parse(event.data);
             var name = jsonData.name;
             var messageText = jsonData.message;
@@ -519,12 +526,21 @@
             newMessageItem.appendChild(bubbleDiv);
             messageList.appendChild(newMessageItem);
 
+            // 消息添加完毕，减少待处理消息计数
+            pendingMessages--;
+
             // 更新滚动按钮状态
             updateScrollButtonState();
 
-            // 只有当用户已经在底部时，才自动滚动
-            if (isAtBottom) {
-                scrollToBottom();
+            // 只有当之前用户在底部，并且没有主动滚动时，才自动滚动
+            // 同时检查是否有短时间内的用户滚动操作
+            var userRecentlyScrolled = (Date.now() - lastScrollTime) < 300;
+
+            if (wasAtBottom && !userRecentlyScrolled && pendingMessages === 0) {
+                // 使用RAF确保DOM完全更新后再滚动
+                requestAnimationFrame(function() {
+                    scrollToBottom();
+                });
             }
         };
 
