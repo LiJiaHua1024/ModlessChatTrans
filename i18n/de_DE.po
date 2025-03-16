@@ -180,3 +180,12 @@ msgstr "Unterstützte Sprachen werden geladen"
 
 msgid "I have an API Key"
 msgstr "Ich habe einen API-Schlüssel"
+
+msgid "Translate System Messages"
+msgstr "Systemnachrichten übersetzen"
+
+msgid "Enable this will translate system messages (messages without names)"
+msgstr "Wenn aktiviert, werden Systemnachrichten (Nachrichten ohne Namen) übersetzt"
+
+msgid "Enter message..."
+msgstr "Nachricht eingeben..."

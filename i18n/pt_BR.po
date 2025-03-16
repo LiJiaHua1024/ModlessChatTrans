@@ -176,3 +176,12 @@ msgstr "Carregando idiomas suportados"
 
 msgid "I have an API Key"
 msgstr "Eu tenho uma chave de API"
+
+msgid "Translate System Messages"
+msgstr "Traduzir mensagens do sistema"
+
+msgid "Enable this will translate system messages (messages without names)"
+msgstr "Ativar isso traduzirá mensagens do sistema (mensagens sem nomes)"
+
+msgid "Enter message..."
+msgstr "Digite uma mensagem..."

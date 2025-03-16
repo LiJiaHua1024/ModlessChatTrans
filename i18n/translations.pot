@@ -174,3 +174,12 @@ msgstr ""
 
 msgid "I have an API Key"
 msgstr ""
+
+msgid "Translate System Messages"
+msgstr ""
+
+msgid "Enable this will translate system messages (messages without names)"
+msgstr ""
+
+msgid "Enter message..."
+msgstr ""

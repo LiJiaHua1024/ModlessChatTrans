@@ -178,3 +178,12 @@ msgstr "正在加载支持的语言"
 
 msgid "I have an API Key"
 msgstr "我有API密钥"
+
+msgid "Translate System Messages"
+msgstr "翻译系统消息"
+
+msgid "Enable this will translate system messages (messages without names)"
+msgstr "启用此选项将翻译系统消息（没有名称的消息）"
+
+msgid "Enter message..."
+msgstr "输入消息..."

@@ -176,3 +176,12 @@ msgstr "対応言語を読み込み中"
 
 msgid "I have an API Key"
 msgstr "APIキーを持っています"
+
+msgid "Translate System Messages"
+msgstr "システムメッセージを翻訳"
+
+msgid "Enable this will translate system messages (messages without names)"
+msgstr "有効にすると、システムメッセージ（名前のないメッセージ）を翻訳します"
+
+msgid "Enter message..."
+msgstr "メッセージを入力..."

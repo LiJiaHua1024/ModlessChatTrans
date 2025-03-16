@@ -176,3 +176,12 @@ msgstr "Chargement des langues prises en charge"
 
 msgid "I have an API Key"
 msgstr "J'ai une clé API"
+
+msgid "Translate System Messages"
+msgstr "Traduire les messages système"
+
+msgid "Enable this will translate system messages (messages without names)"
+msgstr "Activer ceci traduira les messages système (messages sans noms)"
+
+msgid "Enter message..."
+msgstr "Saisissez un message..."

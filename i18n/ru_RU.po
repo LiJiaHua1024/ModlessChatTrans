@@ -178,3 +178,12 @@ msgstr "Загрузка поддерживаемых языков"
 
 msgid "I have an API Key"
 msgstr "У меня есть ключ API"
+
+msgid "Translate System Messages"
+msgstr "Переводить системные сообщения"
+
+msgid "Enable this will translate system messages (messages without names)"
+msgstr "Включение этой опции позволит переводить системные сообщения (сообщения без имён)"
+
+msgid "Enter message..."
+msgstr "Введите сообщение..."
