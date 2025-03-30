@@ -1,4 +1,4 @@
-# Copyright (C) 2024 LiJiaHua1024
+# Copyright (C) 2024-2025 LiJiaHua1024
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,12 +18,13 @@ import glob
 import json
 import shelve
 from dataclasses import dataclass
+from modless_chat_trans.logger import logger
 
 base_path = os.path.dirname(os.path.dirname(__file__))
 cache = shelve.open("MCT_cache")
 
 
-def get_path(path, temp_path=True):
+def get_path(path: str, temp_path=True) -> str:
     if temp_path:
         return os.path.join(base_path, path)
     else:
@@ -58,6 +59,7 @@ class Config:
     use_high_version_fix: bool
     traditional_api_key: str
     trans_sys_message: bool
+    debug: bool
 
 
 DEFAULT_CONFIG = Config(interface_lang="zh_CN",
@@ -81,7 +83,8 @@ DEFAULT_CONFIG = Config(interface_lang="zh_CN",
                         enable_optimization=False,
                         use_high_version_fix=False,
                         traditional_api_key="",
-                        trans_sys_message=True)
+                        trans_sys_message=True,
+                        debug=False)
 
 
 def find_latest_log(directory: str) -> str:
@@ -103,7 +106,7 @@ def find_latest_log(directory: str) -> str:
     return ""
 
 
-def read_config():
+def read_config(**kwargs):
     """
     读取配置文件
 
@@ -129,6 +132,13 @@ def read_config():
             merged_config = {key: config_dict.get(key, default) for key, default in vars(DEFAULT_CONFIG).items()}
             return Config(**merged_config)
         except json.JSONDecodeError:
+            logger_initialization = kwargs.get("logger_initialized", True)
+            if not logger_initialization:
+                temp_logger = logger.add("MCT.log", rotation="10 MB", encoding="utf-8", level="DEBUG")
+            logger.error("Configuration file parsing failed, default configuration restored. "
+                         "Corrupted configuration file renamed to ModlessChatTrans-config.json.bak")
+            if not logger_initialization:
+                logger.remove(temp_logger)
             os.rename("ModlessChatTrans-config.json", "ModlessChatTrans-config.json.bak")
             create_default_config()
 

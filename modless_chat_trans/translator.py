@@ -1,4 +1,4 @@
-# Copyright (C) 2024 LiJiaHua1024
+# Copyright (C) 2024-2025 LiJiaHua1024
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@ import requests
 import translators as ts
 import json
 import re
+from modless_chat_trans.logger import logger
 
 services = ["LLM", "DeepL", "Bing", "Google", "Yandex", "Alibaba", "Caiyun", "Youdao",
             "Sogou", "Iflyrec"]
@@ -33,6 +34,7 @@ class _LazyLanguageDict(dict):
                 lang_list = get_supported_languages(key)
                 lang_list.insert(0, "auto")
             except Exception as e:
+                logger.error(f"Failed to get supported languages for {key}: {str(e)}")
                 lang_list = ["[ERROR]", str(e)]
             super().__setitem__(key, lang_list)
         return super().__getitem__(key)
@@ -64,6 +66,8 @@ class Translator:
         self.traditional_api_key = traditional_api_key
 
         # ts.preaccelerate_and_speedtest()
+
+        logger.info(f"Initialized Translator with optimization {'enabled' if enable_optimization else 'disabled'}")
 
     def llm_translate(self, text, model, source_language=None, target_language=None):
         """
@@ -159,6 +163,7 @@ class Translator:
                     try:
                         content_dict = json.loads(re.sub(r"^```json\s*([\s\S]*?)\s*```$", r"\1", content_str))
                     except json.JSONDecodeError:
+                        logger.warning("Failed to parse optimized translation JSON")
                         return None
 
                 translated_message = content_dict.get("result", None)
@@ -167,6 +172,7 @@ class Translator:
 
             return translated_message
         else:
+            logger.error(f"LLM translation failed: {response.status_code} - {response.text}")
             return None
 
     def traditional_translate(self, text, service, source_language=None, target_language=None):

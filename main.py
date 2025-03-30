@@ -1,4 +1,4 @@
-# Copyright (C) 2024 LiJiaHua1024
+# Copyright (C) 2024-2025 LiJiaHua1024
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,9 +15,12 @@
 
 import threading
 
-from modless_chat_trans.file_utils import read_config
+from modless_chat_trans.file_utils import read_config, get_platform
 from modless_chat_trans.i18n import set_language
-conf = read_config()
+from modless_chat_trans.logger import init_logger, logger
+
+conf = read_config(logger_initialized=False)
+init_logger(conf.debug)
 set_language(conf.interface_lang)
 
 from modless_chat_trans.display import initialization, display_message
@@ -29,8 +32,7 @@ from modless_chat_trans.clipboard_monitor import monitor_clipboard, modify_clipb
 from modless_chat_trans.i18n import _
 from modless_chat_trans.updater import Updater
 
-
-program_info = ProgramInfo(version="v2.1.0",
+program_info = ProgramInfo(version="v2.1.1",
                            author="LiJiaHua1024",
                            email="minecraft_benli@163.com",
                            github="https://github.com/LiJiaHua1024/ModlessChatTrans",
@@ -38,6 +40,10 @@ program_info = ProgramInfo(version="v2.1.0",
 
 updater = Updater(program_info.version, program_info.author, "ModlessChatTrans",
                   include_prerelease=conf.include_prerelease)
+
+logger.info(f"ModlessChatTrans {program_info.version} started, "
+            f"Platform: {'Windows' if get_platform() == 0 else 'Linux'}, "
+            f"Debug mode: {conf.debug}")
 
 
 def start_translation():
@@ -56,6 +62,8 @@ def start_translation():
                         display_message(*processed_message, config.output_method)
                         if processed_message[0] != "[ERROR]":
                             break
+                        else:
+                            logger.error(processed_message[1])
                 else:
                     break  # 不是聊天消息，跳过
             elif data_type == "clipboard":

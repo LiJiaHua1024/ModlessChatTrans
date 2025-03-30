@@ -1,4 +1,4 @@
-# Copyright (C) 2024 LiJiaHua1024
+# Copyright (C) 2024-2025 LiJiaHua1024
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ from flask import Flask, render_template, Response, request, jsonify
 from datetime import datetime
 from modless_chat_trans.i18n import _
 from modless_chat_trans.file_utils import get_path
+from modless_chat_trans.logger import logger
 
 http_messages = []
 sse_clients = []
@@ -26,61 +27,88 @@ sse_clients = []
 
 def start_httpserver(port, callback):
     global http_messages, sse_clients
-    flask_app = Flask(__name__)
-    flask_app.template_folder = get_path("templates")
-    http_messages = []
-    sse_clients = []
+    logger.info(f"Starting HTTP server on port {port}")
 
-    @flask_app.route('/')
-    def home():
-        return render_template('index.html', _=_)
+    try:
+        flask_app = Flask(__name__)
+        flask_app.template_folder = get_path("templates")
+        logger.debug(f"Template folder set to: {get_path('templates')}")
 
-    @flask_app.route('/send-message', methods=['POST'])
-    def handle_user_input():
-        data = request.json
-        translated = callback(data['message'], data_type="clipboard")  # 复用现有clipboard处理逻辑
-        return jsonify({'translated': translated})
+        http_messages = []
+        sse_clients = []
 
-    @flask_app.route('/stream')
-    def stream():
-        def event_stream():
-            global sse_clients, http_messages
-            message_index = 0
-            last_message_count = 0
+        @flask_app.route('/')
+        def home():
+            logger.debug("Serving home page")
+            return render_template('index.html', _=_)
 
+        @flask_app.route('/send-message', methods=['POST'])
+        def handle_user_input():
             try:
-                while True:
-                    time.sleep(1)
-                    current_message_count = len(http_messages)
-                    if current_message_count > last_message_count:
-                        while message_index < current_message_count:
-                            message_tuple = http_messages[message_index]
-                            name = message_tuple[0]
-                            message = message_tuple[1]
-                            timestamp = message_tuple[2]  # 获取时间戳
+                data = request.json
+                logger.debug(
+                    f"Received message from web client: {data['message'][:30]}..." if len(data['message']) > 30 else
+                    data['message'])
+                translated = callback(data['message'], data_type="clipboard")
+                logger.debug("Message translated successfully")
+                return jsonify({'translated': translated})
+            except Exception as e:
+                logger.error(f"Error handling user input: {str(e)}")
+                return jsonify({'error': str(e)}), 500
 
-                            message_data = {
-                                "name": name,
-                                "message": message,
-                                "time": timestamp  # 添加时间信息到JSON数据中
-                            }
-                            json_message = json.dumps(message_data, ensure_ascii=False)
+        @flask_app.route('/stream')
+        def stream():
+            logger.debug("Client connected to SSE stream")
 
-                            yield f"data: {json_message}\n\n"
+            def event_stream():
+                global sse_clients, http_messages
+                message_index = 0
+                last_message_count = 0
 
-                            message_index += 1
+                try:
+                    logger.debug("Starting event stream for client")
+                    while True:
+                        time.sleep(1)
+                        current_message_count = len(http_messages)
 
-                        last_message_count = current_message_count
+                        if current_message_count > last_message_count:
+                            logger.debug(f"Sending {current_message_count - last_message_count} new messages to client")
+                            while message_index < current_message_count:
+                                message_tuple = http_messages[message_index]
+                                name = message_tuple[0]
+                                message = message_tuple[1]
+                                timestamp = message_tuple[2]
 
-            except GeneratorExit:
-                pass
+                                message_data = {
+                                    "name": name,
+                                    "message": message,
+                                    "time": timestamp  # 添加时间信息到JSON数据中
+                                }
 
-        return Response(event_stream(), mimetype="text/event-stream")
+                                json_message = json.dumps(message_data, ensure_ascii=False)
 
-    flask_app.run(debug=False, host='0.0.0.0', port=port)
+                                yield f"data: {json_message}\n\n"
+
+                                message_index += 1
+
+                            last_message_count = current_message_count
+
+                except GeneratorExit:
+                    logger.debug("Client disconnected from event stream")
+
+            return Response(event_stream(), mimetype="text/event-stream")
+
+        logger.info(f"HTTP server starting on 0.0.0.0:{port}")
+        flask_app.run(debug=False, host='0.0.0.0', port=port)
+    except Exception as e:
+        logger.error(f"Failed to start HTTP server: {str(e)}")
 
 
 def httpserver_display(name, message):
     global http_messages
-    current_time = datetime.now().strftime("%H:%M")
-    http_messages.append((name, message, current_time))
+    try:
+        current_time = datetime.now().strftime("%H:%M")
+        logger.debug(f"Adding message from {name if name else 'System'} to HTTP server queue")
+        http_messages.append((name, message, current_time))
+    except Exception as e:
+        logger.error(f"Error adding message to HTTP server: {str(e)}")

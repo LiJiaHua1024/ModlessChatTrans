@@ -1,4 +1,4 @@
-# Copyright (C) 2024 LiJiaHua1024
+# Copyright (C) 2024-2025 LiJiaHua1024
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ from tktooltip import ToolTip
 from modless_chat_trans.file_utils import read_config, save_config, get_path, get_platform
 from modless_chat_trans.i18n import _, supported_languages, lang_window_size_map
 from modless_chat_trans.translator import services, service_supported_languages
+from modless_chat_trans.logger import logger
 
 if (platform := get_platform()) == 0:
     import hPyT
@@ -69,11 +70,14 @@ def normalize_port_number(http_port_entry):
         http_port = int(round(http_port))
     except ValueError:
         http_port = 5000
+        logger.warning("Invalid port number, set to default 5000")
 
     if http_port > 65535:
         http_port = 65535
+        logger.warning("Port number too large, set to 65535")
     elif http_port < 1:
         http_port = 1
+        logger.warning("Port number too small, set to 1")
 
     http_port_entry.delete(0, ctk.END)
     http_port_entry.insert(0, str(http_port))
@@ -95,9 +99,11 @@ def normalize_max_messages(max_messages_entry):
         max_messages = int(max_messages + 0.5)
     except ValueError:
         max_messages = 100
+        logger.warning("Invalid max messages, set to default 100")
 
     if max_messages < 10:
         max_messages = 10
+        logger.warning("Max messages too small, set to 10")
 
     max_messages_entry.delete(0, ctk.END)
     max_messages_entry.insert(0, str(max_messages))
@@ -105,7 +111,9 @@ def normalize_max_messages(max_messages_entry):
 
 # noinspection PyUnresolvedReferences
 def check_and_update(manual_check=False):
+    logger.info("Checking for updates")
     if new_release := updater.check_update():
+        logger.info(f"New release found: {new_release.get('tag_name')}")
         if messagebox.askyesno(_("Update available"),
                                f"{_('A new version of ModlessChatTrans is available:')} "
                                f"{new_release.get('tag_name')}\n"
@@ -118,6 +126,7 @@ def check_and_update(manual_check=False):
                                      _("Failed to download the update. "
                                        "Please check your internet connection and try again."))
     elif manual_check:
+        logger.info("No update available")
         messagebox.showinfo(_("No update available"), _("No update available."))
 
     save_config(last_check_time=datetime.datetime.now().isoformat())
@@ -127,6 +136,7 @@ class MainInterfaceManager:
     def __init__(self, info: ProgramInfo, updater_object):
         self.info = info
         self.config = read_config()
+        logger.info("Configuration loaded")
 
         self.main_window = None
         self.start_button = None
@@ -161,6 +171,7 @@ class MainInterfaceManager:
         # 创建主窗口
         self.main_window = ctk.CTk()
         self.main_window.title(f"Modless Chat Trans {self.info.version}")
+        logger.info("Main window created")
 
         self.main_window.geometry(lang_window_size_map[read_config().interface_lang])
 
@@ -331,11 +342,17 @@ class MainInterfaceManager:
         save_config(minecraft_log_folder=minecraft_log_folder, output_method=output_method, trans_service=trans_service,
                     self_trans_enabled=self_translation_enabled, always_on_top=always_on_top)
 
+        logger.info(f"Starting translation with config: minecraft_log_folder={minecraft_log_folder}, "
+                    f"output_method={output_method}, trans_service={trans_service}, "
+                    f"self_translation_enabled={self_translation_enabled}, always_on_top={always_on_top}")
+
         start_translation()
 
     # noinspection PyUnresolvedReferences,PyTypedDict
     def update_service_widgets(self, service):
         """根据选择的翻译服务更新控件"""
+
+        logger.info(f"Updating widgets for service: {service}")
 
         for i in range(len(self.widgets)):
             widgets = self.widgets[i]
@@ -461,6 +478,7 @@ class MainInterfaceManager:
         切换是否使用 API Key 的复选框时的回调函数
         """
         if self.traditional_widgets["use_api_key_var"].get():
+            logger.info("API key enabled")
             if not self.traditional_widgets.get("api_key_entry"):
                 self.traditional_widgets["api_key_label"] = ctk.CTkLabel(self.main_window, text=_("API Key:"))
                 self.traditional_widgets["api_key_label"].grid(row=5, column=0, padx=20, pady=10, sticky="w")
@@ -469,6 +487,7 @@ class MainInterfaceManager:
                 self.traditional_widgets["api_key_entry"].insert(0, self.config.traditional_api_key)
 
         else:
+            logger.info("API key disabled")
             if self.traditional_widgets.get("api_key_entry"):
                 (self.traditional_widgets["api_key_label"],
                  self.traditional_widgets["api_key_entry"]) = destroy_widgets(
@@ -482,6 +501,8 @@ class MainInterfaceManager:
 
         :param choice: 选择的输出方式
         """
+
+        logger.info(f"Output method changed to: {choice}")
 
         if self.http_port_entry:
             self.http_port_label, self.http_port_entry = destroy_widgets(self.http_port_label,
@@ -509,6 +530,11 @@ class MainInterfaceManager:
         """
         自翻译开关切换时的回调函数
         """
+
+        if self.self_translation_var.get():
+            logger.info("Self translation enabled")
+        else:
+            logger.info("Self translation disabled")
 
         service = self.service_var.get()
 
@@ -638,7 +664,9 @@ class MainInterfaceManager:
         self.main_window.title(f"Modless Chat Trans {self.info.version} - Exiting...")
         from modless_chat_trans.file_utils import cache
         cache.close()
+        logger.info("Cache saved")
         self.main_window.destroy()
+        logger.info("Application closed")
 
 
 class MoreSettingsManager:
@@ -657,6 +685,7 @@ class MoreSettingsManager:
         # noinspection PyTypeChecker
         self.more_settings_window.after(50, self.more_settings_window.grab_set)
         self.more_settings_window.resizable(False, False)
+        logger.info("More settings window created")
 
         if platform == 0:
             hPyT.maximize_minimize_button.hide(self.more_settings_window)
@@ -754,6 +783,7 @@ class MoreSettingsManager:
         enable_optimization = self.variables["enable_optimization"].get()
         use_high_version_fix = self.variables["use_high_version_fix"].get()
         trans_sys_message = self.variables["trans_sys_message"].get()
+        logger.info(f"Saving more settings")
         save_config(update_check_frequency=update_check_frequency, include_prerelease=include_prerelease,
                     enable_optimization=enable_optimization, use_high_version_fix=use_high_version_fix,
                     trans_sys_message=trans_sys_message)
@@ -775,6 +805,7 @@ class ChatInterfaceManager:
         self.chat_window = ctk.CTkToplevel(self.main_window)
         self.chat_window.title(_("Translated Message"))
         self.chat_window.geometry("700x400")
+        logger.info("Chat window created")
 
         self.chat_window.attributes("-topmost", self.always_on_top)
 
@@ -798,6 +829,7 @@ class ChatInterfaceManager:
         :param name: 发送者名称
         :param message: 消息内容
         """
+        logger.debug(f"Displaying message from {name}: {message}")
         self.messages.append((name, message))
         self._append_message(name, message)
 
@@ -846,7 +878,11 @@ class ChatInterfaceManager:
         message_label.pack(anchor="w", padx=10, pady=(0, 5))
 
         # 开始逐字展开动画
-        self._animate_text(message_label, message)
+        try:
+            self._animate_text(message_label, message)
+        except Exception as e:
+            logger.error(f"Error in animation: {str(e)}")
+            message_label.configure(text=message)
 
     def _animate_text(self, label, full_text, index=0, delay=5, step=5):
         """

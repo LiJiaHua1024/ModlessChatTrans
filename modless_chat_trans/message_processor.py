@@ -1,4 +1,4 @@
-# Copyright (C) 2024 LiJiaHua1024
+# Copyright (C) 2024-2025 LiJiaHua1024
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@ from requests.exceptions import HTTPError
 from modless_chat_trans.i18n import _
 from modless_chat_trans.file_utils import cache
 from modless_chat_trans.translator import services
+from modless_chat_trans.logger import logger
 
 
 def process_decorator(function):
@@ -46,6 +47,7 @@ def process_decorator(function):
             return ""
         if original_chat_message:
             if original_chat_message in cache:
+                logger.debug(f"Translation cache hit: {original_chat_message}")
                 translated_chat_message = cache[original_chat_message]
             else:
                 try:
@@ -81,6 +83,7 @@ def process_decorator(function):
                     return "[ERROR]", f"{_('Translation failed, error:')} {e}"
 
                 if translated_chat_message:
+                    logger.debug(f"Translation successful, caching result: {original_chat_message} -> {translated_chat_message}")
                     cache[original_chat_message] = translated_chat_message
             if name:
                 return name, translated_chat_message

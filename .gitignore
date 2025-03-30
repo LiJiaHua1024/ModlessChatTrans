@@ -17,3 +17,5 @@ update_requirements.py
 MCT_cache.bak
 MCT_cache.dat
 MCT_cache.dir
+
+*.log
