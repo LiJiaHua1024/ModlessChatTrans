@@ -56,6 +56,17 @@ def start_httpserver(port, callback):
                 logger.error(f"Error handling user input: {str(e)}")
                 return jsonify({'error': str(e)}), 500
 
+        @flask_app.route('/clear-messages', methods=['POST'])
+        def clear_messages():
+            try:
+                global http_messages
+                logger.debug("Clearing all messages")
+                http_messages = []
+                return jsonify({'success': True})
+            except Exception as e:
+                logger.error(f"Error clearing messages: {str(e)}")
+                return jsonify({'success': False, 'error': str(e)}), 500
+
         @flask_app.route('/stream')
         def stream():
             logger.debug("Client connected to SSE stream")
