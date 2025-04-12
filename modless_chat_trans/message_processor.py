@@ -18,7 +18,9 @@ from modless_chat_trans.i18n import _
 from modless_chat_trans.file_utils import cache
 from modless_chat_trans.translator import services
 from modless_chat_trans.logger import logger
+from langdetect import detect_langs, LangDetectException
 
+UNKNOWN_LANGUAGE = "unknown"
 
 def process_decorator(function):
     """
@@ -26,7 +28,8 @@ def process_decorator(function):
     """
 
     def wrapper(data, data_type, translator, translation_service,
-                model=None, source_language=None, target_language=None, trans_sys_message=True):
+                model=None, source_language=None, target_language=None, trans_sys_message=True,
+                skip_src_lang=None, min_detect_len=None):
         """
         处理日志文件中的一行（包括翻译）
 
@@ -38,6 +41,8 @@ def process_decorator(function):
         :param source_language: 源语言
         :param target_language: 目标语言
         :param trans_sys_message: 是否翻译系统（name为空）消息，仅对log类型有效
+        :param skip_src_lang: 跳过的源语言集合
+        :param min_detect_len: 最小检测长度
         :return: 元组 (玩家名称, 消息内容) 或 消息内容
         """
 
@@ -46,7 +51,26 @@ def process_decorator(function):
         if data_type == "log" and not trans_sys_message and not name:
             return ""
         if original_chat_message:
-            if original_chat_message in cache:
+            if len(original_chat_message) >= min_detect_len:
+                try:
+                    langs = detect_langs(original_chat_message)
+                    best_lang = langs[0]
+                    if best_lang.prob >= 0.9:
+                        detected_lang = best_lang.lang
+                        logger.debug(f"Detected languages: {detected_lang}, confidence: {best_lang.prob}")
+                    else:
+                        detected_lang = UNKNOWN_LANGUAGE
+                        logger.debug(f"Detected languages: {detected_lang}, but confidence {best_lang.prob} is too low")
+                except LangDetectException as e:
+                    logger.info(f"Language detection failed: {e} Proceeding with translation")
+                    detected_lang = UNKNOWN_LANGUAGE
+            else:
+                detected_lang = UNKNOWN_LANGUAGE
+
+            if detected_lang != UNKNOWN_LANGUAGE and detected_lang in skip_src_lang:
+                logger.debug(f"Skipping translation for \"{original_chat_message}\" due to skip_src_lang")
+                translated_chat_message = original_chat_message
+            elif original_chat_message in cache:
                 logger.debug(f"Translation cache hit: {original_chat_message}")
                 translated_chat_message = cache[original_chat_message]
             else:

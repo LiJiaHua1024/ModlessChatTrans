@@ -31,7 +31,7 @@ def get_path(path: str, temp_path=True) -> str:
         return os.path.join(os.getcwd(), path)
 
 
-def get_platform():
+def get_platform() -> int:
     return {"nt": 0, "posix": 1}.get(os.name, 2)
 
 
@@ -60,6 +60,8 @@ class Config:
     traditional_api_key: str
     trans_sys_message: bool
     debug: bool
+    skip_src_lang: list  # ISO 639-1 language code
+    min_detect_len: int  # minimum length of detected text
 
 
 DEFAULT_CONFIG = Config(interface_lang="zh_CN",
@@ -84,7 +86,9 @@ DEFAULT_CONFIG = Config(interface_lang="zh_CN",
                         use_high_version_fix=False,
                         traditional_api_key="",
                         trans_sys_message=True,
-                        debug=False)
+                        debug=False,
+                        skip_src_lang=["language1", "language2"],
+                        min_detect_len=100)
 
 
 def find_latest_log(directory: str) -> str:

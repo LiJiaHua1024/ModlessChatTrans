@@ -57,7 +57,9 @@ def start_translation():
                                                         model=config.model,
                                                         source_language=config.op_src_lang,
                                                         target_language=config.op_tgt_lang,
-                                                        trans_sys_message=config.trans_sys_message):
+                                                        trans_sys_message=config.trans_sys_message,
+                                                        skip_src_lang=config.skip_src_lang,
+                                                        min_detect_len=config.min_detect_len):
                     if processed_message[1]:
                         display_message(*processed_message, config.output_method)
                         if processed_message[0] != "[ERROR]":
