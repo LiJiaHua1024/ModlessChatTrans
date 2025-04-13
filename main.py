@@ -23,16 +23,16 @@ conf = read_config(logger_initialized=False)
 init_logger(conf.debug)
 set_language(conf.interface_lang)
 
-from modless_chat_trans.display import initialization, display_message
+from modless_chat_trans.display import init_display, display_message
 from modless_chat_trans.log_monitor import monitor_log_file
-from modless_chat_trans.message_processor import process_message
+from modless_chat_trans.message_processor import init_processor, process_message
 from modless_chat_trans.translator import Translator
 from modless_chat_trans.interface import ProgramInfo, MainInterfaceManager, MoreSettingsManager
 from modless_chat_trans.clipboard_monitor import monitor_clipboard, modify_clipboard
 from modless_chat_trans.i18n import _
 from modless_chat_trans.updater import Updater
 
-program_info = ProgramInfo(version="v2.1.1",
+program_info = ProgramInfo(version="v2.1.2",
                            author="LiJiaHua1024",
                            email="minecraft_benli@163.com",
                            github="https://github.com/LiJiaHua1024/ModlessChatTrans",
@@ -56,10 +56,7 @@ def start_translation():
                 if processed_message := process_message(data, data_type, translator, config.trans_service,
                                                         model=config.model,
                                                         source_language=config.op_src_lang,
-                                                        target_language=config.op_tgt_lang,
-                                                        trans_sys_message=config.trans_sys_message,
-                                                        skip_src_lang=config.skip_src_lang,
-                                                        min_detect_len=config.min_detect_len):
+                                                        target_language=config.op_tgt_lang):
                     if processed_message[1]:
                         display_message(*processed_message, config.output_method)
                         if processed_message[0] != "[ERROR]":
@@ -85,9 +82,11 @@ def start_translation():
                             enable_optimization=config.enable_optimization,
                             traditional_api_key=config.traditional_api_key)
 
-    initialization(config.output_method, main_window=main_interface_manager.main_window,
+    init_display(config.output_method, main_window=main_interface_manager.main_window,
                    http_port=config.http_port, max_messages=config.max_messages,
                    always_on_top=config.always_on_top, callback=callback)
+
+    init_processor(config.trans_sys_message, config.skip_src_lang, config.min_detect_len, config.glossary)
 
     monitor_thread = threading.Thread(
         target=monitor_log_file,

@@ -680,7 +680,7 @@ class MoreSettingsManager:
         self.more_settings_window = ctk.CTkToplevel(self.main_window)
         self.more_settings_window.title(_("More Settings"))
         self.more_settings_window.geometry(
-            "460x290" if self.config.interface_lang in {"fr_FR", "es_ES", "ru_RU", "pt_BR"} else "400x290"
+            "460x330" if self.config.interface_lang in {"fr_FR", "es_ES", "ru_RU", "pt_BR"} else "400x330"
         )
         # noinspection PyTypeChecker
         self.more_settings_window.after(50, self.more_settings_window.grab_set)
@@ -692,6 +692,12 @@ class MoreSettingsManager:
 
         self.create_additional_widgets()
 
+    def open_glossary_window(self):
+        logger.info("Opening Glossary window")
+        self.config = read_config()
+        glossary_manager = GlossaryManager(self.more_settings_window, self.config)
+        glossary_manager.create_glossary_window()
+
     def create_additional_widgets(self):
         ctk.CTkLabel(
             self.more_settings_window,
@@ -700,7 +706,8 @@ class MoreSettingsManager:
 
         self.variables["update_check_frequency"] = ctk.StringVar(
             value=_(self.config.update_check_frequency if self.config.update_check_frequency in
-            {"On Startup", "Daily", "Weekly", "Monthly", "Never"} else "Daily")
+                                                          {"On Startup", "Daily", "Weekly", "Monthly",
+                                                           "Never"} else "Daily")
         )
 
         ctk.CTkOptionMenu(
@@ -766,9 +773,15 @@ class MoreSettingsManager:
 
         ctk.CTkButton(
             self.more_settings_window,
+            text=_("Glossary"),
+            command=self.open_glossary_window
+        ).grid(row=5, column=0, columnspan=2, padx=20, pady=10, sticky="ew")
+
+        ctk.CTkButton(
+            self.more_settings_window,
             text=_("Save Settings"),
             command=self.save_more_settings
-        ).grid(row=5, column=0, columnspan=2, padx=20, pady=20)
+        ).grid(row=6, column=0, columnspan=2, padx=20, pady=20)
 
     def save_more_settings(self):
         update_check_frequency_map = {
@@ -903,3 +916,189 @@ class ChatInterfaceManager:
         鼠标滚轮事件处理函数，用于滚动聊天窗口。
         """
         self.canvas.yview_scroll(-1 * (event.delta // 120), "units")
+
+
+class GlossaryManager:
+    def __init__(self, main_window, config):
+        self.main_window = main_window
+        self.config = config
+        self.glossary_window = None
+        # 输入控件
+        self.src_entry = None
+        self.tgt_entry = None
+        self.add_button = None
+        # 列表显示控件
+        self.glossary_frame = None  # 将使用 CTkScrollableFrame
+        self.term_buttons = {}  # 存储按钮以便更新状态 {src: button_widget}
+        # 删除和保存控件
+        self.delete_button = None
+        self.save_button = None
+        # 状态变量
+        self.selected_term_src = None  # 当前选中的源术语
+        self.glossary_rules = {}
+        if hasattr(config, 'glossary') and isinstance(config.glossary, dict):
+            self.glossary_rules = config.glossary.copy()
+            logger.info(f"Loaded glossary rules: {len(self.glossary_rules)}")
+        else:
+            logger.warning("Glossary in config is not a dictionary or missing. Initializing as empty.")
+
+    def create_glossary_window(self):
+        """创建术语表窗口"""
+        self.glossary_window = ctk.CTkToplevel(self.main_window)
+        self.glossary_window.title(_("Glossary"))
+        self.glossary_window.geometry("550x450")
+        # noinspection PyTypeChecker
+        self.glossary_window.after(50, self.glossary_window.grab_set)
+        self.glossary_window.resizable(False, False)
+        logger.info("Glossary window created")
+
+        if platform == 0:
+            hPyT.maximize_minimize_button.hide(self.glossary_window)
+            hPyT.window_frame.center_relative(self.main_window, self.glossary_window)
+
+        self._create_widgets()
+        self._update_glossary_display()  # 初始加载并显示术语列表
+
+    def _create_widgets(self):
+        """在术语表窗口中创建控件"""
+        # --- 输入区域 ---
+        input_frame = ctk.CTkFrame(self.glossary_window)
+        input_frame.pack(pady=10, padx=10, fill="x")
+
+        ctk.CTkLabel(input_frame, text=_("Source Term:")).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        self.src_entry = ctk.CTkEntry(input_frame, width=180)
+        self.src_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+
+        ctk.CTkLabel(input_frame, text=_("Target Term:")).grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        self.tgt_entry = ctk.CTkEntry(input_frame, width=180)
+        self.tgt_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+
+        self.add_button = ctk.CTkButton(input_frame, text=_("Add/Update Term"), command=self._add_update_term)
+        self.add_button.grid(row=0, column=2, rowspan=2, padx=10, pady=5)
+
+        input_frame.columnconfigure(1, weight=1)
+
+        # --- 术语列表显示区域 ---
+        self.glossary_frame = ctk.CTkScrollableFrame(self.glossary_window, label_text=_("Glossary Rules"))
+        self.glossary_frame.pack(pady=10, padx=10, fill="both", expand=True)
+
+        # --- 操作按钮区域 ---
+        button_frame = ctk.CTkFrame(self.glossary_window)
+        button_frame.pack(pady=10, padx=10, fill="x")
+
+        self.delete_button = ctk.CTkButton(button_frame, text=_("Delete Selected"), command=self._delete_selected_term,
+                                           state="disabled")
+        self.delete_button.pack(side="left", padx=10)
+
+        self.save_button = ctk.CTkButton(button_frame, text=_("Save Glossary and Close"), command=self._save_glossary)
+        self.save_button.pack(side="right", padx=10)
+
+    def _update_glossary_display(self):
+        """清空并重新填充术语列表显示区域"""
+        # 清空旧按钮
+        for widget in self.glossary_frame.winfo_children():
+            widget.destroy()
+        self.term_buttons.clear()
+        self.selected_term_src = None
+        self.delete_button.configure(state="disabled")
+
+        if not self.glossary_rules:
+            ctk.CTkLabel(self.glossary_frame, text=_("<No glossary rules defined>")).pack(pady=5)
+            return
+
+        # 按源术语排序显示
+        sorted_sources = sorted(self.glossary_rules.keys())
+
+        for src in sorted_sources:
+            tgt = self.glossary_rules[src]
+            display_text = f"\"{src}\" → \"{tgt}\""
+
+            # 为每个条目创建一个按钮
+            term_button = ctk.CTkButton(
+                self.glossary_frame,
+                text=display_text,
+                anchor="w",  # 文本左对齐
+                fg_color="transparent",  # 默认透明背景
+                text_color=ctk.ThemeManager.theme["CTkLabel"]["text_color"],  # 使用标签的文本颜色
+                hover_color=ctk.ThemeManager.theme["CTkButton"]["hover_color"],  # 悬停颜色
+                command=lambda s=src: self._on_term_select(s)  # 使用 lambda 传递当前 src
+            )
+            term_button.pack(fill="x", pady=2, padx=5)
+            self.term_buttons[src] = term_button
+
+    def _on_term_select(self, selected_src):
+        """当用户点击列表中的术语按钮时调用"""
+        logger.debug(f"Term selected: {selected_src}")
+
+        # --- 更新视觉效果 ---
+        # 取消之前选中项的高亮
+        if self.selected_term_src and self.selected_term_src in self.term_buttons:
+            try:
+                # 恢复按钮的默认外观
+                self.term_buttons[self.selected_term_src].configure(
+                    fg_color="transparent",
+                    text_color=ctk.ThemeManager.theme["CTkLabel"]["text_color"]
+                )
+            except tk.TclError:
+                logger.warning(f"Could not reset style for button: {self.selected_term_src}")
+
+        # 高亮新选中项
+        self.selected_term_src = selected_src
+        if self.selected_term_src in self.term_buttons:
+            try:
+                # 设置选中时的外观
+                self.term_buttons[self.selected_term_src].configure(
+                    fg_color=ctk.ThemeManager.theme["CTkButton"]["hover_color"],  # 使用悬停色作为选中色
+                    text_color=ctk.ThemeManager.theme["CTkButton"]["text_color"]  # 使用按钮的文本颜色
+                )
+            except tk.TclError:
+                logger.warning(f"Could not set style for selected button: {self.selected_term_src}")
+
+        # --- 启用删除按钮 ---
+        self.delete_button.configure(state="normal")
+
+    def _add_update_term(self):
+        """添加或更新一个术语对"""
+        src_term = self.src_entry.get().strip()
+        tgt_term = self.tgt_entry.get().strip()
+
+        if not src_term:
+            messagebox.showwarning(_("Input Error"), _("Source term cannot be empty."), parent=self.glossary_window)
+            return
+
+        action = "updated" if src_term in self.glossary_rules else "added"
+        self.glossary_rules[src_term] = tgt_term
+        logger.info(f"Glossary rule {action}: {src_term} -> {tgt_term}")
+
+        # 清空输入框
+        self.src_entry.delete(0, ctk.END)
+        self.tgt_entry.delete(0, ctk.END)
+
+        # 刷新列表显示
+        self._update_glossary_display()
+
+        # # 找到并选中刚刚添加/更新的项
+        # self._on_term_select(src_term)
+
+    def _delete_selected_term(self):
+        """删除当前选中的术语"""
+        if self.selected_term_src is None:
+            logger.warning("Delete button clicked but no term selected.")
+            return
+
+        if self.selected_term_src in self.glossary_rules:
+            del self.glossary_rules[self.selected_term_src]
+            logger.info(f"Glossary rule deleted: {self.selected_term_src}")
+            # 刷新列表显示 (这会自动取消选择并禁用删除按钮)
+            self._update_glossary_display()
+        else:
+            logger.error(f"Selected term '{self.selected_term_src}' not found in rules for deletion.")
+            self._update_glossary_display()
+
+    def _save_glossary(self):
+        try:
+            save_config(glossary=self.glossary_rules)
+            logger.info(f"Glossary dictionary saved successfully with {len(self.glossary_rules)} rules.")
+            self.glossary_window.destroy()
+        except Exception as e:
+            logger.error(f"Failed to save glossary: {e}")

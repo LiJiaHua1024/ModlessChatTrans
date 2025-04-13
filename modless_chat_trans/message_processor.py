@@ -22,14 +22,33 @@ from langdetect import detect_langs, LangDetectException
 
 UNKNOWN_LANGUAGE = "unknown"
 
+trans_sys_message = True
+skip_src_lang = []
+min_detect_len = 100
+glossary = {}
+
+
+def init_processor(_trans_sys_message, _skip_src_lang, _min_detect_len, _glossary):
+    """
+    :param _trans_sys_message: 是否翻译系统（name为空）消息，仅对log类型有效
+    :param _skip_src_lang: 跳过的源语言集合
+    :param _min_detect_len: 最小检测长度
+    :param _glossary: 自定义术语表
+    """
+    global trans_sys_message, skip_src_lang, min_detect_len, glossary
+    trans_sys_message = _trans_sys_message
+    skip_src_lang = _skip_src_lang
+    min_detect_len = _min_detect_len
+    glossary = _glossary
+
+
 def process_decorator(function):
     """
     为process_message添加翻译步骤
     """
 
     def wrapper(data, data_type, translator, translation_service,
-                model=None, source_language=None, target_language=None, trans_sys_message=True,
-                skip_src_lang=None, min_detect_len=None):
+                model=None, source_language=None, target_language=None):
         """
         处理日志文件中的一行（包括翻译）
 
@@ -40,9 +59,6 @@ def process_decorator(function):
         :param model: 模型名称
         :param source_language: 源语言
         :param target_language: 目标语言
-        :param trans_sys_message: 是否翻译系统（name为空）消息，仅对log类型有效
-        :param skip_src_lang: 跳过的源语言集合
-        :param min_detect_len: 最小检测长度
         :return: 元组 (玩家名称, 消息内容) 或 消息内容
         """
 
@@ -67,7 +83,10 @@ def process_decorator(function):
             else:
                 detected_lang = UNKNOWN_LANGUAGE
 
-            if detected_lang != UNKNOWN_LANGUAGE and detected_lang in skip_src_lang:
+            if original_chat_message in glossary:
+                logger.debug(f"Using custom glossary: {original_chat_message} -> {glossary[original_chat_message]}")
+                translated_chat_message = glossary[original_chat_message]
+            elif detected_lang != UNKNOWN_LANGUAGE and detected_lang in skip_src_lang:
                 logger.debug(f"Skipping translation for \"{original_chat_message}\" due to skip_src_lang")
                 translated_chat_message = original_chat_message
             elif original_chat_message in cache:

@@ -20,7 +20,7 @@ from modless_chat_trans.web_display import start_httpserver, httpserver_display
 from modless_chat_trans.logger import logger
 
 
-def initialization(output_method, **kwargs):
+def init_display(output_method, **kwargs):
     logger.info(f"Initializing display with output method: {output_method}")
     try:
         if output_method == "Graphical":
