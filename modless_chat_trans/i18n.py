@@ -22,7 +22,7 @@ _ = None
 
 supported_languages = [("简体中文", "zh_CN"), ("English", "en_US"), ("日本語", "ja_JP"), ("Français", "fr_FR"),
                        ("Deutsch", "de_DE"), ("Español", "es_ES"), ("한국어", "ko_KR"), ("Русский", "ru_RU"),
-                       ("Português do Brasil", "pt_BR")]
+                       ("Português do Brasil", "pt_BR"), ("繁體中文", "zh_TW")]
 
 lang_window_size_map = {
     "zh_CN": "750x620",
@@ -34,6 +34,7 @@ lang_window_size_map = {
     "ko_KR": "750x620",
     "ru_RU": "860x620",
     "pt_BR": "820x620",
+    "zh_TW": "750x620"
 }
 
 

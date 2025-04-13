@@ -1,0 +1,219 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-01 18:03+0800\n"
+"PO-Revision-Date: 2025-04-13 14:34+0800\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.6\n"
+
+msgid "Chat messages translated, translation results in clipboard"
+msgstr "聊天訊息已翻譯，翻譯結果已複製到剪貼板"
+
+msgid "Translated Message"
+msgstr "訊息翻譯結果"
+
+msgid "Messages"
+msgstr "訊息"
+
+msgid "Start"
+msgstr "啟動"
+
+msgid "About"
+msgstr "關於"
+
+msgid "Version"
+msgstr "版本"
+
+msgid "Author"
+msgstr "作者"
+
+msgid "Email"
+msgstr "郵箱"
+
+msgid "License"
+msgstr "許可證"
+
+msgid "Graphical"
+msgstr "圖形界面"
+
+msgid "Speech"
+msgstr "語音"
+
+msgid "Httpserver"
+msgstr "網頁"
+
+msgid "HTTP Port:"
+msgstr "網頁端口："
+
+msgid "Self Source Language:"
+msgstr "自己訊息源語言："
+
+msgid "Self Target Language:"
+msgstr "自己訊息目標語言："
+
+msgid "Minecraft Log Folder:"
+msgstr "Minecraft 日誌文件夾："
+
+msgid "Output Method:"
+msgstr "翻譯結果呈現方式："
+
+msgid "Source Language(Auto if blank):"
+msgstr "源語言（留空自動）："
+
+msgid "Target Language:"
+msgstr "目標語言："
+
+msgid "API URL:"
+msgstr "API 地址："
+
+msgid "API Key:"
+msgstr "API 密鑰："
+
+msgid "Model:"
+msgstr "模型代號："
+
+msgid "Translate Player's Own Message"
+msgstr "翻譯玩家自己的訊息"
+
+msgid "Always on top"
+msgstr "始終置頂"
+
+msgid "Translation failed: Too many requests. Please try again later."
+msgstr "翻譯失敗：請求次數過多。請稍後重試。"
+
+msgid "Translation failed: Server error. Please try again later."
+msgstr "翻譯失敗：伺服器錯誤。請稍後重試。"
+
+msgid "Translation failed: HTTP error occurred."
+msgstr "翻譯失敗：發生HTTP錯誤。"
+
+msgid "Translation failed: Network issue or HTTP error occurred."
+msgstr "翻譯失敗：網絡問題或發生HTTP錯誤。"
+
+msgid ""
+"Translation failed: Invalid response from server. Please check your network "
+"connection."
+msgstr "翻譯失敗：伺服器響應無效。請檢查網絡連接。"
+
+msgid "Translation failed, error:"
+msgstr "翻譯失敗，錯誤："
+
+msgid "Max Messages:"
+msgstr "最大訊息數："
+
+msgid "Update available"
+msgstr "有可用更新"
+
+msgid "Update downloaded"
+msgstr "更新已下載"
+
+msgid "Update download failed"
+msgstr "下載更新失敗"
+
+msgid "Failed to download the update. Please check your internet connection and try again."
+msgstr "下載更新失敗。請檢查網絡連接後重試。"
+
+msgid "No update available"
+msgstr "無可用更新"
+
+msgid "No update available."
+msgstr "無可用更新。"
+
+msgid "More Settings"
+msgstr "更多設置"
+
+msgid "Automatic Update Frequency"
+msgstr "自動檢查更新頻率"
+
+msgid "On Startup"
+msgstr "啟動時"
+
+msgid "Daily"
+msgstr "每天"
+
+msgid "Weekly"
+msgstr "每週"
+
+msgid "Monthly"
+msgstr "每月"
+
+msgid "Never"
+msgstr "從不"
+
+msgid "Check for Updates"
+msgstr "檢查更新"
+
+msgid "Include Pre-release"
+msgstr "包含預發布版本"
+
+msgid "Save Settings"
+msgstr "保存設置"
+
+msgid "Enable Translation Quality Optimization"
+msgstr "啟用翻譯質量優化"
+
+msgid "Enabling this will improve translation quality, but will increase latency and consume more tokens"
+msgstr "啟用此功能將提高翻譯質量，但會增加延遲並消耗更多令牌"
+
+msgid "Enable High Version Fix"
+msgstr "啟用高版本修復"
+
+msgid "Enabling this will temporarily fix the issue of logs not being captured in high versions of Minecraft\nIf it doesn't work, restart this program"
+msgstr "啟用此功能將臨時修復在高版本Minecraft中無法捕獲日誌的問題\n如果不起作用，請重啟此程序"
+
+msgid "Loading supported languages"
+msgstr "正在加載支持的語言"
+
+msgid "I have an API Key"
+msgstr "我有API密鑰"
+
+msgid "Translate System Messages"
+msgstr "翻譯系統訊息"
+
+msgid "Enable this will translate system messages (messages without names)"
+msgstr "啟用此選項將翻譯系統訊息（沒有名稱的訊息）"
+
+msgid "Enter message..."
+msgstr "輸入訊息..."
+
+msgid "Glossary"
+msgstr "術語表"
+
+msgid "Source Term:"
+msgstr "源術語："
+
+msgid "Target Term:"
+msgstr "目標術語："
+
+msgid "Add/Update Term"
+msgstr "添加/更新術語"
+
+msgid "Glossary Rules"
+msgstr "術語表規則"
+
+msgid "Delete Selected"
+msgstr "刪除所選"
+
+msgid "Save Glossary and Close"
+msgstr "保存術語表並關閉"
+
+msgid "<No glossary rules defined>"
+msgstr "<未定義術語表規則>"
+
+msgid "Input Error"
+msgstr "輸入錯誤"
+
+msgid "Source term cannot be empty."
+msgstr "源術語不能為空。"
