@@ -183,3 +183,33 @@ msgstr ""
 
 msgid "Enter message..."
 msgstr ""
+
+msgid "Glossary"
+msgstr ""
+
+msgid "Source Term:"
+msgstr ""
+
+msgid "Target Term:"
+msgstr ""
+
+msgid "Add/Update Term"
+msgstr ""
+
+msgid "Glossary Rules"
+msgstr ""
+
+msgid "Delete Selected"
+msgstr ""
+
+msgid "Save Glossary and Close"
+msgstr ""
+
+msgid "<No glossary rules defined>"
+msgstr ""
+
+msgid "Input Error"
+msgstr ""
+
+msgid "Source term cannot be empty."
+msgstr ""

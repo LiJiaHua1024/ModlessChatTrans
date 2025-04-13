@@ -189,3 +189,33 @@ msgstr "Wenn aktiviert, werden Systemnachrichten (Nachrichten ohne Namen) übers
 
 msgid "Enter message..."
 msgstr "Nachricht eingeben..."
+
+msgid "Glossary"
+msgstr "Glossar"
+
+msgid "Source Term:"
+msgstr "Quellbegriff:"
+
+msgid "Target Term:"
+msgstr "Zielbegriff:"
+
+msgid "Add/Update Term"
+msgstr "Begriff hinzufügen/aktualisieren"
+
+msgid "Glossary Rules"
+msgstr "Glossarregeln"
+
+msgid "Delete Selected"
+msgstr "Ausgewählte löschen"
+
+msgid "Save Glossary and Close"
+msgstr "Glossar speichern und schließen"
+
+msgid "<No glossary rules defined>"
+msgstr "<Keine Glossarregeln definiert>"
+
+msgid "Input Error"
+msgstr "Eingabefehler"
+
+msgid "Source term cannot be empty."
+msgstr "Quellbegriff darf nicht leer sein."

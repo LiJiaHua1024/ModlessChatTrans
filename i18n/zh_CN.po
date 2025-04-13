@@ -187,3 +187,33 @@ msgstr "启用此选项将翻译系统消息（没有名称的消息）"
 
 msgid "Enter message..."
 msgstr "输入消息..."
+
+msgid "Glossary"
+msgstr "术语表"
+
+msgid "Source Term:"
+msgstr "源术语："
+
+msgid "Target Term:"
+msgstr "目标术语："
+
+msgid "Add/Update Term"
+msgstr "添加/更新术语"
+
+msgid "Glossary Rules"
+msgstr "术语表规则"
+
+msgid "Delete Selected"
+msgstr "删除所选"
+
+msgid "Save Glossary and Close"
+msgstr "保存术语表并关闭"
+
+msgid "<No glossary rules defined>"
+msgstr "<未定义术语表规则>"
+
+msgid "Input Error"
+msgstr "输入错误"
+
+msgid "Source term cannot be empty."
+msgstr "源术语不能为空。"

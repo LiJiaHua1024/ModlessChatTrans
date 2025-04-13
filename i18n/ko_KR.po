@@ -185,3 +185,33 @@ msgstr "활성화하면 시스템 메시지(이름이 없는 메시지)를 번�
 
 msgid "Enter message..."
 msgstr "메시지 입력..."
+
+msgid "Glossary"
+msgstr "용어집"
+
+msgid "Source Term:"
+msgstr "원본 용어:"
+
+msgid "Target Term:"
+msgstr "대상 용어:"
+
+msgid "Add/Update Term"
+msgstr "용어 추가/업데이트"
+
+msgid "Glossary Rules"
+msgstr "용어집 규칙"
+
+msgid "Delete Selected"
+msgstr "선택 항목 삭제"
+
+msgid "Save Glossary and Close"
+msgstr "용어집 저장 및 닫기"
+
+msgid "<No glossary rules defined>"
+msgstr "<정의된 용어집 규칙 없음>"
+
+msgid "Input Error"
+msgstr "입력 오류"
+
+msgid "Source term cannot be empty."
+msgstr "원본 용어는 비워둘 수 없습니다."

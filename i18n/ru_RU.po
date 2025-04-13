@@ -187,3 +187,33 @@ msgstr "Включение этой опции позволит переводи
 
 msgid "Enter message..."
 msgstr "Введите сообщение..."
+
+msgid "Glossary"
+msgstr "Глоссарий"
+
+msgid "Source Term:"
+msgstr "Исходный термин:"
+
+msgid "Target Term:"
+msgstr "Целевой термин:"
+
+msgid "Add/Update Term"
+msgstr "Добавить/Обновить термин"
+
+msgid "Glossary Rules"
+msgstr "Правила глоссария"
+
+msgid "Delete Selected"
+msgstr "Удалить выбранное"
+
+msgid "Save Glossary and Close"
+msgstr "Сохранить глоссарий и закрыть"
+
+msgid "<No glossary rules defined>"
+msgstr "<Правила глоссария не определены>"
+
+msgid "Input Error"
+msgstr "Ошибка ввода"
+
+msgid "Source term cannot be empty."
+msgstr "Исходный термин не может быть пустым."

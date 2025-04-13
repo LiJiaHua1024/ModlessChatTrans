@@ -185,3 +185,33 @@ msgstr "Ativar isso traduzirá mensagens do sistema (mensagens sem nomes)"
 
 msgid "Enter message..."
 msgstr "Digite uma mensagem..."
+
+msgid "Glossary"
+msgstr "Glossário"
+
+msgid "Source Term:"
+msgstr "Termo de origem:"
+
+msgid "Target Term:"
+msgstr "Termo de destino:"
+
+msgid "Add/Update Term"
+msgstr "Adicionar/Atualizar termo"
+
+msgid "Glossary Rules"
+msgstr "Regras do glossário"
+
+msgid "Delete Selected"
+msgstr "Excluir selecionados"
+
+msgid "Save Glossary and Close"
+msgstr "Salvar glossário e fechar"
+
+msgid "<No glossary rules defined>"
+msgstr "<Nenhuma regra de glossário definida>"
+
+msgid "Input Error"
+msgstr "Erro de entrada"
+
+msgid "Source term cannot be empty."
+msgstr "O termo de origem não pode estar vazio."

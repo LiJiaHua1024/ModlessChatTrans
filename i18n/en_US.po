@@ -189,3 +189,33 @@ msgstr "Enable this will translate system messages (messages without names)"
 
 msgid "Enter message..."
 msgstr "Enter message..."
+
+msgid "Glossary"
+msgstr "Glossary"
+
+msgid "Source Term:"
+msgstr "Source Term:"
+
+msgid "Target Term:"
+msgstr "Target Term:"
+
+msgid "Add/Update Term"
+msgstr "Add/Update Term"
+
+msgid "Glossary Rules"
+msgstr "Glossary Rules"
+
+msgid "Delete Selected"
+msgstr "Delete Selected"
+
+msgid "Save Glossary and Close"
+msgstr "Save Glossary and Close"
+
+msgid "<No glossary rules defined>"
+msgstr "<No glossary rules defined>"
+
+msgid "Input Error"
+msgstr "Input Error"
+
+msgid "Source term cannot be empty."
+msgstr "Source term cannot be empty."

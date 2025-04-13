@@ -185,3 +185,33 @@ msgstr "有効にすると、システムメッセージ（名前のないメッ
 
 msgid "Enter message..."
 msgstr "メッセージを入力..."
+
+msgid "Glossary"
+msgstr "用語集"
+
+msgid "Source Term:"
+msgstr "原語："
+
+msgid "Target Term:"
+msgstr "訳語："
+
+msgid "Add/Update Term"
+msgstr "用語の追加/更新"
+
+msgid "Glossary Rules"
+msgstr "用語集ルール"
+
+msgid "Delete Selected"
+msgstr "選択項目を削除"
+
+msgid "Save Glossary and Close"
+msgstr "用語集を保存して閉じる"
+
+msgid "<No glossary rules defined>"
+msgstr "<用語集ルールが定義されていません>"
+
+msgid "Input Error"
+msgstr "入力エラー"
+
+msgid "Source term cannot be empty."
+msgstr "原語は空にできません。"
