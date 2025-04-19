@@ -215,3 +215,9 @@ msgstr "入力エラー"
 
 msgid "Source term cannot be empty."
 msgstr "原語は空にできません。"
+
+msgid "Do you want to download it now?"
+msgstr "今すぐダウンロードしますか？"
+
+msgid "A new version of ModlessChatTrans is available:"
+msgstr "ModlessChatTrans の新しいバージョンが利用可能です："

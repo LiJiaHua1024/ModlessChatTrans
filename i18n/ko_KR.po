@@ -215,3 +215,9 @@ msgstr "입력 오류"
 
 msgid "Source term cannot be empty."
 msgstr "원본 용어는 비워둘 수 없습니다."
+
+msgid "Do you want to download it now?"
+msgstr "지금 다운로드하시겠습니까?"
+
+msgid "A new version of ModlessChatTrans is available:"
+msgstr "ModlessChatTrans의 새 버전을 사용할 수 있습니다:"

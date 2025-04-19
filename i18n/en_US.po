@@ -219,3 +219,9 @@ msgstr "Input Error"
 
 msgid "Source term cannot be empty."
 msgstr "Source term cannot be empty."
+
+msgid "Do you want to download it now?"
+msgstr "Do you want to download it now?"
+
+msgid "A new version of ModlessChatTrans is available:"
+msgstr "A new version of ModlessChatTrans is available:"

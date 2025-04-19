@@ -217,3 +217,9 @@ msgstr "輸入錯誤"
 
 msgid "Source term cannot be empty."
 msgstr "源術語不能為空。"
+
+msgid "Do you want to download it now?"
+msgstr "您想現在下載嗎？"
+
+msgid "A new version of ModlessChatTrans is available:"
+msgstr "ModlessChatTrans 有新版可用："

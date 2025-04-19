@@ -215,3 +215,9 @@ msgstr "Erro de entrada"
 
 msgid "Source term cannot be empty."
 msgstr "O termo de origem não pode estar vazio."
+
+msgid "Do you want to download it now?"
+msgstr "Deseja baixá‑lo agora?"
+
+msgid "A new version of ModlessChatTrans is available:"
+msgstr "Uma nova versão do ModlessChatTrans está disponível:"
