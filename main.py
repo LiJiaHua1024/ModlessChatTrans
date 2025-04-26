@@ -63,6 +63,8 @@ def start_translation():
                             break
                         else:
                             logger.error(processed_message[1])
+                            return None
+                    return None
                 else:
                     break  # 不是聊天消息，跳过
             elif data_type == "clipboard":
@@ -77,6 +79,11 @@ def start_translation():
                         return processed_message
                     elif type(processed_message) == tuple and processed_message[0] == "[ERROR]":
                         display_message(*processed_message, config.output_method)
+                        return None
+                    return None
+                return None
+            return None
+        return None
 
     translator = Translator(api_key=config.api_key, api_url=config.api_url,
                             enable_optimization=config.enable_optimization,

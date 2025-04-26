@@ -133,6 +133,7 @@ def process_decorator(function):
             if data_type == "clipboard":
                 return translated_chat_message
             return "", translated_chat_message
+        return None
 
     return wrapper
 

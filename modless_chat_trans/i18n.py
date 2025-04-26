@@ -14,11 +14,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import gettext
+from typing import Callable
 from modless_chat_trans.file_utils import get_path
 from modless_chat_trans.logger import logger
 
 current_language = None
-_ = None
+_: Callable[[str], str] = lambda x: x
 
 supported_languages = [("简体中文", "zh_CN"), ("English", "en_US"), ("日本語", "ja_JP"), ("Français", "fr_FR"),
                        ("Deutsch", "de_DE"), ("Español", "es_ES"), ("한국어", "ko_KR"), ("Русский", "ru_RU"),
