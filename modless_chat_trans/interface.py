@@ -1026,9 +1026,36 @@ class GlossaryManager:
             term_button.pack(fill="x", pady=2, padx=5)
             self.term_buttons[src] = term_button
 
-    def _on_term_select(self, selected_src):
+    def _on_term_select(self, clicked_src):
         """当用户点击列表中的术语按钮时调用"""
-        logger.debug(f"Term selected: {selected_src}")
+        logger.debug(f"Term button clicked: {clicked_src}")
+
+        # --- 检查是否点击了当前已选项，如果是则取消选择 ---
+        if clicked_src == self.selected_term_src:
+
+            # 恢复按钮视觉效果为未选中
+            if clicked_src in self.term_buttons:
+                try:
+                    self.term_buttons[clicked_src].configure(
+                        fg_color="transparent",
+                        text_color=ctk.ThemeManager.theme["CTkLabel"]["text_color"]
+                    )
+                except tk.TclError as e:
+                    logger.warning(f"TclError resetting style for deselected button '{clicked_src}': {e}")
+                except KeyError:
+                    logger.warning(f"KeyError: Button for '{clicked_src}' not found during deselect.")
+
+            # 更新状态变量
+            self.selected_term_src = None
+
+            # 更新UI状态
+            self.delete_button.configure(state="disabled")
+            self.src_entry.delete(0, ctk.END)
+            self.tgt_entry.delete(0, ctk.END)
+
+            return  # 取消选择操作完成，提前退出
+
+        # --- 如果未点击已选项，则执行原有的选择逻辑 ---
 
         # --- 更新视觉效果 ---
         # 取消之前选中项的高亮
@@ -1043,7 +1070,7 @@ class GlossaryManager:
                 logger.warning(f"Could not reset style for button: {self.selected_term_src}")
 
         # 高亮新选中项
-        self.selected_term_src = selected_src
+        self.selected_term_src = clicked_src
         if self.selected_term_src in self.term_buttons:
             try:
                 # 设置选中时的外观
@@ -1058,18 +1085,24 @@ class GlossaryManager:
         self.delete_button.configure(state="normal")
 
         # --- 填充输入框以便编辑 ---
-        if selected_src in self.glossary_rules:
-            tgt_term = self.glossary_rules[selected_src]
-            # 先清空当前输入框内容
-            self.src_entry.delete(0, ctk.END)
-            self.tgt_entry.delete(0, ctk.END)
-            # 插入选中的术语
-            self.src_entry.insert(0, selected_src)
-            self.tgt_entry.insert(0, tgt_term)
-            logger.debug(f"Populated input fields with: '{selected_src}' -> '{tgt_term}'")
+        if clicked_src in self.glossary_rules:
+            try:
+                tgt_term = self.glossary_rules[clicked_src]
+                # 先清空当前输入框内容
+                self.src_entry.delete(0, ctk.END)
+                self.tgt_entry.delete(0, ctk.END)
+                # 插入选中的术语
+                self.src_entry.insert(0, clicked_src)
+                self.tgt_entry.insert(0, tgt_term)
+                logger.debug(f"Populated input fields with: '{clicked_src}' -> '{tgt_term}'")
+            except Exception as e:
+                logger.error(f"Error populating input fields for '{clicked_src}': {e}")
+                self.src_entry.delete(0, ctk.END)
+                self.tgt_entry.delete(0, ctk.END)
         else:
             # 理论上不应该发生，因为 selected_src 来自 glossary_rules 的键
-            logger.warning(f"Selected source term '{selected_src}' not found in glossary_rules dict. Cannot populate fields.")
+            logger.warning(
+                f"Selected source term '{clicked_src}' not found in glossary_rules dict when trying to populate fields.")
             # 清空输入框
             self.src_entry.delete(0, ctk.END)
             self.tgt_entry.delete(0, ctk.END)
@@ -1087,7 +1120,8 @@ class GlossaryManager:
 
         if original_selected_src is not None:
             # --- 处理选中的规则 ---
-            logger.debug(f"Processing with selected rule: Original='{original_selected_src}', Current Input='{current_src}'")
+            logger.debug(
+                f"Processing with selected rule: Original='{original_selected_src}', Current Input='{current_src}'")
 
             if original_selected_src == current_src:
                 # Case 1: 源术语未变，仅更新目标术语
@@ -1101,24 +1135,26 @@ class GlossaryManager:
                 # Case 2: 源术语被修改，需要“重命名”规则键
                 # 检查新源术语是否与 其他 现有规则冲突 (除了原本选中的那个)
                 if current_src in self.glossary_rules and current_src != original_selected_src:
-                     if not messagebox.askyesno(_("Confirm Overwrite"),
-                                                _("The new source term '{0}' already exists. Overwrite it?").format(current_src),
-                                                parent=self.glossary_window):
-                         logger.info("Rule modification cancelled by user due to potential overwrite.")
-                         return # 用户取消操作
+                    if not messagebox.askyesno(_("Confirm Overwrite"),
+                                               _("The new source term '{0}' already exists. Overwrite it?").format(
+                                                   current_src),
+                                               parent=self.glossary_window):
+                        logger.info("Rule modification cancelled by user due to potential overwrite.")
+                        return  # 用户取消操作
 
                 # 先删除旧规则
                 del self.glossary_rules[original_selected_src]
                 logger.debug(f"Removed old rule key: '{original_selected_src}'")
                 # 添加新规则（使用新源作为键）
                 self.glossary_rules[current_src] = current_tgt
-                logger.info(f"Glossary rule modified (source changed): '{current_src}' -> '{current_tgt}' (Original was '{original_selected_src}')")
+                logger.info(
+                    f"Glossary rule modified (source changed): '{current_src}' -> '{current_tgt}' (Original was '{original_selected_src}')")
 
             # 操作完成后，清除选中状态和输入框
-            self.selected_term_src = None # 重置选中状态
+            self.selected_term_src = None  # 重置选中状态
             self.src_entry.delete(0, ctk.END)
             self.tgt_entry.delete(0, ctk.END)
-            self._update_glossary_display() # 刷新列表
+            self._update_glossary_display()  # 刷新列表
 
         else:
             # --- 没有选中规则，执行旧逻辑：添加或更新 ---
