@@ -1057,6 +1057,23 @@ class GlossaryManager:
         # --- 启用删除按钮 ---
         self.delete_button.configure(state="normal")
 
+        # --- 填充输入框以便编辑 ---
+        if selected_src in self.glossary_rules:
+            tgt_term = self.glossary_rules[selected_src]
+            # 先清空当前输入框内容
+            self.src_entry.delete(0, ctk.END)
+            self.tgt_entry.delete(0, ctk.END)
+            # 插入选中的术语
+            self.src_entry.insert(0, selected_src)
+            self.tgt_entry.insert(0, tgt_term)
+            logger.debug(f"Populated input fields with: '{selected_src}' -> '{tgt_term}'")
+        else:
+            # 理论上不应该发生，因为 selected_src 来自 glossary_rules 的键
+            logger.warning(f"Selected source term '{selected_src}' not found in glossary_rules dict. Cannot populate fields.")
+            # 清空输入框
+            self.src_entry.delete(0, ctk.END)
+            self.tgt_entry.delete(0, ctk.END)
+
     def _add_update_term(self):
         """添加或更新一个术语对"""
         src_term = self.src_entry.get().strip()
