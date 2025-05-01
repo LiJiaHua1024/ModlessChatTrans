@@ -26,6 +26,8 @@ mods**.
   Iflyrec Translate
 - **Multiple Presentation Methods**: Supports three ways to display other players' translated messages: CustomTkinter
   GUI interface, Text-to-Speech output, Web interface
+- **Glossary**: Define custom translation rules for specific terms or patterns.
+    - [English User Guide](./docs/glossary_guide_en.md)
 - **Easy to Use**: Simply download and run the .exe file
 
 ### Functionality
