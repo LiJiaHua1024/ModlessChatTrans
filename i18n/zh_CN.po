@@ -223,3 +223,9 @@ msgstr "您想现在下载它吗？"
 
 msgid "A new version of ModlessChatTrans is available:"
 msgstr "ModlessChatTrans 有新版本可用："
+
+msgid "Confirm Overwrite"
+msgstr "确认覆盖"
+
+msgid "The new source term '{0}' already exists. Overwrite it?"
+msgstr "源术语“{0}”已存在。要覆盖吗？"

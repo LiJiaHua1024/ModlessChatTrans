@@ -221,3 +221,9 @@ msgstr "Deseja baixá‑lo agora?"
 
 msgid "A new version of ModlessChatTrans is available:"
 msgstr "Uma nova versão do ModlessChatTrans está disponível:"
+
+msgid "Confirm Overwrite"
+msgstr "Confirmar Sobrescrita"
+
+msgid "The new source term '{0}' already exists. Overwrite it?"
+msgstr "O novo termo de origem '{0}' já existe. Sobrescrever?"

@@ -221,3 +221,9 @@ msgstr "今すぐダウンロードしますか？"
 
 msgid "A new version of ModlessChatTrans is available:"
 msgstr "ModlessChatTrans の新しいバージョンが利用可能です："
+
+msgid "Confirm Overwrite"
+msgstr "上書き確認"
+
+msgid "The new source term '{0}' already exists. Overwrite it?"
+msgstr "新しい原文の用語「{0}」は既に存在します。上書きしますか？"

@@ -221,3 +221,9 @@ msgstr "지금 다운로드하시겠습니까?"
 
 msgid "A new version of ModlessChatTrans is available:"
 msgstr "ModlessChatTrans의 새 버전을 사용할 수 있습니다:"
+
+msgid "Confirm Overwrite"
+msgstr "덮어쓰기 확인"
+
+msgid "The new source term '{0}' already exists. Overwrite it?"
+msgstr "새 원본 용어 '{0}'이(가) 이미 존재합니다. 덮어쓰시겠습니까?"
