@@ -1075,27 +1075,64 @@ class GlossaryManager:
             self.tgt_entry.delete(0, ctk.END)
 
     def _add_update_term(self):
-        """添加或更新一个术语对"""
-        src_term = self.src_entry.get().strip()
-        tgt_term = self.tgt_entry.get().strip()
+        """添加或更新一个术语对。优先处理选中的规则进行修改。"""
+        current_src = self.src_entry.get().strip()
+        current_tgt = self.tgt_entry.get().strip()
 
-        if not src_term:
+        if not current_src:
             messagebox.showwarning(_("Input Error"), _("Source term cannot be empty."), parent=self.glossary_window)
             return
 
-        action = "updated" if src_term in self.glossary_rules else "added"
-        self.glossary_rules[src_term] = tgt_term
-        logger.info(f"Glossary rule {action}: {src_term} -> {tgt_term}")
+        original_selected_src = self.selected_term_src  # 获取当前选中的源术语（可能是 None）
 
-        # 清空输入框
-        self.src_entry.delete(0, ctk.END)
-        self.tgt_entry.delete(0, ctk.END)
+        if original_selected_src is not None:
+            # --- 处理选中的规则 ---
+            logger.debug(f"Processing with selected rule: Original='{original_selected_src}', Current Input='{current_src}'")
 
-        # 刷新列表显示
-        self._update_glossary_display()
+            if original_selected_src == current_src:
+                # Case 1: 源术语未变，仅更新目标术语
+                if self.glossary_rules.get(original_selected_src) != current_tgt:
+                    self.glossary_rules[original_selected_src] = current_tgt
+                    logger.info(f"Glossary rule target updated: '{original_selected_src}' -> '{current_tgt}'")
+                else:
+                    logger.info(f"Glossary rule target unchanged for '{original_selected_src}'.")
+                    # 可选：给用户提示“无更改”
+            else:
+                # Case 2: 源术语被修改，需要“重命名”规则键
+                # 检查新源术语是否与 其他 现有规则冲突 (除了原本选中的那个)
+                if current_src in self.glossary_rules and current_src != original_selected_src:
+                     if not messagebox.askyesno(_("Confirm Overwrite"),
+                                                _("The new source term '{0}' already exists. Overwrite it?").format(current_src),
+                                                parent=self.glossary_window):
+                         logger.info("Rule modification cancelled by user due to potential overwrite.")
+                         return # 用户取消操作
 
-        # # 找到并选中刚刚添加/更新的项
-        # self._on_term_select(src_term)
+                # 先删除旧规则
+                del self.glossary_rules[original_selected_src]
+                logger.debug(f"Removed old rule key: '{original_selected_src}'")
+                # 添加新规则（使用新源作为键）
+                self.glossary_rules[current_src] = current_tgt
+                logger.info(f"Glossary rule modified (source changed): '{current_src}' -> '{current_tgt}' (Original was '{original_selected_src}')")
+
+            # 操作完成后，清除选中状态和输入框
+            self.selected_term_src = None # 重置选中状态
+            self.src_entry.delete(0, ctk.END)
+            self.tgt_entry.delete(0, ctk.END)
+            self._update_glossary_display() # 刷新列表
+
+        else:
+            # --- 没有选中规则，执行旧逻辑：添加或更新 ---
+            action = "updated (no selection)" if current_src in self.glossary_rules else "added"
+            # 检查是否有实际更改，避免不必要的日志和刷新
+            if self.glossary_rules.get(current_src) != current_tgt:
+                self.glossary_rules[current_src] = current_tgt
+                logger.info(f"Glossary rule {action}: '{current_src}' -> '{current_tgt}'")
+                # 清空输入框
+                self.src_entry.delete(0, ctk.END)
+                self.tgt_entry.delete(0, ctk.END)
+
+                # 刷新列表显示
+                self._update_glossary_display()
 
     def _delete_selected_term(self):
         """删除当前选中的术语"""
