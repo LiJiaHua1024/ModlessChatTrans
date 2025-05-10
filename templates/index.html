@@ -707,13 +707,8 @@
             if (wasAtBottom && !userRecentlyScrolled && pendingMessages === 0) {
                 // 使用requestAnimationFrame确保DOM完全更新后再滚动
                 requestAnimationFrame(function() {
-                    // 再次检查是否在底部，以防在RAF回调之前用户又滚动了
-                    if (checkIfAtBottom()) {
-                        scrollToBottom();
-                    } else {
-                        // 如果用户在RAF期间滚动了，更新按钮状态
-                        updateScrollButtonState();
-                    }
+                    // 如果添加消息前在底部，就强制滚到底部
+                    scrollToBottom();
                 });
             } else if (!wasAtBottom) {
                 // 如果添加消息时用户不在底部，确保按钮是可见的（如果需要滚动）
