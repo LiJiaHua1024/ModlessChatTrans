@@ -28,6 +28,7 @@ skip_src_lang = []
 min_detect_len = 100
 glossary = {}
 _compiled_glossary_patterns = {}
+glossary_compiled = False
 
 
 def init_processor(_trans_sys_message, _skip_src_lang, _min_detect_len, _glossary):
@@ -46,9 +47,7 @@ def init_processor(_trans_sys_message, _skip_src_lang, _min_detect_len, _glossar
 
 def _compile_glossary_patterns():
     """预编译术语表中的模式，处理变量名规则和重复变量"""
-    global _compiled_glossary_patterns
-    if _compiled_glossary_patterns:
-        return
+    global _compiled_glossary_patterns, glossary_compiled
 
     logger.info("Compiling glossary patterns...")
     temp_patterns = {}
@@ -125,6 +124,7 @@ def _compile_glossary_patterns():
             logger.error(f"Unexpected error processing key '{key}': {e}")
 
     _compiled_glossary_patterns = temp_patterns
+    glossary_compiled = True
 
 
 def match_and_translate(original_chat_message: str) -> str | None:
@@ -132,7 +132,7 @@ def match_and_translate(original_chat_message: str) -> str | None:
     使用更新后的规则（包括重复变量检查）来匹配和翻译消息。
     """
 
-    if not _compiled_glossary_patterns:
+    if not glossary_compiled:
         _compile_glossary_patterns()
 
     # 1. 尝试通过编译后的模式进行匹配
