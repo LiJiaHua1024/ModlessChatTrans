@@ -14,13 +14,39 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import requests
-import translators as ts
 import json
 import re
+import importlib
 from modless_chat_trans.logger import logger
 
 services = ["LLM", "DeepL", "Bing", "Google", "Yandex", "Alibaba", "Caiyun", "Youdao",
             "Sogou", "Iflyrec"]
+
+
+class LazyTranslatorModule:
+    def __init__(self):
+        self._module = None
+
+    def _ensure_module_loaded(self):
+        if self._module is None:
+            logger.debug("Lazily importing 'translators' library now...")
+            try:
+                self._module = importlib.import_module("translators")
+                # logger.info("Running pre-acceleration for 'translators' library...")
+                # self._module.preaccelerate_and_speedtest()
+            except ImportError as e:
+                logger.error(f"Failed to import 'translators' library: {e}")
+                raise
+            logger.info("'translators' library imported successfully.")
+
+    def __getattr__(self, name):
+        self._ensure_module_loaded()
+        if self._module:
+            return getattr(self._module, name)
+        raise RuntimeError(f"Lazy loading of 'translators' failed.")
+
+
+ts = LazyTranslatorModule()
 
 
 def get_supported_languages(service):
