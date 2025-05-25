@@ -60,6 +60,14 @@ class LogMonitorHandler(FileSystemEventHandler):
         self.line_number = 0
 
         try:
+            chunk_size = 65536  # 64KB
+            with open(file_path, 'rb') as f:
+                while True:
+                    chunk = f.read(chunk_size)
+                    if not chunk:
+                        break
+                    self.line_number += chunk.count(b'\n')
+
             self.file_pointer = open(file_path, 'r', encoding="utf-8")
             self.file_pointer.seek(0, os.SEEK_END)
         except (PermissionError, FileNotFoundError) as e:
