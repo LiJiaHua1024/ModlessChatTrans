@@ -225,3 +225,12 @@ msgstr ""
 
 msgid "The new source term '{0}' already exists. Overwrite it?"
 msgstr ""
+
+msgid "Log Encoding"
+msgstr ""
+
+msgid ""
+"Manually specify the log encoding\n"
+"If there are garbled characters, try changing this value\n"
+"Leave it blank for automatic detection"
+msgstr ""

@@ -231,3 +231,15 @@ msgstr "Überschreiben bestätigen"
 
 msgid "The new source term '{0}' already exists. Overwrite it?"
 msgstr "Der neue Quellbegriff '{0}' existiert bereits. Überschreiben?"
+
+msgid "Log Encoding"
+msgstr "Log-Kodierung"
+
+msgid ""
+"Manually specify the log encoding\n"
+"If there are garbled characters, try changing this value\n"
+"Leave it blank for automatic detection"
+msgstr ""
+"Log-Kodierung manuell festlegen\n"
+"Bei unleserlichen Zeichen versuchen Sie diesen Wert zu ändern\n"
+"Leer lassen für automatische Erkennung"

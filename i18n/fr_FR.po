@@ -227,3 +227,15 @@ msgstr "Confirmer l'écrasement"
 
 msgid "The new source term '{0}' already exists. Overwrite it?"
 msgstr "Le nouveau terme source '{0}' existe déjà. L'écraser ?"
+
+msgid "Log Encoding"
+msgstr "Encodage du journal"
+
+msgid ""
+"Manually specify the log encoding\n"
+"If there are garbled characters, try changing this value\n"
+"Leave it blank for automatic detection"
+msgstr ""
+"Spécifier manuellement l'encodage du journal\n"
+"En cas de caractères illisibles, essayez de modifier cette valeur\n"
+"Laissez vide pour la détection automatique"

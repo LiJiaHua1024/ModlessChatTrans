@@ -227,3 +227,15 @@ msgstr "上書き確認"
 
 msgid "The new source term '{0}' already exists. Overwrite it?"
 msgstr "新しい原文の用語「{0}」は既に存在します。上書きしますか？"
+
+msgid "Log Encoding"
+msgstr "ログエンコーディング"
+
+msgid ""
+"Manually specify the log encoding\n"
+"If there are garbled characters, try changing this value\n"
+"Leave it blank for automatic detection"
+msgstr ""
+"ログのエンコーディングを手動で指定\n"
+"文字化けがある場合は、この値を変更してみてください\n"
+"空白のままにすると自動検出されます"

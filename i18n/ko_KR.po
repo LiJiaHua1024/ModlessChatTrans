@@ -227,3 +227,15 @@ msgstr "덮어쓰기 확인"
 
 msgid "The new source term '{0}' already exists. Overwrite it?"
 msgstr "새 원본 용어 '{0}'이(가) 이미 존재합니다. 덮어쓰시겠습니까?"
+
+msgid "Log Encoding"
+msgstr "로그 인코딩"
+
+msgid ""
+"Manually specify the log encoding\n"
+"If there are garbled characters, try changing this value\n"
+"Leave it blank for automatic detection"
+msgstr ""
+"로그 인코딩을 수동으로 지정\n"
+"깨진 문자가 있으면 이 값을 변경해 보세요\n"
+"자동 감지를 위해 비워 두세요"

@@ -229,3 +229,15 @@ msgstr "确认覆盖"
 
 msgid "The new source term '{0}' already exists. Overwrite it?"
 msgstr "源术语“{0}”已存在。要覆盖吗？"
+
+msgid "Log Encoding"
+msgstr "日志编码"
+
+msgid ""
+"Manually specify the log encoding\n"
+"If there are garbled characters, try changing this value\n"
+"Leave it blank for automatic detection"
+msgstr ""
+"手动指定日志编码\n"
+"如果出现乱码，请尝试更改此值\n"
+"留空则自动检测"

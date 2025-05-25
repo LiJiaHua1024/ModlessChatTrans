@@ -229,3 +229,15 @@ msgstr "Подтвердить перезапись"
 
 msgid "The new source term '{0}' already exists. Overwrite it?"
 msgstr "Новый исходный термин '{0}' уже существует. Перезаписать?"
+
+msgid "Log Encoding"
+msgstr "Кодировка журнала"
+
+msgid ""
+"Manually specify the log encoding\n"
+"If there are garbled characters, try changing this value\n"
+"Leave it blank for automatic detection"
+msgstr ""
+"Вручную указать кодировку журнала\n"
+"При наличии нечитаемых символов попробуйте изменить это значение\n"
+"Оставьте пустым для автоматического определения"

@@ -231,3 +231,15 @@ msgstr "Confirm Overwrite"
 
 msgid "The new source term '{0}' already exists. Overwrite it?"
 msgstr "The new source term '{0}' already exists. Overwrite it?"
+
+msgid "Log Encoding"
+msgstr "Log Encoding"
+
+msgid ""
+"Manually specify the log encoding\n"
+"If there are garbled characters, try changing this value\n"
+"Leave it blank for automatic detection"
+msgstr ""
+"Manually specify the log encoding\n"
+"If there are garbled characters, try changing this value\n"
+"Leave it blank for automatic detection"

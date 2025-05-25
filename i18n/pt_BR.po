@@ -227,3 +227,15 @@ msgstr "Confirmar Sobrescrita"
 
 msgid "The new source term '{0}' already exists. Overwrite it?"
 msgstr "O novo termo de origem '{0}' já existe. Sobrescrever?"
+
+msgid "Log Encoding"
+msgstr "Codificação do log"
+
+msgid ""
+"Manually specify the log encoding\n"
+"If there are garbled characters, try changing this value\n"
+"Leave it blank for automatic detection"
+msgstr ""
+"Especificar manualmente a codificação do log\n"
+"Se houver caracteres ilegíveis, tente alterar este valor\n"
+"Deixe em branco para detecção automática"
