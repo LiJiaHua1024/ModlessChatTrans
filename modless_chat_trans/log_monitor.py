@@ -28,13 +28,14 @@ class LogMonitorHandler(FileSystemEventHandler):
     监控日志文件的变化
     """
 
-    def __init__(self, directory, callback, use_high_version_fix):
+    def __init__(self, directory, callback, use_high_version_fix, encoding=None):
         super().__init__()
         logger.debug(f"Initializing LogMonitorHandler for directory: {directory}, "
-                     f"high_version_fix: {use_high_version_fix}")
+                     f"high_version_fix: {use_high_version_fix}, encoding: {encoding}")
         self.directory = directory
         self.callback = callback
         self.use_high_version_fix = use_high_version_fix
+        self.encoding = encoding
         self.current_file = os.path.join(directory, "latest.log") if use_high_version_fix else find_latest_log(directory)
         self.file_pointer = None
         self.line_number = 0
@@ -68,7 +69,8 @@ class LogMonitorHandler(FileSystemEventHandler):
                         break
                     self.line_number += chunk.count(b'\n')
 
-            self.file_pointer = open(file_path, 'r', encoding="utf-8")
+            encoding = self.encoding or "utf-8"
+            self.file_pointer = open(file_path, 'r', encoding=encoding)
             self.file_pointer.seek(0, os.SEEK_END)
         except (PermissionError, FileNotFoundError) as e:
             logger.warning(f"Error opening file {file_path}: {str(e)}. Will attempt retry shortly if needed.")
@@ -170,6 +172,12 @@ class LogMonitorHandler(FileSystemEventHandler):
                     logger.debug("Finished reading the file")
                     break
                 except UnicodeDecodeError:
+                    if self.encoding:
+                        logger.error(f"Failed to parse the file using user specified encoding {self.encoding}, "
+                                     f"skipping current line")
+                        self.line_number += 1
+                        continue
+
                     logger.warning(f"Encoding parsing error occurred for file {self.current_file}, "
                                    f"attempting to re-detect encoding")
                     encoding = self._detect_file_encoding(self.current_file)
@@ -217,17 +225,18 @@ class LogMonitorHandler(FileSystemEventHandler):
             logger.debug(f"Ignoring non-log file creation: {event.src_path}")
 
 
-def monitor_log_file(directory, callback, use_high_version_fix=False):
+def monitor_log_file(directory, callback, use_high_version_fix, encoding):
     """
     启动日志文件监控
 
     :param directory: 要监控的日志文件目录
     :param callback: 检测到新内容的回调函数
     :param use_high_version_fix: 是否使用高版本 Minecraft 修复
+    :param encoding: 用户指定的文件编码，如果为空则自动检测
     """
     logger.info(f"Starting log file monitoring in directory: {directory}")
 
-    event_handler = LogMonitorHandler(directory, callback, use_high_version_fix)
+    event_handler = LogMonitorHandler(directory, callback, use_high_version_fix, encoding)
     if event_handler.current_file:
         event_handler.open_file(event_handler.current_file)
     else:

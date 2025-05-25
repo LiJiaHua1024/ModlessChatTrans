@@ -62,6 +62,7 @@ class Config:
     debug: bool
     skip_src_lang: list  # ISO 639-1 language code
     min_detect_len: int  # minimum length of detected text
+    encoding: str  # encoding of the log file
     glossary: dict
 
 
@@ -90,6 +91,7 @@ DEFAULT_CONFIG = Config(interface_lang="zh_CN",
                         debug=False,
                         skip_src_lang=["language1", "language2"],
                         min_detect_len=100,
+                        encoding="",
                         glossary={})
 
 

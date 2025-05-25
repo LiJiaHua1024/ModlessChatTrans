@@ -680,7 +680,7 @@ class MoreSettingsManager:
         self.more_settings_window = ctk.CTkToplevel(self.main_window)
         self.more_settings_window.title(_("More Settings"))
         self.more_settings_window.geometry(
-            "460x330" if self.config.interface_lang in {"fr_FR", "es_ES", "ru_RU", "pt_BR"} else "400x330"
+            "460x380" if self.config.interface_lang in {"fr_FR", "es_ES", "ru_RU", "pt_BR"} else "400x380"
         )
         # noinspection PyTypeChecker
         self.more_settings_window.after(50, self.more_settings_window.grab_set)
@@ -771,17 +771,39 @@ class MoreSettingsManager:
                 _("Enable this will translate system messages (messages without names)"),
                 delay=0.3)
 
+        # 自定义编码
+        encoding_label = ctk.CTkLabel(
+            self.more_settings_window,
+            text=_("Log Encoding")
+        )
+        encoding_label.grid(row=5, column=0, padx=20, pady=10, sticky="w")
+
+        ToolTip(
+            encoding_label,
+            _("Manually specify the log encoding\n"
+              "If there are garbled characters, try changing this value\n"
+              "Leave it blank for automatic detection"),
+            delay=0.3
+        )
+
+        self.variables["encoding"] = ctk.StringVar(value=self.config.encoding)
+
+        ctk.CTkEntry(
+            self.more_settings_window,
+            textvariable=self.variables["encoding"]
+        ).grid(row=5, column=1, padx=20, pady=10, sticky="w")
+
         ctk.CTkButton(
             self.more_settings_window,
             text=_("Glossary"),
             command=self.open_glossary_window
-        ).grid(row=5, column=0, columnspan=2, padx=20, pady=10, sticky="ew")
+        ).grid(row=6, column=0, columnspan=2, padx=20, pady=10, sticky="ew")
 
         ctk.CTkButton(
             self.more_settings_window,
             text=_("Save Settings"),
             command=self.save_more_settings
-        ).grid(row=6, column=0, columnspan=2, padx=20, pady=20)
+        ).grid(row=7, column=0, columnspan=2, padx=20, pady=20)
 
     def save_more_settings(self):
         update_check_frequency_map = {
@@ -796,10 +818,11 @@ class MoreSettingsManager:
         enable_optimization = self.variables["enable_optimization"].get()
         use_high_version_fix = self.variables["use_high_version_fix"].get()
         trans_sys_message = self.variables["trans_sys_message"].get()
+        encoding = self.variables["encoding"].get()
         logger.info(f"Saving more settings")
         save_config(update_check_frequency=update_check_frequency, include_prerelease=include_prerelease,
                     enable_optimization=enable_optimization, use_high_version_fix=use_high_version_fix,
-                    trans_sys_message=trans_sys_message)
+                    trans_sys_message=trans_sys_message, encoding=encoding)
         self.more_settings_window.destroy()
 
 

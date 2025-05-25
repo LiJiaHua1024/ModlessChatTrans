@@ -32,7 +32,7 @@ from modless_chat_trans.clipboard_monitor import monitor_clipboard, modify_clipb
 from modless_chat_trans.i18n import _
 from modless_chat_trans.updater import Updater
 
-program_info = ProgramInfo(version="v2.1.3",
+program_info = ProgramInfo(version="v2.1.4",
                            author="LiJiaHua1024",
                            email="minecraft_benli@163.com",
                            github="https://github.com/LiJiaHua1024/ModlessChatTrans",
@@ -97,8 +97,7 @@ def start_translation():
 
     monitor_thread = threading.Thread(
         target=monitor_log_file,
-        args=(config.minecraft_log_folder, callback),
-        kwargs={"use_high_version_fix": config.use_high_version_fix}
+        args=(config.minecraft_log_folder, callback, config.use_high_version_fix, config.encoding)
     )
     monitor_thread.daemon = True
     monitor_thread.start()
