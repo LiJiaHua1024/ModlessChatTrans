@@ -699,123 +699,199 @@ class MoreSettingsManager:
         glossary_manager.create_glossary_window()
 
     def create_additional_widgets(self):
-        ctk.CTkLabel(
-            self.more_settings_window,
-            text=_("Automatic Update Frequency")
-        ).grid(row=0, column=0, padx=20, pady=10, sticky="w")
+        # 定义所有控件的配置
+        widgets_config = [
+            {
+                'type': 'label_optionmenu',
+                'label': _("Automatic Update Frequency"),
+                'var_name': 'update_check_frequency',
+                'var_type': 'string',
+                'default': _(
+                    self.config.update_check_frequency
+                    if self.config.update_check_frequency in {
+                        "On Startup", "Daily", "Weekly", "Monthly", "Never"
+                    }
+                    else "Daily"
+                ),
+                'options': [_("On Startup"), _("Daily"), _("Weekly"), _("Monthly"), _("Never")],
+                'row': 0
+            },
+            {
+                'type': 'checkbox',
+                'text': _("Include Pre-release"),
+                'var_name': 'include_prerelease',
+                'var_type': 'boolean',
+                'default': self.config.include_prerelease,
+                'row': 1,
+                'column': 0
+            },
+            {
+                'type': 'button',
+                'text': _("Check for Updates"),
+                'command': lambda: check_and_update(manual_check=True),
+                'row': 1,
+                'column': 1
+            },
+            {
+                'type': 'checkbox',
+                'text': _("Enable Translation Quality Optimization"),
+                'var_name': 'enable_optimization',
+                'var_type': 'boolean',
+                'default': self.config.enable_optimization,
+                'tooltip': _(
+                    "Enabling this will improve translation quality, "
+                    "but will increase latency and consume more tokens"
+                ),
+                'row': 2,
+                'columnspan': 2
+            },
+            {
+                'type': 'checkbox',
+                'text': _("Enable High Version Fix"),
+                'var_name': 'use_high_version_fix',
+                'var_type': 'boolean',
+                'default': self.config.use_high_version_fix,
+                'tooltip': _(
+                    "Enabling this will temporarily fix the issue of logs "
+                    "not being captured in high versions of Minecraft\n"
+                    "If it doesn't work, restart this program"
+                ),
+                'row': 3,
+                'columnspan': 2
+            },
+            {
+                'type': 'checkbox',
+                'text': _("Translate System Messages"),
+                'var_name': 'trans_sys_message',
+                'var_type': 'boolean',
+                'default': self.config.trans_sys_message,
+                'tooltip': _(
+                    "Enable this will translate system messages "
+                    "(messages without names)"
+                ),
+                'row': 4,
+                'columnspan': 2
+            },
+            {
+                'type': 'checkbox',
+                'text': _("Replace Garbled Characters"),
+                'var_name': 'replace_garbled_character',
+                'var_type': 'boolean',
+                'default': self.config.replace_garbled_character,
+                'tooltip': _(
+                    "Replace all garbled characters with "
+                    "Minecraft formatting codes"
+                ),
+                'row': 5,
+                'columnspan': 2
+            },
+            {
+                'type': 'label_entry',
+                'label': _("Log Encoding"),
+                'var_name': 'encoding',
+                'var_type': 'string',
+                'default': self.config.encoding,
+                'tooltip': _(
+                    "Manually specify the log encoding\n"
+                    "If there are garbled characters, try changing this value\n"
+                    "Leave it blank for automatic detection"
+                ),
+                'row': 6
+            },
+            {
+                'type': 'button',
+                'text': _("Glossary"),
+                'command': self.open_glossary_window,
+                'row': 7,
+                'columnspan': 2,
+                'sticky': 'ew'
+            },
+            {
+                'type': 'button',
+                'text': _("Save Settings"),
+                'command': self.save_more_settings,
+                'row': 8,
+                'columnspan': 2,
+                'pady': 20,
+                'sticky': ''
+            }
+        ]
 
-        self.variables["update_check_frequency"] = ctk.StringVar(
-            value=_(self.config.update_check_frequency if self.config.update_check_frequency in
-                                                          {"On Startup", "Daily", "Weekly", "Monthly",
-                                                           "Never"} else "Daily")
-        )
+        # 创建所有控件
+        for config in widgets_config:
+            self._create_widget(config)
 
-        ctk.CTkOptionMenu(
-            self.more_settings_window,
-            values=[_("On Startup"), _("Daily"), _("Weekly"), _("Monthly"), _("Never")],
-            variable=self.variables["update_check_frequency"]
-        ).grid(row=0, column=1, padx=20, pady=10, sticky="w")
+    def _create_widget(self, config):
+        """根据配置创建单个控件"""
+        widget_type = config['type']
+        row = config['row']
+        column = config.get('column', 0)
+        columnspan = config.get('columnspan', 1)
+        padx = config.get('padx', 20)
+        pady = config.get('pady', 10)
+        sticky = config.get('sticky', 'w')
 
-        ctk.CTkButton(
-            self.more_settings_window,
-            text=_("Check for Updates"),
-            command=lambda: check_and_update(manual_check=True)
-        ).grid(row=1, column=1, padx=20, pady=10, sticky="w")
+        # 创建变量
+        if 'var_name' in config:
+            var_type = config['var_type']
+            if var_type == 'string':
+                self.variables[config['var_name']] = ctk.StringVar(value=config['default'])
+            elif var_type == 'boolean':
+                self.variables[config['var_name']] = ctk.BooleanVar(value=config['default'])
 
-        self.variables["include_prerelease"] = ctk.BooleanVar(value=self.config.include_prerelease)
+        # 创建控件
+        if widget_type == 'label_optionmenu':
+            # 创建标签
+            ctk.CTkLabel(
+                self.more_settings_window,
+                text=config['label']
+            ).grid(row=row, column=0, padx=padx, pady=pady, sticky=sticky)
 
-        ctk.CTkCheckBox(
-            self.more_settings_window,
-            text=_("Include Pre-release"),
-            variable=self.variables["include_prerelease"]
-        ).grid(row=1, column=0, padx=20, pady=10, sticky="w")
+            # 创建选项菜单
+            ctk.CTkOptionMenu(
+                self.more_settings_window,
+                values=config['options'],
+                variable=self.variables[config['var_name']]
+            ).grid(row=row, column=1, padx=padx, pady=pady, sticky=sticky)
 
-        self.variables["enable_optimization"] = ctk.BooleanVar(value=self.config.enable_optimization)
+        elif widget_type == 'checkbox':
+            checkbox = ctk.CTkCheckBox(
+                self.more_settings_window,
+                text=config['text'],
+                variable=self.variables[config['var_name']]
+            )
+            checkbox.grid(row=row, column=column, columnspan=columnspan,
+                          padx=padx, pady=pady, sticky=sticky)
 
-        enable_optimization_checkbox = ctk.CTkCheckBox(
-            self.more_settings_window,
-            text=_("Enable Translation Quality Optimization"),
-            variable=self.variables["enable_optimization"]
-        )
-        enable_optimization_checkbox.grid(row=2, column=0, columnspan=2, padx=20, pady=10, sticky="w")
+            # 添加工具提示（如果有）
+            if 'tooltip' in config:
+                ToolTip(checkbox, config['tooltip'], delay=0.3)
 
-        ToolTip(enable_optimization_checkbox,
-                _("Enabling this will improve translation quality, but will increase latency and consume more tokens"),
-                delay=0.3)
+        elif widget_type == 'button':
+            ctk.CTkButton(
+                self.more_settings_window,
+                text=config['text'],
+                command=config['command']
+            ).grid(row=row, column=column, columnspan=columnspan,
+                   padx=padx, pady=pady, sticky=sticky)
 
-        self.variables["use_high_version_fix"] = ctk.BooleanVar(value=self.config.use_high_version_fix)
+        elif widget_type == 'label_entry':
+            # 创建标签
+            label = ctk.CTkLabel(
+                self.more_settings_window,
+                text=config['label']
+            )
+            label.grid(row=row, column=0, padx=padx, pady=pady, sticky=sticky)
 
-        use_high_version_fix_checkbox = ctk.CTkCheckBox(
-            self.more_settings_window,
-            text=_("Enable High Version Fix"),
-            variable=self.variables["use_high_version_fix"]
-        )
-        use_high_version_fix_checkbox.grid(row=3, column=0, columnspan=2, padx=20, pady=10, sticky="w")
+            # 添加工具提示（如果有）
+            if 'tooltip' in config:
+                ToolTip(label, config['tooltip'], delay=0.3)
 
-        ToolTip(use_high_version_fix_checkbox,
-                _("Enabling this will temporarily fix the issue of logs not being captured in high versions of Minecraft"
-                  "\n"
-                  "If it doesn't work, restart this program"),
-                delay=0.3)
-
-        self.variables["trans_sys_message"] = ctk.BooleanVar(value=self.config.trans_sys_message)
-
-        trans_sys_message_checkbox = ctk.CTkCheckBox(
-            self.more_settings_window,
-            text=_("Translate System Messages"),
-            variable=self.variables["trans_sys_message"]
-        )
-        trans_sys_message_checkbox.grid(row=4, column=0, columnspan=2, padx=20, pady=10, sticky="w")
-
-        ToolTip(trans_sys_message_checkbox,
-                _("Enable this will translate system messages (messages without names)"),
-                delay=0.3)
-
-        self.variables["replace_garbled_character"] = ctk.BooleanVar(value=self.config.replace_garbled_character)
-
-        replace_garbled_character_checkbox = ctk.CTkCheckBox(
-            self.more_settings_window,
-            text=_("Replace Garbled Characters"),
-            variable=self.variables["replace_garbled_character"]
-        )
-        replace_garbled_character_checkbox.grid(row=5, column=0, columnspan=2, padx=20, pady=10, sticky="w")
-
-        ToolTip(replace_garbled_character_checkbox,
-                _("Replace all garbled characters with Minecraft formatting codes"),
-                delay=0.3)
-
-        encoding_label = ctk.CTkLabel(
-            self.more_settings_window,
-            text=_("Log Encoding")
-        )
-        encoding_label.grid(row=6, column=0, padx=20, pady=10, sticky="w")
-
-        ToolTip(
-            encoding_label,
-            _("Manually specify the log encoding\n"
-              "If there are garbled characters, try changing this value\n"
-              "Leave it blank for automatic detection"),
-            delay=0.3
-        )
-
-        self.variables["encoding"] = ctk.StringVar(value=self.config.encoding)
-
-        ctk.CTkEntry(
-            self.more_settings_window,
-            textvariable=self.variables["encoding"]
-        ).grid(row=6, column=1, padx=20, pady=10, sticky="w")
-
-        ctk.CTkButton(
-            self.more_settings_window,
-            text=_("Glossary"),
-            command=self.open_glossary_window
-        ).grid(row=7, column=0, columnspan=2, padx=20, pady=10, sticky="ew")
-
-        ctk.CTkButton(
-            self.more_settings_window,
-            text=_("Save Settings"),
-            command=self.save_more_settings
-        ).grid(row=8, column=0, columnspan=2, padx=20, pady=20)
+            # 创建输入框
+            ctk.CTkEntry(
+                self.more_settings_window,
+                textvariable=self.variables[config['var_name']]
+            ).grid(row=row, column=1, padx=padx, pady=pady, sticky=sticky)
 
     def save_more_settings(self):
         update_check_frequency_map = {
@@ -825,24 +901,25 @@ class MoreSettingsManager:
             _("Monthly"): "Monthly",
             _("Never"): "Never"
         }
-        update_check_frequency = update_check_frequency_map[self.variables["update_check_frequency"].get()]
-        include_prerelease = self.variables["include_prerelease"].get()
-        enable_optimization = self.variables["enable_optimization"].get()
-        use_high_version_fix = self.variables["use_high_version_fix"].get()
-        trans_sys_message = self.variables["trans_sys_message"].get()
-        encoding = self.variables["encoding"].get()
-        replace_garbled_character = self.variables["replace_garbled_character"].get()
-        logger.info(f"Saving more settings")
 
-        save_config(
-            update_check_frequency=update_check_frequency,
-            include_prerelease=include_prerelease,
-            enable_optimization=enable_optimization,
-            use_high_version_fix=use_high_version_fix,
-            trans_sys_message=trans_sys_message,
-            encoding=encoding,
-            replace_garbled_character=replace_garbled_character
-        )
+        config_keys = [
+            "include_prerelease",
+            "enable_optimization",
+            "use_high_version_fix",
+            "trans_sys_message",
+            "encoding",
+            "replace_garbled_character"
+        ]
+
+        # 批量获取配置值
+        config_values = {key: self.variables[key].get() for key in config_keys}
+
+        config_values["update_check_frequency"] = update_check_frequency_map[
+            self.variables["update_check_frequency"].get()
+        ]
+
+        logger.info("Saving more settings")
+        save_config(**config_values)
         self.more_settings_window.destroy()
 
 
