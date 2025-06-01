@@ -85,19 +85,38 @@ def start_translation():
             return None
         return None
 
-    translator = Translator(api_key=config.api_key, api_url=config.api_url,
-                            enable_optimization=config.enable_optimization,
-                            traditional_api_key=config.traditional_api_key)
+    translator = Translator(
+        api_key=config.api_key,
+        api_url=config.api_url,
+        enable_optimization=config.enable_optimization,
+        traditional_api_key=config.traditional_api_key
+    )
 
-    init_display(config.output_method, main_window=main_interface_manager.main_window,
-                   http_port=config.http_port, max_messages=config.max_messages,
-                   always_on_top=config.always_on_top, callback=callback)
+    init_display(
+        config.output_method,
+        main_window=main_interface_manager.main_window,
+        http_port=config.http_port,
+        max_messages=config.max_messages,
+        always_on_top=config.always_on_top,
+        callback=callback
+    )
 
-    init_processor(config.trans_sys_message, config.skip_src_lang, config.min_detect_len, config.glossary)
+    init_processor(
+        config.trans_sys_message,
+        config.skip_src_lang,
+        config.min_detect_len,
+        config.glossary,
+        config.replace_garbled_character
+    )
 
     monitor_thread = threading.Thread(
         target=monitor_log_file,
-        args=(config.minecraft_log_folder, callback, config.use_high_version_fix, config.encoding)
+        args=(
+            config.minecraft_log_folder,
+            callback,
+            config.use_high_version_fix,
+            config.encoding
+        )
     )
     monitor_thread.daemon = True
     monitor_thread.start()

@@ -63,6 +63,7 @@ class Config:
     skip_src_lang: list  # ISO 639-1 language code
     min_detect_len: int  # minimum length of detected text
     encoding: str  # encoding of the log file
+    replace_garbled_character: bool  # Replace garbled characters \ufffd\ufffd with \u00A7
     glossary: dict
 
 
@@ -92,6 +93,7 @@ DEFAULT_CONFIG = Config(interface_lang="zh_CN",
                         skip_src_lang=["language1", "language2"],
                         min_detect_len=100,
                         encoding="",
+                        replace_garbled_character=False,
                         glossary={})
 
 

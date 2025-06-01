@@ -29,20 +29,23 @@ min_detect_len = 100
 glossary = {}
 _compiled_glossary_patterns = {}
 glossary_compiled = False
+replace_garbled_character = False
 
 
-def init_processor(_trans_sys_message, _skip_src_lang, _min_detect_len, _glossary):
+def init_processor(_trans_sys_message, _skip_src_lang, _min_detect_len, _glossary, _replace_garbled_character):
     """
     :param _trans_sys_message: 是否翻译系统（name为空）消息，仅对log类型有效
-    :param _skip_src_lang: 跳过的源语言集合
-    :param _min_detect_len: 最小检测长度
+    :param _skip_src_lang: 跳过不翻译的源语言集合
+    :param _min_detect_len: 触发源语言检测的最小消息长度
     :param _glossary: 自定义术语表
+    :param _replace_garbled_character: 是否将乱码字符\ufffd\ufffd替换为\u00A7
     """
-    global trans_sys_message, skip_src_lang, min_detect_len, glossary
+    global trans_sys_message, skip_src_lang, min_detect_len, glossary, replace_garbled_character
     trans_sys_message = _trans_sys_message
     skip_src_lang = _skip_src_lang
     min_detect_len = _min_detect_len
     glossary = _glossary
+    replace_garbled_character = _replace_garbled_character
 
 
 def _compile_glossary_patterns():
@@ -312,6 +315,9 @@ def process_message(data, data_type):
         return "", data.strip()
     else:
         return "", ""
+
+    if replace_garbled_character:
+        chat_message = chat_message.replace("\ufffd\ufffd", "\u00A7")
 
     if chat_message.startswith("<"):
         name, text = chat_message[1:].split(">", 1)
