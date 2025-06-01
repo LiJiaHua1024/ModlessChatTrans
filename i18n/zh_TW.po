@@ -241,3 +241,9 @@ msgstr ""
 "手動指定日誌編碼\n"
 "如果出現亂碼，請嘗試更改此值\n"
 "留空則自動檢測"
+
+msgid "Replace Garbled Characters"
+msgstr "替換亂碼字符"
+
+msgid "Replace all garbled characters with Minecraft formatting codes"
+msgstr "將所有亂碼字符替換為Minecraft格式化代碼"

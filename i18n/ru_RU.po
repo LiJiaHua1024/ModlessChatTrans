@@ -241,3 +241,9 @@ msgstr ""
 "Вручную указать кодировку журнала\n"
 "При наличии нечитаемых символов попробуйте изменить это значение\n"
 "Оставьте пустым для автоматического определения"
+
+msgid "Replace Garbled Characters"
+msgstr "Заменить Поврежденные Символы"
+
+msgid "Replace all garbled characters with Minecraft formatting codes"
+msgstr "Заменить все поврежденные символы кодами форматирования Minecraft"

@@ -243,3 +243,9 @@ msgstr ""
 "Manually specify the log encoding\n"
 "If there are garbled characters, try changing this value\n"
 "Leave it blank for automatic detection"
+
+msgid "Replace Garbled Characters"
+msgstr "Replace Garbled Characters"
+
+msgid "Replace all garbled characters with Minecraft formatting codes"
+msgstr "Replace all garbled characters with Minecraft formatting codes"

@@ -239,3 +239,9 @@ msgstr ""
 "ログのエンコーディングを手動で指定\n"
 "文字化けがある場合は、この値を変更してみてください\n"
 "空白のままにすると自動検出されます"
+
+msgid "Replace Garbled Characters"
+msgstr "文字化けを置換"
+
+msgid "Replace all garbled characters with Minecraft formatting codes"
+msgstr "すべての文字化けをMinecraftフォーマットコードに置換"

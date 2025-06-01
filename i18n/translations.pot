@@ -234,3 +234,9 @@ msgid ""
 "If there are garbled characters, try changing this value\n"
 "Leave it blank for automatic detection"
 msgstr ""
+
+msgid "Replace Garbled Characters"
+msgstr ""
+
+msgid "Replace all garbled characters with Minecraft formatting codes"
+msgstr ""

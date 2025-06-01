@@ -243,3 +243,9 @@ msgstr ""
 "Log-Kodierung manuell festlegen\n"
 "Bei unleserlichen Zeichen versuchen Sie diesen Wert zu ändern\n"
 "Leer lassen für automatische Erkennung"
+
+msgid "Replace Garbled Characters"
+msgstr "Fehlerhafte Zeichen ersetzen"
+
+msgid "Replace all garbled characters with Minecraft formatting codes"
+msgstr "Alle fehlerhaften Zeichen durch Minecraft-Formatierungscodes ersetzen"

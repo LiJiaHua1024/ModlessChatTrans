@@ -239,3 +239,9 @@ msgstr ""
 "Especificar manualmente a codificação do log\n"
 "Se houver caracteres ilegíveis, tente alterar este valor\n"
 "Deixe em branco para detecção automática"
+
+msgid "Replace Garbled Characters"
+msgstr "Substituir Caracteres Corrompidos"
+
+msgid "Replace all garbled characters with Minecraft formatting codes"
+msgstr "Substituir todos os caracteres corrompidos por códigos de formatação do Minecraft"

@@ -239,3 +239,9 @@ msgstr ""
 "로그 인코딩을 수동으로 지정\n"
 "깨진 문자가 있으면 이 값을 변경해 보세요\n"
 "자동 감지를 위해 비워 두세요"
+
+msgid "Replace Garbled Characters"
+msgstr "깨진 문자 교체"
+
+msgid "Replace all garbled characters with Minecraft formatting codes"
+msgstr "모든 깨진 문자를 Minecraft 포맷 코드로 교체"
