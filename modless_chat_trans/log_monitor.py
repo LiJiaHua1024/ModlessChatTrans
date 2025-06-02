@@ -211,7 +211,9 @@ class LogMonitorHandler(FileSystemEventHandler):
     def on_created(self, event):
         logger.debug(f"Detected file creation event for: {event.src_path}")
 
-        if self.use_high_version_fix:
+        if self.use_high_version_fix and event.src_path.endswith(".log.gz"):
+            logger.info("Reopening log file due to high version fix")
+            self.open_file(self.current_file)
             return
 
         if event.src_path.endswith('.log'):
