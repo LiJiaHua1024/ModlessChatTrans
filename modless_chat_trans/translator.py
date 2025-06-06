@@ -223,12 +223,14 @@ class Translator:
             if self.enable_optimization:
                 try:
                     content_dict = json.loads(content_str)
-                except json.JSONDecodeError:
+                except json.JSONDecodeError as e1:
+                    logger.info(f"Initial JSON parsing failed ({e1}), attempting to clean and retry...")
+
                     try:
                         content_dict = json.loads(re.sub(r"^```json\s*([\s\S]*?)\s*```$", r"\1", content_str))
-                    except json.JSONDecodeError:
-                        logger.warning("Failed to parse optimized translation JSON")
-                        return None
+                    except json.JSONDecodeError as e2:
+                        logger.warning("Failed to parse optimized translation JSON even after cleaning")
+                        raise ValueError("Failed to parse optimized translation JSON") from e2
 
                 translated_message = content_dict.get("result", None)
             else:
