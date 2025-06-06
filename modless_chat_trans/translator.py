@@ -162,16 +162,46 @@ class Translator:
             else:
                 message = f"Translate this sentence to {target_language}: {text}"
         else:
-            system_prompt = "You are a professional translation engine specializing in game translations."
+            system_prompt = (
+                "You are a top-tier game localization expert, specializing in providing "
+                "high-quality, stylistically natural real-time chat translations for "
+                "the Minecraft community.\n"
+                "\n"
+                "[Translation Guidelines]\n"
+                "\n"
+                "1. Style and Context: Use colloquial and internet slang that is "
+                "natural within the target language's player community. Avoid stiff, "
+                "formal language. Sentences are often short and simple.\n"
+                "2. Formatting Code Preservation (CRITICAL): You MUST completely "
+                "preserve all Minecraft formatting codes (e.g., `§c`, `§l`). These "
+                "codes must NEVER be translated, modified, or removed.\n"
+                "3. Proper Nouns and Player Names: Do not translate player IDs, "
+                "server names, or non-standard game terms without a widely accepted "
+                "translation.\n"
+                "4. Untranslatable Content: For meaningless keyboard mashing (e.g., "
+                "\"asdasd\") or garbled text, keep the original text as is.\n"
+                "\n"
+                "[Output Requirement]\n"
+                "\n"
+                "Your response MUST ONLY contain the final translated text. Do not "
+                "add any prefixes, suffixes, explanations, or notes."
+            )
 
+            # User Prompt 采用 XML 风格标签
             if source_language:
-                message = (f"Translate from {source_language} to {target_language}. "
-                           f"Do not translate player names, proper nouns, or garbled text. "
-                           f"No explanations. No notes. Text: {text}")
+                message = (
+                    f"Translate the following text from {source_language} to {target_language}.\n\n"
+                    f"<text_to_translate>\n"
+                    f"{text}\n"
+                    f"</text_to_translate>"
+                )
             else:
-                message = (f"Translate to {target_language}. "
-                           f"Do not translate player names, proper nouns, or garbled text. "
-                           f"No explanations. No notes. Text: {text}")
+                message = (
+                    f"Translate the following text to {target_language}.\n\n"
+                    f"<text_to_translate>\n"
+                    f"{text}\n"
+                    f"</text_to_translate>"
+                )
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
