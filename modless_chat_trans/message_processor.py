@@ -256,9 +256,11 @@ def process_decorator(function):
             if matched_translated_message := match_and_translate(original_chat_message):
                 logger.debug(f"Using custom glossary: {original_chat_message} -> {matched_translated_message}")
                 translated_chat_message = matched_translated_message
+                info["glossary_match"] = True
             elif detected_lang != UNKNOWN_LANGUAGE and detected_lang in skip_src_lang:
                 logger.debug(f"Skipping translation for \"{original_chat_message}\" due to skip_src_lang")
                 translated_chat_message = original_chat_message
+                info["skip_src_lang"] = True
             elif original_chat_message in cache:
                 logger.debug(f"Translation cache hit: {original_chat_message}")
                 translated_chat_message = cache[original_chat_message]

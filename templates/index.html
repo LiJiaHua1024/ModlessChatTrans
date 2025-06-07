@@ -353,8 +353,10 @@
             background: rgba(255, 193, 7, 0.95);
         }
 
-        /* 缓存命中标签样式 */
-        .cache-hit-tag {
+        /* 缓存命中、术语表匹配、跳过源语言三者共用样式 */
+        .cache-hit-tag,
+        .glossary-match-tag,
+        .skip-src-lang-tag {
             background: rgba(76, 175, 80, 0.9);
             color: #fff;
             padding: 2px 6px;
@@ -368,57 +370,73 @@
             animation: fadeIn 0.3s ease-in-out;
             white-space: nowrap;
             overflow: hidden;
-            width: 24px; /* 默认只显示图标的宽度，增大以适应更大图标 */
+            width: 24px;
             cursor: pointer;
-            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); /* 更慢的非线性动画 */
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        /* 深色模式下的缓存命中标签 */
-        :root[data-theme="dark"] .cache-hit-tag {
+        /* 深色模式下的新标签 */
+        :root[data-theme="dark"] .cache-hit-tag,
+        :root[data-theme="dark"] .glossary-match-tag,
+        :root[data-theme="dark"] .skip-src-lang-tag {
             background: rgba(76, 175, 80, 0.85);
             color: #fff;
             box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
         }
 
-        /* 缓存图标样式 - 更大更清晰 */
-        .cache-hit-tag svg {
+        /* 图标大小 */
+        .cache-hit-tag svg,
+        .glossary-match-tag svg,
+        .skip-src-lang-tag svg {
             width: 12px;
             height: 12px;
             flex-shrink: 0;
         }
 
-        /* 缓存标签文字 */
-        .cache-hit-text {
+        /* 标签文字 */
+        .cache-hit-text,
+        .glossary-match-text,
+        .skip-src-lang-text {
             opacity: 0;
             margin-left: 2px;
-            transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* 更慢的透明度过渡 */
+            transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
-        /* 鼠标悬停时展开动画 - 改进的非线性效果 */
-        .cache-hit-tag:hover {
+        /* 悬停展开动画 */
+        .cache-hit-tag:hover,
+        .glossary-match-tag:hover,
+        .skip-src-lang-tag:hover {
             width: auto;
             padding-right: 8px;
             background: rgba(76, 175, 80, 1);
-            transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1); /* 更平滑的展开动画 */
+            transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
         }
 
-        .cache-hit-tag:hover .cache-hit-text {
+        .cache-hit-tag:hover .cache-hit-text,
+        .glossary-match-tag:hover .glossary-match-text,
+        .skip-src-lang-tag:hover .skip-src-lang-text {
             opacity: 1;
-            transition: opacity 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s; /* 延迟0.2s开始淡入 */
+            transition: opacity 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s;
         }
 
-        :root[data-theme="dark"] .cache-hit-tag:hover {
+        :root[data-theme="dark"] .cache-hit-tag:hover,
+        :root[data-theme="dark"] .glossary-match-tag:hover,
+        :root[data-theme="dark"] .skip-src-lang-tag:hover {
             background: rgba(76, 175, 80, 0.95);
         }
 
-        /* 鼠标离开时的动画 */
-        .cache-hit-tag:not(:hover) {
-            transition: all 0.5s cubic-bezier(0.55, 0.06, 0.68, 0.19); /* 更慢的收缩动画 */
+        /* 鼠标离开时动画 */
+        .cache-hit-tag:not(:hover),
+        .glossary-match-tag:not(:hover),
+        .skip-src-lang-tag:not(:hover) {
+            transition: all 0.5s cubic-bezier(0.55, 0.06, 0.68, 0.19);
         }
 
-        .cache-hit-tag:not(:hover) .cache-hit-text {
+        .cache-hit-tag:not(:hover) .cache-hit-text,
+        .glossary-match-tag:not(:hover) .glossary-match-text,
+        .skip-src-lang-tag:not(:hover) .skip-src-lang-text {
             opacity: 0;
-            transition: opacity 0.3s ease-out; /* 快速淡出 */
+            transition: opacity 0.3s ease-out;
         }
 
         /* 添加滚动到底部按钮样式 */
@@ -946,7 +964,7 @@
         }
 
         // 创建消息元素的通用函数
-        function createMessageElement(name, messageText, messageTime, duration, cacheHit) {
+        function createMessageElement(name, messageText, messageTime, duration, cacheHit, glossaryMatch, skipSrcLang) {
             var newMessageItem = document.createElement("li");
             var bubbleDiv = document.createElement('div');
             bubbleDiv.className = 'message-bubble';
@@ -993,7 +1011,8 @@
             }
 
             // 创建底部标签容器
-            var hasBottomTags = (duration !== null && duration !== undefined && duration !== "" && duration !== 0) || (cacheHit === true);
+            var hasBottomTags = (duration !== null && duration !== undefined && duration !== "" && duration !== 0) ||
+                               (cacheHit === true) || (glossaryMatch === true) || (skipSrcLang === true);
             if (hasBottomTags) {
                 var bottomTagsContainer = document.createElement('div');
                 bottomTagsContainer.className = 'bottom-tags-container';
@@ -1017,18 +1036,54 @@
                     bottomTagsContainer.appendChild(durationTag);
                 }
 
+                // 添加术语表匹配标签
+                if (glossaryMatch === true) {
+                    var glossaryMatchTag = document.createElement('div');
+                    glossaryMatchTag.className = 'glossary-match-tag';
+
+                    var glossaryIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    glossaryIcon.setAttribute('viewBox', '0 0 24 24');
+                    glossaryIcon.setAttribute('fill', 'currentColor');
+                    glossaryIcon.innerHTML = '<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM5 17V7h14v10H5z"/><path d="M7 9h10v2H7z"/><path d="M7 13h6v2H7z"/>';
+
+                    var glossaryMatchText = document.createElement('span');
+                    glossaryMatchText.className = 'glossary-match-text';
+                    glossaryMatchText.textContent = 'glossary';
+
+                    glossaryMatchTag.appendChild(glossaryIcon);
+                    glossaryMatchTag.appendChild(glossaryMatchText);
+                    bottomTagsContainer.appendChild(glossaryMatchTag);
+                }
+
+                // 添加跳过源语言标签
+                if (skipSrcLang === true) {
+                    var skipSrcLangTag = document.createElement('div');
+                    skipSrcLangTag.className = 'skip-src-lang-tag';
+
+                    var skipIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    skipIcon.setAttribute('viewBox', '0 0 24 24');
+                    skipIcon.setAttribute('fill', 'currentColor');
+                    skipIcon.innerHTML = '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9C4.63 15.55 4 13.85 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1C19.37 8.45 20 10.15 20 12c0 4.42-3.58 8-8 8z"/>';
+
+                    var skipSrcLangText = document.createElement('span');
+                    skipSrcLangText.className = 'skip-src-lang-text';
+                    skipSrcLangText.textContent = 'skipped';
+
+                    skipSrcLangTag.appendChild(skipIcon);
+                    skipSrcLangTag.appendChild(skipSrcLangText);
+                    bottomTagsContainer.appendChild(skipSrcLangTag);
+                }
+
                 // 添加缓存命中标签（如果cache_hit为true）
                 if (cacheHit === true) {
                     var cacheHitTag = document.createElement('div');
                     cacheHitTag.className = 'cache-hit-tag';
 
-                    // 创建更明显的缓存图标 - 使用数据库/存储服务器图标
                     var cacheIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                     cacheIcon.setAttribute('viewBox', '0 0 24 24');
                     cacheIcon.setAttribute('fill', 'currentColor');
                     cacheIcon.innerHTML = '<path d="M6 2c-1.1 0-2 .9-2 2v5H2v6h2v5c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-5h2V9h-2V4c0-1.1-.9-2-2-2H6z"/><circle cx="8" cy="6" r="1"/><circle cx="12" cy="6" r="1"/><circle cx="16" cy="6" r="1"/>';
 
-                    // 创建缓存命中文本
                     var cacheHitText = document.createElement('span');
                     cacheHitText.className = 'cache-hit-text';
                     cacheHitText.textContent = 'cache hit';
@@ -1092,28 +1147,26 @@
                 var name = jsonData.name;
                 var messageText = jsonData.message;
                 var messageTime = jsonData.time;
-                var duration = jsonData.duration; // 获取耗时信息
-                var cacheHit = jsonData.cache_hit; // 获取缓存命中信息
+                var duration = jsonData.duration;
+                var cacheHit = jsonData.cache_hit;
+                var glossaryMatch = jsonData.glossary_match;
+                var skipSrcLang = jsonData.skip_src_lang;
 
                 // 检查是否为翻译完成的INFO消息
                 if (name === "[INFO]" && isTranslating) {
-                    setTimeout(resetTranslationUI, 500); // 稍微延迟以获得更好的用户体验
+                    setTimeout(resetTranslationUI, 500);
                 }
 
                 // 使用通用函数创建消息元素
-                var messageData = createMessageElement(name, messageText, messageTime, duration, cacheHit);
+                var messageData = createMessageElement(name, messageText, messageTime, duration, cacheHit, glossaryMatch, skipSrcLang);
                 messageList.appendChild(messageData.element);
 
-                // 消息添加完毕，减少待处理消息计数
                 pendingMessages--;
-
-                // 处理消息滚动
                 handleMessageScroll(wasAtBottom);
                 updateClearButtonVisibility();
             };
 
             window.eventSource.onerror = function(event) {
-                // 出错时简单地关闭连接
                 window.eventSource.close();
             };
         }
@@ -1123,17 +1176,15 @@
             var messageList = document.getElementById('message-list');
             var clearButton = document.getElementById('clear-messages-btn');
 
-            // 检查 message-list 是否有子元素 (即 li 消息项)
             if (messageList.childElementCount > 0) {
-                clearButton.style.display = 'flex'; // 如果有消息，显示按钮 (使用 flex 因为按钮样式用了 flex)
+                clearButton.style.display = 'flex';
             } else {
-                clearButton.style.display = 'none';  // 如果没有消息，隐藏按钮
+                clearButton.style.display = 'none';
             }
         }
 
         // 检查是否在底部的函数
         function checkIfAtBottom() {
-            // 添加20px的容差值
             var tolerance = 20;
             return (window.innerHeight + window.pageYOffset) >= (document.body.scrollHeight - tolerance);
         }
@@ -1147,7 +1198,6 @@
         function updateScrollButtonState() {
             isAtBottom = checkIfAtBottom();
 
-            // 如果内容不足以滚动或者已经在底部，隐藏按钮
             if (!needsScrolling() || isAtBottom) {
                 scrollBottomBtn.style.display = "none";
             } else {
@@ -1161,90 +1211,61 @@
                 top: document.body.scrollHeight,
                 behavior: 'smooth'
             });
-
-            // 滚动后更新按钮状态
             setTimeout(updateScrollButtonState, 500);
         }
 
-        // 监听滚动事件
         window.addEventListener('scroll', function() {
             lastScrollTime = Date.now();
             updateScrollButtonState();
         });
 
-        // 监听窗口大小变化事件
         window.addEventListener('resize', function() {
             updateScrollButtonState();
         });
 
-        // 按钮点击事件
         scrollBottomBtn.addEventListener('click', function() {
             scrollToBottom();
         });
 
-        // 清除消息按钮点击处理
         document.getElementById('clear-messages-btn').addEventListener('click', function() {
-            // 清除所有乱码元素
             obfuscatedElements.forEach(function(element) {
                 removeObfuscatedElement(element);
             });
             obfuscatedElements.clear();
 
-            // 发送清除请求到服务器
             fetch('/clear-messages', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
+                headers: { 'Content-Type': 'application/json' }
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // 清除本地显示的消息
                     document.getElementById('message-list').innerHTML = '';
-
-                    // 重新初始化EventSource连接以重置状态
                     initializeEventSource();
-
-                    // 更新滚动按钮状态
                     updateScrollButtonState();
-
-                    // 更新清除按钮状态
                     updateClearButtonVisibility();
                 }
             })
-            .catch(() => {
-                // 出错时简单地忽略
-            });
+            .catch(() => {});
         });
 
-        // 设置过滤器点击事件
         document.querySelectorAll('.filter-option').forEach(function(filter) {
             filter.addEventListener('click', function() {
                 var type = this.getAttribute('data-type');
 
-                // 切换选中状态
                 messageFilters[type] = !messageFilters[type];
-
-                // 直接切换对应type的active类
                 this.classList.toggle('active');
-                // // 移除所有可能的激活类（避免颜色冲突）
-                // this.classList.remove('user', 'system', 'error', 'info');
 
                 if (messageFilters[type]) {
-                    // this.classList.add('active'); // 基础active类
-                    this.classList.add(type); // 添加类型特定的类以应用颜色
+                    this.classList.add(type);
                 } else {
                     this.classList.remove(type);
-                    // this.classList.remove('active'); // 移除基础active类
                 }
 
-                // 应用过滤器
                 applyFilters();
             });
         });
 
-        // 应用过滤器到所有消息
         function applyFilters() {
             document.querySelectorAll('.message-bubble').forEach(function(bubble) {
                 var messageType = '';
@@ -1259,7 +1280,6 @@
                     messageType = 'info';
                 }
 
-                // 确保 messageType 被正确识别
                 if (messageType && messageFilters.hasOwnProperty(messageType)) {
                     if (messageFilters[messageType]) {
                         bubble.classList.remove('hidden');
@@ -1267,57 +1287,43 @@
                         bubble.classList.add('hidden');
                     }
                 } else {
-                    // 如果消息没有明确的类型或类型不在过滤器中，则默认显示
                     bubble.classList.remove('hidden');
                 }
             });
 
-            // 过滤后更新滚动按钮状态
             setTimeout(updateScrollButtonState, 50);
         }
 
-        // 消息输入处理
         var messageInput = document.getElementById("message-input");
         var sendButton = document.getElementById("send-button");
         var translationIndicator = document.querySelector(".translation-indicator");
         var isTranslating = false;
 
-        // 处理消息发送
         function sendMessage() {
             var message = messageInput.value.trim();
             if (message === "" || isTranslating) return;
 
-            // 禁用输入并显示翻译动画
             isTranslating = true;
             messageInput.disabled = true;
             sendButton.disabled = true;
             translationIndicator.classList.add("active");
 
-            // 向服务器发送消息
             fetch('/send-message', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: message })
             })
             .then(response => response.json())
             .then(data => {
                 console.log("收到翻译:", data.translated);
-                // 实际翻译后的消息将通过SSE流接收
             })
-            .catch(error => {
-                // 发生错误时重置UI
+            .catch(() => {
                 resetTranslationUI();
             });
 
-            // 清空输入框
             messageInput.value = "";
-            // 不需要重置高度，因为输入框是单行的
-            // messageInput.style.height = "auto";
         }
 
-        // 接收到响应后重置翻译UI
         function resetTranslationUI() {
             isTranslating = false;
             messageInput.disabled = false;
@@ -1325,9 +1331,7 @@
             translationIndicator.classList.remove("active");
         }
 
-        // 发送按钮点击处理
         sendButton.addEventListener("click", sendMessage);
-
         messageInput.addEventListener("keydown", function(e) {
             if (e.key === "Enter") {
                 e.preventDefault();
@@ -1335,22 +1339,17 @@
             }
         });
 
-        // 页面卸载时清理乱码效果
         window.addEventListener('beforeunload', function() {
             stopObfuscatedEffect();
         });
 
-        // 初始化EventSource
         initializeEventSource();
 
-        // 初始加载时应用过滤器并更新滚动按钮
         document.addEventListener('DOMContentLoaded', (event) => {
-            // 确保初始过滤器按钮状态正确反映 messageFilters 对象
             document.querySelectorAll('.filter-option').forEach(function(filter) {
                 var type = filter.getAttribute('data-type');
                 if (messageFilters[type]) {
                     filter.classList.add('active');
-                    // 添加对应的类型类以应用颜色
                     filter.classList.add(type);
                 } else {
                     filter.classList.remove('active');
@@ -1372,10 +1371,8 @@
             function updateIcon() {
                 var currentTheme = document.documentElement.getAttribute("data-theme");
                 if (currentTheme === "dark") {
-                    // 当前为深色模式，显示太阳图标（点击后切换至浅色模式）
                     toggleButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
                 } else {
-                    // 当前为浅色模式，显示月亮图标（点击后切换至深色模式）
                     toggleButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 0112.21 3 7 7 0 0012 21a9 9 0 009-8.21z"></path></svg>';
                 }
             }

@@ -97,6 +97,8 @@ def start_httpserver(port, callback):
                                     "message": message,
                                     "time": timestamp,  # 添加时间信息到JSON数据中
                                     "duration": duration,  # 耗时
+                                    "glossary_match": info.get("glossary_match", False),
+                                    "skip_src_lang": info.get("skip_src_lang", False),
                                     "cache_hit": info.get("cache_hit", False)
                                 }
 
