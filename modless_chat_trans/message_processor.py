@@ -218,11 +218,22 @@ def process_decorator(function):
         :param model: 模型名称
         :param source_language: 源语言
         :param target_language: 目标语言
-        :return: 元组 (玩家名称, 消息内容) 或 消息内容
+        :return:
+            - None：应被丢弃的数据（可能是不包含[CHAT]的日志行，也可能是系统消息且trans_sys_message为False）
+            - 长度为3的元组：
+                - data_type == "log":
+                    - [0]: 名称（如果有）, if [0] == "[ERROR]": 翻译失败，此时[1]为错误信息
+                    - [1]: 翻译后的消息
+                    - [2]: 相关信息（如是否命中缓存、消耗token等）
+                - data_type == "clipboard":
+                    - [0]: 是否翻译失败，if [0]: 翻译失败，此时[1]为错误信息
+                    - [1]: 翻译后的消息
+                    - [2]: 相关信息（如是否命中缓存、消耗token等）
         """
 
         name, original_chat_message = function(data, data_type)
         translated_chat_message: str = ""
+        info: dict = {}
         if data_type == "log" and not trans_sys_message and not name:
             return ""
         if original_chat_message:
@@ -251,6 +262,7 @@ def process_decorator(function):
             elif original_chat_message in cache:
                 logger.debug(f"Translation cache hit: {original_chat_message}")
                 translated_chat_message = cache[original_chat_message]
+                info["cache_hit"] = True
             else:
                 try:
                     if translation_service == "LLM":
@@ -267,31 +279,32 @@ def process_decorator(function):
                     if response:
                         if response.status_code == 429:
                             # 请求过多
-                            return "[ERROR]", _("Translation failed: Too many requests. Please try again later.")
+                            return "[ERROR]", _("Translation failed: Too many requests. Please try again later."), info
                         elif 500 <= response.status_code < 600:
                             # 服务器错误
-                            return "[ERROR]", _("Translation failed: Server error. Please try again later.")
+                            return "[ERROR]", _("Translation failed: Server error. Please try again later."), info
                         else:
                             # 其他 HTTP 错误
-                            return "[ERROR]", _("Translation failed: HTTP error occurred.")
+                            return "[ERROR]", _("Translation failed: HTTP error occurred."), info
                     else:
                         # 无法获取响应对象，可能是网络问题
-                        return "[ERROR]", _("Translation failed: Network issue or HTTP error occurred.")
+                        return "[ERROR]", _("Translation failed: Network issue or HTTP error occurred."), info
                 except JSONDecodeError:
                     # JSON 解码错误，可能是网络问题或服务器返回了非 JSON 数据
-                    return "[ERROR]", _("Translation failed: Invalid response from server. Please check your network connection.")
+                    return "[ERROR]", _("Translation failed: Invalid response from server. Please check your network connection."), info
                 except Exception as e:
                     # 捕获其他未知错误
-                    return "[ERROR]", f"{_('Translation failed, error:')} {e}"
+                    return "[ERROR]", f"{_('Translation failed, error:')} {e}", info
 
                 if translated_chat_message:
                     logger.debug(f"Translation successful, caching result: {original_chat_message} -> {translated_chat_message}")
                     cache[original_chat_message] = translated_chat_message
-            if name:
-                return name, translated_chat_message
-            if data_type == "clipboard":
-                return translated_chat_message
-            return "", translated_chat_message
+
+            if data_type == "log":
+                return name or "", translated_chat_message, info
+            elif data_type == "clipboard":
+                return False, translated_chat_message, info
+
         return None
 
     return wrapper

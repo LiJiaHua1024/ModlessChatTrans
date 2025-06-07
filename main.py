@@ -33,14 +33,20 @@ from modless_chat_trans.clipboard_monitor import monitor_clipboard, modify_clipb
 from modless_chat_trans.i18n import _
 from modless_chat_trans.updater import Updater
 
-program_info = ProgramInfo(version="v2.1.4",
-                           author="LiJiaHua1024",
-                           email="minecraft_benli@163.com",
-                           github="https://github.com/LiJiaHua1024/ModlessChatTrans",
-                           license=("GNU General Public License v3.0", "https://www.gnu.org/licenses/gpl-3.0.html"))
+program_info = ProgramInfo(
+    version="v2.1.4",
+    author="LiJiaHua1024",
+    email="minecraft_benli@163.com",
+    github="https://github.com/LiJiaHua1024/ModlessChatTrans",
+    license=("GNU General Public License v3.0", "https://www.gnu.org/licenses/gpl-3.0.html")
+)
 
-updater = Updater(program_info.version, program_info.author, "ModlessChatTrans",
-                  include_prerelease=conf.include_prerelease)
+updater = Updater(
+    program_info.version,
+    program_info.author,
+    "ModlessChatTrans",
+    include_prerelease=conf.include_prerelease
+)
 
 logger.info(f"ModlessChatTrans {program_info.version} started, "
             f"Platform: {'Windows' if get_platform() == 0 else 'Linux'}, "
@@ -55,13 +61,22 @@ def start_translation():
         # 重试5次
         for i in range(5):
             if data_type == "log":
-                if processed_message := process_message(data, data_type, translator, config.trans_service,
-                                                        model=config.model,
-                                                        source_language=config.op_src_lang,
-                                                        target_language=config.op_tgt_lang):
+                if processed_message := process_message(
+                        data,
+                        data_type,
+                        translator,
+                        config.trans_service,
+                        model=config.model,
+                        source_language=config.op_src_lang,
+                        target_language=config.op_tgt_lang
+                ):
                     if processed_message[1]:
                         duration = time.time() - start_time
-                        display_message(*processed_message, config.output_method, duration=duration)
+                        display_message(
+                            *processed_message,
+                            config.output_method,
+                            duration=duration
+                        )
                         if processed_message[0] != "[ERROR]":
                             break
                         else:
@@ -71,20 +86,29 @@ def start_translation():
                 else:
                     break  # 不是聊天消息，跳过
             elif data_type == "clipboard":
-                if processed_message := process_message(data, data_type, translator, config.trans_service,
-                                                        model=config.model,
-                                                        source_language=config.self_src_lang,
-                                                        target_language=config.self_tgt_lang):
-                    if type(processed_message) == str:
-                        modify_clipboard(processed_message)
+                if processed_message := process_message(
+                        data,
+                        data_type,
+                        translator,
+                        config.trans_service,
+                        model=config.model,
+                        source_language=config.self_src_lang,
+                        target_language=config.self_tgt_lang
+                ):
+                    if not processed_message[0]:
+                        modify_clipboard(processed_message[1])
                         duration = time.time() - start_time
-                        display_message("[INFO]", _("Chat messages translated, translation results in clipboard"),
-                                        config.output_method, duration=duration)
-                        return processed_message
-                    elif type(processed_message) == tuple and processed_message[0] == "[ERROR]":
+                        display_message(
+                            "[INFO]",
+                            _("Chat messages translated, translation results in clipboard"),
+                            processed_message[2],
+                            config.output_method,
+                            duration=duration
+                        )
+                        return processed_message[1]
+                    else:
                         display_message(*processed_message, config.output_method)
                         return None
-                    return None
                 return None
             return None
         return None

@@ -68,12 +68,13 @@ def _speech_display(message):
         raise e
 
 
-def display_message(name, message, output_method, duration=None):
+def display_message(name, message, info, output_method, duration=None):
     """
     呈现消息
 
     :param name: 名称
     :param message: 消息内容
+    :param info: 相关信息（如是否命中缓存、消耗token等）
     :param output_method: 呈现方式，目前支持 graphical/speech/httpserver
     :param duration: 消息处理耗时（秒）
     """
@@ -98,7 +99,7 @@ def display_message(name, message, output_method, duration=None):
         elif output_method == "Speech":
             _speech_display(text)
         elif output_method == "Httpserver":
-            httpserver_display(name, message, duration)
+            httpserver_display(name, message, duration, info)
         else:
             error_msg = f"Unsupported output method: {output_method}"
             logger.error(error_msg)
