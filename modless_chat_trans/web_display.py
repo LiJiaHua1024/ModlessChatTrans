@@ -89,11 +89,13 @@ def start_httpserver(port, callback):
                                 name = message_tuple[0]
                                 message = message_tuple[1]
                                 timestamp = message_tuple[2]
+                                duration = message_tuple[3]
 
                                 message_data = {
                                     "name": name,
                                     "message": message,
-                                    "time": timestamp  # 添加时间信息到JSON数据中
+                                    "time": timestamp,  # 添加时间信息到JSON数据中
+                                    "duration": duration  # 耗时
                                 }
 
                                 json_message = json.dumps(message_data, ensure_ascii=False)
@@ -115,11 +117,11 @@ def start_httpserver(port, callback):
         logger.error(f"Failed to start HTTP server: {str(e)}")
 
 
-def httpserver_display(name, message):
+def httpserver_display(name, message, duration):
     global http_messages
     try:
         current_time = datetime.now().strftime("%H:%M")
         logger.debug(f"Adding message from {name if name else 'System'} to HTTP server queue")
-        http_messages.append((name, message, current_time))
+        http_messages.append((name, message, current_time, duration))
     except Exception as e:
         logger.error(f"Error adding message to HTTP server: {str(e)}")

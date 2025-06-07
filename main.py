@@ -14,6 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import threading
+import time
 
 from modless_chat_trans.file_utils import read_config, get_platform
 from modless_chat_trans.i18n import set_language
@@ -50,6 +51,7 @@ def start_translation():
     config = read_config()
 
     def callback(data, data_type):
+        start_time = time.time()
         # 重试5次
         for i in range(5):
             if data_type == "log":
@@ -58,7 +60,8 @@ def start_translation():
                                                         source_language=config.op_src_lang,
                                                         target_language=config.op_tgt_lang):
                     if processed_message[1]:
-                        display_message(*processed_message, config.output_method)
+                        duration = time.time() - start_time
+                        display_message(*processed_message, config.output_method, duration=duration)
                         if processed_message[0] != "[ERROR]":
                             break
                         else:
@@ -74,8 +77,9 @@ def start_translation():
                                                         target_language=config.self_tgt_lang):
                     if type(processed_message) == str:
                         modify_clipboard(processed_message)
+                        duration = time.time() - start_time
                         display_message("[INFO]", _("Chat messages translated, translation results in clipboard"),
-                                        config.output_method)
+                                        config.output_method, duration=duration)
                         return processed_message
                     elif type(processed_message) == tuple and processed_message[0] == "[ERROR]":
                         display_message(*processed_message, config.output_method)

@@ -68,13 +68,14 @@ def _speech_display(message):
         raise e
 
 
-def display_message(name, message, output_method):
+def display_message(name, message, output_method, duration=None):
     """
     呈现消息
 
     :param name: 名称
     :param message: 消息内容
     :param output_method: 呈现方式，目前支持 graphical/speech/httpserver
+    :param duration: 消息处理耗时（秒）
     """
     try:
         logger.debug(f"Displaying message from '{name if name else 'System'}' using {output_method}")
@@ -84,12 +85,20 @@ def display_message(name, message, output_method):
         else:
             text = message
 
+        if duration is not None:
+            if duration < 0.001:
+                duration = "instant"
+            elif duration < 1:
+                duration = f"{round(duration * 1000)}ms"
+            else:
+                duration = f"{round(duration, 2)}s"
+
         if output_method == "Graphical":
             chat_interface_manager.display(name, message)
         elif output_method == "Speech":
             _speech_display(text)
         elif output_method == "Httpserver":
-            httpserver_display(name, message)
+            httpserver_display(name, message, duration)
         else:
             error_msg = f"Unsupported output method: {output_method}"
             logger.error(error_msg)

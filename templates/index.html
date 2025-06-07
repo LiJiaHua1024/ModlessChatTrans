@@ -303,6 +303,50 @@
             font-weight: 300;
         }
 
+        /* 耗时标签样式 */
+        .duration-tag {
+            position: absolute;
+            bottom: -8px;
+            left: 8px;
+            background: rgba(255, 193, 7, 0.9);
+            color: #333;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+            z-index: 1;
+            animation: fadeIn 0.3s ease-in-out;
+            transition: all 0.3s ease;
+        }
+
+        /* 深色模式下的耗时标签 */
+        :root[data-theme="dark"] .duration-tag {
+            background: rgba(255, 193, 7, 0.85);
+            color: #1a1a1a;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 闪电图标样式 */
+        .duration-tag svg {
+            width: 10px;
+            height: 10px;
+            flex-shrink: 0;
+        }
+
+        /* 鼠标悬停效果 */
+        .duration-tag:hover {
+            transform: scale(1.05);
+            background: rgba(255, 193, 7, 1);
+        }
+
+        :root[data-theme="dark"] .duration-tag:hover {
+            background: rgba(255, 193, 7, 0.95);
+        }
+
         /* 添加滚动到底部按钮样式 */
         .scroll-to-bottom {
             position: fixed;
@@ -637,7 +681,7 @@
     <div id="clear-messages-btn" class="clear-messages">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2v2"></path>
             <line x1="10" y1="11" x2="10" y2="17"></line>
             <line x1="14" y1="11" x2="14" y2="17"></line>
         </svg>
@@ -828,7 +872,7 @@
         }
 
         // 创建消息元素的通用函数
-        function createMessageElement(name, messageText, messageTime) {
+        function createMessageElement(name, messageText, messageTime, duration) {
             var newMessageItem = document.createElement("li");
             var bubbleDiv = document.createElement('div');
             bubbleDiv.className = 'message-bubble';
@@ -872,6 +916,25 @@
                 timeDiv.textContent = messageTime;
 
                 bubbleDiv.append(nameSpan, textDiv, timeDiv);
+            }
+
+            // 添加耗时标签（如果有duration信息）
+            if (duration !== null && duration !== undefined) {
+                var durationTag = document.createElement('div');
+                durationTag.className = 'duration-tag';
+
+                // 创建闪电图标
+                var lightningIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                lightningIcon.setAttribute('viewBox', '0 0 24 24');
+                lightningIcon.setAttribute('fill', 'currentColor');
+                lightningIcon.innerHTML = '<path d="M13 0L6 12h5l-1 12 7-12h-5l1-12z"/>';
+
+                // 创建耗时文本
+                var durationText = document.createTextNode(duration.toString());
+
+                durationTag.appendChild(lightningIcon);
+                durationTag.appendChild(durationText);
+                bubbleDiv.appendChild(durationTag);
             }
 
             // 检查过滤状态
@@ -925,6 +988,7 @@
                 var name = jsonData.name;
                 var messageText = jsonData.message;
                 var messageTime = jsonData.time;
+                var duration = jsonData.duration; // 获取耗时信息
 
                 // 检查是否为翻译完成的INFO消息
                 if (name === "[INFO]" && isTranslating) {
@@ -932,7 +996,7 @@
                 }
 
                 // 使用通用函数创建消息元素
-                var messageData = createMessageElement(name, messageText, messageTime);
+                var messageData = createMessageElement(name, messageText, messageTime, duration);
                 messageList.appendChild(messageData.element);
 
                 // 消息添加完毕，减少待处理消息计数
