@@ -755,6 +755,63 @@
                 height: 45px;
             }
         }
+
+        /* 添加usage标签样式 */
+        .usage-tag {
+            background: rgba(0, 150, 136, 0.9); /* 改为蓝绿色 */
+            color: white;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+            animation: fadeIn 0.3s ease-in-out;
+            white-space: nowrap;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        /* 深色模式下的usage标签 */
+        :root[data-theme="dark"] .usage-tag {
+            background: rgba(0, 150, 136, 0.85); /* 改为蓝绿色 */
+            color: white;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        /* usage图标样式 */
+        .usage-tag svg {
+            width: 12px;
+            height: 12px;
+            flex-shrink: 0;
+        }
+
+        /* 默认只显示total */
+        .usage-detail {
+            display: none;
+        }
+
+        /* 悬停时显示完整信息 */
+        .usage-tag:hover .usage-total {
+            display: none;
+        }
+
+        .usage-tag:hover .usage-detail {
+            display: inline;
+        }
+
+        /* 鼠标悬停效果 */
+        .usage-tag:hover {
+            transform: scale(1.05);
+            background: rgba(0, 150, 136, 1); /* 改为蓝绿色 */
+        }
+
+        :root[data-theme="dark"] .usage-tag:hover {
+            background: rgba(0, 150, 136, 0.95); /* 改为蓝绿色 */
+        }
     </style>
 </head>
 <body>
@@ -964,7 +1021,7 @@
         }
 
         // 创建消息元素的通用函数
-        function createMessageElement(name, messageText, messageTime, duration, cacheHit, glossaryMatch, skipSrcLang) {
+        function createMessageElement(name, messageText, messageTime, duration, cacheHit, glossaryMatch, skipSrcLang, usage) {
             var newMessageItem = document.createElement("li");
             var bubbleDiv = document.createElement('div');
             bubbleDiv.className = 'message-bubble';
@@ -1012,10 +1069,42 @@
 
             // 创建底部标签容器
             var hasBottomTags = (duration !== null && duration !== undefined && duration !== "" && duration !== 0) ||
-                               (cacheHit === true) || (glossaryMatch === true) || (skipSrcLang === true);
+                               (cacheHit === true) || (glossaryMatch === true) || (skipSrcLang === true) ||
+                               (usage && usage.total_tokens !== null && usage.total_tokens !== undefined);
             if (hasBottomTags) {
                 var bottomTagsContainer = document.createElement('div');
                 bottomTagsContainer.className = 'bottom-tags-container';
+
+                // 添加usage标签（如果有usage信息）
+                if (usage && usage.total_tokens !== null && usage.total_tokens !== undefined) {
+                    var usageTag = document.createElement('div');
+                    usageTag.className = 'usage-tag';
+
+                    // 创建usage图标 (更换为代币图标)
+                    var usageIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    usageIcon.setAttribute('viewBox', '0 0 24 24');
+                    usageIcon.setAttribute('fill', 'none');
+                    usageIcon.setAttribute('stroke', 'currentColor');
+                    usageIcon.setAttribute('stroke-width', '2');
+                    usageIcon.setAttribute('stroke-linecap', 'round');
+                    usageIcon.setAttribute('stroke-linejoin', 'round');
+                    usageIcon.innerHTML = '<path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M14.8 9a2 2 0 0 0 -1.8 -1h-2a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-2a2 2 0 0 1 -1.8 -1" /><path d="M12 6v2" /><path d="M12 16v2" />';
+
+                    // 创建total显示
+                    var usageTotal = document.createElement('span');
+                    usageTotal.className = 'usage-total';
+                    usageTotal.textContent = usage.total_tokens;
+
+                    // 创建详细信息 (添加单位)
+                    var usageDetail = document.createElement('span');
+                    usageDetail.className = 'usage-detail';
+                    usageDetail.textContent = `${usage.prompt_tokens}+${usage.completion_tokens}=${usage.total_tokens} tokens`;
+
+                    usageTag.appendChild(usageIcon);
+                    usageTag.appendChild(usageTotal);
+                    usageTag.appendChild(usageDetail);
+                    bottomTagsContainer.appendChild(usageTag);
+                }
 
                 // 添加耗时标签（如果有duration信息）
                 if (duration !== null && duration !== undefined && duration !== "" && duration !== 0) {
@@ -1151,6 +1240,7 @@
                 var cacheHit = jsonData.cache_hit;
                 var glossaryMatch = jsonData.glossary_match;
                 var skipSrcLang = jsonData.skip_src_lang;
+                var usage = jsonData.usage;
 
                 // 检查是否为翻译完成的INFO消息
                 if (name === "[INFO]" && isTranslating) {
@@ -1158,7 +1248,7 @@
                 }
 
                 // 使用通用函数创建消息元素
-                var messageData = createMessageElement(name, messageText, messageTime, duration, cacheHit, glossaryMatch, skipSrcLang);
+                var messageData = createMessageElement(name, messageText, messageTime, duration, cacheHit, glossaryMatch, skipSrcLang, usage);
                 messageList.appendChild(messageData.element);
 
                 pendingMessages--;

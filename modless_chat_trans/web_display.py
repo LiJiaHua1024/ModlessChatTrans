@@ -99,7 +99,8 @@ def start_httpserver(port, callback):
                                     "duration": duration,  # 耗时
                                     "glossary_match": info.get("glossary_match", False),
                                     "skip_src_lang": info.get("skip_src_lang", False),
-                                    "cache_hit": info.get("cache_hit", False)
+                                    "cache_hit": info.get("cache_hit", False),
+                                    "usage": info.get("usage", {})
                                 }
 
                                 json_message = json.dumps(message_data, ensure_ascii=False)

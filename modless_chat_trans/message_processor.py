@@ -268,9 +268,14 @@ def process_decorator(function):
             else:
                 try:
                     if translation_service == "LLM":
-                        translated_chat_message = translator.llm_translate(original_chat_message, model=model,
-                                                                           source_language=source_language,
-                                                                           target_language=target_language)
+                        if result := translator.llm_translate(
+                            original_chat_message,
+                            model=model,
+                            source_language=source_language,
+                            target_language=target_language
+                            ):
+                            translated_chat_message = result["result"]
+                            info["usage"] = result["usage"]
                     elif translation_service in services:
                         translated_chat_message = translator.traditional_translate(original_chat_message,
                                                                                    translation_service,

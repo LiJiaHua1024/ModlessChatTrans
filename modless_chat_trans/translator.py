@@ -103,7 +103,9 @@ class Translator:
         :param model: 翻译使用的模型
         :param source_language: 源语言，不填则为self.default_source_language
         :param target_language: 目标语言，不填则为self.default_target_language
-        :return: 翻译后的消息
+        :return: 包含翻译结果和token使用信息的字典，格式为:
+                 {"result": "翻译结果", "usage": {"prompt_tokens": x, "completion_tokens": y, "total_tokens": z}}
+                 失败时返回 None
         """
 
         source_language = source_language or self.default_source_language
@@ -219,7 +221,11 @@ class Translator:
         response = requests.post(self.api_url, headers=headers, json=data)
 
         if response.status_code == 200:
-            content_str = response.json().get("choices", [])[0].get("message", {}).get("content", "")
+            response_data = response.json()
+            content_str = response_data.get("choices", [])[0].get("message", {}).get("content", "")
+
+            usage_info = response_data.get("usage", {})
+
             if self.enable_optimization:
                 try:
                     content_dict = json.loads(content_str)
@@ -236,7 +242,10 @@ class Translator:
             else:
                 translated_message = content_str
 
-            return translated_message
+            return {
+                "result": translated_message,
+                "usage": usage_info
+            }
         else:
             logger.error(f"LLM translation failed: {response.status_code} - {response.text}")
             return None
