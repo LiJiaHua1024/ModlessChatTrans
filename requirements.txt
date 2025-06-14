@@ -11,3 +11,7 @@ tkinter-tooltip~=3.1.2
 loguru~=0.7.3
 langdetect~=1.0.9
 packaging~=25.0
+# 如需滚动和高度限制的下拉菜单，请按以下步骤操作：
+# 1. 下载仓库 https://github.com/Akascape/CTkScrollableDropdown
+# 2. 解压后进入仓库目录
+# 3. 将其中的 CTkScrollableDropdown 子文件夹复制到项目根目录

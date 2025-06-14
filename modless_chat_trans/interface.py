@@ -27,6 +27,14 @@ from modless_chat_trans.i18n import _, supported_languages, lang_window_size_map
 from modless_chat_trans.translator import services, service_supported_languages
 from modless_chat_trans.logger import logger
 
+try:
+    from CTkScrollableDropdown import CTkScrollableDropdown  # 提供滚动和高度限制的下拉菜单
+
+    logger.info("CTkScrollableDropdown imported successfully")
+except ImportError:
+    CTkScrollableDropdown = None
+    logger.info("CTkScrollableDropdown not found, using default dropdown")
+
 if (platform := get_platform()) == 0:
     import hPyT
 
@@ -405,12 +413,26 @@ class MainInterfaceManager:
                 self.main_window, values=service_supported_languages[service], variable=src_lang_var)
             self.traditional_widgets["source_language_menu"].grid(row=2, column=1, padx=20, pady=10, sticky="w")
 
+            if CTkScrollableDropdown is not None:
+                try:
+                    CTkScrollableDropdown(self.traditional_widgets["source_language_menu"],
+                                          values=service_supported_languages[service])
+                except Exception as e:
+                    logger.debug(f"Failed to attach scrollable dropdown (src): {e}")
+
             self.traditional_widgets["target_language_menu"] = ctk.CTkOptionMenu(
                 self.main_window,
                 values=[l for l in service_supported_languages[service] if l != 'auto'],
                 variable=tgt_lang_var
             )
             self.traditional_widgets["target_language_menu"].grid(row=3, column=1, padx=20, pady=10, sticky="w")
+
+            if CTkScrollableDropdown is not None:
+                try:
+                    CTkScrollableDropdown(self.traditional_widgets["target_language_menu"],
+                                          values=[l for l in service_supported_languages[service] if l != 'auto'])
+                except Exception as e:
+                    logger.debug(f"Failed to attach scrollable dropdown (tgt): {e}")
 
             self.traditional_widgets["use_api_key_var"] = ctk.BooleanVar(value=bool(self.config.traditional_api_key))
             self.traditional_widgets["use_api_key_checkbox"] = ctk.CTkCheckBox(
@@ -568,6 +590,12 @@ class MainInterfaceManager:
                     self.widgets[1]["self_source_language_menu"] = ctk.CTkOptionMenu(
                         self.main_window, values=service_supported_languages[service], variable=self.self_src_lang_var)
                     self.widgets[1]["self_source_language_menu"].grid(row=8, column=1, padx=20, pady=10, sticky="w")
+                    if CTkScrollableDropdown is not None:
+                        try:
+                            CTkScrollableDropdown(self.widgets[1]["self_source_language_menu"],
+                                                  values=service_supported_languages[service])
+                        except Exception as e:
+                            logger.debug(f"Failed to attach scrollable dropdown (self src): {e}")
                 if not self.widgets[1]["self_target_language_menu"]:
                     self.widgets[1]["self_target_language_label"] = ctk.CTkLabel(self.main_window,
                                                                                  text=_("Self Target Language:"))
@@ -583,6 +611,13 @@ class MainInterfaceManager:
                         variable=self.self_tgt_lang_var
                     )
                     self.widgets[1]["self_target_language_menu"].grid(row=9, column=1, padx=20, pady=10, sticky="w")
+                    if CTkScrollableDropdown is not None:
+                        try:
+                            CTkScrollableDropdown(self.widgets[1]["self_target_language_menu"],
+                                                  values=[l for l in service_supported_languages[service] if
+                                                          l != 'auto'])
+                        except Exception as e:
+                            logger.debug(f"Failed to attach scrollable dropdown (self tgt): {e}")
         else:
             if service == "LLM":
                 if self.widgets[0]["self_source_language_entry"]:
