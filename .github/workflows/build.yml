@@ -43,6 +43,12 @@ jobs:
         # 将源文件夹复制到仓库根目录
         Copy-Item -Path "$tmpDir\CTkScrollableDropdown-main\CTkScrollableDropdown" `
                   -Destination "${{ github.workspace }}" -Recurse -Force
+
+        # 复制第三方库许可证，确保遵循 MIT 许可要求
+        $licenseDir = "${{ github.workspace }}\third_party_licenses"
+        New-Item -ItemType Directory -Path $licenseDir -Force | Out-Null
+        Copy-Item -Path "$tmpDir\CTkScrollableDropdown-main\LICENSE" `
+                  -Destination "$licenseDir\CTkScrollableDropdown_LICENSE" -Force
       shell: pwsh
 
     - name: Determine version
@@ -79,6 +85,7 @@ jobs:
           '--include-package-data=langdetect'
           '--include-data-dir=locales=./locales'
           '--include-data-dir=templates=./templates'
+          '--include-data-dir=third_party_licenses=./third_party_licenses'
           '--include-data-file=choose_language.png=./choose_language.png'
           '--output-filename=ModlessChatTrans'
           '--file-description=ModlessChatTrans'
@@ -113,4 +120,6 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ModlessChatTrans
-        path: ./ModlessChatTrans_v${{ steps.determine_version.outputs.version }}.exe
+        path: |
+          ./ModlessChatTrans_v${{ steps.determine_version.outputs.version }}.exe
+          ./third_party_licenses
