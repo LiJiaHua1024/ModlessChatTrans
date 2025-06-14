@@ -87,6 +87,11 @@ ModlessChatTrans 使用纯 Python 编写。
 本项目遵循 [GNU 通用公共许可证 第3版](https://www.gnu.org/licenses/gpl-3.0.zh-cn.html)。更多信息请参阅 [LICENSE](LICENSE)
 文件。
 
+### 致谢
+
+本项目的部分 UI 功能使用了由 [Akascape](https://github.com/Akascape)
+开发的 [CTkScrollableDropdown](https://github.com/Akascape/CTkScrollableDropdown) 项目，该项目基于 MIT 许可证授权
+
 ### 贡献
 
 本项目由[LiJiaHua1024](https://github.com/LiJiaHua1024)开发

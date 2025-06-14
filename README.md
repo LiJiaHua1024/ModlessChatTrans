@@ -102,6 +102,11 @@ ModlessChatTrans is developed entirely in Python.
 This project follows the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html). For more
 information, please refer to the [LICENSE](LICENSE) file.
 
+### Acknowledgements
+
+This project utilizes [CTkScrollableDropdown](https://github.com/Akascape/CTkScrollableDropdown)
+by [Akascape](https://github.com/Akascape) for some of its UI features, which is licensed under the MIT License.
+
 ### Contribution
 
 This project is developed by [LiJiaHua1024](https://github.com/LiJiaHua1024)
