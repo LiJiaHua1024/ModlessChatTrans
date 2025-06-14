@@ -4,9 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version number'
-        required: true
-        default: '2.0.0'
+        description: 'Version number (optional, format: vx.x.x or x.x.x)'
+        required: false
+        default: ''
+      keep_console:
+        description: 'Keep console window'
+        type: boolean
+        required: false
+        default: false
   push:
     tags:
       - 'v*'
@@ -55,20 +60,48 @@ jobs:
       id: determine_version
       run: |
         if ("${{ github.event_name }}" -eq "workflow_dispatch") {
-            $version = "${{ github.event.inputs.version }}"
+            $inputVersion = "${{ github.event.inputs.version }}"
+            
+            if ([string]::IsNullOrWhiteSpace($inputVersion)) {
+                # 如果用户没有输入版本号，使用commit哈希的前8位
+                $version = "${{ github.sha }}".Substring(0, 8)
+                $fileVersion = "0.0.0.0"
+                $productVersion = "0.0.0.0"
+            }
+            elseif ($inputVersion -match "^v?\d+\.\d+\.\d+$") {
+                # 如果输入格式为vx.x.x或x.x.x
+                $version = $inputVersion -replace "^v", ""
+                $fileVersion = $version
+                $productVersion = $version
+            }
+            else {
+                # 如果输入格式不符合，使用用户输入内容
+                $version = $inputVersion
+                $fileVersion = "0.0.0.0"
+                $productVersion = "0.0.0.0"
+            }
         } else {
+            # 自动触发时的处理
             $version = "${{ github.ref_name }}"
             if ($version -match "^v") {
               $version = $version.Substring(1)
             }
+            $fileVersion = $version
+            $productVersion = $version
         }
+        
         echo "version=$version" >> $env:GITHUB_OUTPUT
+        echo "file_version=$fileVersion" >> $env:GITHUB_OUTPUT
+        echo "product_version=$productVersion" >> $env:GITHUB_OUTPUT
       shell: pwsh
 
     - name: Build with Nuitka
       shell: pwsh
       run: |
         $version = "${{ steps.determine_version.outputs.version }}"
+        $fileVersion = "${{ steps.determine_version.outputs.file_version }}"
+        $productVersion = "${{ steps.determine_version.outputs.product_version }}"
+        $keepConsole = "${{ github.event.inputs.keep_console }}"
 
         $commonArgs = @(
           '--onefile'
@@ -92,23 +125,16 @@ jobs:
           '--product-name=ModlessChatTrans'
           '--copyright=Copyright © 2024-2025 LiJiaHua1024'
           '--assume-yes-for-downloads'
+          "--file-version=$fileVersion"
+          "--product-version=$productVersion"
         )
 
-        if ($version -like "*debug*") {
-          $buildArgs = $commonArgs + @(
-            '--file-version=0.0.0.0'
-            '--product-version=0.0.0.0'
-          )
-        }
-        else {
-          $buildArgs = $commonArgs + @(
-            "--file-version=$version"
-            "--product-version=$version"
-            '--windows-console-mode=disable'
-          )
+        # 只在非手动触发或手动触发时keep_console为false时禁用控制台
+        if ("${{ github.event_name }}" -ne "workflow_dispatch" -or $keepConsole -ne "true") {
+          $commonArgs += '--windows-console-mode=disable'
         }
     
-        & nuitka @buildArgs main.py
+        & nuitka @commonArgs main.py
 
     - name: Rename executable
       run: |
