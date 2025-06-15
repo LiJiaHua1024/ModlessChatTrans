@@ -18,9 +18,29 @@ import json
 import re
 import importlib
 from modless_chat_trans.logger import logger
+from modless_chat_trans.file_utils import read_config, save_config
 
 # 新增支持的 LLM 服务商
 LLM_PROVIDERS = ["OpenAI", "Claude", "Gemini", "DeepSeek"]
+
+
+_PENDING_TOKENS = 0
+_SAVE_THRESHOLD = 5000   # 每累计5000 token 就落盘
+
+
+def flush_pending_tokens():
+    """将内存中待处理的 tokens 写入配置文件"""
+    global _PENDING_TOKENS
+    if _PENDING_TOKENS > 0:
+        try:
+            logger.info(f"Flushing {_PENDING_TOKENS} pending tokens to config.")
+            conf = read_config()
+            save_config(total_tokens=getattr(conf, "total_tokens", 0) + _PENDING_TOKENS)
+        except Exception as e:
+            logger.warning(f"Failed to flush pending tokens: {e}")
+        finally:
+            _PENDING_TOKENS = 0
+
 
 # 所有可用翻译服务列表（LLM + 传统翻译服务）
 services = LLM_PROVIDERS + [
@@ -344,6 +364,18 @@ class Translator:
                 translated_message = content_dict.get("result", None)
             else:
                 translated_message = content_str
+
+            # 更新累计 token 使用量
+            if usage_info and usage_info.get("total_tokens", None):
+                try:
+                    global _PENDING_TOKENS
+                    _PENDING_TOKENS += usage_info["total_tokens"]
+
+                    if _PENDING_TOKENS >= _SAVE_THRESHOLD:
+                        flush_pending_tokens()
+                except Exception as e:
+                    # 避免因为读取或写入配置失败阻止翻译结果返回
+                    logger.warning(f"Failed to update total token usage: {e}")
 
             return {
                 "result": translated_message,

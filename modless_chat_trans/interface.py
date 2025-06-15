@@ -48,6 +48,7 @@ DEFAULT_LLM_API_URLS = {
     "DeepSeek": "https://api.deepseek.com/chat/completions"
 }
 
+
 @dataclass
 class ProgramInfo:
     version: str
@@ -710,6 +711,9 @@ class MainInterfaceManager:
 
     def on_closing(self):
         self.main_window.title(f"Modless Chat Trans {self.info.version} - Exiting...")
+        from modless_chat_trans.translator import flush_pending_tokens
+        flush_pending_tokens()
+        logger.info(f"Cumulative tokens consumed")
         from modless_chat_trans.file_utils import cache
         cache.close()
         logger.info("Cache saved")
@@ -734,6 +738,9 @@ class MoreSettingsManager:
         self.more_settings_window.after(50, self.more_settings_window.grab_set)
         self.more_settings_window.resizable(False, False)
         logger.info("More settings window created")
+
+        # 在打开窗口时刷新配置，确保显示最新的累计 token 数
+        self.config = read_config()
 
         if platform == 0:
             hPyT.maximize_minimize_button.hide(self.more_settings_window)
@@ -786,9 +793,10 @@ class MoreSettingsManager:
                 'var_name': 'enable_optimization',
                 'var_type': 'boolean',
                 'default': self.config.enable_optimization,
-                'tooltip': _(
-                    "Enabling this will improve translation quality, "
-                    "but will increase latency and consume more tokens"
+                'tooltip': (
+                        _("Enabling this will improve translation quality, "
+                          "but will increase latency and consume more tokens")
+                        + f"\n{_('Cumulative tokens consumed')}: {self.config.total_tokens}"
                 ),
                 'row': 2,
                 'columnspan': 2
