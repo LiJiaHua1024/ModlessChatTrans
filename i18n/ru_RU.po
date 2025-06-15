@@ -247,3 +247,6 @@ msgstr "Заменить Поврежденные Символы"
 
 msgid "Replace all garbled characters with Minecraft formatting codes"
 msgstr "Заменить все поврежденные символы кодами форматирования Minecraft"
+
+msgid "Cumulative tokens consumed"
+msgstr "Суммарное количество использованных токенов"

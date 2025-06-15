@@ -249,3 +249,7 @@ msgstr "Fehlerhafte Zeichen ersetzen"
 
 msgid "Replace all garbled characters with Minecraft formatting codes"
 msgstr "Alle fehlerhaften Zeichen durch Minecraft-Formatierungscodes ersetzen"
+
+msgid "Cumulative tokens consumed"
+msgstr "Insgesamt verbrauchte Token"
+

@@ -245,3 +245,6 @@ msgstr "깨진 문자 교체"
 
 msgid "Replace all garbled characters with Minecraft formatting codes"
 msgstr "모든 깨진 문자를 Minecraft 포맷 코드로 교체"
+
+msgid "Cumulative tokens consumed"
+msgstr "누적 토큰 사용량"

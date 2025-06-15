@@ -245,3 +245,6 @@ msgstr "Reemplazar Caracteres Corruptos"
 
 msgid "Replace all garbled characters with Minecraft formatting codes"
 msgstr "Reemplazar todos los caracteres corruptos con códigos de formateo de Minecraft"
+
+msgid "Cumulative tokens consumed"
+msgstr "Tokens consumidos acumulados"

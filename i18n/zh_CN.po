@@ -247,3 +247,6 @@ msgstr "替换乱码字符"
 
 msgid "Replace all garbled characters with Minecraft formatting codes"
 msgstr "将所有乱码字符替换为Minecraft格式化代码"
+
+msgid "Cumulative tokens consumed"
+msgstr "累计消耗的 Token 数"

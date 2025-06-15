@@ -240,3 +240,6 @@ msgstr ""
 
 msgid "Replace all garbled characters with Minecraft formatting codes"
 msgstr ""
+
+msgid "Cumulative tokens consumed"
+msgstr ""
