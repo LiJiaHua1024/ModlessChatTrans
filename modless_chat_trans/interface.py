@@ -24,7 +24,7 @@ from tkinter import messagebox
 from tktooltip import ToolTip
 from modless_chat_trans.file_utils import read_config, save_config, get_path, get_platform
 from modless_chat_trans.i18n import _, supported_languages, lang_window_size_map
-from modless_chat_trans.translator import services, service_supported_languages
+from modless_chat_trans.translator import services, service_supported_languages, LLM_PROVIDERS
 from modless_chat_trans.logger import logger
 
 try:
@@ -40,6 +40,13 @@ if (platform := get_platform()) == 0:
 
 updater = None
 
+# 各 LLM 提供商默认 API URL 映射（若用户未自定义则自动填充）
+DEFAULT_LLM_API_URLS = {
+    "OpenAI": "https://api.openai.com/v1/chat/completions",
+    "Claude": "https://api.anthropic.com/v1/messages",
+    "Gemini": "https://generativelanguage.googleapis.com/v1beta",
+    "DeepSeek": "https://api.deepseek.com/chat/completions"
+}
 
 @dataclass
 class ProgramInfo:
@@ -309,7 +316,7 @@ class MainInterfaceManager:
 
         trans_service = self.service_var.get()
 
-        if trans_service == "LLM":
+        if trans_service in LLM_PROVIDERS:
             op_src_lang = self.widgets[0]["source_language_entry"].get()
             op_tgt_lang = self.widgets[0]["target_language_entry"].get()
             api_url = self.widgets[0]["api_url_entry"].get()
@@ -327,7 +334,7 @@ class MainInterfaceManager:
                 self_tgt_lang = self.widgets[0]["self_target_language_entry"].get()
                 save_config(self_src_lang=self_src_lang, self_tgt_lang=self_tgt_lang)
 
-        elif trans_service in services:
+        elif trans_service in services and trans_service not in LLM_PROVIDERS:
             op_src_lang = self.widgets[1]["source_language_menu"].get()
             op_tgt_lang = self.widgets[1]["target_language_menu"].get()
             save_config(op_src_lang=op_src_lang, op_tgt_lang=op_tgt_lang)
@@ -369,7 +376,7 @@ class MainInterfaceManager:
             destroyed_dict = dict(zip(keys_to_destroy, destroy_widgets(*widgets_to_destroy)))
             self.widgets[i].update(destroyed_dict)
 
-        if service == "LLM":
+        if service in LLM_PROVIDERS:
             self.llm_widgets["source_language_entry"] = ctk.CTkEntry(self.main_window, width=400)
             self.llm_widgets["source_language_entry"].insert(0, self.config.op_src_lang)
             self.llm_widgets["source_language_entry"].grid(row=2, column=1, padx=20, pady=10, sticky="w")
@@ -381,7 +388,13 @@ class MainInterfaceManager:
             self.llm_widgets["api_url_label"] = ctk.CTkLabel(self.main_window, text=_("API URL:"))
             self.llm_widgets["api_url_label"].grid(row=4, column=0, padx=20, pady=10, sticky="w")
             self.llm_widgets["api_url_entry"] = ctk.CTkEntry(self.main_window, width=400)
-            self.llm_widgets["api_url_entry"].insert(0, self.config.api_url)
+            # 根据当前提供商填充默认 URL（若尚未保存自定义）
+            preset_url = (
+                self.config.api_url
+                if self.config.trans_service == service and self.config.api_url
+                else DEFAULT_LLM_API_URLS.get(service, "")
+            )
+            self.llm_widgets["api_url_entry"].insert(0, preset_url)
             self.llm_widgets["api_url_entry"].grid(row=4, column=1, padx=20, pady=10, sticky="w")
 
             self.llm_widgets["api_key_label"] = ctk.CTkLabel(self.main_window, text=_("API Key:"))
@@ -396,7 +409,7 @@ class MainInterfaceManager:
             self.llm_widgets["model_entry"].insert(0, self.config.model)
             self.llm_widgets["model_entry"].grid(row=6, column=1, padx=20, pady=10, sticky="w")
 
-        elif service in services:
+        elif service in services and service not in LLM_PROVIDERS:
             self.main_window.title(f"Modless Chat Trans {self.info.version} - {_('Loading supported languages')}...")
 
             src_lang_var = ctk.StringVar(
@@ -485,8 +498,8 @@ class MainInterfaceManager:
         }
 
         self.widgets = [self.llm_widgets, self.traditional_widgets]
-        self.service_var = ctk.StringVar(
-            value=service if (service := self.config.trans_service) in services else "LLM")
+        default_service = self.config.trans_service if self.config.trans_service in services else LLM_PROVIDERS[0]
+        self.service_var = ctk.StringVar(value=default_service)
         service_option_menu = ctk.CTkOptionMenu(self.main_window,
                                                 values=services,
                                                 variable=self.service_var,
@@ -562,7 +575,7 @@ class MainInterfaceManager:
 
         if self.self_translation_var.get():
 
-            if service == "LLM":
+            if service in LLM_PROVIDERS:
                 if not self.widgets[0]["self_source_language_entry"]:
                     self.widgets[0]["self_source_language_label"] = ctk.CTkLabel(self.main_window,
                                                                                  text=_("Self Source Language:"))
@@ -577,7 +590,7 @@ class MainInterfaceManager:
                     self.widgets[0]["self_target_language_entry"] = ctk.CTkEntry(self.main_window, width=400)
                     self.widgets[0]["self_target_language_entry"].grid(row=9, column=1, padx=20, pady=10, sticky="w")
                     self.widgets[0]["self_target_language_entry"].insert(0, self.config.self_tgt_lang)
-            elif service in services:
+            elif service in services and service not in LLM_PROVIDERS:
                 if not self.widgets[1]["self_source_language_menu"]:
                     self.widgets[1]["self_source_language_label"] = ctk.CTkLabel(self.main_window,
                                                                                  text=_("Self Source Language:"))
@@ -619,7 +632,7 @@ class MainInterfaceManager:
                         except Exception as e:
                             logger.debug(f"Failed to attach scrollable dropdown (self tgt): {e}")
         else:
-            if service == "LLM":
+            if service in LLM_PROVIDERS:
                 if self.widgets[0]["self_source_language_entry"]:
                     (self.widgets[0]["self_source_language_label"],
                      self.widgets[0]["self_source_language_entry"]) = destroy_widgets(
@@ -632,7 +645,7 @@ class MainInterfaceManager:
                         self.widgets[0]["self_target_language_label"],
                         self.widgets[0]["self_target_language_entry"]
                     )
-            elif service in services:
+            elif service in services and service not in LLM_PROVIDERS:
                 if self.widgets[1]["self_source_language_menu"]:
                     (self.widgets[1]["self_source_language_label"],
                      self.widgets[1]["self_source_language_menu"]) = destroy_widgets(
@@ -1285,9 +1298,9 @@ class GlossaryManager:
                     logger.info(f"Glossary rule target updated: '{original_selected_src}' -> '{current_tgt}'")
                 else:
                     logger.info(f"Glossary rule target unchanged for '{original_selected_src}'.")
-                    # 可选：给用户提示“无更改”
+                    # 可选：给用户提示"无更改"
             else:
-                # Case 2: 源术语被修改，需要“重命名”规则键
+                # Case 2: 源术语被修改，需要"重命名"规则键
                 # 检查新源术语是否与 其他 现有规则冲突 (除了原本选中的那个)
                 if current_src in self.glossary_rules and current_src != original_selected_src:
                     if not messagebox.askyesno(_("Confirm Overwrite"),

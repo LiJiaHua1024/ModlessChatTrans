@@ -17,7 +17,7 @@ from json import JSONDecodeError
 from requests.exceptions import HTTPError
 from modless_chat_trans.i18n import _
 from modless_chat_trans.file_utils import cache
-from modless_chat_trans.translator import services
+from modless_chat_trans.translator import services, LLM_PROVIDERS
 from modless_chat_trans.logger import logger
 from langdetect import detect_langs, LangDetectException
 
@@ -267,20 +267,27 @@ def process_decorator(function):
                 info["cache_hit"] = True
             else:
                 try:
+                    # 向后兼容旧配置中的 "LLM" 值
                     if translation_service == "LLM":
+                        translation_service = LLM_PROVIDERS[0]
+
+                    if translation_service in LLM_PROVIDERS:
                         if result := translator.llm_translate(
                             original_chat_message,
                             model=model,
+                            provider=translation_service,
                             source_language=source_language,
                             target_language=target_language
-                            ):
+                        ):
                             translated_chat_message = result["result"]
                             info["usage"] = result["usage"]
                     elif translation_service in services:
-                        translated_chat_message = translator.traditional_translate(original_chat_message,
-                                                                                   translation_service,
-                                                                                   source_language=source_language,
-                                                                                   target_language=target_language)
+                        translated_chat_message = translator.traditional_translate(
+                            original_chat_message,
+                            translation_service,
+                            source_language=source_language,
+                            target_language=target_language
+                        )
                 except HTTPError as http_err:
                     response = getattr(http_err, "response", None)
                     if response:

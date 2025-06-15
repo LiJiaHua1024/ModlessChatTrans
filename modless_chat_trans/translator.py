@@ -19,8 +19,13 @@ import re
 import importlib
 from modless_chat_trans.logger import logger
 
-services = ["LLM", "DeepL", "Bing", "Google", "Yandex", "Alibaba", "Caiyun", "Youdao",
-            "Sogou", "Iflyrec"]
+# 新增支持的 LLM 服务商
+LLM_PROVIDERS = ["OpenAI", "Claude", "Gemini", "DeepSeek"]
+
+# 所有可用翻译服务列表（LLM + 传统翻译服务）
+services = LLM_PROVIDERS + [
+    "DeepL", "Bing", "Google", "Yandex", "Alibaba", "Caiyun", "Youdao", "Sogou", "Iflyrec"
+]
 
 
 class LazyTranslatorModule:
@@ -95,12 +100,13 @@ class Translator:
 
         logger.info(f"Initialized Translator with optimization {'enabled' if enable_optimization else 'disabled'}")
 
-    def llm_translate(self, text, model, source_language=None, target_language=None):
+    def llm_translate(self, text, model, provider="OpenAI", source_language=None, target_language=None):
         """
         使用 LLM API 翻译消息
 
         :param text: 要翻译的文字
         :param model: 翻译使用的模型
+        :param provider: LLM 提供商 (OpenAI / Claude / Gemini / DeepSeek)
         :param source_language: 源语言，不填则为self.default_source_language
         :param target_language: 目标语言，不填则为self.default_target_language
         :return: 包含翻译结果和token使用信息的字典，格式为:
@@ -205,26 +211,123 @@ class Translator:
                     f"</text_to_translate>"
                 )
 
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-        data = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": message}
-            ],
-            "temperature": 0
-        }
+        # 根据不同提供商组织请求
+        if provider == "OpenAI" or provider == "DeepSeek":
+            # OpenAI/DeepSeek 接口基本兼容
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+            data = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": message}
+                ],
+                "temperature": 0
+            }
+            response = requests.post(self.api_url, headers=headers, json=data)
 
-        response = requests.post(self.api_url, headers=headers, json=data)
+        elif provider == "Claude":
+            headers = {
+                "x-api-key": self.api_key,
+                "Content-Type": "application/json",
+                "anthropic-version": "2023-06-01"
+            }
+            data = {
+                "model": model,
+                "system": system_prompt,
+                "messages": [
+                    {"role": "user", "content": message}
+                ],
+                "temperature": 0
+            }
+            response = requests.post(self.api_url, headers=headers, json=data)
+
+        elif provider == "Gemini":
+            # Gemini API 规则：/v1beta/models/{model}:generateContent?key=KEY
+            # 允许用户提供完整 URL，或仅提供基础 host。若未提供则使用官方默认 host。
+
+            if self.api_url:  # 用户自定义
+                if "/models/" in self.api_url:  # 已包含模型段
+                    base_url = self.api_url.rstrip("?")  # 移除可能的结尾 ?
+                else:  # 仅提供 host，需拼接 models 段
+                    base_url = f"{self.api_url.rstrip('/')}/models/{model}:generateContent"
+            else:
+                # 默认 Google host
+                base_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+
+            # 拼接 API Key
+            separator = "&" if "?" in base_url else "?"
+            url = f"{base_url}{separator}key={self.api_key}"
+
+            headers = {
+                "Content-Type": "application/json"
+            }
+            data = {
+                "systemInstruction": {
+                    "parts": [{"text": system_prompt}]
+                },
+                "contents": [
+                    {
+                        "role": "user",
+                        "parts": [{"text": message}]
+                    }
+                ],
+                "generationConfig": {
+                    "temperature": 0
+                }
+            }
+            response = requests.post(url, headers=headers, json=data)
+
+        else:
+            raise ValueError(f"Unsupported LLM provider: {provider}")
 
         if response.status_code == 200:
             response_data = response.json()
-            content_str = response_data.get("choices", [])[0].get("message", {}).get("content", "")
 
-            usage_info = response_data.get("usage", {})
+            # 根据不同提供商解析响应
+            if provider in ("OpenAI", "DeepSeek"):
+                content_str = (
+                    response_data.get("choices", [{}])[0]
+                    .get("message", {})
+                    .get("content", "")
+                )
+                usage_info = response_data.get("usage", {})
+
+            elif provider == "Claude":
+                # Claude 将内容放在 content 列表中，每项包含 type 与 text
+                content_items = response_data.get("content", [])
+                content_str = "".join(item.get("text", "") for item in content_items)
+                if raw_usage := response_data.get("usage", {}):
+                    pt = raw_usage.get("input_tokens", 0)
+                    ct = raw_usage.get("output_tokens", 0)
+                    usage_info = {
+                        "prompt_tokens": pt,
+                        "completion_tokens": ct,
+                        "total_tokens": pt + ct
+                    }
+                else:
+                    usage_info = {}
+
+            elif provider == "Gemini":
+                candidates = response_data.get("candidates", [])
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    content_str = "".join(part.get("text", "") for part in parts)
+                else:
+                    content_str = ""
+                if raw_usage := response_data.get("usageMetadata", {}):
+                    usage_info = {
+                        "prompt_tokens": raw_usage.get("promptTokenCount", 0),
+                        "completion_tokens": raw_usage.get("candidatesTokenCount", 0),
+                        "total_tokens": raw_usage.get("totalTokenCount", 0)
+                    }
+                else:
+                    usage_info = {}
+            else:
+                content_str = ""
+                usage_info = {}
 
             if self.enable_optimization:
                 try:
@@ -247,7 +350,7 @@ class Translator:
                 "usage": usage_info
             }
         else:
-            logger.error(f"LLM translation failed: {response.status_code} - {response.text}")
+            logger.error(f"LLM translation failed ({provider}): {response.status_code} - {response.text}")
             return None
 
     def traditional_translate(self, text, service, source_language=None, target_language=None):
