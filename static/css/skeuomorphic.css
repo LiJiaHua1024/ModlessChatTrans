@@ -1,0 +1,511 @@
+/* Extreme Skeuomorphic Design - Digital Craftwork */
+@import url('base.css');
+
+/* ===== PART 1: Physical Laws of the Skeuomorphic World ===== */
+
+/* Core Material Properties */
+:root {
+    /* Base Material Colors */
+    --skeuo-background: #E0E5EC; /* Digital Clay Base */
+    --skeuo-background-dark: #2C3E50; /* Dark Clay Base */
+
+    /* Light Source at 10 o'clock */
+    --skeuo-light-shadow: rgba(255, 255, 255, 0.9); /* Highlight */
+    --skeuo-dark-shadow: rgba(163, 177, 198, 0.6); /* Shadow */
+    --skeuo-light-shadow-dark: rgba(255, 255, 255, 0.1); /* Dark Mode Highlight */
+    --skeuo-dark-shadow-dark: rgba(0, 0, 0, 0.8); /* Dark Mode Shadow */
+
+    /* Text Colors */
+    --skeuo-text-primary: #61677C;
+    --skeuo-text-muted: #8A92A1;
+    --skeuo-text-active: #3f4354;
+    --skeuo-text-primary-dark: #BDC3C7;
+    --skeuo-text-muted-dark: #95A5A6;
+    --skeuo-text-active-dark: #ECF0F1;
+
+    /* Interactive States */
+    --skeuo-button-gradient: linear-gradient(145deg, #f0f5fd, #c8cdd4);
+    --skeuo-button-gradient-dark: linear-gradient(145deg, #34495e, #2c3e50);
+    --skeuo-button-hover-gradient: linear-gradient(145deg, #f5f8fe, #d1d6dd);
+    --skeuo-button-hover-gradient-dark: linear-gradient(145deg, #3b4c63, #2f4052);
+}
+
+/* Environment Setup */
+body {
+    background-color: var(--skeuo-background) !important;
+    color: var(--skeuo-text-primary) !important;
+    font-family: 'Segoe UI Variable', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif !important;
+    /* Noise/Grain Texture */
+    background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%239C92AC' fill-opacity='0.12' fill-rule='evenodd'%3E%3Cpath d='M5 0h1L0 6V5zM6 5v1H5z'/%3E%3C/g%3E%3C/svg%3E") !important;
+}
+
+/* Dark Mode Environment */
+:root[data-theme="dark"] body {
+    background-color: var(--skeuo-background-dark) !important;
+    color: var(--skeuo-text-primary-dark) !important;
+    background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='0.25' fill-rule='evenodd'%3E%3Cpath d='M5 0h1L0 6V5zM6 5v1H5z'/%3E%3C/g%3E%3C/svg%3E") !important;
+}
+
+/* ===== PART 2: Component-Level Digital Craftsmanship ===== */
+
+/* 1. Title - Carved Text Effect */
+h1 {
+    color: var(--skeuo-text-muted) !important;
+    font-size: 32px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px !important;
+    margin-bottom: 32px !important;
+    /* Carved Effect - Light from 10 o'clock */
+    text-shadow:
+        -1px -1px 1px var(--skeuo-light-shadow),
+        1px 1px 1px var(--skeuo-dark-shadow) !important;
+}
+
+:root[data-theme="dark"] h1 {
+    color: var(--skeuo-text-muted-dark) !important;
+    text-shadow:
+        -1px -1px 1px var(--skeuo-light-shadow-dark),
+        1px 1px 1px var(--skeuo-dark-shadow-dark) !important;
+}
+
+h1::after {
+    display: none !important;
+}
+
+/* 2. Message Bubbles - Floating Panels */
+.message-bubble {
+    border-radius: 12px !important;
+    background: var(--skeuo-background) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    margin-bottom: 16px !important;
+    transition: all 0.2s ease !important;
+    /* Raised Effect - Light from 10 o'clock */
+    box-shadow:
+        -7px -7px 15px var(--skeuo-light-shadow),
+        7px 7px 15px var(--skeuo-dark-shadow) !important;
+}
+
+:root[data-theme="dark"] .message-bubble {
+    background: var(--skeuo-background-dark) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    box-shadow:
+        -7px -7px 15px var(--skeuo-light-shadow-dark),
+        7px 7px 15px var(--skeuo-dark-shadow-dark) !important;
+}
+
+.message-bubble:hover {
+    /* Enhanced elevation on hover */
+    box-shadow:
+        -9px -9px 18px var(--skeuo-light-shadow),
+        9px 9px 18px var(--skeuo-dark-shadow) !important;
+}
+
+:root[data-theme="dark"] .message-bubble:hover {
+    box-shadow:
+        -9px -9px 18px var(--skeuo-light-shadow-dark),
+        9px 9px 18px var(--skeuo-dark-shadow-dark) !important;
+}
+
+/* Message type indicators through subtle border variations */
+.message-bubble.user {
+    border-left: 3px solid #3498DB !important;
+}
+
+.message-bubble.error {
+    border-left: 3px solid #E74C3C !important;
+}
+
+.message-bubble.info {
+    border-left: 3px solid #F39C12 !important;
+}
+
+/* 3. Physical Buttons - Filter Options */
+.filter-option {
+    position: relative !important;
+    border: none !important;
+    border-radius: 10px !important;
+    background: var(--skeuo-button-gradient) !important;
+    color: var(--skeuo-text-primary) !important;
+    padding: 8px 16px !important;
+    height: 36px !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    letter-spacing: 0.3px !important;
+    /* Carved text effect */
+    text-shadow: 1px 1px 1px var(--skeuo-light-shadow) !important;
+    /* Raised button effect */
+    box-shadow:
+        -5px -5px 10px var(--skeuo-light-shadow),
+        5px 5px 10px var(--skeuo-dark-shadow) !important;
+    transition: all 0.15s ease-out !important;
+    cursor: pointer !important;
+}
+
+:root[data-theme="dark"] .filter-option {
+    background: var(--skeuo-button-gradient-dark) !important;
+    color: var(--skeuo-text-primary-dark) !important;
+    text-shadow: 1px 1px 1px var(--skeuo-dark-shadow-dark) !important;
+    box-shadow:
+        -5px -5px 10px var(--skeuo-light-shadow-dark),
+        5px 5px 10px var(--skeuo-dark-shadow-dark) !important;
+}
+
+.filter-option:hover {
+    background: var(--skeuo-button-hover-gradient) !important;
+    /* Enhanced raised effect on hover */
+    box-shadow:
+        -6px -6px 12px var(--skeuo-light-shadow),
+        6px 6px 12px var(--skeuo-dark-shadow) !important;
+    transform: translateY(-1px) !important;
+}
+
+:root[data-theme="dark"] .filter-option:hover {
+    background: var(--skeuo-button-hover-gradient-dark) !important;
+    box-shadow:
+        -6px -6px 12px var(--skeuo-light-shadow-dark),
+        6px 6px 12px var(--skeuo-dark-shadow-dark) !important;
+}
+
+.filter-option.active,
+.filter-option:active {
+    background: var(--skeuo-background) !important;
+    color: var(--skeuo-text-active) !important;
+    text-shadow: none !important;
+    transform: translateY(1px) !important;
+    /* Pressed/Inset effect */
+    box-shadow:
+        inset -5px -5px 10px var(--skeuo-light-shadow),
+        inset 5px 5px 10px var(--skeuo-dark-shadow) !important;
+}
+
+:root[data-theme="dark"] .filter-option.active,
+:root[data-theme="dark"] .filter-option:active {
+    background: var(--skeuo-background-dark) !important;
+    color: var(--skeuo-text-active-dark) !important;
+    box-shadow:
+        inset -5px -5px 10px var(--skeuo-light-shadow-dark),
+        inset 5px 5px 10px var(--skeuo-dark-shadow-dark) !important;
+}
+
+/* Remove individual type colors for active states */
+.filter-option.active.user,
+.filter-option.active.system,
+.filter-option.active.error,
+.filter-option.active.info {
+    background: var(--skeuo-background) !important;
+    color: var(--skeuo-text-active) !important;
+}
+
+:root[data-theme="dark"] .filter-option.active.user,
+:root[data-theme="dark"] .filter-option.active.system,
+:root[data-theme="dark"] .filter-option.active.error,
+:root[data-theme="dark"] .filter-option.active.info {
+    background: var(--skeuo-background-dark) !important;
+    color: var(--skeuo-text-active-dark) !important;
+}
+
+/* 4. Inset Input Container - Carved Channel */
+.input-container {
+    border-radius: 10px !important;
+    background: var(--skeuo-background) !important;
+    border: none !important;
+    padding: 8px 16px !important;
+    height: 44px !important;
+    /* Deep inset effect for input channel */
+    box-shadow:
+        inset -5px -5px 8px var(--skeuo-light-shadow),
+        inset 5px 5px 8px var(--skeuo-dark-shadow) !important;
+    transition: all 0.2s ease !important;
+}
+
+:root[data-theme="dark"] .input-container {
+    background: var(--skeuo-background-dark) !important;
+    box-shadow:
+        inset -5px -5px 8px var(--skeuo-light-shadow-dark),
+        inset 5px 5px 8px var(--skeuo-dark-shadow-dark) !important;
+}
+
+.input-container:focus-within {
+    /* Deeper inset when focused */
+    box-shadow:
+        inset -6px -6px 10px var(--skeuo-light-shadow),
+        inset 6px 6px 10px var(--skeuo-dark-shadow) !important;
+}
+
+:root[data-theme="dark"] .input-container:focus-within {
+    box-shadow:
+        inset -6px -6px 10px var(--skeuo-light-shadow-dark),
+        inset 6px 6px 10px var(--skeuo-dark-shadow-dark) !important;
+}
+
+/* 5. Input Field */
+#message-input {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    color: var(--skeuo-text-primary) !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    /* Subtle carved text effect */
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1) !important;
+}
+
+:root[data-theme="dark"] #message-input {
+    color: var(--skeuo-text-primary-dark) !important;
+    text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.05) !important;
+}
+
+#message-input::placeholder {
+    color: var(--skeuo-text-muted) !important;
+    opacity: 0.7 !important;
+}
+
+:root[data-theme="dark"] #message-input::placeholder {
+    color: var(--skeuo-text-muted-dark) !important;
+}
+
+/* 6. Physical Switch - Send Button */
+#send-button {
+    border-radius: 50% !important;
+    background: var(--skeuo-button-gradient) !important;
+    border: none !important;
+    color: var(--skeuo-text-primary) !important;
+    width: 36px !important;
+    height: 36px !important;
+    margin-left: 8px !important;
+    /* Round button raised effect */
+    box-shadow:
+        -4px -4px 8px var(--skeuo-light-shadow),
+        4px 4px 8px var(--skeuo-dark-shadow) !important;
+    transition: all 0.15s ease !important;
+    cursor: pointer !important;
+}
+
+:root[data-theme="dark"] #send-button {
+    background: var(--skeuo-button-gradient-dark) !important;
+    color: var(--skeuo-text-primary-dark) !important;
+    box-shadow:
+        -4px -4px 8px var(--skeuo-light-shadow-dark),
+        4px 4px 8px var(--skeuo-dark-shadow-dark) !important;
+}
+
+#send-button:hover:not(:disabled) {
+    background: var(--skeuo-button-hover-gradient) !important;
+    box-shadow:
+        -5px -5px 10px var(--skeuo-light-shadow),
+        5px 5px 10px var(--skeuo-dark-shadow) !important;
+    transform: translateY(-1px) !important;
+}
+
+:root[data-theme="dark"] #send-button:hover:not(:disabled) {
+    background: var(--skeuo-button-hover-gradient-dark) !important;
+    box-shadow:
+        -5px -5px 10px var(--skeuo-light-shadow-dark),
+        5px 5px 10px var(--skeuo-dark-shadow-dark) !important;
+}
+
+#send-button:active:not(:disabled) {
+    background: var(--skeuo-background) !important;
+    transform: translateY(1px) !important;
+    /* Pressed switch effect */
+    box-shadow:
+        inset -4px -4px 8px var(--skeuo-light-shadow),
+        inset 4px 4px 8px var(--skeuo-dark-shadow) !important;
+}
+
+:root[data-theme="dark"] #send-button:active:not(:disabled) {
+    background: var(--skeuo-background-dark) !important;
+    box-shadow:
+        inset -4px -4px 8px var(--skeuo-light-shadow-dark),
+        inset 4px 4px 8px var(--skeuo-dark-shadow-dark) !important;
+}
+
+#send-button:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    box-shadow:
+        inset -2px -2px 4px var(--skeuo-light-shadow),
+        inset 2px 2px 4px var(--skeuo-dark-shadow) !important;
+}
+
+/* 7. Floating Action Buttons - Rounded Switches */
+.scroll-to-bottom,
+.clear-messages {
+    border-radius: 50% !important;
+    background: var(--skeuo-button-gradient) !important;
+    border: none !important;
+    color: var(--skeuo-text-primary) !important;
+    width: 52px !important;
+    height: 52px !important;
+    box-shadow:
+        -6px -6px 12px var(--skeuo-light-shadow),
+        6px 6px 12px var(--skeuo-dark-shadow) !important;
+    transition: all 0.2s ease !important;
+}
+
+:root[data-theme="dark"] .scroll-to-bottom,
+:root[data-theme="dark"] .clear-messages {
+    background: var(--skeuo-button-gradient-dark) !important;
+    color: var(--skeuo-text-primary-dark) !important;
+    box-shadow:
+        -6px -6px 12px var(--skeuo-light-shadow-dark),
+        6px 6px 12px var(--skeuo-dark-shadow-dark) !important;
+}
+
+.scroll-to-bottom:hover,
+.clear-messages:hover {
+    box-shadow:
+        -8px -8px 15px var(--skeuo-light-shadow),
+        8px 8px 15px var(--skeuo-dark-shadow) !important;
+    transform: translateY(-2px) !important;
+}
+
+:root[data-theme="dark"] .scroll-to-bottom:hover,
+:root[data-theme="dark"] .clear-messages:hover {
+    box-shadow:
+        -8px -8px 15px var(--skeuo-light-shadow-dark),
+        8px 8px 15px var(--skeuo-dark-shadow-dark) !important;
+}
+
+/* 8. Dark Mode Toggle - Physical Switch */
+#dark-mode-toggle {
+    border-radius: 50% !important;
+    background: var(--skeuo-button-gradient) !important;
+    border: none !important;
+    color: var(--skeuo-text-primary) !important;
+    width: 44px !important;
+    height: 44px !important;
+    box-shadow:
+        -5px -5px 10px var(--skeuo-light-shadow),
+        5px 5px 10px var(--skeuo-dark-shadow) !important;
+    transition: all 0.15s ease !important;
+}
+
+:root[data-theme="dark"] #dark-mode-toggle {
+    background: var(--skeuo-button-gradient-dark) !important;
+    color: var(--skeuo-text-primary-dark) !important;
+    box-shadow:
+        -5px -5px 10px var(--skeuo-light-shadow-dark),
+        5px 5px 10px var(--skeuo-dark-shadow-dark) !important;
+}
+
+#dark-mode-toggle:hover {
+    box-shadow:
+        -6px -6px 12px var(--skeuo-light-shadow),
+        6px 6px 12px var(--skeuo-dark-shadow) !important;
+    transform: translateY(-1px) !important;
+}
+
+:root[data-theme="dark"] #dark-mode-toggle:hover {
+    box-shadow:
+        -6px -6px 12px var(--skeuo-light-shadow-dark),
+        6px 6px 12px var(--skeuo-dark-shadow-dark) !important;
+}
+
+/* 9. Bottom Tags - Raised Labels */
+.duration-tag,
+.cache-hit-tag,
+.glossary-match-tag,
+.skip-src-lang-tag,
+.usage-tag {
+    border-radius: 6px !important;
+    background: var(--skeuo-button-gradient) !important;
+    border: none !important;
+    color: var(--skeuo-text-primary) !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    padding: 2px 6px !important;
+    height: 18px !important;
+    text-shadow: 1px 1px 1px var(--skeuo-light-shadow) !important;
+    box-shadow:
+        -2px -2px 4px var(--skeuo-light-shadow),
+        2px 2px 4px var(--skeuo-dark-shadow) !important;
+}
+
+:root[data-theme="dark"] .duration-tag,
+:root[data-theme="dark"] .cache-hit-tag,
+:root[data-theme="dark"] .glossary-match-tag,
+:root[data-theme="dark"] .skip-src-lang-tag,
+:root[data-theme="dark"] .usage-tag {
+    background: var(--skeuo-button-gradient-dark) !important;
+    color: var(--skeuo-text-primary-dark) !important;
+    text-shadow: 1px 1px 1px var(--skeuo-dark-shadow-dark) !important;
+    box-shadow:
+        -2px -2px 4px var(--skeuo-light-shadow-dark),
+        2px 2px 4px var(--skeuo-dark-shadow-dark) !important;
+}
+
+/* 10. Message Text with Subtle Carving */
+.message-text {
+    color: var(--skeuo-text-primary) !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.3) !important;
+}
+
+:root[data-theme="dark"] .message-text {
+    color: var(--skeuo-text-primary-dark) !important;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5) !important;
+}
+
+.message-name {
+    color: var(--skeuo-text-muted) !important;
+    font-weight: 700 !important;
+    font-size: 12px !important;
+    text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.5) !important;
+    letter-spacing: 0.5px !important;
+}
+
+:root[data-theme="dark"] .message-name {
+    color: var(--skeuo-text-muted-dark) !important;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.7) !important;
+}
+
+.message-name::before {
+    display: none !important;
+}
+
+.message-time {
+    color: var(--skeuo-text-muted) !important;
+    font-size: 11px !important;
+}
+
+:root[data-theme="dark"] .message-time {
+    color: var(--skeuo-text-muted-dark) !important;
+}
+
+/* 11. Translation Indicator */
+.dot {
+    background: var(--skeuo-button-gradient) !important;
+    border-radius: 50% !important;
+    box-shadow:
+        -1px -1px 2px var(--skeuo-light-shadow),
+        1px 1px 2px var(--skeuo-dark-shadow) !important;
+}
+
+:root[data-theme="dark"] .dot {
+    background: var(--skeuo-button-gradient-dark) !important;
+    box-shadow:
+        -1px -1px 2px var(--skeuo-light-shadow-dark),
+        1px 1px 2px var(--skeuo-dark-shadow-dark) !important;
+}
+
+/* Remove all gradients from base.css */
+.message-bubble.user,
+.message-bubble.system,
+.message-bubble.error,
+.message-bubble.info {
+    background-image: none !important;
+}
+
+/* Smooth animations for physical interactions */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}

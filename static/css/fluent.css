@@ -1,0 +1,417 @@
+/* Windows 11 Fluent Design - Mica-inspired Theme */
+@import url('base.css');
+
+/* ===== PART 1: Core Design Principles ===== */
+
+/* Light Mode - Windows 11 Mica */
+:root {
+    /* Typography */
+    font-family: 'Segoe UI Variable', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+
+    /* Mica-like Background Colors */
+    --background: #F9F9F9; /* Mica Base */
+    --card-background: #FFFFFF; /* Card Layer */
+    --hover-background: #F0F0F0; /* Subtle Hover */
+    --active-background: #EBEBEB; /* Subtle Active */
+
+    /* Text Colors */
+    --text-primary: #1F1F1F; /* Softer than pure black */
+    --text-muted: #616161;
+    --text-disabled: #A3A3A3;
+
+    /* Subtle Borders */
+    --border-subtle: #EBEBEB;
+    --border-default: #D1D1D1;
+    --border-strong: #B3B3B3;
+
+    /* Brand Color (used sparingly) */
+    --primary-color: #005FB7; /* Win11 Blue */
+    --primary-hover: #0067C0;
+    --primary-active: #005AA3;
+
+    /* Remove all shadows and gradients */
+    --shadow-soft: none;
+    --input-shadow: none;
+    --input-focus-shadow: 0 0 0 2px rgba(0, 95, 183, 0.2);
+    --input-focus-shadow-desktop: 0 0 0 2px rgba(0, 95, 183, 0.2);
+
+    /* Input specific */
+    --input-background: #FFFFFF;
+    --input-border: 1px solid #D1D1D1;
+
+    /* Message bubble backgrounds (no gradients) */
+    --user-bubble: #FFFFFF;
+    --system-bubble: #FFFFFF;
+    --error-bubble: #FFFFFF;
+    --info-bubble: #FFFFFF;
+
+    /* Accent lines for message types */
+    --user-accent: #005FB7;
+    --system-accent: #616161;
+    --error-accent: #C42B1C;
+    --info-accent: #FFCA28;
+
+    /* Filter states */
+    --filter-inactive-bg: transparent;
+    --filter-inactive-text: var(--text-primary);
+}
+
+/* Dark Mode - Windows 11 Mica Dark */
+:root[data-theme="dark"] {
+    /* Mica-like Background Colors */
+    --background: #202020; /* Mica Base Dark */
+    --card-background: #2B2B2B; /* Card Layer Dark */
+    --hover-background: #353535; /* Subtle Hover Dark */
+    --active-background: #3F3F3F; /* Subtle Active Dark */
+
+    /* Text Colors */
+    --text-primary: #FFFFFF;
+    --text-muted: #B3B3B3;
+    --text-disabled: #757575;
+
+    /* Subtle Borders */
+    --border-subtle: #323232;
+    --border-default: #424242;
+    --border-strong: #525252;
+
+    /* Brand Color (less saturated in dark mode) */
+    --primary-color: #60CDFF;
+    --primary-hover: #70D2FF;
+    --primary-active: #50C5FF;
+
+    /* Remove shadows */
+    --shadow-soft: none;
+    --input-shadow: none;
+    --input-focus-shadow: 0 0 0 2px rgba(96, 205, 255, 0.2);
+    --input-focus-shadow-desktop: 0 0 0 2px rgba(96, 205, 255, 0.2);
+
+    /* Input specific */
+    --input-background: #2B2B2B;
+    --input-border: 1px solid #424242;
+
+    /* Message bubble backgrounds (no gradients) */
+    --user-bubble: #2B2B2B;
+    --system-bubble: #2B2B2B;
+    --error-bubble: #2B2B2B;
+    --info-bubble: #2B2B2B;
+
+    /* Accent lines remain vibrant */
+    --user-accent: #60CDFF;
+    --system-accent: #B3B3B3;
+    --error-accent: #FF6B6B;
+    --info-accent: #FFCA28;
+}
+
+/* ===== PART 2: Component-Level Style Restructuring ===== */
+
+/* Global Typography */
+body {
+    font-family: 'Segoe UI Variable', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif !important;
+    font-size: 14px;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    background-color: var(--background) !important;
+}
+
+/* 1. Title - Clean and Minimal */
+h1 {
+    font-size: 32px !important;
+    font-weight: 600 !important;
+    line-height: 40px !important;
+    color: var(--text-primary);
+    margin-bottom: 32px !important;
+    letter-spacing: -0.01em !important;
+}
+
+h1::after {
+    display: none !important;
+}
+
+/* 2. Message Bubbles - Win11 Cards */
+.message-bubble {
+    border-radius: 6px !important;
+    box-shadow: none !important;
+    border: 1px solid var(--border-subtle) !important;
+    background: var(--card-background) !important;
+    transition: border-color 0.15s ease !important;
+    margin-bottom: 12px !important;
+}
+
+.message-bubble:hover {
+    border-color: var(--border-default) !important;
+}
+
+/* User messages - subtle right accent */
+.message-bubble.user {
+    border-right: 2px solid var(--user-accent) !important;
+    background: var(--card-background) !important;
+}
+
+/* System messages - default card */
+.message-bubble.system {
+    background: var(--card-background) !important;
+}
+
+/* Error messages - left accent line */
+.message-bubble.error {
+    border-left: 3px solid var(--error-accent) !important;
+    background: var(--card-background) !important;
+}
+
+/* Info messages - left accent line */
+.message-bubble.info {
+    border-left: 3px solid var(--info-accent) !important;
+    background: var(--card-background) !important;
+}
+
+/* 3. Filter Options - Win11 Navigation Items */
+.filter-container {
+    gap: 4px !important;
+    margin-bottom: 24px !important;
+}
+
+.filter-option {
+    position: relative !important;
+    border: none !important;
+    border-radius: 4px !important;
+    background-color: transparent !important;
+    color: var(--text-primary) !important;
+    padding: 8px 12px 8px 16px !important;
+    height: 36px !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    transition: all 0.15s cubic-bezier(0.84, 0.02, 0.37, 1.1) !important;
+    box-shadow: none !important;
+}
+
+.filter-option:hover {
+    background-color: var(--hover-background) !important;
+    transform: none !important;
+}
+
+.filter-option.active {
+    background-color: var(--active-background) !important;
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+}
+
+/* Active indicator line */
+.filter-option.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 25%;
+    height: 50%;
+    width: 3px;
+    background-color: var(--primary-color) !important;
+    border-radius: 2px;
+}
+
+/* Remove colored active states */
+.filter-option.active.user,
+.filter-option.active.system,
+.filter-option.active.error,
+.filter-option.active.info {
+    background-color: var(--active-background) !important;
+    color: var(--text-primary) !important;
+}
+
+/* 4. Input Container - Subtle and Clean */
+.input-container {
+    background: var(--input-background) !important;
+    border: 1px solid var(--border-default) !important;
+    box-shadow: none !important;
+    border-radius: 4px !important;
+    height: 40px !important;
+    transition: all 0.15s ease !important;
+}
+
+.input-container:hover {
+    border-color: var(--border-strong) !important;
+}
+
+.input-container:focus-within {
+    border-color: var(--primary-color) !important;
+    box-shadow: var(--input-focus-shadow) !important;
+}
+
+/* 5. Send Button - Icon Button Style */
+#send-button {
+    background-color: transparent !important;
+    color: var(--text-muted) !important;
+    border: none !important;
+    border-radius: 4px !important;
+    width: 32px !important;
+    height: 32px !important;
+    transition: all 0.15s ease !important;
+    box-shadow: none !important;
+}
+
+#send-button:hover:not(:disabled) {
+    background-color: var(--hover-background) !important;
+    color: var(--text-primary) !important;
+    transform: none !important;
+}
+
+#send-button:active:not(:disabled) {
+    background-color: var(--active-background) !important;
+}
+
+#send-button:disabled {
+    color: var(--text-disabled) !important;
+    background-color: transparent !important;
+}
+
+/* 6. Floating Action Buttons - Subtle Cards */
+.scroll-to-bottom,
+.clear-messages {
+    background-color: var(--card-background) !important;
+    color: var(--text-primary) !important;
+    box-shadow: none !important;
+    border: 1px solid var(--border-subtle) !important;
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 4px !important;
+    transition: all 0.15s ease !important;
+}
+
+.scroll-to-bottom:hover,
+.clear-messages:hover {
+    background-color: var(--hover-background) !important;
+    border-color: var(--border-default) !important;
+    transform: none !important;
+}
+
+/* 7. Dark Mode Toggle - Subtle Icon Button */
+#dark-mode-toggle {
+    background-color: transparent !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-subtle) !important;
+    box-shadow: none !important;
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 4px !important;
+    transition: all 0.15s ease !important;
+}
+
+#dark-mode-toggle:hover {
+    background-color: var(--hover-background) !important;
+    border-color: var(--border-default) !important;
+    transform: none !important;
+}
+
+/* 8. Bottom Tags - Minimal Pills */
+.duration-tag,
+.cache-hit-tag,
+.glossary-match-tag,
+.skip-src-lang-tag,
+.usage-tag {
+    border-radius: 10px !important;
+    font-size: 11px !important;
+    font-weight: 400 !important;
+    padding: 2px 8px !important;
+    height: 18px !important;
+    box-shadow: none !important;
+    border: 1px solid var(--border-subtle) !important;
+    background-color: var(--hover-background) !important;
+}
+
+/* Duration tag - subtle yellow */
+.duration-tag {
+    background-color: rgba(255, 202, 40, 0.1) !important;
+    border-color: rgba(255, 202, 40, 0.3) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Success tags - subtle green */
+.cache-hit-tag,
+.glossary-match-tag,
+.skip-src-lang-tag {
+    background-color: rgba(76, 175, 80, 0.1) !important;
+    border-color: rgba(76, 175, 80, 0.3) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Usage tag - subtle blue */
+.usage-tag {
+    background-color: rgba(0, 95, 183, 0.1) !important;
+    border-color: rgba(0, 95, 183, 0.3) !important;
+    color: var(--text-primary) !important;
+}
+
+/* 9. Input Field */
+#message-input {
+    font-family: 'Segoe UI Variable', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    color: var(--text-primary) !important;
+}
+
+/* 10. Message Typography */
+.message-text {
+    font-size: 14px !important;
+    line-height: 20px !important;
+    color: var(--text-primary) !important;
+}
+
+.message-name {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+    color: var(--text-primary) !important;
+    opacity: 0.8;
+}
+
+.message-name::before {
+    display: none !important;
+}
+
+.message-time {
+    font-size: 11px !important;
+    font-weight: 400 !important;
+    color: var(--text-muted) !important;
+    opacity: 0.8;
+}
+
+/* 11. Translation Indicator */
+.translation-indicator {
+    opacity: 0.6;
+}
+
+.dot {
+    background-color: var(--primary-color) !important;
+    width: 6px !important;
+    height: 6px !important;
+}
+
+/* Animations - Subtle and Smooth */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(2px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Focus States - Win11 Style */
+.filter-option:focus-visible,
+#send-button:focus-visible,
+.scroll-to-bottom:focus-visible,
+.clear-messages:focus-visible,
+#dark-mode-toggle:focus-visible {
+    outline: 2px solid var(--primary-color) !important;
+    outline-offset: 2px !important;
+    box-shadow: none !important;
+}
+
+/* Remove all gradient backgrounds from base.css */
+.message-bubble.user,
+.message-bubble.system,
+.message-bubble.error,
+.message-bubble.info {
+    background-image: none !important;
+}

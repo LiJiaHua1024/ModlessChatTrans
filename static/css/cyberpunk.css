@@ -1,0 +1,703 @@
+/* Cyborg Neon - Cyberpunk Terminal Interface */
+@import url('base.css');
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono:wght@400;700&display=swap');
+
+/* ===== PART 1: Cyberpunk World Design Laws ===== */
+
+/* Core Neon Colors and Variables */
+:root {
+    /* Primary Neon Colors */
+    --neon-cyan: #00f6ff;
+    --neon-magenta: #ff00e0;
+    --neon-green: #39ff14;
+    --neon-orange: #ff6600;
+    --neon-yellow: #ffff00;
+
+    /* Environment Colors */
+    --background-dark: #0d0c1d;
+    --background-darker: #06050f;
+    --background-panel: rgba(10, 15, 30, 0.8);
+    --scanline-color: rgba(18, 16, 16, 0.2);
+
+    /* High Contrast Text Colors */
+    --text-primary: #ffffff;
+    --text-muted: #b8c5d1;
+    --text-terminal: #00f6ff;
+    --text-shadow-dark: rgba(0, 0, 0, 0.8);
+
+    /* Override base variables */
+    --primary-color: var(--neon-cyan);
+    --background: var(--background-dark);
+    --input-background: var(--background-panel);
+
+    /* Remove all traditional styling */
+    --shadow-soft: none;
+    --input-shadow: none;
+    --input-focus-shadow: 0 0 0 2px var(--neon-cyan), 0 0 10px var(--neon-cyan);
+    --input-focus-shadow-desktop: 0 0 0 2px var(--neon-cyan), 0 0 10px var(--neon-cyan);
+    --input-border: 1px solid var(--neon-cyan);
+}
+
+/* ===== PART 2: Environment Setup ===== */
+
+/* Perpetual Night Environment */
+body {
+    background-color: var(--background-dark) !important;
+    color: var(--text-primary) !important;
+    font-family: 'Share Tech Mono', 'Courier New', monospace !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    /* Scanline Effect */
+    background-image: repeating-linear-gradient(
+        0deg,
+        var(--scanline-color),
+        var(--scanline-color) 1px,
+        transparent 1px,
+        transparent 3px
+    ) !important;
+    /* Subtle animated grain */
+    position: relative;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg width='64' height='64' viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2300f6ff' fill-opacity='0.03'%3E%3Cpath d='M8 16c0 4.418 3.582 8 8 8s8-3.582 8-8-3.582-8-8-8-8 3.582-8 8zm0 32c0 4.418 3.582 8 8 8s8-3.582 8-8-3.582-8-8-8-8 3.582-8 8zm32-32c0 4.418 3.582 8 8 8s8-3.582 8-8-3.582-8-8-8-8 3.582-8 8zm0 32c0 4.418 3.582 8 8 8s8-3.582 8-8-3.582-8-8-8-8 3.582-8 8z'/%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: -1;
+    animation: grain 0.5s steps(8, end) infinite;
+}
+
+@keyframes grain {
+    0%, 100% { transform: translate(0, 0); }
+    10% { transform: translate(-1px, -1px); }
+    20% { transform: translate(-1px, 1px); }
+    30% { transform: translate(1px, -1px); }
+    40% { transform: translate(1px, 1px); }
+    50% { transform: translate(-1px, 0); }
+    60% { transform: translate(1px, 0); }
+    70% { transform: translate(0, -1px); }
+    80% { transform: translate(0, 1px); }
+    90% { transform: translate(-1px, -1px); }
+}
+
+/* ===== PART 3: Component Cybernetic Implants ===== */
+
+/* 1. Neon Title - Terminal Header */
+h1 {
+    color: #FFFFFF !important;
+    font-family: 'Share Tech Mono', monospace !important;
+    font-size: 32px !important;
+    font-weight: 700 !important;
+    letter-spacing: 4px !important;
+    text-transform: uppercase !important;
+    margin-bottom: 32px !important;
+    /* Massive Neon Glow with Dark Shadow for Contrast */
+    text-shadow:
+        0 0 5px #fff,
+        0 0 10px #fff,
+        0 0 20px var(--neon-cyan),
+        0 0 30px var(--neon-cyan),
+        0 0 40px var(--neon-cyan),
+        2px 2px 4px var(--text-shadow-dark) !important;
+    animation: titleFlicker 2s ease-in-out infinite alternate;
+}
+
+@keyframes titleFlicker {
+    0%, 100% {
+        text-shadow:
+            0 0 5px #fff,
+            0 0 10px #fff,
+            0 0 20px var(--neon-cyan),
+            0 0 30px var(--neon-cyan),
+            0 0 40px var(--neon-cyan),
+            2px 2px 4px var(--text-shadow-dark);
+    }
+    50% {
+        text-shadow:
+            0 0 2px #fff,
+            0 0 5px #fff,
+            0 0 10px var(--neon-cyan),
+            0 0 15px var(--neon-cyan),
+            0 0 20px var(--neon-cyan),
+            2px 2px 4px var(--text-shadow-dark);
+    }
+}
+
+h1::after {
+    display: none !important;
+}
+
+/* 2. Data Terminal Panels - Message Bubbles with Cool Animations */
+.message-bubble {
+    border: 1px solid var(--neon-cyan) !important;
+    border-radius: 0 !important;
+    background: var(--background-panel) !important;
+    backdrop-filter: blur(4px) !important;
+    margin-bottom: 16px !important;
+    padding: 20px 24px !important; /* Increased padding for tags */
+    /* Cold Precision - Laser Cut Angles with more space */
+    clip-path: polygon(0 12px, 12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%) !important;
+    /* Neon Glow Effect */
+    box-shadow:
+        0 0 5px var(--neon-cyan),
+        0 0 10px var(--neon-cyan),
+        inset 0 0 4px rgba(0, 246, 255, 0.3) !important;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+    position: relative;
+    transform-origin: center;
+}
+
+/* Cool Entry Animations */
+.message-bubble.user {
+    animation: slideInRight 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.message-bubble.system,
+.message-bubble.error,
+.message-bubble.info {
+    animation: slideInLeft 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes slideInRight {
+    0% {
+        transform: translateX(100px) rotateY(-15deg) scale(0.8);
+        opacity: 0;
+        filter: blur(4px);
+    }
+    60% {
+        transform: translateX(-5px) rotateY(2deg) scale(1.02);
+        opacity: 0.9;
+        filter: blur(1px);
+    }
+    100% {
+        transform: translateX(0) rotateY(0deg) scale(1);
+        opacity: 1;
+        filter: blur(0);
+    }
+}
+
+@keyframes slideInLeft {
+    0% {
+        transform: translateX(-100px) rotateY(15deg) scale(0.8);
+        opacity: 0;
+        filter: blur(4px);
+    }
+    60% {
+        transform: translateX(5px) rotateY(-2deg) scale(1.02);
+        opacity: 0.9;
+        filter: blur(1px);
+    }
+    100% {
+        transform: translateX(0) rotateY(0deg) scale(1);
+        opacity: 1;
+        filter: blur(0);
+    }
+}
+
+/* Epic Hover Animation - 20% Scale with Glow Boost */
+.message-bubble:hover {
+    transform: scale(1.2) rotateX(5deg) !important;
+    box-shadow:
+        0 0 15px var(--neon-cyan),
+        0 0 25px var(--neon-cyan),
+        0 0 35px var(--neon-cyan),
+        0 10px 30px rgba(0, 246, 255, 0.3),
+        inset 0 0 8px rgba(0, 246, 255, 0.5) !important;
+    z-index: 10;
+    filter: brightness(1.2) saturate(1.3);
+}
+
+/* Message Type Variations with High Contrast */
+.message-bubble.user {
+    border-color: var(--neon-cyan) !important;
+    box-shadow:
+        0 0 5px var(--neon-cyan),
+        0 0 10px var(--neon-cyan),
+        inset 0 0 4px rgba(0, 246, 255, 0.3) !important;
+}
+
+.message-bubble.user:hover {
+    box-shadow:
+        0 0 15px var(--neon-cyan),
+        0 0 25px var(--neon-cyan),
+        0 0 35px var(--neon-cyan),
+        0 10px 30px rgba(0, 246, 255, 0.3),
+        inset 0 0 8px rgba(0, 246, 255, 0.5) !important;
+}
+
+.message-bubble.system {
+    border-color: var(--neon-green) !important;
+    box-shadow:
+        0 0 5px var(--neon-green),
+        0 0 10px var(--neon-green),
+        inset 0 0 4px rgba(57, 255, 20, 0.3) !important;
+}
+
+.message-bubble.system:hover {
+    box-shadow:
+        0 0 15px var(--neon-green),
+        0 0 25px var(--neon-green),
+        0 0 35px var(--neon-green),
+        0 10px 30px rgba(57, 255, 20, 0.3),
+        inset 0 0 8px rgba(57, 255, 20, 0.5) !important;
+}
+
+.message-bubble.error {
+    border-color: var(--neon-magenta) !important;
+    box-shadow:
+        0 0 5px var(--neon-magenta),
+        0 0 10px var(--neon-magenta),
+        inset 0 0 4px rgba(255, 0, 224, 0.3) !important;
+}
+
+.message-bubble.error:hover {
+    box-shadow:
+        0 0 15px var(--neon-magenta),
+        0 0 25px var(--neon-magenta),
+        0 0 35px var(--neon-magenta),
+        0 10px 30px rgba(255, 0, 224, 0.3),
+        inset 0 0 8px rgba(255, 0, 224, 0.5) !important;
+}
+
+.message-bubble.info {
+    border-color: var(--neon-orange) !important;
+    box-shadow:
+        0 0 5px var(--neon-orange),
+        0 0 10px var(--neon-orange),
+        inset 0 0 4px rgba(255, 102, 0, 0.3) !important;
+}
+
+.message-bubble.info:hover {
+    box-shadow:
+        0 0 15px var(--neon-orange),
+        0 0 25px var(--neon-orange),
+        0 0 35px var(--neon-orange),
+        0 10px 30px rgba(255, 102, 0, 0.3),
+        inset 0 0 8px rgba(255, 102, 0, 0.5) !important;
+}
+
+/* 3. Data Interface Switches - Filter Options */
+.filter-container {
+    gap: 8px !important;
+    margin-bottom: 24px !important;
+}
+
+.filter-option {
+    position: relative !important;
+    border: 1px solid var(--neon-magenta) !important;
+    border-radius: 0 !important;
+    background-color: transparent !important;
+    color: var(--neon-magenta) !important;
+    padding: 8px 16px !important;
+    height: 36px !important;
+    font-family: 'Share Tech Mono', monospace !important;
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    /* Industrial Cut Angles */
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px)) !important;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+    box-shadow: none !important;
+    /* High contrast text shadow */
+    text-shadow: 0 0 3px var(--neon-magenta), 1px 1px 2px var(--text-shadow-dark) !important;
+}
+
+.filter-option:hover {
+    background-color: rgba(255, 0, 224, 0.15) !important;
+    text-shadow:
+        0 0 8px var(--neon-magenta),
+        0 0 15px var(--neon-magenta),
+        1px 1px 2px var(--text-shadow-dark) !important;
+    box-shadow: 0 0 8px var(--neon-magenta) !important;
+    transform: scale(1.1) translateY(-2px) !important;
+}
+
+.filter-option.active {
+    background-color: var(--neon-magenta) !important;
+    color: var(--background-dark) !important;
+    font-weight: 700 !important;
+    box-shadow:
+        0 0 8px var(--neon-magenta),
+        0 0 15px var(--neon-magenta),
+        inset 0 0 4px rgba(255, 0, 224, 0.8) !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Remove individual type colors */
+.filter-option.active.user,
+.filter-option.active.system,
+.filter-option.active.error,
+.filter-option.active.info {
+    background-color: var(--neon-magenta) !important;
+    color: var(--background-dark) !important;
+}
+
+/* 4. Enhanced Digital Decay - Glitch Art Effect */
+.message-bubble.error .message-text {
+    animation: advancedGlitch 0.8s steps(4, end) infinite;
+}
+
+@keyframes advancedGlitch {
+    0% {
+        text-shadow:
+            -2px 0 var(--neon-magenta),
+            2px 0 var(--neon-cyan),
+            1px 1px 2px var(--text-shadow-dark);
+        clip-path: polygon(0 0, 100% 0, 100% 30%, 0 30%);
+        transform: translateX(0) skew(0deg);
+    }
+    20% {
+        text-shadow:
+            2px 0 var(--neon-yellow),
+            -2px 0 var(--neon-green),
+            1px 1px 2px var(--text-shadow-dark);
+        clip-path: polygon(0 40%, 100% 40%, 100% 70%, 0 70%);
+        transform: translateX(-3px) skew(-2deg);
+    }
+    40% {
+        text-shadow:
+            -1px 0 var(--neon-orange),
+            1px 0 var(--neon-magenta),
+            1px 1px 2px var(--text-shadow-dark);
+        clip-path: polygon(0 70%, 100% 70%, 100% 100%, 0 100%);
+        transform: translateX(2px) skew(1deg);
+    }
+    60% {
+        text-shadow:
+            3px 0 var(--neon-cyan),
+            -1px 0 var(--neon-yellow),
+            1px 1px 2px var(--text-shadow-dark);
+        clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+        transform: translateX(-1px) skew(-1deg);
+    }
+    80% {
+        text-shadow:
+            -2px 0 var(--neon-green),
+            2px 0 var(--neon-orange),
+            1px 1px 2px var(--text-shadow-dark);
+        clip-path: polygon(0 20%, 100% 20%, 100% 80%, 0 80%);
+        transform: translateX(1px) skew(0deg);
+    }
+    100% {
+        text-shadow:
+            -2px 0 var(--neon-magenta),
+            2px 0 var(--neon-cyan),
+            1px 1px 2px var(--text-shadow-dark);
+        clip-path: polygon(0 0, 100% 0, 100% 30%, 0 30%);
+        transform: translateX(0) skew(0deg);
+    }
+}
+
+/* 5. Terminal Input - Command Line Interface */
+.input-container {
+    border: 1px solid var(--neon-cyan) !important;
+    border-radius: 0 !important;
+    background: var(--background-panel) !important;
+    backdrop-filter: blur(4px) !important;
+    height: 44px !important; /* Increased height */
+    padding: 10px 18px !important; /* Better padding */
+    /* Cut corners with more space */
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px) !important;
+    box-shadow:
+        0 0 5px var(--neon-cyan),
+        inset 0 0 4px rgba(0, 246, 255, 0.2) !important;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+}
+
+.input-container:focus-within {
+    box-shadow:
+        0 0 12px var(--neon-cyan),
+        0 0 20px var(--neon-cyan),
+        inset 0 0 8px rgba(0, 246, 255, 0.4) !important;
+    border-color: var(--neon-cyan) !important;
+    transform: scale(1.02) !important;
+}
+
+/* 6. Terminal Input Field */
+#message-input {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    color: var(--text-primary) !important;
+    font-family: 'Share Tech Mono', monospace !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    /* High contrast text shadow */
+    text-shadow:
+        0 0 3px var(--neon-cyan),
+        1px 1px 2px var(--text-shadow-dark) !important;
+    width: 100% !important;
+}
+
+#message-input::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 0.7 !important;
+    text-shadow: 1px 1px 2px var(--text-shadow-dark) !important;
+}
+
+/* 7. Command Execute Button - Send Button */
+#send-button {
+    border: 1px solid var(--neon-green) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--neon-green) !important;
+    width: 36px !important;
+    height: 32px !important;
+    margin-left: 8px !important;
+    /* Cut corners */
+    clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px) !important;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+    box-shadow: 0 0 3px var(--neon-green) !important;
+    text-shadow: 0 0 3px var(--neon-green) !important;
+}
+
+#send-button:hover:not(:disabled) {
+    background: rgba(57, 255, 20, 0.15) !important;
+    box-shadow:
+        0 0 12px var(--neon-green),
+        0 0 20px var(--neon-green) !important;
+    text-shadow:
+        0 0 8px var(--neon-green),
+        0 0 15px var(--neon-green) !important;
+    transform: scale(1.1) rotate(5deg) !important;
+}
+
+#send-button:active:not(:disabled) {
+    background: var(--neon-green) !important;
+    color: var(--background-dark) !important;
+    box-shadow:
+        0 0 15px var(--neon-green),
+        inset 0 0 4px rgba(57, 255, 20, 0.8) !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8) !important;
+    transform: scale(0.95) !important;
+}
+
+#send-button:disabled {
+    border-color: var(--text-muted) !important;
+    color: var(--text-muted) !important;
+    box-shadow: none !important;
+    opacity: 0.5 !important;
+    text-shadow: none !important;
+}
+
+/* 8. System Control Panels - Floating Action Buttons */
+.scroll-to-bottom,
+.clear-messages {
+    border: 1px solid var(--neon-orange) !important;
+    border-radius: 0 !important;
+    background: var(--background-panel) !important;
+    color: var(--neon-orange) !important;
+    width: 52px !important; /* Slightly larger for better visibility */
+    height: 52px !important;
+    /* Octagonal cut */
+    clip-path: polygon(25% 0%, 75% 0%, 100% 25%, 100% 75%, 75% 100%, 25% 100%, 0% 75%, 0% 25%) !important;
+    box-shadow:
+        0 0 5px var(--neon-orange),
+        0 0 10px var(--neon-orange) !important;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+    text-shadow: 0 0 3px var(--neon-orange) !important;
+}
+
+.scroll-to-bottom:hover,
+.clear-messages:hover {
+    box-shadow:
+        0 0 12px var(--neon-orange),
+        0 0 20px var(--neon-orange),
+        0 0 30px var(--neon-orange) !important;
+    text-shadow:
+        0 0 8px var(--neon-orange),
+        0 0 15px var(--neon-orange) !important;
+    transform: scale(1.15) rotate(10deg) !important;
+}
+
+/* 9. System Mode Toggle - Dark Mode Toggle */
+#dark-mode-toggle {
+    border: 1px solid var(--neon-yellow) !important;
+    border-radius: 0 !important;
+    background: var(--background-panel) !important;
+    color: var(--neon-yellow) !important;
+    width: 44px !important; /* Slightly larger */
+    height: 44px !important;
+    /* Diamond cut */
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%) !important;
+    box-shadow:
+        0 0 5px var(--neon-yellow),
+        0 0 10px var(--neon-yellow) !important;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+    text-shadow: 0 0 3px var(--neon-yellow) !important;
+}
+
+#dark-mode-toggle:hover {
+    box-shadow:
+        0 0 12px var(--neon-yellow),
+        0 0 20px var(--neon-yellow) !important;
+    text-shadow:
+        0 0 8px var(--neon-yellow),
+        0 0 15px var(--neon-yellow) !important;
+    transform: scale(1.1) rotate(45deg) !important;
+}
+
+/* 10. Fixed Data Tags - Information Chips */
+.bottom-tags-container {
+    position: absolute;
+    bottom: -12px !important; /* Adjusted for better visibility */
+    left: 12px !important;
+    display: flex;
+    gap: 8px !important; /* Increased gap */
+    z-index: 2;
+    flex-wrap: wrap; /* Allow wrapping */
+    max-width: calc(100% - 24px); /* Prevent overflow */
+}
+
+.duration-tag,
+.cache-hit-tag,
+.glossary-match-tag,
+.skip-src-lang-tag,
+.usage-tag {
+    border: 1px solid var(--neon-cyan) !important;
+    border-radius: 0 !important;
+    background: var(--background-panel) !important;
+    color: var(--neon-cyan) !important;
+    font-family: 'Share Tech Mono', monospace !important;
+    font-size: 10px !important;
+    font-weight: 400 !important;
+    padding: 4px 8px !important; /* Increased padding */
+    height: auto !important; /* Auto height to prevent truncation */
+    min-height: 20px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    box-shadow: 0 0 3px var(--neon-cyan) !important;
+    /* Simple cut corners with more space */
+    clip-path: polygon(3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%, 0 3px) !important;
+    white-space: nowrap !important;
+    /* High contrast text shadow */
+    text-shadow: 0 0 2px var(--neon-cyan), 1px 1px 1px var(--text-shadow-dark) !important;
+    transition: all 0.2s ease !important;
+}
+
+/* Hover effects for tags */
+.duration-tag:hover,
+.cache-hit-tag:hover,
+.glossary-match-tag:hover,
+.skip-src-lang-tag:hover,
+.usage-tag:hover {
+    transform: scale(1.1) !important;
+    z-index: 3 !important;
+}
+
+/* Specialized tag colors with better contrast */
+.duration-tag {
+    border-color: var(--neon-orange) !important;
+    color: var(--neon-orange) !important;
+    background: rgba(255, 102, 0, 0.15) !important;
+    box-shadow: 0 0 3px var(--neon-orange) !important;
+    text-shadow: 0 0 2px var(--neon-orange), 1px 1px 1px var(--text-shadow-dark) !important;
+}
+
+.cache-hit-tag,
+.glossary-match-tag,
+.skip-src-lang-tag {
+    border-color: var(--neon-green) !important;
+    color: var(--neon-green) !important;
+    background: rgba(57, 255, 20, 0.15) !important;
+    box-shadow: 0 0 3px var(--neon-green) !important;
+    text-shadow: 0 0 2px var(--neon-green), 1px 1px 1px var(--text-shadow-dark) !important;
+}
+
+.usage-tag {
+    border-color: var(--neon-magenta) !important;
+    color: var(--neon-magenta) !important;
+    background: rgba(255, 0, 224, 0.15) !important;
+    box-shadow: 0 0 3px var(--neon-magenta) !important;
+    text-shadow: 0 0 2px var(--neon-magenta), 1px 1px 1px var(--text-shadow-dark) !important;
+}
+
+/* 11. High Contrast Terminal Text Styling */
+.message-text {
+    color: var(--text-primary) !important;
+    font-family: 'Share Tech Mono', monospace !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    /* Strong text shadow for readability */
+    text-shadow:
+        0 0 1px rgba(255, 255, 255, 0.8),
+        1px 1px 2px var(--text-shadow-dark) !important;
+}
+
+.message-name {
+    color: var(--neon-cyan) !important;
+    font-family: 'Share Tech Mono', monospace !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    text-shadow:
+        0 0 3px var(--neon-cyan),
+        1px 1px 2px var(--text-shadow-dark) !important;
+    margin-bottom: 6px !important;
+}
+
+.message-name::before {
+    display: none !important;
+}
+
+.message-time {
+    color: var(--text-muted) !important;
+    font-family: 'Share Tech Mono', monospace !important;
+    font-size: 10px !important;
+    opacity: 0.9 !important;
+    text-shadow: 1px 1px 1px var(--text-shadow-dark) !important;
+}
+
+/* 12. System Status Indicator - Translation Dots */
+.translation-indicator {
+    opacity: 0.9;
+}
+
+.dot {
+    background: var(--neon-cyan) !important;
+    border-radius: 0 !important;
+    width: 5px !important;
+    height: 5px !important;
+    clip-path: polygon(25% 0%, 75% 0%, 100% 25%, 100% 75%, 75% 100%, 25% 100%, 0% 75%, 0% 25%) !important;
+    box-shadow: 0 0 3px var(--neon-cyan) !important;
+    animation: dotPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes dotPulse {
+    0%, 100% {
+        box-shadow: 0 0 3px var(--neon-cyan);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 8px var(--neon-cyan), 0 0 15px var(--neon-cyan);
+        transform: scale(1.3);
+    }
+}
+
+/* Remove all gradients and soft effects from base.css */
+.message-bubble.user,
+.message-bubble.system,
+.message-bubble.error,
+.message-bubble.info {
+    background-image: none !important;
+}
+
+/* Cyberpunk Focus States */
+.filter-option:focus-visible,
+#send-button:focus-visible,
+.scroll-to-bottom:focus-visible,
+.clear-messages:focus-visible,
+#dark-mode-toggle:focus-visible {
+    outline: none !important;
+    box-shadow:
+        0 0 0 2px var(--neon-cyan),
+        0 0 8px var(--neon-cyan),
+        0 0 15px var(--neon-cyan) !important;
+}

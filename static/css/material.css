@@ -1,0 +1,302 @@
+/* Material Design 3 Theme - Full Implementation */
+@import url('base.css');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+/* ===== PART 1: CSS Variables Override ===== */
+
+/* Light Mode - Material Design 3 */
+:root {
+    /* Core Colors */
+    --primary-color: #6750A4; /* Primary */
+    --secondary-container: #E8DEF8; /* Secondary Container */
+    --on-secondary-container: #1D192B; /* On Secondary Container */
+    --tertiary-container: #FFD8E4; /* Tertiary Container */
+    --on-tertiary-container: #31111D; /* On Tertiary Container */
+    --background: #FFFBFE; /* Surface */
+    --text-primary: #1C1B1F; /* On Surface */
+    --text-muted: #49454F; /* On Surface Variant */
+    --input-background: #E7E0EC; /* Surface Variant */
+    --outline-color: #79747E; /* Outline */
+
+    /* Filter Colors */
+    --filter-inactive-bg: transparent;
+    --filter-inactive-text: #1C1B1F;
+
+    /* Message Bubbles */
+    --user-bubble: linear-gradient(135deg, #EADDFF, #D0BCFF);
+    --system-bubble: linear-gradient(135deg, #E8DEF8, #EADDFF);
+    --error-bubble: linear-gradient(135deg, #F2B8B5, #F9DEDC);
+    --info-bubble: linear-gradient(135deg, #FFD8E4, #FBBFE9);
+
+    /* Accent Colors */
+    --user-accent: #6750A4;
+    --system-accent: #625B71;
+    --error-accent: #B3261E;
+    --info-accent: #7D5260;
+
+    /* Shadows - M3 Elevation */
+    --shadow-soft: 0px 1px 2px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+    --input-shadow: 0px 1px 2px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15);
+    --input-focus-shadow: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px rgba(0, 0, 0, 0.3);
+    --input-focus-shadow-desktop: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px rgba(0, 0, 0, 0.3);
+    --input-border: 1px solid transparent;
+}
+
+/* Dark Mode - Material Design 3 */
+:root[data-theme="dark"] {
+    /* Core Colors */
+    --primary-color: #D0BCFF; /* Primary */
+    --secondary-container: #4A4458; /* Secondary Container */
+    --on-secondary-container: #E8DEF8; /* On Secondary Container */
+    --tertiary-container: #633B48; /* Tertiary Container */
+    --on-tertiary-container: #FFD8E4; /* On Tertiary Container */
+    --background: #1C1B1F; /* Surface */
+    --text-primary: #E6E1E5; /* On Surface */
+    --text-muted: #CAC4D0; /* On Surface Variant */
+    --input-background: #49454F; /* Surface Variant */
+    --outline-color: #938F99; /* Outline */
+
+    /* Filter Colors */
+    --filter-inactive-bg: transparent;
+    --filter-inactive-text: #E6E1E5;
+
+    /* Message Bubbles */
+    --user-bubble: linear-gradient(135deg, #4F378B, #634B9F);
+    --system-bubble: linear-gradient(135deg, #4A4458, #4F378B);
+    --error-bubble: linear-gradient(135deg, #8C1D18, #93000A);
+    --info-bubble: linear-gradient(135deg, #633B48, #7D5260);
+
+    /* Accent Colors */
+    --user-accent: #D0BCFF;
+    --system-accent: #CCC2DC;
+    --error-accent: #F2B8B5;
+    --info-accent: #EFB8C8;
+
+    /* Shadows - M3 Elevation (Dark) */
+    --shadow-soft: 0px 1px 2px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+    --input-shadow: 0px 1px 2px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15);
+    --input-focus-shadow: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px rgba(0, 0, 0, 0.3);
+    --input-focus-shadow-desktop: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px rgba(0, 0, 0, 0.3);
+    --input-border: 1px solid transparent;
+}
+
+/* ===== PART 2: Component-Level Style Restructuring ===== */
+
+/* Typography System */
+body {
+    font-family: Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* 1. Title (H1) - MD3 Display Small */
+h1 {
+    font-size: 36px !important;
+    font-weight: 400 !important;
+    line-height: 44px !important;
+    letter-spacing: 0 !important;
+    text-align: center;
+    color: var(--text-primary);
+    margin-bottom: 32px !important;
+}
+
+h1::after {
+    display: none !important;
+}
+
+/* 2. Filter Options - MD3 Filter Chips */
+.filter-option {
+    position: relative;
+    border: 1px solid var(--outline-color) !important;
+    background-color: transparent !important;
+    color: var(--text-primary) !important;
+    padding: 0 16px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    line-height: 20px !important;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    box-shadow: none !important;
+}
+
+.filter-option:hover {
+    background-color: rgba(103, 80, 164, 0.08) !important;
+    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15) !important;
+}
+
+:root[data-theme="dark"] .filter-option:hover {
+    background-color: rgba(208, 188, 255, 0.08) !important;
+}
+
+.filter-option.active {
+    background-color: var(--secondary-container) !important;
+    color: var(--on-secondary-container) !important;
+    border-color: transparent !important;
+    padding-left: 36px !important;
+}
+
+.filter-option.active::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    background-color: var(--on-secondary-container);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") no-repeat center;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") no-repeat center;
+    -webkit-mask-size: 18px 18px;
+    mask-size: 18px 18px;
+}
+
+/* Remove individual type colors for active states */
+.filter-option.active.user,
+.filter-option.active.system,
+.filter-option.active.error,
+.filter-option.active.info {
+    background-color: var(--secondary-container) !important;
+    color: var(--on-secondary-container) !important;
+}
+
+/* 3. Floating Action Buttons - MD3 FAB */
+.scroll-to-bottom,
+.clear-messages {
+    background-color: var(--tertiary-container) !important;
+    color: var(--on-tertiary-container) !important;
+    box-shadow: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px rgba(0, 0, 0, 0.3) !important;
+    width: 56px !important;
+    height: 56px !important;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
+}
+
+.scroll-to-bottom:hover,
+.clear-messages:hover {
+    box-shadow: 0px 6px 10px 4px rgba(0, 0, 0, 0.15), 0px 2px 3px rgba(0, 0, 0, 0.3) !important;
+    transform: scale(1.05) !important;
+}
+
+/* 4. Message Bubbles - MD3 Conversational UI */
+.message-bubble {
+    border-radius: 16px !important;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
+}
+
+/* User messages with tail */
+.message-bubble.user {
+    border-bottom-right-radius: 4px !important;
+}
+
+/* System messages with tail */
+.message-bubble.system {
+    border-bottom-left-radius: 4px !important;
+}
+
+/* 5. Input Container - MD3 Text Field */
+.input-container {
+    border-radius: 28px !important;
+    background-color: var(--input-background) !important;
+    border: 1px solid transparent !important;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
+}
+
+.input-container:focus-within {
+    border-color: var(--primary-color) !important;
+}
+
+/* 6. Send Button - MD3 Icon Button */
+#send-button {
+    background-color: var(--primary-color) !important;
+    color: #FFFFFF !important;
+    border-radius: 20px !important;
+    width: 40px !important;
+    height: 40px !important;
+}
+
+:root[data-theme="dark"] #send-button {
+    color: #1C1B1F !important;
+}
+
+#send-button:hover:not(:disabled) {
+    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15) !important;
+}
+
+#send-button:disabled {
+    background-color: rgba(103, 80, 164, 0.38) !important;
+    color: rgba(255, 255, 255, 0.38) !important;
+}
+
+:root[data-theme="dark"] #send-button:disabled {
+    background-color: rgba(208, 188, 255, 0.38) !important;
+    color: rgba(28, 27, 31, 0.38) !important;
+}
+
+/* 7. Dark Mode Toggle - MD3 Icon Button */
+#dark-mode-toggle {
+    background-color: var(--primary-color) !important;
+    box-shadow: 0px 2px 4px 2px rgba(0, 0, 0, 0.15), 0px 1px 2px rgba(0, 0, 0, 0.3) !important;
+    width: 48px !important;
+    height: 48px !important;
+}
+
+#dark-mode-toggle:hover {
+    box-shadow: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 8. Bottom Tags - MD3 Chips */
+.duration-tag,
+.cache-hit-tag,
+.glossary-match-tag,
+.skip-src-lang-tag,
+.usage-tag {
+    border-radius: 8px !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    padding: 4px 8px !important;
+    height: 20px !important;
+}
+
+/* 9. Input Field - MD3 Typography */
+#message-input {
+    font-family: Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    font-size: 16px !important;
+    font-weight: 400 !important;
+    line-height: 24px !important;
+}
+
+/* 10. Message Text Typography */
+.message-text {
+    font-size: 14px !important;
+    line-height: 20px !important;
+    letter-spacing: 0.25px !important;
+}
+
+.message-name {
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+}
+
+.message-time {
+    font-size: 11px !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* 11. Translation Indicator - MD3 Progress */
+.dot {
+    background-color: var(--primary-color) !important;
+}
+
+/* Animations - MD3 Motion */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}

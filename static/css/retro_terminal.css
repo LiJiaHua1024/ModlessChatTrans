@@ -1,0 +1,606 @@
+/* Terminal Retro - Authentic Command Line Interface with Essential Info */
+@import url('base.css');
+@import url('https://fonts.googleapis.com/css2?family=VT323:wght@400&display=swap');
+
+/* ===== PART 1: Authentic Terminal Design Laws ===== */
+
+/* Core Terminal Environment */
+:root {
+    /* Pure Monochrome Terminal Colors */
+    --terminal-green: #33FF33;
+    --terminal-dim: #00AA00;
+    --terminal-red: #FF4444;
+    --terminal-yellow: #FFFF44;
+    --terminal-cyan: #44FFFF;
+    --background-black: #000000;
+    --terminal-glow: 0 0 3px rgba(51, 255, 51, 0.7);
+    --terminal-strong-glow: 0 0 5px rgba(51, 255, 51, 0.9);
+
+    /* Override all base variables to terminal colors */
+    --primary-color: var(--terminal-green);
+    --background: var(--background-black);
+    --text-primary: var(--terminal-green);
+    --text-muted: var(--terminal-dim);
+    --input-background: transparent;
+
+    /* Disable all modern effects */
+    --shadow-soft: none;
+    --input-shadow: none;
+    --input-focus-shadow: none;
+    --input-focus-shadow-desktop: none;
+    --input-border: none;
+}
+
+/* ===== PART 2: CRT Monitor Environment ===== */
+
+/* Terminal Screen Setup */
+body {
+    background-color: var(--background-black) !important;
+    color: var(--terminal-green) !important;
+    font-family: 'VT323', 'Courier New', monospace !important;
+    font-size: 16px !important;
+    line-height: 1.4 !important;
+    text-shadow: var(--terminal-glow) !important;
+    padding: 20px !important;
+    margin: 0 !important;
+
+    /* CRT Screen Flicker */
+    animation: crtFlicker 0.15s infinite linear;
+
+    /* Scanlines Effect */
+    background-image: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(51, 255, 51, 0.02) 2px,
+        rgba(51, 255, 51, 0.02) 4px
+    ) !important;
+}
+
+/* Remove default body constraints for true terminal feel */
+body {
+    max-width: none !important;
+    padding-bottom: 60px !important; /* Space for clear button */
+}
+
+/* CRT Flicker Animation */
+@keyframes crtFlicker {
+    0% {
+        text-shadow: var(--terminal-glow);
+        opacity: 1;
+    }
+    98% {
+        text-shadow: var(--terminal-glow);
+        opacity: 1;
+    }
+    99% {
+        text-shadow: var(--terminal-strong-glow);
+        opacity: 0.98;
+    }
+    100% {
+        text-shadow: var(--terminal-glow);
+        opacity: 1;
+    }
+}
+
+/* ===== PART 3: Terminal System Header ===== */
+
+/* 1. Terminal Boot Header */
+h1 {
+    color: var(--terminal-green) !important;
+    font-family: 'VT323', monospace !important;
+    font-size: 16px !important;
+    font-weight: 400 !important;
+    text-align: left !important;
+    margin: 0 0 16px 0 !important;
+    text-shadow: var(--terminal-glow) !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    line-height: 1.4 !important;
+    white-space: pre-line !important;
+}
+
+h1::before {
+    content: 'CHAT TERMINAL v1.0\ASYSTEM READY\A\A';
+    white-space: pre;
+}
+
+h1::after {
+    display: none !important;
+}
+
+/* 2. Terminal Filter Commands */
+.filter-container {
+    display: flex !important;
+    gap: 4px !important;
+    margin-bottom: 12px !important;
+    flex-wrap: wrap !important;
+}
+
+.filter-option {
+    border: none !important;
+    background: transparent !important;
+    color: var(--terminal-green) !important;
+    font-family: 'VT323', monospace !important;
+    font-size: 14px !important;
+    padding: 2px 4px !important;
+    height: auto !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    text-shadow: var(--terminal-glow) !important;
+    transition: none !important;
+    cursor: pointer !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.filter-option::before {
+    content: '[';
+}
+
+.filter-option::after {
+    content: ']';
+}
+
+.filter-option:hover {
+    color: var(--terminal-yellow) !important;
+    text-shadow: 0 0 3px rgba(255, 255, 68, 0.7) !important;
+    transform: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.filter-option.active {
+    color: var(--terminal-cyan) !important;
+    text-shadow: 0 0 3px rgba(68, 255, 255, 0.7) !important;
+    background: transparent !important;
+}
+
+.filter-option.active.user,
+.filter-option.active.system,
+.filter-option.active.error,
+.filter-option.active.info {
+    color: var(--terminal-cyan) !important;
+    text-shadow: 0 0 3px rgba(68, 255, 255, 0.7) !important;
+    background: transparent !important;
+}
+
+/* ===== PART 4: Terminal Output Stream ===== */
+
+/* 3. Terminal Output Stream - Message List */
+#message-list {
+    list-style: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    margin-bottom: 8px !important;
+}
+
+/* 4. Log Output Lines - Message Bubbles */
+.message-bubble {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 1px 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    transition: none !important;
+    animation: none !important;
+    position: relative;
+}
+
+.message-bubble:hover {
+    transform: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+/* 5. Terminal Output Text with All Info at Front */
+.message-text {
+    color: var(--terminal-green) !important;
+    font-family: 'VT323', monospace !important;
+    font-size: 16px !important;
+    line-height: 1.4 !important;
+    text-shadow: var(--terminal-glow) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    display: block !important;
+}
+
+/* Show player names in terminal format */
+.message-name {
+    display: inline !important;
+    color: var(--terminal-green) !important;
+    font-family: 'VT323', monospace !important;
+    font-size: 16px !important;
+    text-shadow: var(--terminal-glow) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-weight: 400 !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+}
+
+/* Hide the default colored dots */
+.message-name::before {
+    display: none !important;
+}
+
+/* 6. System message - no special prefix */
+.message-bubble.system .message-name {
+    display: none !important; /* System messages don't show names */
+}
+
+.message-bubble.system .message-text::before {
+    content: '';
+}
+
+/* 7. User input format: [TIME] [TOKENS] USER: message */
+.message-bubble.user .message-name::before {
+    content: '';
+    /* Time and tokens will be handled by JS or server */
+}
+
+.message-bubble.user .message-name::after {
+    content: ': ';
+}
+
+/* 8. Information output format: [TIME] [TOKENS] [INFO] message */
+.message-bubble.info .message-name {
+    display: none !important;
+}
+
+.message-bubble.info .message-text::before {
+    content: '[INFO] ';
+    color: var(--terminal-yellow);
+    text-shadow: 0 0 3px rgba(255, 255, 68, 0.7);
+}
+
+.message-bubble.info .message-text {
+    color: var(--terminal-yellow) !important;
+    text-shadow: 0 0 3px rgba(255, 255, 68, 0.7) !important;
+}
+
+/* 9. Error output format: [TIME] [TOKENS] [ERROR] message */
+.message-bubble.error .message-name {
+    display: none !important;
+}
+
+.message-bubble.error .message-text::before {
+    content: '[ERROR] ';
+    color: var(--terminal-red);
+    text-shadow: 0 0 3px rgba(255, 68, 68, 0.7);
+}
+
+.message-bubble.error .message-text {
+    color: var(--terminal-red) !important;
+    text-shadow: 0 0 3px rgba(255, 68, 68, 0.7) !important;
+}
+
+/* 10. Hide timestamps and bottom tags - info moved to front */
+.message-time {
+    display: none !important;
+}
+
+.bottom-tags-container {
+    display: none !important;
+}
+
+/* ===== PART 5: Command Line Input ===== */
+
+/* 11. Command Line Interface - Input Container */
+.input-container {
+    position: static !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 8px 0 0 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    display: flex !important;
+    align-items: baseline !important;
+    transform: none !important;
+    transition: none !important;
+    left: auto !important;
+    bottom: auto !important;
+    z-index: auto !important;
+}
+
+.input-container:focus-within {
+    box-shadow: none !important;
+    border: none !important;
+    transform: none !important;
+}
+
+/* Command Prompt */
+.input-container::before {
+    content: 'C:\\CHAT\\> ';
+    color: var(--terminal-green);
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    text-shadow: var(--terminal-glow);
+    white-space: nowrap;
+    margin-right: 0;
+    flex-shrink: 0;
+}
+
+/* 12. True Terminal Input Field */
+#message-input {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    color: var(--terminal-green) !important;
+    font-family: 'VT323', monospace !important;
+    font-size: 16px !important;
+    font-weight: 400 !important;
+    text-shadow: var(--terminal-glow) !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    flex-grow: 1 !important;
+    width: auto !important;
+    height: auto !important;
+    line-height: 1.4 !important;
+
+    /* The Soul of the Terminal - Real Block Cursor */
+    caret-color: var(--terminal-green) !important;
+    caret-shape: block !important;
+}
+
+/* Enhanced placeholder styling */
+#message-input::placeholder {
+    color: var(--terminal-dim) !important;
+    opacity: 0.6 !important;
+    text-shadow: 0 0 2px rgba(0, 170, 0, 0.5) !important;
+}
+
+/* 13. Hide Send Button - Terminal uses Enter key */
+#send-button {
+    display: none !important;
+}
+
+/* ===== PART 6: Terminal System Controls ===== */
+
+/* 14. Terminal Clear Command */
+.clear-messages {
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    border: none !important;
+    background: transparent !important;
+    color: var(--terminal-green) !important;
+    font-family: 'VT323', monospace !important;
+    font-size: 14px !important;
+    padding: 4px 8px !important;
+    text-shadow: var(--terminal-glow) !important;
+    cursor: pointer !important;
+    transition: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    width: auto !important;
+    height: auto !important;
+}
+
+.clear-messages::before {
+    content: '[CLEAR]';
+}
+
+.clear-messages svg {
+    display: none !important;
+}
+
+.clear-messages:hover {
+    color: var(--terminal-yellow) !important;
+    text-shadow: 0 0 3px rgba(255, 255, 68, 0.7) !important;
+    transform: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+/* 15. Hide Scroll Button - Not Needed in Terminal */
+.scroll-to-bottom {
+    display: none !important;
+}
+
+/* 16. Hide Dark Mode Toggle - Terminal is Always Dark */
+#dark-mode-toggle {
+    display: none !important;
+}
+
+/* ===== PART 7: Terminal System Indicators ===== */
+
+/* 17. Terminal Processing Indicator - Only show when active */
+.translation-indicator {
+    display: none !important; /* Hidden by default */
+    position: static !important;
+    margin: 4px 0 !important;
+    align-items: center !important;
+    opacity: 1 !important;
+}
+
+.translation-indicator.active {
+    display: flex !important; /* Only show when active */
+}
+
+.translation-indicator::before {
+    content: 'PROCESSING... ';
+    color: var(--terminal-dim);
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    text-shadow: 0 0 2px rgba(0, 170, 0, 0.5);
+    margin-right: 8px;
+}
+
+.dot {
+    background: var(--terminal-green) !important;
+    border-radius: 0 !important;
+    width: 4px !important;
+    height: 4px !important;
+    margin: 0 1px !important;
+    border: 1px solid var(--terminal-green) !important;
+    box-shadow: none !important;
+    animation: terminalDotBlink 1s infinite;
+}
+
+.dot:nth-child(2) {
+    animation-delay: 0.3s;
+}
+
+.dot:nth-child(3) {
+    animation-delay: 0.6s;
+}
+
+@keyframes terminalDotBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* ===== PART 8: Terminal Entry Animation ===== */
+
+/* Simple terminal-style message appearance */
+.message-bubble {
+    animation: terminalPrint 0.1s ease-out;
+}
+
+@keyframes terminalPrint {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* ===== PART 9: Clean Up Modern Elements ===== */
+
+/* Remove all modern styling from inherited elements */
+.message-bubble.user,
+.message-bubble.system,
+.message-bubble.error,
+.message-bubble.info {
+    background-image: none !important;
+    background: transparent !important;
+    border-image: none !important;
+    clip-path: none !important;
+}
+
+/* Disable all transitions for authentic terminal feel */
+* {
+    transition: none !important;
+    animation-duration: 0.1s !important;
+}
+
+/* Keep only essential animations */
+body,
+#message-input,
+.message-bubble,
+.dot {
+    animation-duration: initial !important;
+}
+
+/* ===== PART 10: Terminal Focus Management ===== */
+
+/* Ensure input always gets focus in terminal */
+#message-input:focus {
+    outline: none !important;
+}
+
+#message-input:focus-visible {
+    outline: 1px dotted var(--terminal-green) !important;
+    outline-offset: 2px !important;
+}
+
+/* ===== PART 11: Responsive Terminal ===== */
+
+/* Maintain terminal authenticity on mobile */
+@media (max-width: 768px) {
+    body {
+        padding: 10px !important;
+        font-size: 14px !important;
+    }
+
+    .input-container::before {
+        content: 'C:\\> ';
+        font-size: 14px;
+    }
+
+    #message-input {
+        font-size: 14px !important;
+    }
+
+    .message-text {
+        font-size: 14px !important;
+    }
+
+    .message-name {
+        font-size: 14px !important;
+    }
+
+    h1 {
+        font-size: 14px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 8px !important;
+        font-size: 12px !important;
+    }
+
+    .input-container::before {
+        content: '> ';
+        font-size: 12px;
+    }
+
+    #message-input {
+        font-size: 12px !important;
+    }
+
+    .message-text {
+        font-size: 12px !important;
+    }
+
+    .message-name {
+        font-size: 12px !important;
+    }
+
+    h1 {
+        font-size: 12px !important;
+    }
+}
+
+/* ===== PART 12: Terminal Accessibility ===== */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    :root {
+        --terminal-glow: 0 0 1px rgba(51, 255, 51, 1);
+    }
+
+    body {
+        text-shadow: var(--terminal-glow) !important;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    body {
+        animation: none !important;
+    }
+
+    .message-bubble {
+        animation: none !important;
+    }
+
+    .dot {
+        animation: none !important;
+    }
+}

@@ -118,6 +118,7 @@ jobs:
           '--include-package-data=certifi'
           '--include-data-dir=locales=./locales'
           '--include-data-dir=templates=./templates'
+          '--include-data-dir=static=./static'
           '--include-data-dir=third_party_licenses=./third_party_licenses'
           '--include-data-file=choose_language.png=./choose_language.png'
           '--output-filename=ModlessChatTrans'

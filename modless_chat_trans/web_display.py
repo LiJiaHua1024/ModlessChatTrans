@@ -30,17 +30,30 @@ def start_httpserver(port, callback):
     logger.info(f"Starting HTTP server on port {port}")
 
     try:
-        flask_app = Flask(__name__)
-        flask_app.template_folder = get_path("templates")
-        logger.debug(f"Template folder set to: {get_path('templates')}")
+        template_dir = get_path("templates")
+        static_dir = get_path("static")
+
+        # 同时指定模板文件夹和静态文件夹
+        flask_app = Flask(
+            __name__,
+            template_folder=template_dir,
+            static_folder=static_dir
+        )
+
+        logger.debug(f"Template folder set to: {template_dir}")
+        logger.debug(f"Static folder set to: {static_dir}")
 
         http_messages = []
         sse_clients = []
 
         @flask_app.route('/')
         def home():
-            logger.debug("Serving home page")
-            return render_template('index.html', _=_)
+            theme_name = request.args.get('theme', 'base')
+            logger.debug(f"Serving home page with theme: {theme_name}")
+
+            # 将主题对应的CSS文件名传递给模板
+            # 我们约定CSS文件名和主题名一致（例如 theme=material -> material.css）
+            return render_template('index.html', _=_, theme_css=theme_name)
 
         @flask_app.route('/send-message', methods=['POST'])
         def handle_user_input():

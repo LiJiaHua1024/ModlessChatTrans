@@ -1,0 +1,804 @@
+:root {
+    /* 基础颜色 - 浅色模式 */
+    --primary-color: #5c6bc0;
+    --background: #f5f7fa;
+    --text-primary: #2c3e50;
+    --text-muted: #7f8c8d;
+    --input-background: white;
+    --filter-inactive-bg: #e0e0e0;
+    --filter-inactive-text: #757575;
+
+    /* 消息气泡颜色 - 渐变效果 - 浅色模式 */
+    --user-bubble: linear-gradient(135deg, #e8f5fe, #d1e6f9); /* 蓝色渐变 - 正常玩家 */
+    --system-bubble: linear-gradient(135deg, #e8f5e9, #d5ebd7); /* 绿色渐变 - 无name消息 */
+    --error-bubble: linear-gradient(135deg, #ffebee, #ffcdd2); /* 红色渐变 - 错误消息 */
+    --info-bubble: linear-gradient(135deg, #fff8e1, #ffecb3);  /* 黄色渐变 - info消息 */
+
+    /* 边框和强调色 - 浅色模式 */
+    --user-accent: #5c6bc0;   /* 蓝色 */
+    --system-accent: #4caf50; /* 绿色 */
+    --error-accent: #e53935;  /* 红色 */
+    --info-accent: #ffc107;   /* 黄色 */
+
+    /* 阴影 - 浅色模式 */
+    --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.05);
+    --input-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    --input-focus-shadow: 0 6px 24px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06);
+    --input-focus-shadow-desktop: 0 6px 28px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+    --input-border: 1px solid rgba(0,0,0,0.05);
+
+    --transition-speed: 0.2s;
+}
+
+/* 深色模式变量 */
+:root[data-theme="dark"] {
+    --primary-color: #7986cb; /* 稍亮的蓝色 */
+    --background: #121212; /* 深灰背景 */
+    --text-primary: #e0e0e0; /* 浅灰色文本 */
+    --text-muted: #9e9e9e; /* 中灰色文本 */
+    --input-background: #1e1e1e; /* 稍亮的深灰输入背景 */
+    --filter-inactive-bg: #333;
+    --filter-inactive-text: #bbb;
+
+    /* 消息气泡颜色 - 深色模式 */
+    --user-bubble: linear-gradient(135deg, #2a3f5f, #3f51b5); /* 深蓝渐变 */
+    --system-bubble: linear-gradient(135deg, #2e4d30, #43a047); /* 深绿渐变 */
+    --error-bubble: linear-gradient(135deg, #5d2f2f, #c62828); /* 深红渐变 */
+    --info-bubble: linear-gradient(135deg, #615228, #ffb300);  /* 深黄/橙渐变 */
+
+    /* 边框和强调色 - 深色模式 */
+    --user-accent: #7986cb;   /* 亮蓝色 */
+    --system-accent: #66bb6a; /* 亮绿色 */
+    --error-accent: #ef5350;  /* 亮红色 */
+    --info-accent: #ffca28;   /* 亮黄色 */
+
+    /* 阴影 - 深色模式 (通常更微妙) */
+    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.2);
+    --input-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    --input-focus-shadow: 0 6px 24px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.2);
+    --input-focus-shadow-desktop: 0 6px 28px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2);
+    --input-border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* 深色模式下特定元素的颜色调整 */
+:root[data-theme="dark"] .message-text {
+    color: #f5f5f5; /* 确保消息文本在深色气泡上更清晰 */
+}
+
+:root[data-theme="dark"] #send-button {
+    color: #1e1e1e; /* 深色背景上的发送按钮图标颜色 */
+}
+
+:root[data-theme="dark"] #send-button:disabled {
+    background: #555;
+    color: #888;
+}
+
+:root[data-theme="dark"] .scroll-to-bottom {
+    background: var(--primary-color);
+    color: #1e1e1e; /* 深色背景上的滚动按钮图标颜色 */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+/* 输入框placeholder颜色 */
+:root[data-theme="dark"] #message-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
+/* 确保过滤按钮激活状态文本为深色 */
+:root[data-theme="dark"] .filter-option.active.user,
+:root[data-theme="dark"] .filter-option.active.system,
+:root[data-theme="dark"] .filter-option.active.error,
+:root[data-theme="dark"] .filter-option.active.info {
+    color: #1e1e1e;
+}
+
+:root[data-theme="dark"] .dot {
+    background-color: var(--primary-color);
+}
+
+/* Minecraft格式化代码颜色定义 - 浅色模式 */
+.mc-color-0 { color: #000000; } /* 黑色 */
+.mc-color-1 { color: #0000AA; } /* 深蓝色 */
+.mc-color-2 { color: #008800; } /* 深绿色 - 加深 */
+.mc-color-3 { color: #008888; } /* 深青色 - 加深 */
+.mc-color-4 { color: #AA0000; } /* 深红色 */
+.mc-color-5 { color: #AA00AA; } /* 深紫色 */
+.mc-color-6 { color: #CC7700; } /* 金色 - 加深 */
+.mc-color-7 { color: #777777; } /* 灰色 - 加深 */
+.mc-color-8 { color: #333333; } /* 深灰色 - 加深 */
+.mc-color-9 { color: #3333FF; } /* 蓝色 - 加深 */
+.mc-color-a { color: #22AA22; } /* 绿色 - 加深 */
+.mc-color-b { color: #22AAAA; } /* 青色 - 加深 */
+.mc-color-c { color: #FF3333; } /* 红色 - 加深 */
+.mc-color-d { color: #FF33FF; } /* 洋红色 - 加深 */
+.mc-color-e { color: #CCCC00; } /* 黄色 - 大幅加深 */
+.mc-color-f { color: #444444; } /* 白色 -> 深灰色 */
+
+/* 深色模式下的Minecraft颜色调整 */
+:root[data-theme="dark"] .mc-color-0 { color: #000000; }
+:root[data-theme="dark"] .mc-color-1 { color: #4C4CFF; }
+:root[data-theme="dark"] .mc-color-2 { color: #4CFF4C; }
+:root[data-theme="dark"] .mc-color-3 { color: #4CFFFF; }
+:root[data-theme="dark"] .mc-color-4 { color: #FF4C4C; }
+:root[data-theme="dark"] .mc-color-5 { color: #FF4CFF; }
+:root[data-theme="dark"] .mc-color-6 { color: #FFCC4C; }
+:root[data-theme="dark"] .mc-color-7 { color: #CCCCCC; }
+:root[data-theme="dark"] .mc-color-8 { color: #888888; }
+:root[data-theme="dark"] .mc-color-9 { color: #7C7CFF; }
+:root[data-theme="dark"] .mc-color-a { color: #7CFF7C; }
+:root[data-theme="dark"] .mc-color-b { color: #7CFFFF; }
+:root[data-theme="dark"] .mc-color-c { color: #FF7C7C; }
+:root[data-theme="dark"] .mc-color-d { color: #FF7CFF; }
+:root[data-theme="dark"] .mc-color-e { color: #FFFF7C; }
+:root[data-theme="dark"] .mc-color-f { color: #FFFFFF; }
+
+/* Minecraft格式化样式 */
+.mc-bold { font-weight: bold; }
+.mc-italic { font-style: italic; }
+.mc-underline { text-decoration: underline; }
+.mc-strikethrough { text-decoration: line-through; }
+
+/* 改进的乱码效果 */
+.mc-obfuscated {
+    display: inline-block;
+    position: relative;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--background);
+    color: var(--text-primary);
+    line-height: 1.6;
+    padding: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+    padding-bottom: 100px; /* 为输入框留出空间 */
+    transition: background-color 0.3s ease, color 0.3s ease; /* 添加过渡效果 */
+}
+
+h1 {
+    color: var(--text-primary);
+    margin-bottom: 25px;
+    font-size: 1.6rem;
+    font-weight: 600;
+    text-align: center;
+    position: relative;
+    padding-bottom: 12px;
+}
+
+h1:after {
+    content: "";
+    position: absolute;
+    width: 60px;
+    height: 3px;
+    background: var(--primary-color);
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 3px;
+}
+
+#message-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.message-bubble {
+    border-radius: 18px;
+    padding: 14px 18px;
+    box-shadow: var(--shadow-soft);
+    max-width: 80%;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    margin-bottom: 18px;
+    position: relative;
+    transition: all var(--transition-speed), background 0.3s ease; /* 添加背景过渡 */
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.message-bubble:hover {
+    transform: translateY(-2px);
+}
+
+/* 普通用户消息 - 蓝色渐变 */
+.message-bubble.user {
+    background: var(--user-bubble);
+    margin-left: auto;
+    border-bottom-right-radius: 4px;
+}
+
+/* 系统消息（无name）- 绿色渐变 */
+.message-bubble.system {
+    background: var(--system-bubble);
+    margin-right: auto;
+    border-bottom-left-radius: 4px;
+}
+
+/* 错误消息 - 红色渐变 */
+.message-bubble.error {
+    background: var(--error-bubble);
+    margin-right: auto;
+    border-bottom-left-radius: 4px;
+    border-left: 3px solid var(--error-accent);
+}
+
+/* 信息消息 - 黄色渐变 */
+.message-bubble.info {
+    background: var(--info-bubble);
+    margin-right: auto;
+    border-bottom-left-radius: 4px;
+    border-left: 3px solid var(--info-accent);
+}
+
+.message-name {
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+}
+
+.message-name:before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+/* 移除 [INFO] 和 [ERROR] 前面的点 */
+.message-bubble.error .message-name:before,
+.message-bubble.info .message-name:before {
+    display: none;
+}
+
+/* 用户名颜色样式 */
+.message-bubble.user .message-name {
+    color: var(--user-accent);
+}
+
+.message-bubble.user .message-name:before {
+    background: var(--user-accent);
+}
+
+.message-bubble.error .message-name {
+    color: var(--error-accent);
+}
+
+.message-bubble.info .message-name {
+    color: var(--info-accent);
+}
+
+.message-text {
+    color: var(--text-primary); /* 默认为浅色模式文本色 */
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.message-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 6px;
+    text-align: right;
+    font-weight: 300;
+}
+
+/* 底部标签容器 */
+.bottom-tags-container {
+    position: absolute;
+    bottom: -8px;
+    left: 8px;
+    display: flex;
+    gap: 6px;
+    z-index: 1;
+}
+
+/* 耗时标签样式 */
+.duration-tag {
+    background: rgba(255, 193, 7, 0.9);
+    color: #333;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 0.65rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+    animation: fadeIn 0.3s ease-in-out;
+    transition: all 0.3s ease;
+}
+
+/* 深色模式下的耗时标签 */
+:root[data-theme="dark"] .duration-tag {
+    background: rgba(255, 193, 7, 0.85);
+    color: #1a1a1a;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* 闪电图标样式 */
+.duration-tag svg {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+}
+
+/* 鼠标悬停效果 */
+.duration-tag:hover {
+    transform: scale(1.05);
+    background: rgba(255, 193, 7, 1);
+}
+
+:root[data-theme="dark"] .duration-tag:hover {
+    background: rgba(255, 193, 7, 0.95);
+}
+
+/* 缓存命中、术语表匹配、跳过源语言三者共用样式 */
+.cache-hit-tag,
+.glossary-match-tag,
+.skip-src-lang-tag {
+    background: rgba(76, 175, 80, 0.9);
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 0.65rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+    animation: fadeIn 0.3s ease-in-out;
+    white-space: nowrap;
+    overflow: hidden;
+    width: 24px;
+    cursor: pointer;
+    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 深色模式下的新标签 */
+:root[data-theme="dark"] .cache-hit-tag,
+:root[data-theme="dark"] .glossary-match-tag,
+:root[data-theme="dark"] .skip-src-lang-tag {
+    background: rgba(76, 175, 80, 0.85);
+    color: #fff;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* 图标大小 */
+.cache-hit-tag svg,
+.glossary-match-tag svg,
+.skip-src-lang-tag svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+}
+
+/* 标签文字 */
+.cache-hit-text,
+.glossary-match-text,
+.skip-src-lang-text {
+    opacity: 0;
+    margin-left: 2px;
+    transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* 悬停展开动画 */
+.cache-hit-tag:hover,
+.glossary-match-tag:hover,
+.skip-src-lang-tag:hover {
+    width: auto;
+    padding-right: 8px;
+    background: rgba(76, 175, 80, 1);
+    transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.cache-hit-tag:hover .cache-hit-text,
+.glossary-match-tag:hover .glossary-match-text,
+.skip-src-lang-tag:hover .skip-src-lang-text {
+    opacity: 1;
+    transition: opacity 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s;
+}
+
+:root[data-theme="dark"] .cache-hit-tag:hover,
+:root[data-theme="dark"] .glossary-match-tag:hover,
+:root[data-theme="dark"] .skip-src-lang-tag:hover {
+    background: rgba(76, 175, 80, 0.95);
+}
+
+/* 鼠标离开时动画 */
+.cache-hit-tag:not(:hover),
+.glossary-match-tag:not(:hover),
+.skip-src-lang-tag:not(:hover) {
+    transition: all 0.5s cubic-bezier(0.55, 0.06, 0.68, 0.19);
+}
+
+.cache-hit-tag:not(:hover) .cache-hit-text,
+.glossary-match-tag:not(:hover) .glossary-match-text,
+.skip-src-lang-tag:not(:hover) .skip-src-lang-text {
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+}
+
+/* 添加滚动到底部按钮样式 */
+.scroll-to-bottom {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: white; /* 默认浅色模式图标颜色 */
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    z-index: 100;
+    animation: fadeIn 0.3s ease;
+    transition: all 0.2s ease, background-color 0.3s ease, color 0.3s ease; /* 添加颜色过渡 */
+}
+
+.scroll-to-bottom:hover {
+    transform: scale(1.1);
+}
+
+/* 清除按钮样式 */
+.clear-messages {
+    position: fixed;
+    bottom: 80px; /* 位于输入框上方 */
+    right: 20px;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    z-index: 100;
+    animation: fadeIn 0.3s ease;
+    transition: all 0.2s ease, background-color 0.3s ease, color 0.3s ease;
+}
+
+.clear-messages:hover {
+    transform: scale(1.1);
+}
+
+:root[data-theme="dark"] .clear-messages {
+    color: #1e1e1e; /* 深色背景上的按钮图标颜色 */
+}
+
+/* 消息类型过滤器样式 */
+.filter-container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+    animation: fadeIn 0.3s ease;
+}
+
+.filter-option {
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease, background-color 0.3s ease, color 0.3s ease; /* 添加颜色过渡 */
+    background-color: var(--filter-inactive-bg);
+    color: var(--filter-inactive-text);
+    box-shadow: var(--shadow-soft);
+    user-select: none;
+}
+
+.filter-option:hover {
+    transform: scale(1.1);
+}
+
+/* 激活状态的过滤按钮 */
+.filter-option.active.user {
+    background-color: var(--user-accent);
+    color: white; /* 浅色模式下激活按钮文本色 */
+}
+
+.filter-option.active.system {
+    background-color: var(--system-accent);
+    color: white; /* 浅色模式下激活按钮文本色 */
+}
+
+.filter-option.active.error {
+    background-color: var(--error-accent);
+    color: white; /* 浅色模式下激活按钮文本色 */
+}
+
+.filter-option.active.info {
+    background-color: var(--info-accent);
+    color: white; /* 浅色模式下激活按钮文本色 */
+}
+
+/* 隐藏被过滤的消息 */
+.message-bubble.hidden {
+    display: none;
+}
+
+.input-container {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 240px;
+    max-width: 800px;
+    background: var(--input-background); /* 使用变量 */
+    border-radius: 24px;
+    box-shadow: var(--input-shadow); /* 使用变量 */
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    /* 移动设备上较快的动画 */
+    transition:
+        width 0.8s cubic-bezier(0.25, 0.1, 0.25, 1),
+        box-shadow 0.6s cubic-bezier(0.23, 0.1, 0.32, 1),
+        background-color 0.3s ease; /* 添加背景过渡 */
+    z-index: 100;
+    border: var(--input-border); /* 使用变量 */
+    height: 44px; /* 固定高度适合单行输入 */
+}
+
+.input-container:focus-within {
+    width: 90%; /* 移动设备上更宽 */
+    box-shadow: var(--input-focus-shadow); /* 使用变量 */
+    transition:
+        width 1s cubic-bezier(0.19, 0.5, 0.22, 1),
+        box-shadow 0.8s cubic-bezier(0.19, 0.6, 0.22, 1),
+        background-color 0.3s ease; /* 添加背景过渡 */
+}
+
+/* 桌面设备的适配 */
+@media (min-width: 768px) {
+    .input-container {
+        transition:
+            width 1.8s cubic-bezier(0.25, 0.1, 0.25, 1),
+            box-shadow 1.4s cubic-bezier(0.23, 0.1, 0.32, 1),
+            background-color 0.3s ease; /* 添加背景过渡 */
+    }
+
+    .input-container:focus-within {
+        width: 80%;
+        box-shadow: var(--input-focus-shadow-desktop); /* 使用变量 */
+        transition:
+            width 2.2s cubic-bezier(0.19, 0.5, 0.22, 1),
+            box-shadow 2s cubic-bezier(0.19, 0.6, 0.22, 1),
+            background-color 0.3s ease; /* 添加背景过渡 */
+    }
+}
+
+#message-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    padding: 0 6px;
+    height: 28px;
+    min-width: 0;
+    color: var(--text-primary); /* 确保输入文本颜色也变化 */
+}
+
+#message-input:focus {
+    height: 24px; /* 保持相同高度，不增加高度 */
+}
+
+#send-button {
+    background: var(--primary-color);
+    color: white; /* 默认浅色模式图标颜色 */
+    border: none;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    min-width: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease, background-color 0.3s ease, color 0.3s ease; /* 添加颜色过渡 */
+    margin-left: 8px;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+#send-button:hover {
+    transform: scale(1.1);
+}
+
+#send-button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: scale(1);
+    color: #888; /* 禁用时图标颜色 */
+}
+
+/* 翻译中动画指示器 */
+.translation-indicator {
+    display: none;
+    align-items: center;
+    margin-right: 10px;
+}
+
+.translation-indicator.active {
+    display: flex;
+}
+
+.dot {
+    height: 8px;
+    width: 8px;
+    margin: 0 2px;
+    background-color: var(--primary-color); /* 使用变量 */
+    border-radius: 50%;
+    display: inline-block;
+    animation: dot-pulse 1.5s infinite ease-in-out;
+    transition: background-color 0.3s ease; /* 添加过渡 */
+}
+
+.dot:nth-child(2) {
+    animation-delay: 0.3s;
+}
+
+.dot:nth-child(3) {
+    animation-delay: 0.6s;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 15px;
+    }
+
+    .message-bubble {
+        max-width: 85%;
+        padding: 12px 16px;
+    }
+
+    h1 {
+        font-size: 1.4rem;
+        margin-bottom: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .message-bubble {
+        max-width: 90%;
+        padding: 10px 14px;
+    }
+
+    h1 {
+        font-size: 1.3rem;
+        margin-bottom: 15px;
+    }
+
+    .filter-container {
+        gap: 8px;
+    }
+
+    .filter-option {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dot-pulse {
+    0%, 100% {
+        transform: scale(0.8);
+        opacity: 0.6;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}
+
+/* Dark Mode Toggle Button Styles */
+#dark-mode-toggle {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+    padding: 8px;
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    z-index: 101;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#dark-mode-toggle:hover {
+    transform: scale(1.1);
+}
+@media (min-width: 768px) {
+    #dark-mode-toggle {
+        top: 20px;
+        right: 20px;
+        width: 45px;
+        height: 45px;
+    }
+}
+
+/* 添加usage标签样式 */
+.usage-tag {
+    background: rgba(0, 150, 136, 0.9); /* 改为蓝绿色 */
+    color: white;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 0.65rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+    animation: fadeIn 0.3s ease-in-out;
+    white-space: nowrap;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* 深色模式下的usage标签 */
+:root[data-theme="dark"] .usage-tag {
+    background: rgba(0, 150, 136, 0.85); /* 改为蓝绿色 */
+    color: white;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* usage图标样式 */
+.usage-tag svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+}
+
+/* 默认只显示total */
+.usage-detail {
+    display: none;
+}
+
+/* 悬停时显示完整信息 */
+.usage-tag:hover .usage-total {
+    display: none;
+}
+
+.usage-tag:hover .usage-detail {
+    display: inline;
+}
+
+/* 鼠标悬停效果 */
+.usage-tag:hover {
+    transform: scale(1.05);
+    background: rgba(0, 150, 136, 1); /* 改为蓝绿色 */
+}
+
+:root[data-theme="dark"] .usage-tag:hover {
+    background: rgba(0, 150, 136, 0.95); /* 改为蓝绿色 */
+}
