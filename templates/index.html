@@ -13,6 +13,18 @@
     <h1>{{ _("Messages") }}</h1>
     <button id="dark-mode-toggle" aria-label="Toggle dark mode"></button>
 
+    <!-- 主题选择器 -->
+    <div class="theme-selector" style="position:fixed;top:10px;left:10px;z-index:999;">
+        <select id="theme-select">
+            <option value="base" {% if theme_css == 'base' %}selected{% endif %}>Default</option>
+            <option value="cyberpunk" {% if theme_css == 'cyberpunk' %}selected{% endif %}>Cyberpunk</option>
+            <option value="fluent" {% if theme_css == 'fluent' %}selected{% endif %}>Fluent</option>
+            <option value="material" {% if theme_css == 'material' %}selected{% endif %}>Material</option>
+            <option value="retro_terminal" {% if theme_css == 'retro_terminal' %}selected{% endif %}>Retro Terminal</option>
+            <option value="skeuomorphic" {% if theme_css == 'skeuomorphic' %}selected{% endif %}>Skeuomorphic</option>
+        </select>
+    </div>
+
     <!-- 添加消息类型过滤器 -->
     <div class="filter-container">
         <div class="filter-option user active" data-type="user">User</div>

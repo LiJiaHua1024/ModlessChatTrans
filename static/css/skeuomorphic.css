@@ -500,12 +500,54 @@ h1::after {
 
 /* Smooth animations for physical interactions */
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(4px) scale(0.98);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+    from { opacity: 0; transform: translateY(2px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== PART 3: New Component - Skeuomorphic Select Menu ===== */
+.theme-selector select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background: var(--skeuo-background) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 8px 32px 8px 14px !important;
+    font-family: 'Segoe UI Variable', sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: var(--skeuo-text-primary) !important;
+    text-shadow: 1px 1px 1px var(--skeuo-light-shadow) !important;
+    /* Inset/Pressed Effect */
+    box-shadow:
+        inset -4px -4px 8px var(--skeuo-light-shadow),
+        inset 4px 4px 8px var(--skeuo-dark-shadow) !important;
+    transition: all 0.2s ease;
+    cursor: pointer !important;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cpath fill="%2361677C" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/%3E%3C/svg%3E') !important;
+    background-repeat: no-repeat !important;
+    background-position: right 6px center !important;
+    background-size: 20px !important;
+}
+
+.theme-selector select:hover {
+    box-shadow:
+        inset -5px -5px 10px var(--skeuo-light-shadow),
+        inset 5px 5px 10px var(--skeuo-dark-shadow) !important;
+}
+
+:root[data-theme="dark"] .theme-selector select {
+    background: var(--skeuo-background-dark) !important;
+    color: var(--skeuo-text-primary-dark) !important;
+    text-shadow: 1px 1px 1px var(--skeuo-dark-shadow-dark) !important;
+    box-shadow:
+        inset -4px -4px 8px var(--skeuo-light-shadow-dark),
+        inset 4px 4px 8px var(--skeuo-dark-shadow-dark) !important;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cpath fill="%23BDC3C7" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/%3E%3C/svg%3E') !important;
+}
+
+:root[data-theme="dark"] .theme-selector select:hover {
+    box-shadow:
+        inset -5px -5px 10px var(--skeuo-light-shadow-dark),
+        inset 5px 5px 10px var(--skeuo-dark-shadow-dark) !important;
 }

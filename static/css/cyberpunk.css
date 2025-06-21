@@ -701,3 +701,38 @@ h1::after {
         0 0 8px var(--neon-cyan),
         0 0 15px var(--neon-cyan) !important;
 }
+
+/* ===== PART 4: New Implant - Theme Selector v2.0 ===== */
+
+.theme-selector select {
+    background: var(--background-panel) !important;
+    color: var(--neon-cyan) !important;
+    border: 1px solid var(--neon-cyan) !important;
+    font-family: 'Share Tech Mono', monospace !important;
+    padding: 8px 12px !important;
+    border-radius: 0 !important;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%) !important;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    box-shadow: 0 0 5px var(--neon-cyan), inset 0 0 3px rgba(0, 246, 255, 0.4);
+    transition: all 0.2s ease-in-out;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Cpath fill="%2300f6ff" d="M0 25 L50 75 L100 25 z"/%3E%3C/svg%3E') !important;
+    background-repeat: no-repeat !important;
+    background-position: right 8px center !important;
+    background-size: 12px !important;
+}
+
+.theme-selector select:hover {
+    color: #000 !important;
+    background: var(--neon-cyan) !important;
+    border-color: var(--neon-magenta) !important;
+    box-shadow: 0 0 12px var(--neon-cyan), 0 0 20px var(--neon-cyan), inset 0 0 6px rgba(0, 246, 255, 0.8);
+}
+
+.theme-selector select:focus {
+    outline: none !important;
+    box-shadow: 0 0 10px var(--neon-magenta), 0 0 15px var(--neon-magenta), inset 0 0 5px rgba(255, 0, 224, 0.6);
+    border-color: var(--neon-magenta) !important;
+}

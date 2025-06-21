@@ -614,3 +614,22 @@ document.addEventListener('DOMContentLoaded', (event) => {
         updateIcon();
     });
 })();
+
+// Theme selector functionality
+(function() {
+    const themeSelect = document.getElementById('theme-select');
+    if (!themeSelect) return;
+
+    // 如果模板未标记 selected，则根据 URL 初始化
+    const current = new URL(window.location.href).searchParams.get('theme');
+    if (current) {
+        themeSelect.value = current;
+    }
+
+    themeSelect.addEventListener('change', function() {
+        const selected = this.value;
+        const url = new URL(window.location.href);
+        url.searchParams.set('theme', selected);
+        window.location.href = url.toString();
+    });
+})();
