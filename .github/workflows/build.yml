@@ -105,7 +105,6 @@ jobs:
 
         $commonArgs = @(
           '--onefile'
-          '--onefile-no-dll'
           '--standalone'
           '--msvc=latest'
           '--lto=yes'
@@ -116,6 +115,7 @@ jobs:
           '--include-package=urllib3'
           '--include-package=CTkScrollableDropdown'
           '--include-package-data=langdetect'
+          '--include-package-data=certifi'
           '--include-data-dir=locales=./locales'
           '--include-data-dir=templates=./templates'
           '--include-data-dir=third_party_licenses=./third_party_licenses'
