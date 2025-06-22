@@ -70,7 +70,7 @@ class Config:
 
 DEFAULT_CONFIG = Config(interface_lang="zh_CN",
                         minecraft_log_folder="",
-                        output_method="Graphical",
+                        output_method="Httpserver",
                         trans_service="OpenAI",
                         op_src_lang="",
                         op_tgt_lang="zh-CN",
