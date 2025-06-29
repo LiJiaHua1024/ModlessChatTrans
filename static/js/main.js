@@ -368,6 +368,23 @@ function initializeEventSource() {
         pendingMessages++;
 
         var jsonData = JSON.parse(event.data);
+
+        // 处理服务器发送的清空指令
+        if (jsonData.clear) {
+            // 移除所有正在运行的乱码效果
+            obfuscatedElements.forEach(function(element) {
+                removeObfuscatedElement(element);
+            });
+            obfuscatedElements.clear();
+
+            // 清空消息列表
+            document.getElementById('message-list').innerHTML = '';
+            updateScrollButtonState();
+            updateClearButtonVisibility();
+            pendingMessages--;
+            return; // 不再继续处理
+        }
+
         var name = jsonData.name;
         var messageText = jsonData.message;
         var messageTime = jsonData.time;

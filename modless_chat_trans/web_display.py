@@ -124,6 +124,16 @@ def start_httpserver(port, callback):
 
                             last_message_count = current_message_count
 
+                        elif current_message_count < last_message_count:
+                            # 消息被清空，向客户端发送清除指令并重置计数器
+                            clear_payload = json.dumps({"clear": True})
+                            yield f"data: {clear_payload}\n\n"
+
+                            # 归零本地索引，等待新的消息
+                            message_index = 0
+                            last_message_count = current_message_count
+                            continue
+
                 except GeneratorExit:
                     logger.debug("Client disconnected from event stream")
 
