@@ -17,6 +17,7 @@ import tkinter as tk
 import customtkinter as ctk
 import webbrowser
 import datetime
+import tksvg
 from dataclasses import dataclass
 from collections import deque
 from typing import Tuple
@@ -226,7 +227,7 @@ class MainInterfaceManager:
         )
         self.start_button.grid(row=10, column=0, columnspan=2, padx=20, pady=10)
 
-        choose_language_photo = tk.PhotoImage(file=get_path("choose_language.png"))
+        choose_language_photo = tksvg.SvgImage(file=get_path("choose_language.svg"), scaletowidth=50)
         choose_language_button = ctk.CTkButton(self.main_window, image=choose_language_photo, text="",
                                                width=50, height=50, fg_color="transparent", hover_color="white")
         choose_language_button.bind("<Button-1>", show_language_menu)

@@ -67,7 +67,7 @@ jobs:
       run: |
         if ("${{ github.event_name }}" -eq "workflow_dispatch") {
             $inputVersion = "${{ github.event.inputs.version }}"
-            
+
             if ([string]::IsNullOrWhiteSpace($inputVersion)) {
                 # 如果用户没有输入版本号，使用commit哈希的前8位
                 $version = "${{ github.sha }}".Substring(0, 8)
@@ -95,7 +95,7 @@ jobs:
             $fileVersion = $version
             $productVersion = $version
         }
-        
+
         echo "version=$version" >> $env:GITHUB_OUTPUT
         echo "file_version=$fileVersion" >> $env:GITHUB_OUTPUT
         echo "product_version=$productVersion" >> $env:GITHUB_OUTPUT
@@ -126,7 +126,7 @@ jobs:
           '--include-data-dir=src/templates=templates'
           '--include-data-dir=src/static=static'
           '--include-data-dir=third_party_licenses=third_party_licenses'
-          '--include-data-file=src/choose_language.png=choose_language.png'
+          '--include-data-file=src/choose_language.svg=choose_language.svg'
           '--output-filename=ModlessChatTrans'
           '--file-description=ModlessChatTrans'
           '--product-name=ModlessChatTrans'
@@ -140,7 +140,7 @@ jobs:
         if ("${{ github.event_name }}" -ne "workflow_dispatch" -or $keepConsole -ne "true") {
           $commonArgs += '--windows-console-mode=disable'
         }
-    
+
         uv run nuitka @commonArgs src/main.py
 
     - name: Rename executable
