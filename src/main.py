@@ -15,6 +15,7 @@
 
 import threading
 import time
+from importlib.metadata import version
 
 from modless_chat_trans.file_utils import read_config, get_platform
 from modless_chat_trans.i18n import set_language
@@ -34,7 +35,7 @@ from modless_chat_trans.i18n import _
 from modless_chat_trans.updater import Updater
 
 program_info = ProgramInfo(
-    version="v2.2.0",
+    version=f"v{version('ModlessChatTrans')}",
     author="LiJiaHua1024",
     email="minecraft_benli@163.com",
     github="https://github.com/LiJiaHua1024/ModlessChatTrans",
