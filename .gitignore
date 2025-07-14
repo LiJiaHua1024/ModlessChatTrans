@@ -1,23 +1,25 @@
 __pycache__/
+*.log
+.venv
+ModlessChatTrans.egg-info
+
 .idea/
 
 build/
 dist/
-
 main.build/
 main.dist/
 main.onefile-build/
-
 main.spec
 
 ModlessChatTrans-config.json
-
 update_requirements.py
+
+CTkScrollableDropdown/
 
 MCT_cache.bak
 MCT_cache.dat
 MCT_cache.dir
 
-*.log
-
-CTkScrollableDropdown/
+MoreSettingsDocs.md
+plan.md

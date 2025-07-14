@@ -155,7 +155,13 @@ def start_translation():
         clipboard_thread.start()
 
 
-main_interface_manager = MainInterfaceManager(program_info, updater)
-more_settings_manager = MoreSettingsManager(main_interface_manager.main_window, main_interface_manager.config)
-main_interface_manager.create_main_window(start_translation=start_translation,
-                                          more_settings=more_settings_manager.create_more_settings_window)
+def main():
+    global main_interface_manager, more_settings_manager
+    main_interface_manager = MainInterfaceManager(program_info, updater)
+    more_settings_manager = MoreSettingsManager(main_interface_manager.main_window, main_interface_manager.config)
+    main_interface_manager.create_main_window(start_translation=start_translation,
+                                              more_settings=more_settings_manager.create_more_settings_window)
+
+
+if __name__ == "__main__":
+    main()

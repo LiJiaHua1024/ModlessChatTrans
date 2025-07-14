@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-编译 i18n 目录下的 .po 文件为 .mo 文件，并将其放置到 locales 目录的相应结构中。
+编译 i18n 目录下的 .po 文件为 .mo 文件，并将其放置到 src/locales 目录的相应结构中。
 
 此脚本设计为放置在项目根目录下的 'tools/' 子目录中。
-它会自动计算项目根目录，并查找 'i18n/' 和 'locales/' 文件夹。
+它会自动计算项目根目录，并查找 'i18n/' 和 'src/locales/' 文件夹。
 
 用法：
 1. 将此脚本放置在项目的 'tools/' 目录下。
@@ -16,9 +16,11 @@
    ├── i18n/
    │   ├── en_US.po
    │   └── ...
-   └── locales/
-       ├── en_US/
-       │   └── LC_MESSAGES/
+   └── src/
+       ├── locales/
+       │   ├── en_US/
+       │   │   └── LC_MESSAGES/
+       │   └── ...
        └── ...
 2. 确保已安装 gettext 工具 (包含 msgfmt 命令)。
    - Ubuntu/Debian: sudo apt-get update && sudo apt-get install gettext
@@ -40,7 +42,7 @@ SCRIPT_DIR = Path(__file__).parent.resolve()
 PROJECT_ROOT = SCRIPT_DIR.parent
 # 基于项目根目录定义源和目标路径
 SOURCE_DIR = PROJECT_ROOT / "i18n"
-TARGET_BASE_DIR = PROJECT_ROOT / "locales"
+TARGET_BASE_DIR = PROJECT_ROOT / "src" / "locales"  # 修改为新的目标路径
 
 OUTPUT_FILENAME = "translations.mo" # 所有 .mo 文件都使用这个名称
 TEMPLATE_FILENAME = "translations.pot"

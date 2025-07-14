@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ModlessChatTrans"
+version = "2.2.0"
+description = "A tool that provides real-time chat translation for Minecraft players without requiring any mods."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "GPL-3.0-or-later"
+authors = [
+  { name="LiJiaHua1024", email="minecraft_benli@163.com" },
+]
+dependencies = [
+    "pyttsx3~=2.9",
+    "requests>=2.25.0",
+    "Flask>=3.0.0,<3.2.0",
+    "customtkinter>=5.0.0,<6.0.0",
+    "hpyt==1.4.0",
+    "pyperclip>=1.8.0,<2.0.0",
+    "translators~=6.0.0",
+    "watchdog>=6.0.0,<7.0.0",
+    "chardet>=5.0.0,<6.0.0",
+    "tkinter-tooltip~=3.1.2",
+    "loguru~=0.7.3",
+    "langdetect~=1.0.9",
+    "packaging~=25.0",
+    "setuptools>=61.0",
+    "urllib3>=1.26.0,<2.0.0",
+]
+
+# 如需滚动和高度限制的下拉菜单，请按以下步骤操作：
+# 1. 下载仓库 https://github.com/Akascape/CTkScrollableDropdown
+# 2. 解压后进入仓库目录
+# 3. 将其中的 CTkScrollableDropdown 子文件夹复制到src/目录
+
+[project.scripts]
+modless-chat-trans = "main:main"
