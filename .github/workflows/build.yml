@@ -29,11 +29,17 @@ jobs:
       with:
         python-version: '3.12'
 
-    - name: Install dependencies
+    - name: Install uv
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install nuitka
+        powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+        echo "$env:USERPROFILE\.local\bin" >> $env:GITHUB_PATH
+      shell: pwsh
+
+    - name: Install dependencies with uv
+      run: |
+        uv sync
+        uv add nuitka
+      shell: pwsh
 
     - name: Download CTkScrollableDropdown
       run: |
@@ -45,9 +51,9 @@ jobs:
         Invoke-WebRequest -Uri $zipUrl -OutFile $zipFile
         Expand-Archive -Path $zipFile -DestinationPath $tmpDir -Force
 
-        # 将源文件夹复制到仓库根目录
+        # 将源文件夹复制到 src 目录
         Copy-Item -Path "$tmpDir\CTkScrollableDropdown-main\CTkScrollableDropdown" `
-                  -Destination "${{ github.workspace }}" -Recurse -Force
+                  -Destination "${{ github.workspace }}\src" -Recurse -Force
 
         # 复制第三方库许可证，确保遵循 MIT 许可要求
         $licenseDir = "${{ github.workspace }}\third_party_licenses"
@@ -116,11 +122,11 @@ jobs:
           '--include-package=CTkScrollableDropdown'
           '--include-package-data=langdetect'
           '--include-package-data=certifi'
-          '--include-data-dir=locales=./locales'
-          '--include-data-dir=templates=./templates'
-          '--include-data-dir=static=./static'
-          '--include-data-dir=third_party_licenses=./third_party_licenses'
-          '--include-data-file=choose_language.png=./choose_language.png'
+          '--include-data-dir=src/locales=locales'
+          '--include-data-dir=src/templates=templates'
+          '--include-data-dir=src/static=static'
+          '--include-data-dir=third_party_licenses=third_party_licenses'
+          '--include-data-file=src/choose_language.png=choose_language.png'
           '--output-filename=ModlessChatTrans'
           '--file-description=ModlessChatTrans'
           '--product-name=ModlessChatTrans'
@@ -135,7 +141,7 @@ jobs:
           $commonArgs += '--windows-console-mode=disable'
         }
     
-        & nuitka @commonArgs main.py
+        uv run nuitka @commonArgs src/main.py
 
     - name: Rename executable
       run: |
