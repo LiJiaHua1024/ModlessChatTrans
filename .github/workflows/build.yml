@@ -122,6 +122,7 @@ jobs:
           '--include-package=CTkScrollableDropdown'
           '--include-package-data=langdetect'
           '--include-package-data=certifi'
+          '--include-package-data=tksvg'
           '--include-data-dir=src/locales=locales'
           '--include-data-dir=src/templates=templates'
           '--include-data-dir=src/static=static'
