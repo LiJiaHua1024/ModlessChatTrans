@@ -101,6 +101,13 @@ jobs:
         echo "product_version=$productVersion" >> $env:GITHUB_OUTPUT
       shell: pwsh
 
+    - name: Set tksvg path
+      id: tksvg_path
+      run: |
+        $tksvgPath = uv run python -c "import os, tksvg; print(os.path.dirname(tksvg.__file__))"
+        echo "TKSVG_PATH=$tksvgPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      shell: pwsh
+
     - name: Build with Nuitka
       shell: pwsh
       run: |
@@ -127,6 +134,7 @@ jobs:
           '--include-data-dir=src/templates=templates'
           '--include-data-dir=src/static=static'
           '--include-data-dir=third_party_licenses=third_party_licenses'
+          '--include-data-file=${{ env.TKSVG_PATH }}/libtksvg.dll=tksvg/libtksvg.dll'
           '--include-data-file=src/choose_language.svg=choose_language.svg'
           '--output-filename=ModlessChatTrans'
           '--file-description=ModlessChatTrans'
