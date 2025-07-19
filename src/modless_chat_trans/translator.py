@@ -16,16 +16,14 @@
 import requests
 import json
 import re
-import importlib
 from modless_chat_trans.logger import logger
-from modless_chat_trans.file_utils import read_config, save_config
+from modless_chat_trans.file_utils import read_config, save_config, LazyImporter
 
 # 新增支持的 LLM 服务商
 LLM_PROVIDERS = ["OpenAI", "Claude", "Gemini", "DeepSeek"]
 
-
 _PENDING_TOKENS = 0
-_SAVE_THRESHOLD = 5000   # 每累计5000 token 就落盘
+_SAVE_THRESHOLD = 5000  # 每累计5000 token 就落盘
 
 
 def flush_pending_tokens():
@@ -47,31 +45,8 @@ services = LLM_PROVIDERS + [
     "DeepL", "Bing", "Google", "Yandex", "Alibaba", "Caiyun", "Youdao", "Sogou", "Iflyrec"
 ]
 
-
-class LazyTranslatorModule:
-    def __init__(self):
-        self._module = None
-
-    def _ensure_module_loaded(self):
-        if self._module is None:
-            logger.debug("Lazily importing 'translators' library now...")
-            try:
-                self._module = importlib.import_module("translators")
-                # logger.info("Running pre-acceleration for 'translators' library...")
-                # self._module.preaccelerate_and_speedtest()
-            except ImportError as e:
-                logger.error(f"Failed to import 'translators' library: {e}")
-                raise
-            logger.info("'translators' library imported successfully.")
-
-    def __getattr__(self, name):
-        self._ensure_module_loaded()
-        if self._module:
-            return getattr(self._module, name)
-        raise RuntimeError(f"Lazy loading of 'translators' failed.")
-
-
-ts = LazyTranslatorModule()
+llm_completion = LazyImporter("litellm", "completion")
+ts = LazyImporter("translators")
 
 
 def get_supported_languages(service):
@@ -95,47 +70,37 @@ service_supported_languages = _LazyLanguageDict()
 
 
 class Translator:
-    def __init__(self, api_key=None, api_url=None, default_source_language=None,
-                 default_target_language="zh-CN", enable_optimization=False,
-                 traditional_api_key=None):
+    def __init__(self,
+                 enable_optimization=False,
+                 llm_kwargs=None,
+                 traditional_kwargs=None):
         """
-        初始化翻译器
+        初始化 Translator 类, 提供多种翻译相关选项及服务参数
 
-        :param api_key: LLM API 的密钥
-        :param api_url: LLM API 的网址(不用可以不填)
-        :param default_source_language: 源语言，默认自动识别，如果识别错误可指定
-        :param default_target_language: 目标语言，默认是简体中文
         :param enable_optimization: 是否启用翻译质量优化
-        :param traditional_api_key: 传统翻译服务 API 的密钥
+        :param llm_kwargs: 与大语言模型(LLM)翻译相关的关键字参数
+        :param traditional_kwargs: 与传统翻译相关的关键字参数
         """
 
-        self.api_key = api_key
-        self.api_url = api_url
-        self.default_source_language = default_source_language
-        self.default_target_language = default_target_language
         self.enable_optimization = enable_optimization
-        self.traditional_api_key = traditional_api_key
-
-        # ts.preaccelerate_and_speedtest()
+        self.llm_kwargs = llm_kwargs or {}
+        self.traditional_kwargs = traditional_kwargs or {}
 
         logger.info(f"Initialized Translator with optimization {'enabled' if enable_optimization else 'disabled'}")
 
-    def llm_translate(self, text, model, provider="OpenAI", source_language=None, target_language=None):
+    def llm_translate(self, text, model, source_language, target_language, provider="OpenAI"):
         """
         使用 LLM API 翻译消息
 
         :param text: 要翻译的文字
         :param model: 翻译使用的模型
+        :param source_language: 源语言
+        :param target_language: 目标语言
         :param provider: LLM 提供商 (OpenAI / Claude / Gemini / DeepSeek)
-        :param source_language: 源语言，不填则为self.default_source_language
-        :param target_language: 目标语言，不填则为self.default_target_language
         :return: 包含翻译结果和token使用信息的字典，格式为:
                  {"result": "翻译结果", "usage": {"prompt_tokens": x, "completion_tokens": y, "total_tokens": z}}
                  失败时返回 None
         """
-
-        source_language = source_language or self.default_source_language
-        target_language = target_language or self.default_target_language
 
         if self.enable_optimization:
             # scene = "Hypixel Bedwars"
@@ -231,186 +196,97 @@ class Translator:
                     f"</text_to_translate>"
                 )
 
-        # 根据不同提供商组织请求
-        if provider == "OpenAI" or provider == "DeepSeek":
-            # OpenAI/DeepSeek 接口基本兼容
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
-            data = {
-                "model": model,
+        # 使用 litellm 统一调用各类大模型
+        try:
+            # 针对部分 provider 做模型名前缀映射，保持与旧版调用兼容
+            mapped_model = model
+            provider_lower = provider.lower() if provider else "openai"
+            if provider_lower == "claude" and "/" not in model.lower():
+                mapped_model = f"anthropic/{model}"
+            elif provider_lower == "gemini" and "/" not in model.lower():
+                mapped_model = f"gemini/{model}"
+            elif provider_lower == "deepseek" and "/" not in model.lower():
+                mapped_model = f"deepseek/{model}"
+
+            llm_params = {
+                "model": mapped_model,
                 "messages": [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": message}
                 ],
-                "temperature": 0
+                "temperature": 0,
+                "api_key": self.llm_kwargs["api_key"],
+                "api_base": self.llm_kwargs["api_url"]
             }
-            response = requests.post(self.api_url, headers=headers, json=data)
 
-        elif provider == "Claude":
-            headers = {
-                "x-api-key": self.api_key,
-                "Content-Type": "application/json",
-                "anthropic-version": "2023-06-01"
-            }
-            data = {
-                "model": model,
-                "system": system_prompt,
-                "messages": [
-                    {"role": "user", "content": message}
-                ],
-                "temperature": 0
-            }
-            response = requests.post(self.api_url, headers=headers, json=data)
+            response = llm_completion(**llm_params)
 
-        elif provider == "Gemini":
-            # Gemini API 规则：/v1beta/models/{model}:generateContent?key=KEY
-            # 允许用户提供完整 URL，或仅提供基础 host。若未提供则使用官方默认 host。
+            # litellm 的返回对象与 OpenAI SDK 高度兼容
+            content_str = response.choices[0].message.content or ""
 
-            if self.api_url:  # 用户自定义
-                if "/models/" in self.api_url:  # 已包含模型段
-                    base_url = self.api_url.rstrip("?")  # 移除可能的结尾 ?
-                else:  # 仅提供 host，需拼接 models 段
-                    base_url = f"{self.api_url.rstrip('/')}/models/{model}:generateContent"
-            else:
-                # 默认 Google host
-                base_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+            usage_info = response.model_dump().get("usage", {})
 
-            # 拼接 API Key
-            separator = "&" if "?" in base_url else "?"
-            url = f"{base_url}{separator}key={self.api_key}"
-
-            headers = {
-                "Content-Type": "application/json"
-            }
-            data = {
-                "systemInstruction": {
-                    "parts": [{"text": system_prompt}]
-                },
-                "contents": [
-                    {
-                        "role": "user",
-                        "parts": [{"text": message}]
-                    }
-                ],
-                "generationConfig": {
-                    "temperature": 0
-                }
-            }
-            response = requests.post(url, headers=headers, json=data)
-
-        else:
-            raise ValueError(f"Unsupported LLM provider: {provider}")
-
-        if response.status_code == 200:
-            response_data = response.json()
-
-            # 根据不同提供商解析响应
-            if provider in ("OpenAI", "DeepSeek"):
-                content_str = (
-                    response_data.get("choices", [{}])[0]
-                    .get("message", {})
-                    .get("content", "")
-                )
-                usage_info = response_data.get("usage", {})
-
-            elif provider == "Claude":
-                # Claude 将内容放在 content 列表中，每项包含 type 与 text
-                content_items = response_data.get("content", [])
-                content_str = "".join(item.get("text", "") for item in content_items)
-                if raw_usage := response_data.get("usage", {}):
-                    pt = raw_usage.get("input_tokens", 0)
-                    ct = raw_usage.get("output_tokens", 0)
-                    usage_info = {
-                        "prompt_tokens": pt,
-                        "completion_tokens": ct,
-                        "total_tokens": pt + ct
-                    }
-                else:
-                    usage_info = {}
-
-            elif provider == "Gemini":
-                candidates = response_data.get("candidates", [])
-                if candidates:
-                    parts = candidates[0].get("content", {}).get("parts", [])
-                    content_str = "".join(part.get("text", "") for part in parts)
-                else:
-                    content_str = ""
-                if raw_usage := response_data.get("usageMetadata", {}):
-                    usage_info = {
-                        "prompt_tokens": raw_usage.get("promptTokenCount", 0),
-                        "completion_tokens": raw_usage.get("candidatesTokenCount", 0),
-                        "total_tokens": raw_usage.get("totalTokenCount", 0)
-                    }
-                else:
-                    usage_info = {}
-            else:
-                content_str = ""
-                usage_info = {}
-
-            if self.enable_optimization:
-                try:
-                    content_dict = json.loads(content_str)
-                except json.JSONDecodeError as e1:
-                    logger.info(f"Initial JSON parsing failed ({e1}), attempting to clean and retry...")
-
-                    try:
-                        content_dict = json.loads(re.sub(r"^```json\s*([\s\S]*?)\s*```$", r"\1", content_str))
-                    except json.JSONDecodeError as e2:
-                        logger.warning("Failed to parse optimized translation JSON even after cleaning")
-                        raise ValueError("Failed to parse optimized translation JSON") from e2
-
-                translated_message = content_dict.get("result", None)
-            else:
-                translated_message = content_str
-
-            # 更新累计 token 使用量
-            if usage_info and usage_info.get("total_tokens", None):
-                try:
-                    global _PENDING_TOKENS
-                    _PENDING_TOKENS += usage_info["total_tokens"]
-
-                    if _PENDING_TOKENS >= _SAVE_THRESHOLD:
-                        flush_pending_tokens()
-                except Exception as e:
-                    # 避免因为读取或写入配置失败阻止翻译结果返回
-                    logger.warning(f"Failed to update total token usage: {e}")
-
-            return {
-                "result": translated_message,
-                "usage": usage_info
-            }
-        else:
-            logger.error(f"LLM translation failed ({provider}): {response.status_code} - {response.text}")
+        except Exception as e:
+            logger.error(f"LLM translation failed ({provider}) via litellm: {e}")
             return None
 
-    def traditional_translate(self, text, service, source_language=None, target_language=None):
+        if self.enable_optimization:
+            try:
+                content_dict = json.loads(content_str)
+            except json.JSONDecodeError as e1:
+                logger.info(f"Initial JSON parsing failed ({e1}), attempting to clean and retry...")
+
+                try:
+                    content_dict = json.loads(re.sub(r"^```json\s*([\s\S]*?)\s*```$", r"\1", content_str))
+                except json.JSONDecodeError as e2:
+                    logger.warning("Failed to parse optimized translation JSON even after cleaning")
+                    raise ValueError("Failed to parse optimized translation JSON") from e2
+
+            translated_message = content_dict.get("result", None)
+        else:
+            translated_message = content_str
+
+        # 更新累计 token 使用量
+        if usage_info and usage_info.get("total_tokens", None):
+            try:
+                global _PENDING_TOKENS
+                _PENDING_TOKENS += usage_info["total_tokens"]
+
+                if _PENDING_TOKENS >= _SAVE_THRESHOLD:
+                    flush_pending_tokens()
+            except Exception as e:
+                # 避免因为读取或写入配置失败阻止翻译结果返回
+                logger.warning(f"Failed to update total token usage: {e}")
+
+        return {
+            "result": translated_message,
+            "usage": usage_info
+        }
+
+    def traditional_translate(self, text, service, source_language, target_language):
         """
         使用传统翻译服务翻译消息
 
         :param text: 要翻译的文字
         :param service: 翻译服务
-        :param source_language: 源语言，不填则为self.default_source_language
-        :param target_language: 目标语言，不填则为self.default_target_language
+        :param source_language: 源语言
+        :param target_language: 目标语言
         :return: 翻译后的消息
         """
 
-        source_language = source_language or self.default_source_language
-        target_language = target_language or self.default_target_language
-
-        if self.traditional_api_key:
+        traditional_api_key: str = self.traditional_kwargs.get("api_key", "")
+        if traditional_api_key:
             service = service.lower()
 
             # DeepL API
             if service == "deepl":
-                if self.traditional_api_key.endswith(":fx"):
+                if traditional_api_key.endswith(":fx"):
                     url = "https://api-free.deepl.com/v2/translate"
                 else:
                     url = "https://api.deepl.com/v2/translate"
 
                 headers = {
-                    "Authorization": f"DeepL-Auth-Key {self.traditional_api_key}"
+                    "Authorization": f"DeepL-Auth-Key {traditional_api_key}"
                 }
                 data = {
                     "text": [text],
@@ -428,7 +304,7 @@ class Translator:
             elif service == "google":
                 url = "https://translation.googleapis.com/language/translate/v2"
                 params = {
-                    "key": self.traditional_api_key,
+                    "key": traditional_api_key,
                     "q": text,
                     "target": target_language.split("-")[0],
                 }
@@ -444,7 +320,7 @@ class Translator:
             elif service == "yandex":
                 url = "https://translate.api.cloud.yandex.net/translate/v2/translate"
                 headers = {
-                    "Authorization": f"Api-Key {self.traditional_api_key}",
+                    "Authorization": f"Api-Key {traditional_api_key}",
                     "Content-Type": "application/json"
                 }
                 data = {
@@ -468,7 +344,7 @@ class Translator:
                 import hashlib
                 from urllib.parse import urlencode
 
-                access_key_id, access_key_secret = self.traditional_api_key.split(":")
+                access_key_id, access_key_secret = traditional_api_key.split(":")
 
                 url = "https://mt.cn-hangzhou.aliyuncs.com/"
 
@@ -515,7 +391,7 @@ class Translator:
                 url = "http://api.interpreter.caiyunai.com/v1/translator"
                 headers = {
                     "Content-Type": "application/json",
-                    "X-Authorization": f"token {self.traditional_api_key}"
+                    "X-Authorization": f"token {traditional_api_key}"
                 }
                 payload = {
                     "source": [text],
@@ -534,8 +410,8 @@ class Translator:
                 import uuid
 
                 url = "https://openapi.youdao.com/api"
-                app_key = self.traditional_api_key.split(":")[0]
-                app_secret = self.traditional_api_key.split(":")[1]
+                app_key = traditional_api_key.split(":")[0]
+                app_secret = traditional_api_key.split(":")[1]
 
                 def encrypt(sign_str):
                     hash_algorithm = hashlib.sha256()
@@ -572,7 +448,7 @@ class Translator:
             elif service == "bing":
                 endpoint = "https://api.cognitive.microsofttranslator.com/translate"
                 headers = {
-                    'Ocp-Apim-Subscription-Key': self.traditional_api_key,
+                    'Ocp-Apim-Subscription-Key': traditional_api_key,
                     'Ocp-Apim-Subscription-Region': 'global',
                     'Content-type': 'application/json'
                 }

@@ -17,6 +17,7 @@ import os
 import glob
 import json
 import shelve
+import importlib
 from dataclasses import dataclass
 from modless_chat_trans.logger import logger
 
@@ -33,6 +34,35 @@ def get_path(path: str, temp_path=True) -> str:
 
 def get_platform() -> int:
     return {"nt": 0, "posix": 1}.get(os.name, 2)
+
+
+class LazyImporter:
+    def __init__(self, module_name, attr_name=None):
+        self.module_name = module_name
+        self.attr_name = attr_name
+        self._module = None
+
+    def _ensure_module_loaded(self):
+        if self._module is None:
+            logger.debug(f"Lazily importing '{self.module_name}' library now...")
+            try:
+                module = importlib.import_module(self.module_name)
+                if self.attr_name:
+                    self._module = getattr(module, self.attr_name)
+                else:
+                    self._module = module
+            except (ImportError, AttributeError) as e:
+                logger.error(f"Failed to import '{self.module_name}' library: {e}")
+                raise
+            logger.info(f"'{self.module_name}' library imported successfully.")
+
+    def __getattr__(self, name):
+        self._ensure_module_loaded()
+        return getattr(self._module, name)
+
+    def __call__(self, *args, **kwargs):
+        self._ensure_module_loaded()
+        return self._module(*args, **kwargs)
 
 
 @dataclass

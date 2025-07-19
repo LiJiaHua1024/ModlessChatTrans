@@ -115,10 +115,9 @@ def start_translation():
         return None
 
     translator = Translator(
-        api_key=config.api_key,
-        api_url=config.api_url,
         enable_optimization=config.enable_optimization,
-        traditional_api_key=config.traditional_api_key
+        llm_kwargs={"api_key": config.api_key, "api_url": config.api_url},
+        traditional_kwargs={"api_key": config.traditional_api_key}
     )
 
     init_display(

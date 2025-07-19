@@ -275,9 +275,9 @@ def process_decorator(function):
                         if result := translator.llm_translate(
                             original_chat_message,
                             model=model,
-                            provider=translation_service,
                             source_language=source_language,
-                            target_language=target_language
+                            target_language=target_language,
+                            provider=translation_service
                         ):
                             translated_chat_message = result["result"]
                             info["usage"] = result["usage"]
