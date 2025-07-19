@@ -20,7 +20,20 @@ from modless_chat_trans.logger import logger
 from modless_chat_trans.file_utils import read_config, save_config, LazyImporter
 
 # 新增支持的 LLM 服务商
-LLM_PROVIDERS = ["OpenAI", "Claude", "Gemini", "DeepSeek"]
+LLM_PROVIDERS_PREFIXES = {
+    "OpenAI": "openai/",
+    "Anthropic": "anthropic/",
+    "DeepSeek": "deepseek/",
+    "Meta": "meta_llama/",
+    "Azure": "azure/",
+    "AWS SageMaker": "sagemaker/",
+    "AWS Bedrock": "bedrock/",
+    "Google Vertex AI": "vertex_ai/",
+    "Google AI Studio": "gemini/",
+    "HuggingFace": "huggingface/"
+}
+
+LLM_PROVIDERS = list(LLM_PROVIDERS_PREFIXES.keys())
 
 _PENDING_TOKENS = 0
 _SAVE_THRESHOLD = 5000  # 每累计5000 token 就落盘
@@ -88,7 +101,7 @@ class Translator:
 
         logger.info(f"Initialized Translator with optimization {'enabled' if enable_optimization else 'disabled'}")
 
-    def llm_translate(self, text, model, source_language, target_language, provider="OpenAI"):
+    def llm_translate(self, text, model, source_language, target_language, provider):
         """
         使用 LLM API 翻译消息
 
@@ -96,7 +109,7 @@ class Translator:
         :param model: 翻译使用的模型
         :param source_language: 源语言
         :param target_language: 目标语言
-        :param provider: LLM 提供商 (OpenAI / Claude / Gemini / DeepSeek)
+        :param provider: LLM 提供商 (e.g., "OpenAI", "Anthropic", "DeepSeek", etc.)
         :return: 包含翻译结果和token使用信息的字典，格式为:
                  {"result": "翻译结果", "usage": {"prompt_tokens": x, "completion_tokens": y, "total_tokens": z}}
                  失败时返回 None
@@ -199,14 +212,15 @@ class Translator:
         # 使用 litellm 统一调用各类大模型
         try:
             # 针对部分 provider 做模型名前缀映射，保持与旧版调用兼容
-            mapped_model = model
-            provider_lower = provider.lower() if provider else "openai"
-            if provider_lower == "claude" and "/" not in model.lower():
-                mapped_model = f"anthropic/{model}"
-            elif provider_lower == "gemini" and "/" not in model.lower():
-                mapped_model = f"gemini/{model}"
-            elif provider_lower == "deepseek" and "/" not in model.lower():
-                mapped_model = f"deepseek/{model}"
+            provider = provider or "OpenAI"
+
+            # 为模型名添加提供商前缀（如果尚未添加）
+            prefix = LLM_PROVIDERS_PREFIXES[provider]
+            mapped_model = (
+                model
+                if model.startswith(prefix)
+                else prefix + model
+            )
 
             llm_params = {
                 "model": mapped_model,
@@ -216,8 +230,11 @@ class Translator:
                 ],
                 "temperature": 0,
                 "api_key": self.llm_kwargs["api_key"],
-                "api_base": self.llm_kwargs["api_url"]
             }
+
+            # API URL 留空自动
+            if api_url := self.llm_kwargs["api_url"]:
+                llm_params["api_base"] = api_url
 
             response = llm_completion(**llm_params)
 

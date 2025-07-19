@@ -41,14 +41,6 @@ if (platform := get_platform()) == 0:
 
 updater = None
 
-# 各 LLM 提供商默认 API URL 映射（若用户未自定义则自动填充）
-DEFAULT_LLM_API_URLS = {
-    "OpenAI": "https://api.openai.com/v1/chat/completions",
-    "Claude": "https://api.anthropic.com/v1/messages",
-    "Gemini": "https://generativelanguage.googleapis.com/v1beta",
-    "DeepSeek": "https://api.deepseek.com/chat/completions"
-}
-
 
 @dataclass
 class ProgramInfo:
@@ -387,14 +379,13 @@ class MainInterfaceManager:
             self.llm_widgets["target_language_entry"].insert(0, self.config.op_tgt_lang)
             self.llm_widgets["target_language_entry"].grid(row=3, column=1, padx=20, pady=10, sticky="w")
 
-            self.llm_widgets["api_url_label"] = ctk.CTkLabel(self.main_window, text=_("API URL:"))
+            self.llm_widgets["api_url_label"] = ctk.CTkLabel(self.main_window, text=_("API URL(Auto if blank):"))
             self.llm_widgets["api_url_label"].grid(row=4, column=0, padx=20, pady=10, sticky="w")
             self.llm_widgets["api_url_entry"] = ctk.CTkEntry(self.main_window, width=400)
-            # 根据当前提供商填充默认 URL（若尚未保存自定义）
             preset_url = (
                 self.config.api_url
                 if self.config.trans_service == service and self.config.api_url
-                else DEFAULT_LLM_API_URLS.get(service, "")
+                else ""
             )
             self.llm_widgets["api_url_entry"].insert(0, preset_url)
             self.llm_widgets["api_url_entry"].grid(row=4, column=1, padx=20, pady=10, sticky="w")
@@ -507,6 +498,12 @@ class MainInterfaceManager:
                                                 variable=self.service_var,
                                                 command=self.update_service_widgets)
         service_option_menu.grid(row=7, column=0, padx=20, pady=10, sticky="w")
+
+        if CTkScrollableDropdown is not None:
+            try:
+                CTkScrollableDropdown(service_option_menu, values=services, width=200)
+            except Exception as e:
+                logger.debug(f"Failed to attach scrollable dropdown (service): {e}")
 
         self.update_service_widgets(self.service_var.get())  # 初始化控件
 
