@@ -113,7 +113,7 @@ def start_httpserver(port, callback):
                                     "glossary_match": info.get("glossary_match", False),
                                     "skip_src_lang": info.get("skip_src_lang", False),
                                     "cache_hit": info.get("cache_hit", False),
-                                    "usage": info.get("usage", {})
+                                    "usage": info.get("usage")
                                 }
 
                                 json_message = json.dumps(message_data, ensure_ascii=False)

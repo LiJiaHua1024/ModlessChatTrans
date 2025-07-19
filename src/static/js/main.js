@@ -205,13 +205,14 @@ function createMessageElement(name, messageText, messageTime, duration, cacheHit
     // 创建底部标签容器
     var hasBottomTags = (duration !== null && duration !== undefined && duration !== "" && duration !== 0) ||
                        (cacheHit === true) || (glossaryMatch === true) || (skipSrcLang === true) ||
-                       (usage && usage.total_tokens !== null && usage.total_tokens !== undefined);
+                       (usage && (usage.total_tokens !== null && usage.total_tokens !== undefined && usage.total_tokens !== 0));
+                       
     if (hasBottomTags) {
         var bottomTagsContainer = document.createElement('div');
         bottomTagsContainer.className = 'bottom-tags-container';
 
         // 添加usage标签（如果有usage信息）
-        if (usage && usage.total_tokens !== null && usage.total_tokens !== undefined) {
+        if (usage && (usage.total_tokens !== null && usage.total_tokens !== undefined && usage.total_tokens !== 0)) {
             var usageTag = document.createElement('div');
             usageTag.className = 'usage-tag';
 
@@ -225,15 +226,18 @@ function createMessageElement(name, messageText, messageTime, duration, cacheHit
             usageIcon.setAttribute('stroke-linejoin', 'round');
             usageIcon.innerHTML = '<path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M14.8 9a2 2 0 0 0 -1.8 -1h-2a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-2a2 2 0 0 1 -1.8 -1" /><path d="M12 6v2" /><path d="M12 16v2" />';
 
-            // 创建total显示
+            // 创建total显示 - 安全地处理 undefined/null
             var usageTotal = document.createElement('span');
             usageTotal.className = 'usage-total';
-            usageTotal.textContent = usage.total_tokens;
+            var totalTokens = usage.total_tokens || 0;
+            usageTotal.textContent = totalTokens;
 
-            // 创建详细信息 (添加单位)
+            // 创建详细信息 (添加单位) - 安全地处理 undefined/null
             var usageDetail = document.createElement('span');
             usageDetail.className = 'usage-detail';
-            usageDetail.textContent = `${usage.prompt_tokens}+${usage.completion_tokens}=${usage.total_tokens} tokens`;
+            var promptTokens = usage.prompt_tokens || 0;
+            var completionTokens = usage.completion_tokens || 0;
+            usageDetail.textContent = `${promptTokens}+${completionTokens}=${totalTokens} tokens`;
 
             usageTag.appendChild(usageIcon);
             usageTag.appendChild(usageTotal);
