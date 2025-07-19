@@ -75,8 +75,8 @@ msgstr "Исходный язык (авто, если пусто):"
 msgid "Target Language:"
 msgstr "Целевой язык:"
 
-msgid "API URL:"
-msgstr "URL API:"
+msgid "API URL(Auto if blank):"
+msgstr "URL API (авто, если пусто):"
 
 msgid "API Key:"
 msgstr "Ключ API:"

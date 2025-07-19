@@ -73,7 +73,7 @@ msgstr ""
 msgid "Target Language:"
 msgstr ""
 
-msgid "API URL:"
+msgid "API URL(Auto if blank):"
 msgstr ""
 
 msgid "API Key:"

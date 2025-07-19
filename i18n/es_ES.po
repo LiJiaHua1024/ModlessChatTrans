@@ -75,8 +75,8 @@ msgstr "Idioma de origen (Automático si está en blanco):"
 msgid "Target Language:"
 msgstr "Idioma de destino:"
 
-msgid "API URL:"
-msgstr "URL de la API:"
+msgid "API URL(Auto if blank):"
+msgstr "URL de la API (Automático si está en blanco):"
 
 msgid "API Key:"
 msgstr "Clave de la API:"

@@ -75,8 +75,8 @@ msgstr "源语言（留空自动）："
 msgid "Target Language:"
 msgstr "目标语言："
 
-msgid "API URL:"
-msgstr "API 地址："
+msgid "API URL(Auto if blank):"
+msgstr "API 地址（留空自动）："
 
 msgid "API Key:"
 msgstr "API 密钥："

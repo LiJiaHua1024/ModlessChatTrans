@@ -75,8 +75,8 @@ msgstr "원본 언어 (공란 시 자동 감지):"
 msgid "Target Language:"
 msgstr "대상 언어:"
 
-msgid "API URL:"
-msgstr "API URL:"
+msgid "API URL(Auto if blank):"
+msgstr "API URL (공란 시 자동 감지):"
 
 msgid "API Key:"
 msgstr "API 키:"

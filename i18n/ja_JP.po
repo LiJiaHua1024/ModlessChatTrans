@@ -75,8 +75,8 @@ msgstr "元言語（空白の場合は自動）："
 msgid "Target Language:"
 msgstr "目標言語："
 
-msgid "API URL:"
-msgstr "API アドレス："
+msgid "API URL(Auto if blank):"
+msgstr "API アドレス（空白の場合は自動）："
 
 msgid "API Key:"
 msgstr "APIキー："
