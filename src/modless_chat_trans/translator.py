@@ -24,13 +24,26 @@ LLM_PROVIDERS_PREFIXES = {
     "OpenAI": "openai/",
     "Anthropic": "anthropic/",
     "DeepSeek": "deepseek/",
-    "Meta": "meta_llama/",
+    "Meta Llama": "meta_llama/",
     "Azure": "azure/",
-    "AWS SageMaker": "sagemaker/",
-    "AWS Bedrock": "bedrock/",
+    "Amazon SageMaker": "sagemaker/",
+    "Amazon Bedrock": "bedrock/",
     "Google Vertex AI": "vertex_ai/",
-    "Google AI Studio": "gemini/",
-    "HuggingFace": "huggingface/"
+    "Gemini": "gemini/",
+    "Hugging Face": "huggingface/",
+    "Mistral AI": "mistral/",
+    "IBM watsonx": "watson/",
+    "NVIDIA NIM": "nvidia_nim/",
+    "xAI": "xai/",
+    "Moonshot AI": "moonshot/",
+    "LM Studio": "lm_studio/",
+    "Volcengine": "volcengine/",
+    "Groq": "groq/",
+    "vLLM": "hosted_vllm/",
+    "Github": "github/",
+    "Github Copilot": "github_copilot/",
+    "Together AI": "together_ai/",
+    "OpenRouter": "openrouter/"
 }
 
 LLM_PROVIDERS = list(LLM_PROVIDERS_PREFIXES.keys())
