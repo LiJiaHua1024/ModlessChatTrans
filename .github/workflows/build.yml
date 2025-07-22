@@ -127,6 +127,8 @@ jobs:
           '--include-module=dbm.dumb'
           '--include-package=urllib3'
           '--include-package=CTkScrollableDropdown'
+          '--include-package=litellm'
+          '--include-package=translators'
           '--include-package-data=langdetect'
           '--include-package-data=certifi'
           '--include-package-data=tksvg'
