@@ -499,11 +499,11 @@ class MainInterfaceManager:
                                                 command=self.update_service_widgets)
         service_option_menu.grid(row=7, column=0, padx=20, pady=10, sticky="w")
 
-        if CTkScrollableDropdown is not None:
-            try:
-                CTkScrollableDropdown(service_option_menu, values=services, width=200)
-            except Exception as e:
-                logger.debug(f"Failed to attach scrollable dropdown (service): {e}")
+        # if CTkScrollableDropdown is not None:
+        #     try:
+        #         CTkScrollableDropdown(service_option_menu, values=services, width=200)
+        #     except Exception as e:
+        #         logger.debug(f"Failed to attach scrollable dropdown (service): {e}")
 
         self.update_service_widgets(self.service_var.get())  # 初始化控件
 
