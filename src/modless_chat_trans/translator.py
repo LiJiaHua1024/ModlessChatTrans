@@ -67,9 +67,10 @@ def flush_pending_tokens():
 
 
 # 所有可用翻译服务列表（LLM + 传统翻译服务）
-services = LLM_PROVIDERS + [
+TRADITIONAL_SERVICES = [
     "DeepL", "Bing", "Google", "Yandex", "Alibaba", "Caiyun", "Youdao", "Sogou", "Iflyrec"
 ]
+services = LLM_PROVIDERS + TRADITIONAL_SERVICES
 
 llm_completion = LazyImporter("litellm", "completion")
 ts = LazyImporter("translators")

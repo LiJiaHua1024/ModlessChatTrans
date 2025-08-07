@@ -4,6 +4,7 @@ __pycache__/
 ModlessChatTrans.egg-info
 
 .idea/
+.trae/
 
 build/
 dist/
