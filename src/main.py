@@ -25,11 +25,11 @@ conf = read_config(logger_initialized=False)
 init_logger(conf.debug)
 set_language(conf.interface_lang)
 
-from modless_chat_trans.display import init_display, display_message
+from modless_chat_trans.web_display import start_httpserver_thread, display_message
 from modless_chat_trans.log_monitor import monitor_log_file
 from modless_chat_trans.message_processor import init_processor, process_message
 from modless_chat_trans.translator import Translator
-from modless_chat_trans.interface import ProgramInfo, MainInterfaceManager, MoreSettingsManager
+from modless_chat_trans.new_interface import ProgramInfo, MainWindow, QApplication
 from modless_chat_trans.clipboard_monitor import monitor_clipboard, modify_clipboard
 from modless_chat_trans.i18n import _
 from modless_chat_trans.updater import Updater
@@ -75,7 +75,6 @@ def start_translation():
                         duration = time.time() - start_time
                         display_message(
                             *processed_message,
-                            config.output_method,
                             duration=duration
                         )
                         if processed_message[0] != "[ERROR]":
@@ -103,7 +102,6 @@ def start_translation():
                             "[INFO]",
                             _("Chat messages translated, translation results in clipboard"),
                             processed_message[2],
-                            config.output_method,
                             duration=duration
                         )
                         return processed_message[1]
@@ -120,12 +118,9 @@ def start_translation():
         traditional_kwargs={"api_key": config.traditional_api_key}
     )
 
-    init_display(
-        config.output_method,
-        main_window=main_interface_manager.main_window,
+    start_httpserver_thread(
         http_port=config.http_port,
         max_messages=config.max_messages,
-        always_on_top=config.always_on_top,
         callback=callback
     )
 
@@ -156,11 +151,11 @@ def start_translation():
 
 
 def main():
-    global main_interface_manager, more_settings_manager
-    main_interface_manager = MainInterfaceManager(program_info, updater)
-    more_settings_manager = MoreSettingsManager(main_interface_manager.main_window, main_interface_manager.config)
-    main_interface_manager.create_main_window(start_translation=start_translation,
-                                              more_settings=more_settings_manager.create_more_settings_window)
+    app = QApplication([])
+    main_window = MainWindow(program_info, updater)
+    main_window.setting_interface.check_for_updates()
+    main_window.show()
+    app.exec()
 
 
 if __name__ == "__main__":

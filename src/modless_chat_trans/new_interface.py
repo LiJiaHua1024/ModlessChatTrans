@@ -740,70 +740,17 @@ class MessagePresentationInterface(QFrame):
         self.grid_layout = QGridLayout()
         self.grid_layout.setSpacing(15)
 
-        # 展示方式选择
-        presentation_label = BodyLabel('展示方式:', self)
-        self.presentation_combo = ComboBox(self)
-        self.presentation_combo.addItems(['Graphical', 'Web Page'])
-        self.presentation_combo.currentTextChanged.connect(self.on_presentation_changed)
-
-        self.grid_layout.addWidget(presentation_label, 0, 0)
-        self.grid_layout.addWidget(self.presentation_combo, 0, 1)
-
-        # Graphical 模式的配置选项
-        # 最大消息数
-        self.max_messages_label = BodyLabel('最大消息数:', self)
-        self.max_messages_spin = SpinBox(self)
-        self.max_messages_spin.setRange(1, 1000)
-        self.max_messages_spin.setValue(100)
-
-        self.grid_layout.addWidget(self.max_messages_label, 1, 0)
-        self.grid_layout.addWidget(self.max_messages_spin, 1, 1)
-
-        # 始终置顶
-        self.always_on_top_label = BodyLabel('始终置顶:', self)
-        self.always_on_top_switch = SwitchButton(self)
-
-        self.grid_layout.addWidget(self.always_on_top_label, 2, 0)
-        self.grid_layout.addWidget(self.always_on_top_switch, 2, 1)
-
-        # Web Page 模式的配置选项
         # 网页端口
         self.web_port_label = BodyLabel('网页端口:', self)
         self.web_port_spin = SpinBox(self)
         self.web_port_spin.setRange(1024, 65535)
         self.web_port_spin.setValue(8080)
 
-        self.grid_layout.addWidget(self.web_port_label, 3, 0)
-        self.grid_layout.addWidget(self.web_port_spin, 3, 1)
+        self.grid_layout.addWidget(self.web_port_label, 0, 0)
+        self.grid_layout.addWidget(self.web_port_spin, 0, 1)
 
         self.main_layout.addLayout(self.grid_layout)
         self.main_layout.addStretch()
-
-        # 初始化显示状态
-        self.on_presentation_changed(self.presentation_combo.currentText())
-
-    def on_presentation_changed(self, text):
-        """根据选择的展示方式显示/隐藏相应的配置选项"""
-        if text == 'Graphical':
-            # 显示 Graphical 相关选项
-            self.max_messages_label.setVisible(True)
-            self.max_messages_spin.setVisible(True)
-            self.always_on_top_label.setVisible(True)
-            self.always_on_top_switch.setVisible(True)
-
-            # 隐藏 Web Page 相关选项
-            self.web_port_label.setVisible(False)
-            self.web_port_spin.setVisible(False)
-        elif text == 'Web Page':
-            # 隐藏 Graphical 相关选项
-            self.max_messages_label.setVisible(False)
-            self.max_messages_spin.setVisible(False)
-            self.always_on_top_label.setVisible(False)
-            self.always_on_top_switch.setVisible(False)
-
-            # 显示 Web Page 相关选项
-            self.web_port_label.setVisible(True)
-            self.web_port_spin.setVisible(True)
 
 
 class MessageSendInterface(QFrame):
@@ -1354,13 +1301,10 @@ class StartInterface(QFrame):
         # 3. 翻译结果呈现配置
         print("\n【翻译结果呈现配置】")
         msg_presentation = main_window.message_presentation_interface
-        print(f"展示方式: {msg_presentation.presentation_combo.currentText()}")
-
-        if msg_presentation.presentation_combo.currentText() == 'Graphical':
-            print(f"最大消息数: {msg_presentation.max_messages_spin.value()}")
-            print(f"始终置顶: {msg_presentation.always_on_top_switch.isChecked()}")
-        else:  # Web Page
-            print(f"网页端口: {msg_presentation.web_port_spin.value()}")
+        print("展示方式: 图形界面 + Web页面（同时启用）")
+        print(f"图形界面 - 最大消息数: {msg_presentation.max_messages_spin.value()}")
+        print(f"图形界面 - 始终置顶: {msg_presentation.always_on_top_switch.isChecked()}")
+        print(f"Web页面 - 网页端口: {msg_presentation.web_port_spin.value()}")
 
         # 4. 消息发送配置
         print("\n【消息发送配置】")
@@ -2552,29 +2496,3 @@ class MainWindow(FluentWindow):
             duration=-1,
             parent=self
         )
-
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    program_info = ProgramInfo(
-        version="v3.0.0.dev0",
-        author="LiJiaHua1024",
-        email="minecraft_benli@163.com",
-        github="https://github.com/LiJiaHua1024/ModlessChatTrans",
-        license=("GNU General Public License v3.0", "https://www.gnu.org/licenses/gpl-3.0.html")
-    )
-
-    # 创建 Updater 实例
-    from modless_chat_trans.updater import Updater
-
-    updater = Updater(
-        current_version=program_info.version,
-        owner="LiJiaHua1024",
-        repo="ModlessChatTrans",
-        include_prerelease=False
-    )
-
-    window = MainWindow(program_info, updater)
-    window.setting_interface.check_for_updates()
-    window.show()
-    app.exec()
