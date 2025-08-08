@@ -2,6 +2,7 @@ __pycache__/
 *.log
 .venv
 ModlessChatTrans.egg-info
+babel.cfg
 
 .idea/
 .trae/

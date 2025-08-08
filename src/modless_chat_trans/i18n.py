@@ -28,6 +28,10 @@ supported_languages = [("简体中文", "zh_CN"), ("English", "en_US"), ("日本
 
 def set_language(language):
     global current_language, _
+
+    if language == "zh_CN":
+        return
+
     logger.info(f"Setting application language to: {language}")
     try:
         logger.debug(f"Loading translation files from: {get_path('locales')}")

@@ -1,250 +1,504 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
-#, fuzzy
+# ko_KR.po
+# Translations for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# GPT-5, 2025.
 msgid ""
 msgstr ""
-"Project-Id-Version: \n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-18 13:41+0800\n"
-"PO-Revision-Date: 2025-01-18 12:30+0800\n"
-"Last-Translator: \n"
-"Language-Team: \n"
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-08-08 18:30+0800\n"
+"PO-Revision-Date: 2025-08-08 10:00+0000\n"
+"Last-Translator: GPT-5 <noreply@example.com>\n"
+"Language-Team: Korean\n"
 "Language: ko_KR\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 3.5\n"
+"Generated-By: Babel 2.17.0\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: GPT-5\n"
 
-msgid "Chat messages translated, translation results in clipboard"
-msgstr "채팅 메시지가 번역되었으며, 번역 결과가 클립보드에 복사되었습니다"
+msgid "消息翻译结果"
+msgstr "메시지 번역 결과"
 
-msgid "Translated Message"
-msgstr "번역된 메시지"
-
-msgid "Messages"
+msgid "消息"
 msgstr "메시지"
 
-msgid "Start"
-msgstr "시작"
+msgid "输入消息..."
+msgstr "메시지를 입력..."
 
-msgid "About"
-msgstr "정보"
+msgid "要发送的消息翻译完成，翻译结果已复制到剪切板"
+msgstr "보낼 메시지의 번역이 완료되었습니다. 결과가 클립보드에 복사되었습니다."
 
-msgid "Version"
-msgstr "버전"
+msgid "翻译失败：请求次数过多，请稍后重试。"
+msgstr "번역 실패: 요청이 너무 많습니다. 잠시 후 다시 시도하세요."
 
-msgid "Author"
-msgstr "저자"
+msgid "翻译失败：服务器错误，请稍后重试。"
+msgstr "번역 실패: 서버 오류입니다. 잠시 후 다시 시도하세요."
 
-msgid "Email"
-msgstr "이메일"
-
-msgid "License"
-msgstr "라이선스"
-
-msgid "Graphical"
-msgstr "그래픽 인터페이스"
-
-msgid "Speech"
-msgstr "음성"
-
-msgid "Httpserver"
-msgstr "웹 페이지"
-
-msgid "HTTP Port:"
-msgstr "웹 포트:"
-
-msgid "Self Source Language:"
-msgstr "자신의 메시지 원본 언어:"
-
-msgid "Self Target Language:"
-msgstr "자신의 메시지 대상 언어:"
-
-msgid "Minecraft Log Folder:"
-msgstr "Minecraft 로그 폴더:"
-
-msgid "Output Method:"
-msgstr "출력 방법:"
-
-msgid "Source Language(Auto if blank):"
-msgstr "원본 언어 (공란 시 자동 감지):"
-
-msgid "Target Language:"
-msgstr "대상 언어:"
-
-msgid "API URL(Auto if blank):"
-msgstr "API URL (공란 시 자동 감지):"
-
-msgid "API Key:"
-msgstr "API 키:"
-
-msgid "Model:"
-msgstr "모델 코드:"
-
-msgid "Translate Player's Own Message"
-msgstr "플레이어 자신의 메시지 번역"
-
-msgid "Always on top"
-msgstr "항상 맨 위"
-
-msgid "Translation failed: Too many requests. Please try again later."
-msgstr "번역 실패: 요청이 너무 많습니다. 잠시 후 다시 시도해주세요."
-
-msgid "Translation failed: Server error. Please try again later."
-msgstr "번역 실패: 서버 오류입니다. 잠시 후 다시 시도해주세요."
-
-msgid "Translation failed: HTTP error occurred."
+msgid "翻译失败：发生HTTP错误。"
 msgstr "번역 실패: HTTP 오류가 발생했습니다."
 
-msgid "Translation failed: Network issue or HTTP error occurred."
-msgstr "번역 실패: 네트워크 또는 HTTP 오류가 발생했습니다."
+msgid "翻译失败：网络问题或发生HTTP错误。"
+msgstr "번역 실패: 네트워크 문제 또는 HTTP 오류가 발생했습니다."
 
-msgid "Translation failed: Invalid response from server. Please check your network connection."
-msgstr "번역 실패: 서버로부터 잘못된 응답을 받았습니다. 네트워크 연결을 확인해주세요."
+msgid "翻译失败：服务器响应无效，请检查网络连接。"
+msgstr "번역 실패: 서버 응답이 올바르지 않습니다. 네트워크 연결을 확인하세요."
 
-msgid "Translation failed, error:"
-msgstr "번역 실패, 오류:"
+msgid "翻译失败，错误："
+msgstr "번역 실패, 오류: "
 
-msgid "Max Messages:"
-msgstr "최대 메시지 수:"
+msgid "下载失败"
+msgstr "다운로드 실패"
 
-msgid "Update available"
-msgstr "업데이트 가능"
+msgid "消息捕获设置"
+msgstr "메시지 캡처 설정"
 
-msgid "Update downloaded"
-msgstr "업데이트 다운로드 완료"
+msgid "Minecraft 日志位置："
+msgstr "Minecraft 로그 위치:"
 
-msgid "Update download failed"
-msgstr "업데이트 다운로드 실패"
+msgid "请选择Minecraft日志文件夹路径"
+msgstr "Minecraft 로그 폴더 경로를 선택하세요"
 
-msgid "Failed to download the update. Please check your internet connection and try again."
-msgstr "업데이트 다운로드에 실패했습니다. 인터넷 연결을 확인하고 다시 시도해주세요."
+msgid "源语言："
+msgstr "원본 언어:"
 
-msgid "No update available"
-msgstr "사용 가능한 업데이트 없음"
+msgid "目标语言："
+msgstr "대상 언어:"
 
-msgid "No update available."
-msgstr "사용 가능한 업데이트가 없습니다."
+msgid "日志编码："
+msgstr "로그 인코딩:"
 
-msgid "More Settings"
-msgstr "추가 설정"
+msgid "建议选择自动检测（auto），如果无效可以尝试手动指定GBK等编码"
+msgstr "자동 감지(auto)를 권장합니다. 작동하지 않으면 GBK 등의 인코딩을 수동으로 지정해 보세요."
 
-msgid "Automatic Update Frequency"
-msgstr "자동 업데이트 주기"
+msgid "监控模式："
+msgstr "모니터링 모드:"
 
-msgid "On Startup"
-msgstr "시작할 때"
+msgid "建议优先尝试高效模式，若无法正常获取消息，再切换至兼容模式"
+msgstr "먼저 고효율 모드를 사용해 보세요. 메시지를 정상적으로 가져오지 못하면 호환 모드로 전환하세요."
 
-msgid "Daily"
-msgstr "매일"
+msgid "高效模式"
+msgstr "고효율 모드"
 
-msgid "Weekly"
-msgstr "매주"
+msgid "低版本 Minecraft 推荐使用"
+msgstr "구버전 Minecraft 권장"
 
-msgid "Monthly"
-msgstr "매월"
+msgid "兼容模式"
+msgstr "호환 모드"
 
-msgid "Never"
-msgstr "없음"
+msgid "高版本 Minecraft 使用"
+msgstr "신버전 Minecraft 사용"
 
-msgid "Check for Updates"
-msgstr "업데이트 확인"
+msgid "过滤服务器消息"
+msgstr "서버 메시지 필터링"
 
-msgid "Include Pre-release"
-msgstr "프리릴리스 포함"
+msgid "不翻译不带玩家名称的服务器消息（系统消息）"
+msgstr "플레이어 이름이 없는 서버 메시지(시스템 메시지)는 번역하지 않기"
 
-msgid "Save Settings"
-msgstr "설정 저장"
+msgid "替换乱码字符"
+msgstr "깨진 문자 대체"
 
-msgid "Enable Translation Quality Optimization"
-msgstr "번역 품질 최적화 활성화"
+msgid "请输入源语言（格式不限，AI可智能识别）"
+msgstr "원본 언어를 입력하세요(형식 무관, AI가 인식)"
 
-msgid "Enabling this will improve translation quality, but will increase latency and consume more tokens"
-msgstr "활성화하면 번역 품질이 향상되지만, 대기 시간이 증가하고 더 많은 토큰을 사용합니다"
+msgid "请输入目标语言（格式不限，AI可智能识别）"
+msgstr "대상 언어를 입력하세요(형식 무관, AI가 인식)"
 
-msgid "Enable High Version Fix"
-msgstr "상위 버전 수정 활성화"
+msgid "请选择源语言"
+msgstr "원본 언어를 선택하세요"
 
-msgid "Enabling this will temporarily fix the issue of logs not being captured in high versions of Minecraft\nIf it doesn't work, restart this program"
-msgstr "이 옵션을 활성화하면 상위 버전의 Minecraft에서 로그가 캡처되지 않는 문제를 임시로 해결합니다\n작동하지 않는 경우 이 프로그램을 재시작하세요"
+msgid "请选择目标语言"
+msgstr "대상 언어를 선택하세요"
 
-msgid "Loading supported languages"
-msgstr "지원되는 언어를 불러오는 중"
+msgid "翻译服务设置"
+msgstr "번역 서비스 설정"
 
-msgid "I have an API Key"
-msgstr "API 키가 있습니다"
+msgid "玩家消息翻译服务"
+msgstr "플레이어 메시지 번역 서비스"
 
-msgid "Translate System Messages"
-msgstr "시스템 메시지 번역"
+msgid "独立设置消息发送翻译服务"
+msgstr "메시지 전송용 별도 번역 서비스를 설정"
 
-msgid "Enable this will translate system messages (messages without names)"
-msgstr "활성화하면 시스템 메시지(이름이 없는 메시지)를 번역합니다"
+msgid "                AI翻译                "
+msgstr "                AI 번역                "
 
-msgid "Enter message..."
-msgstr "메시지 입력..."
+msgid "                传统翻译                "
+msgstr "                기존 번역                "
 
-msgid "Glossary"
-msgstr "용어집"
+msgid "消息发送翻译服务"
+msgstr "메시지 전송 번역 서비스"
 
-msgid "Source Term:"
+msgid "选择服务："
+msgstr "서비스 선택:"
+
+msgid "请选择翻译服务"
+msgstr "번역 서비스를 선택하세요"
+
+msgid "API Key："
+msgstr "API 키:"
+
+msgid "请输入您的API Key"
+msgstr "API 키를 입력하세요"
+
+msgid "API地址："
+msgstr "API 엔드포인트:"
+
+msgid "默认端点"
+msgstr "기본 엔드포인트"
+
+msgid "模型代号："
+msgstr "모델 ID:"
+
+msgid "请输入模型代号，如：gpt-3.5-turbo"
+msgstr "모델 ID를 입력하세요. 예: gpt-3.5-turbo"
+
+msgid "不使用"
+msgstr "사용 안 함"
+
+msgid "翻译结果显示"
+msgstr "번역 결과 표시"
+
+msgid "网页端口："
+msgstr "웹 포트:"
+
+msgid "消息发送设置"
+msgstr "메시지 전송 설정"
+
+msgid "监控剪切板"
+msgstr "클립보드 모니터링"
+
+msgid "从剪切板获取要发送的消息"
+msgstr "클립보드에서 전송할 메시지 가져오기"
+
+msgid "术语表管理"
+msgstr "용어집 관리"
+
+msgid "源术语："
 msgstr "원본 용어:"
 
-msgid "Target Term:"
+msgid "请输入源术语"
+msgstr "원본 용어를 입력하세요"
+
+msgid "目标术语："
 msgstr "대상 용어:"
 
-msgid "Add/Update Term"
+msgid "请输入目标术语"
+msgstr "대상 용어를 입력하세요"
+
+msgid "添加/更新术语"
 msgstr "용어 추가/업데이트"
 
-msgid "Glossary Rules"
-msgstr "용어집 규칙"
+msgid "清空输入"
+msgstr "입력 지우기"
 
-msgid "Delete Selected"
-msgstr "선택 항목 삭제"
+msgid "源术语"
+msgstr "원본 용어"
 
-msgid "Save Glossary and Close"
-msgstr "용어집 저장 및 닫기"
+msgid "目标术语"
+msgstr "대상 용어"
 
-msgid "<No glossary rules defined>"
-msgstr "<정의된 용어집 규칙 없음>"
+msgid "删除选中术语"
+msgstr "선택한 용어 삭제"
 
-msgid "Input Error"
+msgid "清空术语"
+msgstr "용어 비우기"
+
+msgid "输入错误"
 msgstr "입력 오류"
 
-msgid "Source term cannot be empty."
-msgstr "원본 용어는 비워둘 수 없습니다."
+msgid "源术语不能为空"
+msgstr "원본 용어는 비워둘 수 없습니다"
 
-msgid "Do you want to download it now?"
-msgstr "지금 다운로드하시겠습니까?"
-
-msgid "A new version of ModlessChatTrans is available:"
-msgstr "ModlessChatTrans의 새 버전을 사용할 수 있습니다:"
-
-msgid "Confirm Overwrite"
+msgid "确认覆盖"
 msgstr "덮어쓰기 확인"
 
-msgid "The new source term '{0}' already exists. Overwrite it?"
-msgstr "새 원본 용어 '{0}'이(가) 이미 존재합니다. 덮어쓰시겠습니까?"
+msgid "源术语 “{}” 已存在，是否覆盖？"
+msgstr "원본 용어 “{}”가 이미 존재합니다. 덮어쓰시겠습니까?"
 
-msgid "Log Encoding"
-msgstr "로그 인코딩"
+msgid "更新"
+msgstr "업데이트"
+
+msgid "添加"
+msgstr "추가"
+
+msgid "术语{}成功"
+msgstr "용어 {} 성공"
+
+msgid "删除成功"
+msgstr "삭제 성공"
+
+msgid "术语 “{}” 已删除"
+msgstr "용어 “{}”가 삭제되었습니다"
+
+msgid "提示"
+msgstr "알림"
+
+msgid "术语表为空，无需清空"
+msgstr "용어집이 비어 있어 비울 필요가 없습니다"
+
+msgid "确认清空"
+msgstr "비우기 확인"
+
+msgid "确定要清空所有术语吗？此操作不可恢复。"
+msgstr "모든 용어를 비우시겠습니까? 이 작업은 복구할 수 없습니다."
+
+msgid "清空成功"
+msgstr "비우기 완료"
+
+msgid "已清空 {} 个术语"
+msgstr "{}개의 용어를 비웠습니다"
+
+msgid "启动"
+msgstr "시작"
+
+msgid "获取并打印所有配置"
+msgstr "모든 설정 가져와 출력"
+
+msgid "应用信息"
+msgstr "앱 정보"
+
+msgid "版本"
+msgstr "버전"
+
+msgid "作者"
+msgstr "작성자"
+
+msgid "邮箱"
+msgstr "이메일"
+
+msgid "相关链接"
+msgstr "관련 링크"
+
+msgid "许可证"
+msgstr "라이선스"
+
+msgid "发现新版本"
+msgstr "새 버전 발견"
+
+msgid "创建更新对话框时出错: {}"
+msgstr "업데이트 대화 상자 생성 중 오류: {}"
+
+msgid "下载更新"
+msgstr "업데이트 다운로드"
+
+msgid "暂不更新"
+msgstr "나중에"
+
+msgid "版本信息"
+msgstr "버전 정보"
+
+msgid "当前版本："
+msgstr "현재 버전:"
+
+msgid "最新版本："
+msgstr "최신 버전:"
+
+msgid "未知"
+msgstr "알 수 없음"
+
+msgid "发布时间："
+msgstr "출시일:"
+
+msgid "发布者："
+msgstr "게시자:"
+
+msgid "版本类型："
+msgstr "버전 유형:"
+
+msgid "预发布版本"
+msgstr "프리릴리스"
+
+msgid "更新说明"
+msgstr "업데이트 노트"
+
+msgid "暂无更新说明"
+msgstr "업데이트 노트가 없습니다"
+
+msgid "在 GitHub 上查看完整说明"
+msgstr "GitHub에서 전체 노트 보기"
+
+msgid "正在下载更新"
+msgstr "업데이트 다운로드 중"
+
+msgid "取消"
+msgstr "취소"
+
+msgid "正在下载版本 {}..."
+msgstr "버전 {} 다운로드 중..."
+
+msgid "下载进度："
+msgstr "다운로드 진행률:"
+
+msgid "下载速度："
+msgstr "다운로드 속도:"
+
+msgid "剩余时间："
+msgstr "남은 시간:"
+
+msgid "计算中..."
+msgstr "계산 중..."
+
+msgid "下载方式："
+msgstr "다운로드 방식:"
+
+msgid "检测中..."
+msgstr "감지 중..."
+
+msgid "{} 线程下载"
+msgstr "{} 스레드 다운로드"
+
+msgid "单线程下载"
+msgstr "단일 스레드 다운로드"
+
+msgid "{} 秒"
+msgstr "{}초"
+
+msgid "{} 分 {} 秒"
+msgstr "{}분 {}초"
+
+msgid "{} 分钟"
+msgstr "{}분"
+
+msgid "{} 小时 {} 分"
+msgstr "{}시간 {}분"
+
+msgid "{} 小时"
+msgstr "{}시간"
+
+msgid "完成"
+msgstr "완료"
+
+msgid "正在取消..."
+msgstr "취소 중..."
+
+msgid "错误"
+msgstr "오류"
+
+msgid "关闭"
+msgstr "닫기"
+
+msgid "设置"
+msgstr "설정"
+
+msgid "语言设置"
+msgstr "언어 설정"
+
+msgid "界面语言："
+msgstr "인터페이스 언어:"
+
+msgid "保存"
+msgstr "저장"
+
+msgid "* 语言更改将在重启后生效"
+msgstr "* 언어 변경은 재시작 후 적용됩니다"
+
+msgid "更新设置"
+msgstr "업데이트 설정"
+
+msgid "自动检查："
+msgstr "자동 확인:"
+
+msgid "启动时"
+msgstr "시작 시"
+
+msgid "每天"
+msgstr "매일"
+
+msgid "每周"
+msgstr "매주"
+
+msgid "每月"
+msgstr "매월"
+
+msgid "从不"
+msgstr "안 함"
+
+msgid "预发布版本："
+msgstr "프리릴리스:"
+
+msgid "包含预发布版本"
+msgstr "프리릴리스를 포함"
+
+msgid "手动检查："
+msgstr "수동 확인:"
+
+msgid "检查更新"
+msgstr "업데이트 확인"
+
+msgid "设置已保存"
+msgstr "설정이 저장되었습니다"
+
+msgid "界面语言已设置为 {}，重启后生效。"
+msgstr "인터페이스 언어가 {}(으)로 설정되었습니다. 재시작 후 적용됩니다."
+
+msgid "更新器未初始化"
+msgstr "업데이터가 초기화되지 않았습니다"
+
+msgid "检查更新失败"
+msgstr "업데이트 확인 실패"
+
+msgid "错误: {}"
+msgstr "오류: {}"
+
+msgid "未知版本"
+msgstr "알 수 없는 버전"
 
 msgid ""
-"Manually specify the log encoding\n"
-"If there are garbled characters, try changing this value\n"
-"Leave it blank for automatic detection"
+"最新版本: {}\n"
+"当前版本: v{}\n"
+"\n"
+"是否在浏览器中查看？"
 msgstr ""
-"로그 인코딩을 수동으로 지정\n"
-"깨진 문자가 있으면 이 값을 변경해 보세요\n"
-"자동 감지를 위해 비워 두세요"
+"최신 버전: {}\n"
+"현재 버전: v{}\n"
+"\n"
+"브라우저에서 보시겠습니까?"
 
-msgid "Replace Garbled Characters"
-msgstr "깨진 문자 교체"
+msgid "您是最新的"
+msgstr "이미 최신 버전입니다"
 
-msgid "Replace all garbled characters with Minecraft formatting codes"
-msgstr "모든 깨진 문자를 Minecraft 포맷 코드로 교체"
+msgid "当前版本 v{} 已是最新版本"
+msgstr "현재 버전 v{}은(는) 최신입니다"
 
-msgid "Cumulative tokens consumed"
-msgstr "누적 토큰 사용량"
+msgid "下载完成"
+msgstr "다운로드 완료"
+
+msgid ""
+"更新文件已下载到:\n"
+"{}\n"
+"\n"
+"请手动安装更新。"
+msgstr ""
+"업데이트 파일이 다음 위치에 다운로드되었습니다:\n"
+"{}\n"
+"\n"
+"수동으로 업데이트를 설치하세요."
+
+msgid "下载已取消"
+msgstr "다운로드가 취소되었습니다"
+
+msgid "更新下载已取消"
+msgstr "업데이트 다운로드가 취소되었습니다"
+
+msgid "消息捕获"
+msgstr "메시지 캡처"
+
+msgid "翻译服务"
+msgstr "번역 서비스"
+
+msgid "发送消息"
+msgstr "메시지 보내기"
+
+msgid "术语表"
+msgstr "용어집"
+
+msgid "关于"
+msgstr "정보"
+
+msgid "语言加载错误"
+msgstr "언어 로딩 오류"
+
+msgid "获取支持语言失败 ({service_id}): {error_msg}"
+msgstr "지원되는 언어를 가져오지 못했습니다({service_id}): {error_msg}"

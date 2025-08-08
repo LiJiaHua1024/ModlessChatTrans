@@ -293,22 +293,22 @@ def process_decorator(function):
                     if response:
                         if response.status_code == 429:
                             # 请求过多
-                            return "[ERROR]", _("Translation failed: Too many requests. Please try again later."), info
+                            return "[ERROR]", _("翻译失败：请求次数过多，请稍后重试。"), info
                         elif 500 <= response.status_code < 600:
                             # 服务器错误
-                            return "[ERROR]", _("Translation failed: Server error. Please try again later."), info
+                            return "[ERROR]", _("翻译失败：服务器错误，请稍后重试。"), info
                         else:
                             # 其他 HTTP 错误
-                            return "[ERROR]", _("Translation failed: HTTP error occurred."), info
+                            return "[ERROR]", _("翻译失败：发生HTTP错误。"), info
                     else:
                         # 无法获取响应对象，可能是网络问题
-                        return "[ERROR]", _("Translation failed: Network issue or HTTP error occurred."), info
+                        return "[ERROR]", _("翻译失败：网络问题或发生HTTP错误。"), info
                 except JSONDecodeError:
                     # JSON 解码错误，可能是网络问题或服务器返回了非 JSON 数据
-                    return "[ERROR]", _("Translation failed: Invalid response from server. Please check your network connection."), info
+                    return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
                 except Exception as e:
                     # 捕获其他未知错误
-                    return "[ERROR]", f"{_('Translation failed, error:')} {e}", info
+                    return "[ERROR]", f"{_('翻译失败，错误：')} {e}", info
 
                 if translated_chat_message:
                     logger.debug(f"Translation successful, caching result: {original_chat_message} -> {translated_chat_message}")

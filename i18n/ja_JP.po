@@ -1,250 +1,504 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
-#, fuzzy
+# ja_JP.po
+# Translations for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# GPT-5, 2025.
 msgid ""
 msgstr ""
-"Project-Id-Version: \n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-18 13:41+0800\n"
-"PO-Revision-Date: 2025-01-18 12:28+0800\n"
-"Last-Translator: \n"
-"Language-Team: \n"
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-08-08 18:30+0800\n"
+"PO-Revision-Date: 2025-08-08 10:00+0000\n"
+"Last-Translator: GPT-5 <noreply@example.com>\n"
+"Language-Team: Japanese\n"
 "Language: ja_JP\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 3.5\n"
+"Generated-By: Babel 2.17.0\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: GPT-5\n"
 
-msgid "Chat messages translated, translation results in clipboard"
-msgstr "チャットメッセージが翻訳され、翻訳結果がクリップボードにコピーされました"
+msgid "消息翻译结果"
+msgstr "メッセージ翻訳結果"
 
-msgid "Translated Message"
-msgstr "翻訳されたメッセージ"
-
-msgid "Messages"
+msgid "消息"
 msgstr "メッセージ"
 
-msgid "Start"
-msgstr "開始"
-
-msgid "About"
-msgstr "概要"
-
-msgid "Version"
-msgstr "バージョン"
-
-msgid "Author"
-msgstr "作者"
-
-msgid "Email"
-msgstr "メール"
-
-msgid "License"
-msgstr "ライセンス"
-
-msgid "Graphical"
-msgstr "グラフィカル"
-
-msgid "Speech"
-msgstr "スピーチ"
-
-msgid "Httpserver"
-msgstr "ウェブページ"
-
-msgid "HTTP Port:"
-msgstr "ウェブポート："
-
-msgid "Self Source Language:"
-msgstr "自分のメッセージの元言語："
-
-msgid "Self Target Language:"
-msgstr "自分のメッセージの目標言語："
-
-msgid "Minecraft Log Folder:"
-msgstr "Minecraftログフォルダ："
-
-msgid "Output Method:"
-msgstr "出力方法："
-
-msgid "Source Language(Auto if blank):"
-msgstr "元言語（空白の場合は自動）："
-
-msgid "Target Language:"
-msgstr "目標言語："
-
-msgid "API URL(Auto if blank):"
-msgstr "API アドレス（空白の場合は自動）："
-
-msgid "API Key:"
-msgstr "APIキー："
-
-msgid "Model:"
-msgstr "モデル："
-
-msgid "Translate Player's Own Message"
-msgstr "プレイヤー自身のメッセージを翻訳"
-
-msgid "Always on top"
-msgstr "常に最前面に表示"
-
-msgid "Translation failed: Too many requests. Please try again later."
-msgstr "翻訳に失敗しました：リクエストが多すぎます。後でもう一度お試しください。"
-
-msgid "Translation failed: Server error. Please try again later."
-msgstr "翻訳に失敗しました：サーバーエラー。後でもう一度お試しください。"
-
-msgid "Translation failed: HTTP error occurred."
-msgstr "翻訳に失敗しました：HTTPエラーが発生しました。"
-
-msgid "Translation failed: Network issue or HTTP error occurred."
-msgstr "翻訳に失敗しました：ネットワークの問題またはHTTPエラーが発生しました。"
-
-msgid "Translation failed: Invalid response from server. Please check your network connection."
-msgstr "翻訳に失敗しました：サーバーからの応答が無効です。ネットワーク接続を確認してください。"
-
-msgid "Translation failed, error:"
-msgstr "翻訳に失敗しました、エラー："
-
-msgid "Max Messages:"
-msgstr "最大メッセージ数："
-
-msgid "Update available"
-msgstr "アップデートが利用可能です"
-
-msgid "Update downloaded"
-msgstr "アップデートをダウンロードしました"
-
-msgid "Update download failed"
-msgstr "アップデートのダウンロードに失敗しました"
-
-msgid "Failed to download the update. Please check your internet connection and try again."
-msgstr "アップデートのダウンロードに失敗しました。インターネット接続を確認して、もう一度お試しください。"
-
-msgid "No update available"
-msgstr "利用可能なアップデートはありません"
-
-msgid "No update available."
-msgstr "利用可能なアップデートはありません。"
-
-msgid "More Settings"
-msgstr "その他の設定"
-
-msgid "Automatic Update Frequency"
-msgstr "自動アップデートの頻度"
-
-msgid "On Startup"
-msgstr "起動時"
-
-msgid "Daily"
-msgstr "毎日"
-
-msgid "Weekly"
-msgstr "毎週"
-
-msgid "Monthly"
-msgstr "毎月"
-
-msgid "Never"
-msgstr "なし"
-
-msgid "Check for Updates"
-msgstr "アップデートを確認"
-
-msgid "Include Pre-release"
-msgstr "プレリリースを含める"
-
-msgid "Save Settings"
-msgstr "設定を保存"
-
-msgid "Enable Translation Quality Optimization"
-msgstr "翻訳品質の最適化を有効化"
-
-msgid "Enabling this will improve translation quality, but will increase latency and consume more tokens"
-msgstr "有効にすると翻訳品質が向上しますが、待ち時間が増加しトークンの消費も増えます"
-
-msgid "Enable High Version Fix"
-msgstr "高バージョン修正を有効化"
-
-msgid "Enabling this will temporarily fix the issue of logs not being captured in high versions of Minecraft\nIf it doesn't work, restart this program"
-msgstr "これを有効にすると、高バージョンのMinecraftでログが取得されない問題を一時的に修正します\n機能しない場合は、このプログラムを再起動してください"
-
-msgid "Loading supported languages"
-msgstr "対応言語を読み込み中"
-
-msgid "I have an API Key"
-msgstr "APIキーを持っています"
-
-msgid "Translate System Messages"
-msgstr "システムメッセージを翻訳"
-
-msgid "Enable this will translate system messages (messages without names)"
-msgstr "有効にすると、システムメッセージ（名前のないメッセージ）を翻訳します"
-
-msgid "Enter message..."
+msgid "输入消息..."
 msgstr "メッセージを入力..."
 
-msgid "Glossary"
-msgstr "用語集"
+msgid "要发送的消息翻译完成，翻译结果已复制到剪切板"
+msgstr "送信するメッセージの翻訳が完了しました。結果はクリップボードにコピーされました。"
 
-msgid "Source Term:"
-msgstr "原語："
+msgid "翻译失败：请求次数过多，请稍后重试。"
+msgstr "翻訳に失敗しました：リクエストが多すぎます。しばらくしてからお試しください。"
 
-msgid "Target Term:"
-msgstr "訳語："
+msgid "翻译失败：服务器错误，请稍后重试。"
+msgstr "翻訳に失敗しました：サーバーエラーが発生しました。しばらくしてからお試しください。"
 
-msgid "Add/Update Term"
-msgstr "用語の追加/更新"
+msgid "翻译失败：发生HTTP错误。"
+msgstr "翻訳に失敗しました：HTTPエラーが発生しました。"
 
-msgid "Glossary Rules"
-msgstr "用語集ルール"
+msgid "翻译失败：网络问题或发生HTTP错误。"
+msgstr "翻訳に失敗しました：ネットワークの問題またはHTTPエラーが発生しました。"
 
-msgid "Delete Selected"
-msgstr "選択項目を削除"
+msgid "翻译失败：服务器响应无效，请检查网络连接。"
+msgstr "翻訳に失敗しました：サーバーの応答が無効です。ネットワーク接続を確認してください。"
 
-msgid "Save Glossary and Close"
-msgstr "用語集を保存して閉じる"
+msgid "翻译失败，错误："
+msgstr "翻訳に失敗しました。エラー："
 
-msgid "<No glossary rules defined>"
-msgstr "<用語集ルールが定義されていません>"
+msgid "下载失败"
+msgstr "ダウンロードに失敗しました"
 
-msgid "Input Error"
-msgstr "入力エラー"
+msgid "消息捕获设置"
+msgstr "メッセージキャプチャ設定"
 
-msgid "Source term cannot be empty."
-msgstr "原語は空にできません。"
+msgid "Minecraft 日志位置："
+msgstr "Minecraft ログの場所："
 
-msgid "Do you want to download it now?"
-msgstr "今すぐダウンロードしますか？"
+msgid "请选择Minecraft日志文件夹路径"
+msgstr "Minecraft のログフォルダーパスを選択してください"
 
-msgid "A new version of ModlessChatTrans is available:"
-msgstr "ModlessChatTrans の新しいバージョンが利用可能です："
+msgid "源语言："
+msgstr "ソース言語："
 
-msgid "Confirm Overwrite"
-msgstr "上書き確認"
+msgid "目标语言："
+msgstr "ターゲット言語："
 
-msgid "The new source term '{0}' already exists. Overwrite it?"
-msgstr "新しい原文の用語「{0}」は既に存在します。上書きしますか？"
+msgid "日志编码："
+msgstr "ログのエンコード："
 
-msgid "Log Encoding"
-msgstr "ログエンコーディング"
+msgid "建议选择自动检测（auto），如果无效可以尝试手动指定GBK等编码"
+msgstr "自動検出（auto）を推奨します。うまくいかない場合は GBK などのエンコードを手動で指定してみてください。"
 
-msgid ""
-"Manually specify the log encoding\n"
-"If there are garbled characters, try changing this value\n"
-"Leave it blank for automatic detection"
-msgstr ""
-"ログのエンコーディングを手動で指定\n"
-"文字化けがある場合は、この値を変更してみてください\n"
-"空白のままにすると自動検出されます"
+msgid "监控模式："
+msgstr "監視モード："
 
-msgid "Replace Garbled Characters"
+msgid "建议优先尝试高效模式，若无法正常获取消息，再切换至兼容模式"
+msgstr "まずは高効率モードをお試しください。メッセージを正しく取得できない場合は互換モードに切り替えてください。"
+
+msgid "高效模式"
+msgstr "高効率モード"
+
+msgid "低版本 Minecraft 推荐使用"
+msgstr "古いバージョンの Minecraft に推奨"
+
+msgid "兼容模式"
+msgstr "互換モード"
+
+msgid "高版本 Minecraft 使用"
+msgstr "新しいバージョンの Minecraft に使用"
+
+msgid "过滤服务器消息"
+msgstr "サーバーメッセージをフィルター"
+
+msgid "不翻译不带玩家名称的服务器消息（系统消息）"
+msgstr "プレイヤー名を含まないサーバーメッセージ（システムメッセージ）は翻訳しない"
+
+msgid "替换乱码字符"
 msgstr "文字化けを置換"
 
-msgid "Replace all garbled characters with Minecraft formatting codes"
-msgstr "すべての文字化けをMinecraftフォーマットコードに置換"
+msgid "请输入源语言（格式不限，AI可智能识别）"
+msgstr "ソース言語を入力（形式は不問。AI が自動認識）"
 
-msgid "Cumulative tokens consumed"
-msgstr "累積消費トークン数"
+msgid "请输入目标语言（格式不限，AI可智能识别）"
+msgstr "ターゲット言語を入力（形式は不問。AI が自動認識）"
+
+msgid "请选择源语言"
+msgstr "ソース言語を選択してください"
+
+msgid "请选择目标语言"
+msgstr "ターゲット言語を選択してください"
+
+msgid "翻译服务设置"
+msgstr "翻訳サービス設定"
+
+msgid "玩家消息翻译服务"
+msgstr "プレイヤーメッセージ翻訳サービス"
+
+msgid "独立设置消息发送翻译服务"
+msgstr "送信メッセージ用に個別の翻訳サービスを設定"
+
+msgid "                AI翻译                "
+msgstr "                AI翻訳                "
+
+msgid "                传统翻译                "
+msgstr "                従来の翻訳                "
+
+msgid "消息发送翻译服务"
+msgstr "送信メッセージ翻訳サービス"
+
+msgid "选择服务："
+msgstr "サービスを選択："
+
+msgid "请选择翻译服务"
+msgstr "翻訳サービスを選択してください"
+
+msgid "API Key："
+msgstr "APIキー："
+
+msgid "请输入您的API Key"
+msgstr "APIキーを入力してください"
+
+msgid "API地址："
+msgstr "API エンドポイント："
+
+msgid "默认端点"
+msgstr "デフォルトエンドポイント"
+
+msgid "模型代号："
+msgstr "モデルID："
+
+msgid "请输入模型代号，如：gpt-3.5-turbo"
+msgstr "モデルIDを入力してください（例：gpt-3.5-turbo）"
+
+msgid "不使用"
+msgstr "使用しない"
+
+msgid "翻译结果显示"
+msgstr "翻訳結果の表示"
+
+msgid "网页端口："
+msgstr "Web ポート："
+
+msgid "消息发送设置"
+msgstr "メッセージ送信設定"
+
+msgid "监控剪切板"
+msgstr "クリップボードを監視"
+
+msgid "从剪切板获取要发送的消息"
+msgstr "送信するメッセージをクリップボードから取得"
+
+msgid "术语表管理"
+msgstr "用語集の管理"
+
+msgid "源术语："
+msgstr "ソース用語："
+
+msgid "请输入源术语"
+msgstr "ソース用語を入力してください"
+
+msgid "目标术语："
+msgstr "ターゲット用語："
+
+msgid "请输入目标术语"
+msgstr "ターゲット用語を入力してください"
+
+msgid "添加/更新术语"
+msgstr "用語を追加/更新"
+
+msgid "清空输入"
+msgstr "入力をクリア"
+
+msgid "源术语"
+msgstr "ソース用語"
+
+msgid "目标术语"
+msgstr "ターゲット用語"
+
+msgid "删除选中术语"
+msgstr "選択した用語を削除"
+
+msgid "清空术语"
+msgstr "用語をクリア"
+
+msgid "输入错误"
+msgstr "入力エラー"
+
+msgid "源术语不能为空"
+msgstr "ソース用語は空にできません"
+
+msgid "确认覆盖"
+msgstr "上書きの確認"
+
+msgid "源术语 “{}” 已存在，是否覆盖？"
+msgstr "ソース用語「{}」は既に存在します。上書きしますか？"
+
+msgid "更新"
+msgstr "更新"
+
+msgid "添加"
+msgstr "追加"
+
+msgid "术语{}成功"
+msgstr "用語{}に成功"
+
+msgid "删除成功"
+msgstr "削除に成功しました"
+
+msgid "术语 “{}” 已删除"
+msgstr "用語「{}」を削除しました"
+
+msgid "提示"
+msgstr "ヒント"
+
+msgid "术语表为空，无需清空"
+msgstr "用語集は空です。クリアする必要はありません"
+
+msgid "确认清空"
+msgstr "クリアの確認"
+
+msgid "确定要清空所有术语吗？此操作不可恢复。"
+msgstr "すべての用語をクリアしてもよろしいですか？この操作は元に戻せません。"
+
+msgid "清空成功"
+msgstr "クリアに成功しました"
+
+msgid "已清空 {} 个术语"
+msgstr "{} 件の用語をクリアしました"
+
+msgid "启动"
+msgstr "起動"
+
+msgid "获取并打印所有配置"
+msgstr "すべての設定を取得して表示"
+
+msgid "应用信息"
+msgstr "アプリ情報"
+
+msgid "版本"
+msgstr "バージョン"
+
+msgid "作者"
+msgstr "作者"
+
+msgid "邮箱"
+msgstr "メール"
+
+msgid "相关链接"
+msgstr "関連リンク"
+
+msgid "许可证"
+msgstr "ライセンス"
+
+msgid "发现新版本"
+msgstr "新しいバージョンを発見"
+
+msgid "创建更新对话框时出错: {}"
+msgstr "アップデートダイアログの作成中にエラーが発生しました: {}"
+
+msgid "下载更新"
+msgstr "アップデートをダウンロード"
+
+msgid "暂不更新"
+msgstr "後で"
+
+msgid "版本信息"
+msgstr "バージョン情報"
+
+msgid "当前版本："
+msgstr "現在のバージョン："
+
+msgid "最新版本："
+msgstr "最新バージョン："
+
+msgid "未知"
+msgstr "不明"
+
+msgid "发布时间："
+msgstr "リリース日："
+
+msgid "发布者："
+msgstr "公開者："
+
+msgid "版本类型："
+msgstr "バージョン種別："
+
+msgid "预发布版本"
+msgstr "プレリリース"
+
+msgid "更新说明"
+msgstr "更新内容"
+
+msgid "暂无更新说明"
+msgstr "更新内容はありません"
+
+msgid "在 GitHub 上查看完整说明"
+msgstr "GitHub で詳細を表示"
+
+msgid "正在下载更新"
+msgstr "アップデートをダウンロード中"
+
+msgid "取消"
+msgstr "キャンセル"
+
+msgid "正在下载版本 {}..."
+msgstr "バージョン {} をダウンロード中..."
+
+msgid "下载进度："
+msgstr "ダウンロードの進行状況："
+
+msgid "下载速度："
+msgstr "ダウンロード速度："
+
+msgid "剩余时间："
+msgstr "残り時間："
+
+msgid "计算中..."
+msgstr "計算中..."
+
+msgid "下载方式："
+msgstr "ダウンロード方式："
+
+msgid "检测中..."
+msgstr "検出中..."
+
+msgid "{} 线程下载"
+msgstr "{} スレッドでダウンロード"
+
+msgid "单线程下载"
+msgstr "単一スレッドでダウンロード"
+
+msgid "{} 秒"
+msgstr "{} 秒"
+
+msgid "{} 分 {} 秒"
+msgstr "{} 分 {} 秒"
+
+msgid "{} 分钟"
+msgstr "{} 分"
+
+msgid "{} 小时 {} 分"
+msgstr "{} 時間 {} 分"
+
+msgid "{} 小时"
+msgstr "{} 時間"
+
+msgid "完成"
+msgstr "完了"
+
+msgid "正在取消..."
+msgstr "キャンセル中..."
+
+msgid "错误"
+msgstr "エラー"
+
+msgid "关闭"
+msgstr "閉じる"
+
+msgid "设置"
+msgstr "設定"
+
+msgid "语言设置"
+msgstr "言語設定"
+
+msgid "界面语言："
+msgstr "UI 言語："
+
+msgid "保存"
+msgstr "保存"
+
+msgid "* 语言更改将在重启后生效"
+msgstr "* 言語の変更は再起動後に有効になります"
+
+msgid "更新设置"
+msgstr "更新設定"
+
+msgid "自动检查："
+msgstr "自動チェック："
+
+msgid "启动时"
+msgstr "起動時"
+
+msgid "每天"
+msgstr "毎日"
+
+msgid "每周"
+msgstr "毎週"
+
+msgid "每月"
+msgstr "毎月"
+
+msgid "从不"
+msgstr "しない"
+
+msgid "预发布版本："
+msgstr "プレリリース："
+
+msgid "包含预发布版本"
+msgstr "プレリリースを含める"
+
+msgid "手动检查："
+msgstr "手動チェック："
+
+msgid "检查更新"
+msgstr "アップデートを確認"
+
+msgid "设置已保存"
+msgstr "設定を保存しました"
+
+msgid "界面语言已设置为 {}，重启后生效。"
+msgstr "UI 言語を {} に設定しました。再起動後に有効になります。"
+
+msgid "更新器未初始化"
+msgstr "アップデーターが初期化されていません"
+
+msgid "检查更新失败"
+msgstr "アップデートの確認に失敗しました"
+
+msgid "错误: {}"
+msgstr "エラー: {}"
+
+msgid "未知版本"
+msgstr "不明なバージョン"
+
+msgid ""
+"最新版本: {}\n"
+"当前版本: v{}\n"
+"\n"
+"是否在浏览器中查看？"
+msgstr ""
+"最新バージョン: {}\n"
+"現在のバージョン: v{}\n"
+"\n"
+"ブラウザーで表示しますか？"
+
+msgid "您是最新的"
+msgstr "すでに最新バージョンです"
+
+msgid "当前版本 v{} 已是最新版本"
+msgstr "現在のバージョン v{} は最新です"
+
+msgid "下载完成"
+msgstr "ダウンロード完了"
+
+msgid ""
+"更新文件已下载到:\n"
+"{}\n"
+"\n"
+"请手动安装更新。"
+msgstr ""
+"更新ファイルをダウンロードしました:\n"
+"{}\n"
+"\n"
+"手動で更新をインストールしてください。"
+
+msgid "下载已取消"
+msgstr "ダウンロードをキャンセルしました"
+
+msgid "更新下载已取消"
+msgstr "更新のダウンロードはキャンセルされました"
+
+msgid "消息捕获"
+msgstr "メッセージキャプチャ"
+
+msgid "翻译服务"
+msgstr "翻訳サービス"
+
+msgid "发送消息"
+msgstr "メッセージ送信"
+
+msgid "术语表"
+msgstr "用語集"
+
+msgid "关于"
+msgstr "このアプリについて"
+
+msgid "语言加载错误"
+msgstr "言語の読み込みエラー"
+
+msgid "获取支持语言失败 ({service_id}): {error_msg}"
+msgstr "対応言語の取得に失敗しました（{service_id}）：{error_msg}"

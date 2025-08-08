@@ -100,7 +100,7 @@ def start_translation():
                         duration = time.time() - start_time
                         display_message(
                             "[INFO]",
-                            _("Chat messages translated, translation results in clipboard"),
+                            _("要发送的消息翻译完成，翻译结果已复制到剪切板"),
                             processed_message[2],
                             duration=duration
                         )

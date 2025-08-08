@@ -1,255 +1,504 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
-#, fuzzy
+# de_DE.po
+# Translations for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# GPT-5, 2025.
 msgid ""
 msgstr ""
-"Project-Id-Version: \n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-18 13:41+0800\n"
-"PO-Revision-Date: 2025-01-18 12:11+0800\n"
-"Last-Translator: \n"
-"Language-Team: \n"
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-08-08 18:30+0800\n"
+"PO-Revision-Date: 2025-08-08 10:00+0000\n"
+"Last-Translator: GPT-5 <noreply@example.com>\n"
+"Language-Team: German\n"
 "Language: de_DE\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 3.5\n"
+"Generated-By: Babel 2.17.0\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: GPT-5\n"
 
-msgid "Chat messages translated, translation results in clipboard"
-msgstr "Chat-Nachrichten übersetzt, Übersetzungsergebnisse in die Zwischenablage kopiert"
+msgid "消息翻译结果"
+msgstr "Ergebnis der Nachrichtenübersetzung"
 
-msgid "Translated Message"
-msgstr "Übersetzte Nachricht"
+msgid "消息"
+msgstr "Nachricht"
 
-msgid "Messages"
-msgstr "Nachrichten"
-
-msgid "Start"
-msgstr "Starten"
-
-msgid "About"
-msgstr "Über"
-
-msgid "Version"
-msgstr "Version"
-
-msgid "Author"
-msgstr "Autor"
-
-msgid "Email"
-msgstr "E-Mail"
-
-msgid "License"
-msgstr "Lizenz"
-
-msgid "Graphical"
-msgstr "Grafische Oberfläche"
-
-msgid "Speech"
-msgstr "Sprache"
-
-msgid "Httpserver"
-msgstr "Webseite"
-
-msgid "HTTP Port:"
-msgstr "Web-Port:"
-
-msgid "Self Source Language:"
-msgstr "Eigene Nachrichtenquellensprache:"
-
-msgid "Self Target Language:"
-msgstr "Eigene Nachrichtenzielsprache:"
-
-msgid "Minecraft Log Folder:"
-msgstr "Minecraft-Protokollordner:"
-
-msgid "Output Method:"
-msgstr "Ausgabemethode:"
-
-msgid "Source Language(Auto if blank):"
-msgstr "Quellsprache (automatisch bei leer):"
-
-msgid "Target Language:"
-msgstr "Zielsprache:"
-
-msgid "API URL(Auto if blank):"
-msgstr "API-URL (automatisch bei leer):"
-
-msgid "API Key:"
-msgstr "API-Schlüssel:"
-
-msgid "Model:"
-msgstr "Modell:"
-
-msgid "Translate Player's Own Message"
-msgstr "Eigene Nachrichten des Spielers übersetzen"
-
-msgid "Always on top"
-msgstr "Immer im Vordergrund"
-
-msgid "Translation failed: Too many requests. Please try again later."
-msgstr ""
-"Übersetzung fehlgeschlagen: Zu viele Anfragen. Bitte versuchen Sie es später erneut."
-
-msgid "Translation failed: Server error. Please try again later."
-msgstr "Übersetzung fehlgeschlagen: Serverfehler. Bitte versuchen Sie es später erneut."
-
-msgid "Translation failed: HTTP error occurred."
-msgstr "Übersetzung fehlgeschlagen: HTTP-Fehler aufgetreten."
-
-msgid "Translation failed: Network issue or HTTP error occurred."
-msgstr "Übersetzung fehlgeschlagen: Netzwerk- oder HTTP-Fehler aufgetreten."
-
-msgid ""
-"Translation failed: Invalid response from server. Please check your network connection."
-msgstr ""
-"Übersetzung fehlgeschlagen: Ungültige Serverantwort. Bitte überprüfen Sie Ihre "
-"Netzwerkverbindung."
-
-msgid "Translation failed, error:"
-msgstr "Übersetzung fehlgeschlagen, Fehler:"
-
-msgid "Max Messages:"
-msgstr "Maximale Nachrichten:"
-
-msgid "Update available"
-msgstr "Update verfügbar"
-
-msgid "Update downloaded"
-msgstr "Update heruntergeladen"
-
-msgid "Update download failed"
-msgstr "Update-Download fehlgeschlagen"
-
-msgid "Failed to download the update. Please check your internet connection and try again."
-msgstr "Fehler beim Herunterladen des Updates. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut."
-
-msgid "No update available"
-msgstr "Kein Update verfügbar"
-
-msgid "No update available."
-msgstr "Kein Update verfügbar."
-
-msgid "More Settings"
-msgstr "Weitere Einstellungen"
-
-msgid "Automatic Update Frequency"
-msgstr "Automatische Update-Häufigkeit"
-
-msgid "On Startup"
-msgstr "Beim Start"
-
-msgid "Daily"
-msgstr "Täglich"
-
-msgid "Weekly"
-msgstr "Wöchentlich"
-
-msgid "Monthly"
-msgstr "Monatlich"
-
-msgid "Never"
-msgstr "Nie"
-
-msgid "Check for Updates"
-msgstr "Nach Updates suchen"
-
-msgid "Include Pre-release"
-msgstr "Vorabversionen einschließen"
-
-msgid "Save Settings"
-msgstr "Einstellungen speichern"
-
-msgid "Enable Translation Quality Optimization"
-msgstr "Übersetzungsqualität-Optimierung aktivieren"
-
-msgid "Enabling this will improve translation quality, but will increase latency and consume more tokens"
-msgstr "Die Aktivierung verbessert die Übersetzungsqualität, erhöht jedoch die Latenzzeit und verbraucht mehr Token"
-
-msgid "Enable High Version Fix"
-msgstr "Höhere-Version-Fehlerbehebung aktivieren"
-
-msgid "Enabling this will temporarily fix the issue of logs not being captured in high versions of Minecraft\nIf it doesn't work, restart this program"
-msgstr "Die Aktivierung behebt vorübergehend das Problem, dass Protokolle in höheren Minecraft-Versionen nicht erfasst werden\nWenn es nicht funktioniert, starten Sie das Programm neu"
-
-msgid "Loading supported languages"
-msgstr "Unterstützte Sprachen werden geladen"
-
-msgid "I have an API Key"
-msgstr "Ich habe einen API-Schlüssel"
-
-msgid "Translate System Messages"
-msgstr "Systemnachrichten übersetzen"
-
-msgid "Enable this will translate system messages (messages without names)"
-msgstr "Wenn aktiviert, werden Systemnachrichten (Nachrichten ohne Namen) übersetzt"
-
-msgid "Enter message..."
+msgid "输入消息..."
 msgstr "Nachricht eingeben..."
 
-msgid "Glossary"
-msgstr "Glossar"
+msgid "要发送的消息翻译完成，翻译结果已复制到剪切板"
+msgstr "Die zu sendende Nachricht wurde übersetzt; das Ergebnis wurde in die Zwischenablage kopiert."
 
-msgid "Source Term:"
-msgstr "Quellbegriff:"
+msgid "翻译失败：请求次数过多，请稍后重试。"
+msgstr "Übersetzung fehlgeschlagen: Zu viele Anfragen. Bitte später erneut versuchen."
 
-msgid "Target Term:"
-msgstr "Zielbegriff:"
+msgid "翻译失败：服务器错误，请稍后重试。"
+msgstr "Übersetzung fehlgeschlagen: Serverfehler. Bitte später erneut versuchen."
 
-msgid "Add/Update Term"
-msgstr "Begriff hinzufügen/aktualisieren"
+msgid "翻译失败：发生HTTP错误。"
+msgstr "Übersetzung fehlgeschlagen: HTTP-Fehler aufgetreten."
 
-msgid "Glossary Rules"
-msgstr "Glossarregeln"
+msgid "翻译失败：网络问题或发生HTTP错误。"
+msgstr "Übersetzung fehlgeschlagen: Netzwerkproblem oder HTTP-Fehler."
 
-msgid "Delete Selected"
-msgstr "Ausgewählte löschen"
+msgid "翻译失败：服务器响应无效，请检查网络连接。"
+msgstr "Übersetzung fehlgeschlagen: Ungültige Serverantwort. Bitte Netzwerkverbindung prüfen."
 
-msgid "Save Glossary and Close"
-msgstr "Glossar speichern und schließen"
+msgid "翻译失败，错误："
+msgstr "Übersetzung fehlgeschlagen, Fehler: "
 
-msgid "<No glossary rules defined>"
-msgstr "<Keine Glossarregeln definiert>"
+msgid "下载失败"
+msgstr "Download fehlgeschlagen"
 
-msgid "Input Error"
-msgstr "Eingabefehler"
+msgid "消息捕获设置"
+msgstr "Einstellungen zur Nachrichtenerfassung"
 
-msgid "Source term cannot be empty."
-msgstr "Quellbegriff darf nicht leer sein."
+msgid "Minecraft 日志位置："
+msgstr "Minecraft-Logspeicherort:"
 
-msgid "Do you want to download it now?"
-msgstr "Möchten Sie es jetzt herunterladen?"
+msgid "请选择Minecraft日志文件夹路径"
+msgstr "Bitte den Ordnerpfad des Minecraft-Logs auswählen"
 
-msgid "A new version of ModlessChatTrans is available:"
-msgstr "Eine neue Version von ModlessChatTrans ist verfügbar:"
+msgid "源语言："
+msgstr "Ausgangssprache:"
 
-msgid "Confirm Overwrite"
-msgstr "Überschreiben bestätigen"
+msgid "目标语言："
+msgstr "Zielsprache:"
 
-msgid "The new source term '{0}' already exists. Overwrite it?"
-msgstr "Der neue Quellbegriff '{0}' existiert bereits. Überschreiben?"
+msgid "日志编码："
+msgstr "Log-Kodierung:"
 
-msgid "Log Encoding"
-msgstr "Log-Kodierung"
+msgid "建议选择自动检测（auto），如果无效可以尝试手动指定GBK等编码"
+msgstr "Es wird empfohlen, Auto-Erkennung (auto) zu wählen. Falls das nicht funktioniert, versuchen Sie GBK oder andere Kodierungen manuell anzugeben."
 
-msgid ""
-"Manually specify the log encoding\n"
-"If there are garbled characters, try changing this value\n"
-"Leave it blank for automatic detection"
-msgstr ""
-"Log-Kodierung manuell festlegen\n"
-"Bei unleserlichen Zeichen versuchen Sie diesen Wert zu ändern\n"
-"Leer lassen für automatische Erkennung"
+msgid "监控模式："
+msgstr "Überwachungsmodus:"
 
-msgid "Replace Garbled Characters"
+msgid "建议优先尝试高效模式，若无法正常获取消息，再切换至兼容模式"
+msgstr "Versuchen Sie zuerst den Effizienz-Modus. Wenn Nachrichten nicht richtig erfasst werden, auf Kompatibilitätsmodus wechseln."
+
+msgid "高效模式"
+msgstr "Effizienz-Modus"
+
+msgid "低版本 Minecraft 推荐使用"
+msgstr "Empfohlen für ältere Minecraft-Versionen"
+
+msgid "兼容模式"
+msgstr "Kompatibilitätsmodus"
+
+msgid "高版本 Minecraft 使用"
+msgstr "Für neuere Minecraft-Versionen"
+
+msgid "过滤服务器消息"
+msgstr "Servernachrichten filtern"
+
+msgid "不翻译不带玩家名称的服务器消息（系统消息）"
+msgstr "Servernachrichten ohne Spielernamen (Systemnachrichten) nicht übersetzen"
+
+msgid "替换乱码字符"
 msgstr "Fehlerhafte Zeichen ersetzen"
 
-msgid "Replace all garbled characters with Minecraft formatting codes"
-msgstr "Alle fehlerhaften Zeichen durch Minecraft-Formatierungscodes ersetzen"
+msgid "请输入源语言（格式不限，AI可智能识别）"
+msgstr "Bitte Ausgangssprache eingeben (beliebiges Format; KI kann sie erkennen)"
 
-msgid "Cumulative tokens consumed"
-msgstr "Insgesamt verbrauchte Token"
+msgid "请输入目标语言（格式不限，AI可智能识别）"
+msgstr "Bitte Zielsprache eingeben (beliebiges Format; KI kann sie erkennen)"
 
+msgid "请选择源语言"
+msgstr "Bitte Ausgangssprache wählen"
+
+msgid "请选择目标语言"
+msgstr "Bitte Zielsprache wählen"
+
+msgid "翻译服务设置"
+msgstr "Einstellungen des Übersetzungsdienstes"
+
+msgid "玩家消息翻译服务"
+msgstr "Übersetzungsdienst für Spielermitteilungen"
+
+msgid "独立设置消息发送翻译服务"
+msgstr "Eigenen Übersetzungsdienst für das Senden von Nachrichten festlegen"
+
+msgid "                AI翻译                "
+msgstr "                KI-Übersetzung                "
+
+msgid "                传统翻译                "
+msgstr "                Traditionelle Übersetzung                "
+
+msgid "消息发送翻译服务"
+msgstr "Übersetzungsdienst für das Senden von Nachrichten"
+
+msgid "选择服务："
+msgstr "Dienst auswählen:"
+
+msgid "请选择翻译服务"
+msgstr "Bitte Übersetzungsdienst wählen"
+
+msgid "API Key："
+msgstr "API-Schlüssel:"
+
+msgid "请输入您的API Key"
+msgstr "Bitte Ihren API-Schlüssel eingeben"
+
+msgid "API地址："
+msgstr "API-Endpunkt:"
+
+msgid "默认端点"
+msgstr "Standard-Endpunkt"
+
+msgid "模型代号："
+msgstr "Modell-ID:"
+
+msgid "请输入模型代号，如：gpt-3.5-turbo"
+msgstr "Bitte eine Modell-ID eingeben, z. B.: gpt-3.5-turbo"
+
+msgid "不使用"
+msgstr "Nicht verwenden"
+
+msgid "翻译结果显示"
+msgstr "Anzeige des Übersetzungsergebnisses"
+
+msgid "网页端口："
+msgstr "Web-Port:"
+
+msgid "消息发送设置"
+msgstr "Einstellungen zum Senden von Nachrichten"
+
+msgid "监控剪切板"
+msgstr "Zwischenablage überwachen"
+
+msgid "从剪切板获取要发送的消息"
+msgstr "Zu sendende Nachrichten aus der Zwischenablage holen"
+
+msgid "术语表管理"
+msgstr "Glossar-Verwaltung"
+
+msgid "源术语："
+msgstr "Quellbegriff:"
+
+msgid "请输入源术语"
+msgstr "Bitte Quellbegriff eingeben"
+
+msgid "目标术语："
+msgstr "Zielbegriff:"
+
+msgid "请输入目标术语"
+msgstr "Bitte Zielbegriff eingeben"
+
+msgid "添加/更新术语"
+msgstr "Begriff hinzufügen/aktualisieren"
+
+msgid "清空输入"
+msgstr "Eingabe leeren"
+
+msgid "源术语"
+msgstr "Quellbegriff"
+
+msgid "目标术语"
+msgstr "Zielbegriff"
+
+msgid "删除选中术语"
+msgstr "Ausgewählte Begriffe löschen"
+
+msgid "清空术语"
+msgstr "Begriffe leeren"
+
+msgid "输入错误"
+msgstr "Eingabefehler"
+
+msgid "源术语不能为空"
+msgstr "Quellbegriff darf nicht leer sein"
+
+msgid "确认覆盖"
+msgstr "Überschreiben bestätigen"
+
+msgid "源术语 “{}” 已存在，是否覆盖？"
+msgstr "Der Quellbegriff „{}“ existiert bereits. Überschreiben?"
+
+msgid "更新"
+msgstr "Aktualisieren"
+
+msgid "添加"
+msgstr "Hinzufügen"
+
+msgid "术语{}成功"
+msgstr "Begriff {} erfolgreich"
+
+msgid "删除成功"
+msgstr "Erfolgreich gelöscht"
+
+msgid "术语 “{}” 已删除"
+msgstr "Begriff „{}“ wurde gelöscht"
+
+msgid "提示"
+msgstr "Hinweis"
+
+msgid "术语表为空，无需清空"
+msgstr "Glossar ist leer; Leeren nicht erforderlich"
+
+msgid "确认清空"
+msgstr "Leeren bestätigen"
+
+msgid "确定要清空所有术语吗？此操作不可恢复。"
+msgstr "Alle Begriffe wirklich leeren? Dieser Vorgang kann nicht rückgängig gemacht werden."
+
+msgid "清空成功"
+msgstr "Leeren erfolgreich"
+
+msgid "已清空 {} 个术语"
+msgstr "{} Begriffe geleert"
+
+msgid "启动"
+msgstr "Starten"
+
+msgid "获取并打印所有配置"
+msgstr "Alle Konfigurationen abrufen und ausgeben"
+
+msgid "应用信息"
+msgstr "App-Informationen"
+
+msgid "版本"
+msgstr "Version"
+
+msgid "作者"
+msgstr "Autor"
+
+msgid "邮箱"
+msgstr "E-Mail"
+
+msgid "相关链接"
+msgstr "Relevante Links"
+
+msgid "许可证"
+msgstr "Lizenz"
+
+msgid "发现新版本"
+msgstr "Neue Version gefunden"
+
+msgid "创建更新对话框时出错: {}"
+msgstr "Fehler beim Erstellen des Update-Dialogs: {}"
+
+msgid "下载更新"
+msgstr "Update herunterladen"
+
+msgid "暂不更新"
+msgstr "Später"
+
+msgid "版本信息"
+msgstr "Versionsinformationen"
+
+msgid "当前版本："
+msgstr "Aktuelle Version:"
+
+msgid "最新版本："
+msgstr "Neueste Version:"
+
+msgid "未知"
+msgstr "Unbekannt"
+
+msgid "发布时间："
+msgstr "Veröffentlichungsdatum:"
+
+msgid "发布者："
+msgstr "Veröffentlicher:"
+
+msgid "版本类型："
+msgstr "Versionstyp:"
+
+msgid "预发布版本"
+msgstr "Vorabveröffentlichung"
+
+msgid "更新说明"
+msgstr "Versionshinweise"
+
+msgid "暂无更新说明"
+msgstr "Keine Versionshinweise verfügbar"
+
+msgid "在 GitHub 上查看完整说明"
+msgstr "Vollständige Hinweise auf GitHub anzeigen"
+
+msgid "正在下载更新"
+msgstr "Update wird heruntergeladen"
+
+msgid "取消"
+msgstr "Abbrechen"
+
+msgid "正在下载版本 {}..."
+msgstr "Version {} wird heruntergeladen..."
+
+msgid "下载进度："
+msgstr "Fortschritt:"
+
+msgid "下载速度："
+msgstr "Geschwindigkeit:"
+
+msgid "剩余时间："
+msgstr "Verbleibende Zeit:"
+
+msgid "计算中..."
+msgstr "Wird berechnet..."
+
+msgid "下载方式："
+msgstr "Download-Methode:"
+
+msgid "检测中..."
+msgstr "Wird ermittelt..."
+
+msgid "{} 线程下载"
+msgstr "{}-Thread-Download"
+
+msgid "单线程下载"
+msgstr "Einzel-Thread-Download"
+
+msgid "{} 秒"
+msgstr "{} Sekunden"
+
+msgid "{} 分 {} 秒"
+msgstr "{} Min {} Sek"
+
+msgid "{} 分钟"
+msgstr "{} Minuten"
+
+msgid "{} 小时 {} 分"
+msgstr "{} Std {} Min"
+
+msgid "{} 小时"
+msgstr "{} Stunden"
+
+msgid "完成"
+msgstr "Fertig"
+
+msgid "正在取消..."
+msgstr "Wird abgebrochen..."
+
+msgid "错误"
+msgstr "Fehler"
+
+msgid "关闭"
+msgstr "Schließen"
+
+msgid "设置"
+msgstr "Einstellungen"
+
+msgid "语言设置"
+msgstr "Spracheinstellungen"
+
+msgid "界面语言："
+msgstr "Oberflächensprache:"
+
+msgid "保存"
+msgstr "Speichern"
+
+msgid "* 语言更改将在重启后生效"
+msgstr "* Sprachänderungen werden nach einem Neustart wirksam"
+
+msgid "更新设置"
+msgstr "Update-Einstellungen"
+
+msgid "自动检查："
+msgstr "Automatische Prüfung:"
+
+msgid "启动时"
+msgstr "Beim Start"
+
+msgid "每天"
+msgstr "Täglich"
+
+msgid "每周"
+msgstr "Wöchentlich"
+
+msgid "每月"
+msgstr "Monatlich"
+
+msgid "从不"
+msgstr "Nie"
+
+msgid "预发布版本："
+msgstr "Vorabversionen:"
+
+msgid "包含预发布版本"
+msgstr "Vorabversionen einschließen"
+
+msgid "手动检查："
+msgstr "Manuelle Prüfung:"
+
+msgid "检查更新"
+msgstr "Nach Updates suchen"
+
+msgid "设置已保存"
+msgstr "Einstellungen gespeichert"
+
+msgid "界面语言已设置为 {}，重启后生效。"
+msgstr "Oberflächensprache auf {} gesetzt. Wirksam nach Neustart."
+
+msgid "更新器未初始化"
+msgstr "Updater nicht initialisiert"
+
+msgid "检查更新失败"
+msgstr "Fehler bei der Update-Prüfung"
+
+msgid "错误: {}"
+msgstr "Fehler: {}"
+
+msgid "未知版本"
+msgstr "Unbekannte Version"
+
+msgid ""
+"最新版本: {}\n"
+"当前版本: v{}\n"
+"\n"
+"是否在浏览器中查看？"
+msgstr ""
+"Neueste Version: {}\n"
+"Aktuelle Version: v{}\n"
+"\n"
+"Im Browser anzeigen?"
+
+msgid "您是最新的"
+msgstr "Bereits auf dem neuesten Stand"
+
+msgid "当前版本 v{} 已是最新版本"
+msgstr "Aktuelle Version v{} ist bereits die neueste"
+
+msgid "下载完成"
+msgstr "Download abgeschlossen"
+
+msgid ""
+"更新文件已下载到:\n"
+"{}\n"
+"\n"
+"请手动安装更新。"
+msgstr ""
+"Die Update-Datei wurde heruntergeladen nach:\n"
+"{}\n"
+"\n"
+"Bitte installieren Sie das Update manuell."
+
+msgid "下载已取消"
+msgstr "Download abgebrochen"
+
+msgid "更新下载已取消"
+msgstr "Update-Download wurde abgebrochen"
+
+msgid "消息捕获"
+msgstr "Nachrichtenerfassung"
+
+msgid "翻译服务"
+msgstr "Übersetzungsdienst"
+
+msgid "发送消息"
+msgstr "Nachricht senden"
+
+msgid "术语表"
+msgstr "Glossar"
+
+msgid "关于"
+msgstr "Über"
+
+msgid "语言加载错误"
+msgstr "Fehler beim Laden der Sprache"
+
+msgid "获取支持语言失败 ({service_id}): {error_msg}"
+msgstr "Abrufen der unterstützten Sprachen fehlgeschlagen ({service_id}): {error_msg}"
