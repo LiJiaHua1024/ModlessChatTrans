@@ -37,18 +37,23 @@ from qfluentwidgets import (
     HyperlinkLabel, ElevatedCardWidget, TitleLabel, SimpleCardWidget,
     IconWidget, TabBar, TabCloseButtonDisplayMode, MessageBoxBase,
     ScrollArea, PrimaryPushButton, TransparentPushButton, TextEdit,
-    ProgressBar
+    ProgressBar, ToolTipFilter, ToolTipPosition
 )
 from qfluentwidgets import FluentIcon as FIF
 
 from modless_chat_trans.file_utils import get_path
-from modless_chat_trans.i18n import supported_languages
+from modless_chat_trans.i18n import supported_languages, _
 from modless_chat_trans.logger import logger
 from modless_chat_trans.translator import (
-    get_supported_languages,
+    service_supported_languages,
     TRADITIONAL_SERVICES,
     LLM_PROVIDERS
 )
+
+
+def set_tool_tip(widget, tip, duration=400, position=ToolTipPosition.TOP_LEFT):
+    widget.setToolTip(tip)
+    widget.installEventFilter(ToolTipFilter(widget, showDelay=duration, position=position))
 
 
 @dataclass
@@ -114,7 +119,7 @@ class DownloadWorker(QObject):
             elif self.is_cancelled:
                 self.download_finished.emit("")
             else:
-                self.download_error.emit("下载失败")
+                self.download_error.emit(_("下载失败"))
 
         except Exception as e:
             self.download_error.emit(str(e))
@@ -131,7 +136,7 @@ class LanguageLoaderThread(QThread):
 
     def run(self):
         try:
-            langs = get_supported_languages(self.service_name)
+            langs = service_supported_languages[self.service_name]
             self.languages_loaded.emit(langs)
         except Exception as e:
             self.error_occurred.emit(str(e))
@@ -153,7 +158,7 @@ class MessageCaptureInterface(QFrame):
         self.main_layout.setSpacing(20)
 
         # 标题
-        title = SubtitleLabel('消息捕获设置', self)
+        title = SubtitleLabel(_('消息捕获设置'), self)
         setFont(title, 24)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.main_layout.addWidget(title)
@@ -164,9 +169,9 @@ class MessageCaptureInterface(QFrame):
         self.grid_layout.setColumnStretch(1, 1)
 
         # MC 日志位置
-        log_label = BodyLabel('MC日志位置:', self)
+        log_label = BodyLabel(_('Minecraft 日志位置：'), self)
         self.log_location_edit = LineEdit(self)
-        self.log_location_edit.setPlaceholderText("请选择MC日志文件夹路径")
+        self.log_location_edit.setPlaceholderText(_("请选择Minecraft日志文件夹路径"))
         self.log_location_edit.setClearButtonEnabled(True)
         file_action = Action(FluentIcon.FOLDER, "", triggered=self.select_log_folder)
         self.log_location_edit.addAction(file_action, LineEdit.ActionPosition.TrailingPosition)
@@ -174,8 +179,8 @@ class MessageCaptureInterface(QFrame):
         self.grid_layout.addWidget(self.log_location_edit, 0, 1)
 
         # 源/目标语言标签
-        self.src_label = BodyLabel('源语言:', self)
-        self.tgt_label = BodyLabel('目标语言:', self)
+        self.src_label = BodyLabel(_('源语言：'), self)
+        self.tgt_label = BodyLabel(_('目标语言：'), self)
         self.grid_layout.addWidget(self.src_label, 1, 0)
         self.grid_layout.addWidget(self.tgt_label, 2, 0)
 
@@ -183,15 +188,19 @@ class MessageCaptureInterface(QFrame):
         self.create_all_language_widgets()
 
         # 日志编码
-        log_encoding_label = BodyLabel('日志编码:', self)
+        log_encoding_label = BodyLabel(_('日志编码：'), self)
+        set_tool_tip(log_encoding_label, _("建议选择自动检测（auto），如果无效可以尝试手动指定GBK等编码"))
         self.log_encoding_combo = EditableComboBox(self)
-        self.log_encoding_combo.addItems(['Auto', 'UTF-8', 'GBK', 'GB2312', 'GB18030', 'ISO-8859-1'])
-        self.log_encoding_combo.setCurrentText('Auto')
+        self.log_encoding_combo.addItems(['auto', 'UTF-8', 'GBK', 'GB2312', 'GB18030', 'ISO-8859-1'])
+        self.log_encoding_combo.setCurrentText('auto')
 
         # 监控模式
-        monitor_mode_label = BodyLabel('监控模式:', self)
-        self.efficient_mode_radio = RadioButton('高效模式', self)
-        self.compatible_mode_radio = RadioButton('兼容模式', self)
+        monitor_mode_label = BodyLabel(_('监控模式：'), self)
+        set_tool_tip(monitor_mode_label, _("建议优先尝试高效模式，若无法正常获取消息，再切换至兼容模式"))
+        self.efficient_mode_radio = RadioButton(_('高效模式'), self)
+        set_tool_tip(self.efficient_mode_radio, _("低版本 Minecraft 推荐使用"))
+        self.compatible_mode_radio = RadioButton(_('兼容模式'), self)
+        set_tool_tip(self.compatible_mode_radio, _("高版本 Minecraft 使用"))
         self.efficient_mode_radio.setChecked(True)
 
         self.monitor_mode_group = QButtonGroup(self)
@@ -204,8 +213,12 @@ class MessageCaptureInterface(QFrame):
         mode_layout.addStretch()
 
         # 翻译设置
-        self.translate_non_player_check = CheckBox('翻译非玩家消息（服务器消息）', self)
-        self.replace_garbled_check = CheckBox('替换乱码字符', self)
+        self.translate_non_player_check = CheckBox(_('过滤服务器消息'), self)
+        set_tool_tip(self.translate_non_player_check, _("不翻译不带玩家名称的服务器消息（系统消息）"))
+
+        self.replace_garbled_check = CheckBox(_('替换乱码字符'), self)
+        set_tool_tip(self.replace_garbled_check,
+                     "将乱码字符（\\ufffd\\ufffd）替换为用于Minecraft格式化代码的分节符\u00A7（\\u00A7）")
 
         self.grid_layout.addWidget(log_encoding_label, 3, 0)
         self.grid_layout.addWidget(self.log_encoding_combo, 3, 1)
@@ -221,14 +234,14 @@ class MessageCaptureInterface(QFrame):
     def create_all_language_widgets(self):
         # LLM 模式用的自由输入
         self.src_lang_edit = LineEdit(self)
-        self.src_lang_edit.setPlaceholderText("请输入源语言代码，如: en")
+        self.src_lang_edit.setPlaceholderText(_("请输入源语言（格式不限，AI可智能识别）"))
         self.src_lang_edit.setClearButtonEnabled(True)
         src_completer = QCompleter([], self.src_lang_edit)
         src_completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.src_lang_edit.setCompleter(src_completer)
 
         self.tgt_lang_edit = LineEdit(self)
-        self.tgt_lang_edit.setPlaceholderText("请输入目标语言代码，如: zh")
+        self.tgt_lang_edit.setPlaceholderText(_("请输入目标语言（格式不限，AI可智能识别）"))
         self.tgt_lang_edit.setClearButtonEnabled(True)
         tgt_completer = QCompleter([], self.tgt_lang_edit)
         tgt_completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
@@ -236,11 +249,11 @@ class MessageCaptureInterface(QFrame):
 
         # 传统翻译服务用的下拉
         self.src_lang_combo = ComboBox(self)
-        self.src_lang_combo.setPlaceholderText("请选择源语言")
+        self.src_lang_combo.setPlaceholderText(_("请选择源语言"))
         self.src_lang_combo.setCurrentIndex(-1)
 
         self.tgt_lang_combo = ComboBox(self)
-        self.tgt_lang_combo.setPlaceholderText("请选择目标语言")
+        self.tgt_lang_combo.setPlaceholderText(_("请选择目标语言"))
         self.tgt_lang_combo.setCurrentIndex(-1)
 
         # 添加到布局（先隐藏）
@@ -294,7 +307,7 @@ class TranslationServiceInterface(QFrame):
         self.main_layout.setSpacing(20)
 
         # 标题
-        title = SubtitleLabel('翻译服务设置', self)
+        title = SubtitleLabel(_('翻译服务设置'), self)
         setFont(title, 24)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.main_layout.addWidget(title)
@@ -335,7 +348,7 @@ class TranslationServiceInterface(QFrame):
         # 添加第一个标签
         self.tab_bar.addTab(
             routeKey="playerService",
-            text="玩家消息翻译服务",
+            text=_("玩家消息翻译服务"),
             onClick=lambda: self.switch_tab(0)
         )
 
@@ -355,7 +368,7 @@ class TranslationServiceInterface(QFrame):
         self.main_layout.addStretch()
 
         # 添加独立设置复选框到底部
-        self.independent_service_check = CheckBox('独立设置玩家消息和发送消息服务', self)
+        self.independent_service_check = CheckBox(_('独立设置消息发送翻译服务'), self)
         self.independent_service_check.toggled.connect(self.on_independent_service_toggled)
 
         # 创建底部容器
@@ -391,12 +404,12 @@ class TranslationServiceInterface(QFrame):
         # 添加服务类型选项
         segmented_widget.addItem(
             routeKey=f"llm_service_{service_id}",
-            text="LLMs",
+            text=_("                AI翻译                "),
             onClick=lambda: self.switch_service_type(stacked_widget, 0, service_id)
         )
         segmented_widget.addItem(
             routeKey=f"traditional_service_{service_id}",
-            text="Traditional Translation",
+            text=_("                传统翻译                "),
             onClick=lambda: self.switch_service_type(stacked_widget, 1, service_id)
         )
 
@@ -429,7 +442,7 @@ class TranslationServiceInterface(QFrame):
             if self.tab_bar.count() == 1:
                 self.tab_bar.addTab(
                     routeKey="sendService",
-                    text="发送消息翻译服务",
+                    text=_("消息发送翻译服务"),
                     onClick=lambda: self.switch_tab(1)
                 )
 
@@ -471,10 +484,10 @@ class TranslationServiceInterface(QFrame):
         layout.setVerticalSpacing(15)
 
         # 服务选择
-        service_label = BodyLabel('选择服务:', widget)
+        service_label = BodyLabel(_('选择服务：'), widget)
         llm_service_combo = ComboBox(widget)
         llm_service_combo.addItems(LLM_PROVIDERS)
-        llm_service_combo.setPlaceholderText("请选择服务")
+        llm_service_combo.setPlaceholderText(_("请选择翻译服务"))
         llm_service_combo.setCurrentIndex(-1)
         llm_service_combo.setFixedWidth(200)
 
@@ -482,28 +495,28 @@ class TranslationServiceInterface(QFrame):
         layout.addWidget(llm_service_combo, 0, 1)
 
         # API Key输入
-        api_key_label = BodyLabel('API Key:', widget)
+        api_key_label = BodyLabel(_('API Key：'), widget)
         llm_api_key_edit = LineEdit(widget)
-        llm_api_key_edit.setPlaceholderText("请输入您的API Key")
+        llm_api_key_edit.setPlaceholderText(_("请输入您的API Key"))
         llm_api_key_edit.setFixedWidth(300)
 
         layout.addWidget(api_key_label, 1, 0, Qt.AlignmentFlag.AlignRight)
         layout.addWidget(llm_api_key_edit, 1, 1)
 
         # API URL输入
-        llm_api_url_label = BodyLabel('API URL:', widget)
+        llm_api_url_label = BodyLabel(_('API地址：'), widget)
         llm_api_url_edit = EditableComboBox(widget)
-        llm_api_url_edit.addItems(["默认"])
-        llm_api_url_edit.setCurrentText("默认")
+        llm_api_url_edit.addItems([_("默认端点")])
+        llm_api_url_edit.setCurrentText(_("默认端点"))
         llm_api_url_edit.setFixedWidth(300)
 
         layout.addWidget(llm_api_url_label, 2, 0, Qt.AlignmentFlag.AlignRight)
         layout.addWidget(llm_api_url_edit, 2, 1)
 
         # 模型代号输入
-        model_label = BodyLabel('模型代号:', widget)
+        model_label = BodyLabel(_('模型代号：'), widget)
         llm_model_edit = LineEdit(widget)
-        llm_model_edit.setPlaceholderText("请输入模型代号，如: gpt-3.5-turbo")
+        llm_model_edit.setPlaceholderText(_("请输入模型代号，如：gpt-3.5-turbo"))
         llm_model_edit.setClearButtonEnabled(True)
         llm_model_edit.setFixedWidth(300)
 
@@ -533,7 +546,7 @@ class TranslationServiceInterface(QFrame):
         layout.setVerticalSpacing(15)
 
         # 服务选择
-        service_label = BodyLabel('选择服务:', widget)
+        service_label = BodyLabel(_('选择服务：'), widget)
 
         # 创建一个水平布局来容纳ComboBox和加载动画
         service_container = QFrame(widget)
@@ -543,7 +556,7 @@ class TranslationServiceInterface(QFrame):
 
         traditional_service_combo = ComboBox(service_container)
         traditional_service_combo.addItems(TRADITIONAL_SERVICES)
-        traditional_service_combo.setPlaceholderText("请选择服务")
+        traditional_service_combo.setPlaceholderText(_("请选择翻译服务"))
         traditional_service_combo.setCurrentIndex(-1)
         traditional_service_combo.setFixedWidth(200)
 
@@ -561,10 +574,10 @@ class TranslationServiceInterface(QFrame):
         layout.addWidget(service_container, 0, 1)
 
         # API Key标签和输入
-        traditional_api_key_label = BodyLabel('API Key:', widget)
+        traditional_api_key_label = BodyLabel(_('API Key：'), widget)
         traditional_api_key_edit = EditableComboBox(widget)
-        traditional_api_key_edit.addItems(["不使用"])
-        traditional_api_key_edit.setCurrentText("不使用")
+        traditional_api_key_edit.addItems([_("不使用")])
+        traditional_api_key_edit.setCurrentText(_("不使用"))
         traditional_api_key_edit.setFixedWidth(300)
 
         layout.addWidget(traditional_api_key_label, 1, 0, Qt.AlignmentFlag.AlignRight)
@@ -731,7 +744,7 @@ class MessagePresentationInterface(QFrame):
         self.main_layout.setSpacing(20)
 
         # 标题
-        title = SubtitleLabel('翻译结果呈现', self)
+        title = SubtitleLabel(_('翻译结果显示'), self)
         setFont(title, 24)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.main_layout.addWidget(title)
@@ -741,7 +754,7 @@ class MessagePresentationInterface(QFrame):
         self.grid_layout.setSpacing(15)
 
         # 网页端口
-        self.web_port_label = BodyLabel('网页端口:', self)
+        self.web_port_label = BodyLabel(_('网页端口：'), self)
         self.web_port_spin = SpinBox(self)
         self.web_port_spin.setRange(1024, 65535)
         self.web_port_spin.setValue(8080)
@@ -769,7 +782,7 @@ class MessageSendInterface(QFrame):
         self.main_layout.setSpacing(20)
 
         # 标题
-        title = SubtitleLabel('消息发送设置', self)
+        title = SubtitleLabel(_('消息发送设置'), self)
         setFont(title, 24)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.main_layout.addWidget(title)
@@ -780,12 +793,13 @@ class MessageSendInterface(QFrame):
         self.grid_layout.setColumnStretch(1, 1)
 
         # 是否监控剪切板
-        self.clipboard_monitor_check = CheckBox('监控剪切板', self)
+        self.clipboard_monitor_check = CheckBox(_('监控剪切板'), self)
+        set_tool_tip(self.clipboard_monitor_check, _("从剪切板获取要发送的消息"))
         self.grid_layout.addWidget(self.clipboard_monitor_check, 0, 0, 1, 2)
 
         # 源/目标语言标签
-        src_label = BodyLabel('源语言:', self)
-        tgt_label = BodyLabel('目标语言:', self)
+        src_label = BodyLabel(_('源语言：'), self)
+        tgt_label = BodyLabel(_('目标语言：'), self)
         self.grid_layout.addWidget(src_label, 1, 0)
         self.grid_layout.addWidget(tgt_label, 2, 0)
 
@@ -799,14 +813,14 @@ class MessageSendInterface(QFrame):
     def create_all_language_widgets(self):
         # LLM 模式
         self.src_lang_edit = LineEdit(self)
-        self.src_lang_edit.setPlaceholderText("请输入源语言代码，如: en")
+        self.src_lang_edit.setPlaceholderText(_("请输入源语言（格式不限，AI可智能识别）"))
         self.src_lang_edit.setClearButtonEnabled(True)
         src_completer = QCompleter([], self.src_lang_edit)
         src_completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.src_lang_edit.setCompleter(src_completer)
 
         self.tgt_lang_edit = LineEdit(self)
-        self.tgt_lang_edit.setPlaceholderText("请输入目标语言代码，如: zh")
+        self.tgt_lang_edit.setPlaceholderText(_("请输入目标语言（格式不限，AI可智能识别）"))
         self.tgt_lang_edit.setClearButtonEnabled(True)
         tgt_completer = QCompleter([], self.tgt_lang_edit)
         tgt_completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
@@ -814,11 +828,11 @@ class MessageSendInterface(QFrame):
 
         # 传统翻译服务
         self.src_lang_combo = ComboBox(self)
-        self.src_lang_combo.setPlaceholderText("请选择源语言")
+        self.src_lang_combo.setPlaceholderText(_("请选择源语言"))
         self.src_lang_combo.setCurrentIndex(-1)
 
         self.tgt_lang_combo = ComboBox(self)
-        self.tgt_lang_combo.setPlaceholderText("请选择目标语言")
+        self.tgt_lang_combo.setPlaceholderText(_("请选择目标语言"))
         self.tgt_lang_combo.setCurrentIndex(-1)
 
         # 添加到布局（先隐藏）
@@ -868,7 +882,7 @@ class GlossaryInterface(QFrame):
         self.main_layout.setSpacing(20)
 
         # 标题
-        title = SubtitleLabel('术语表管理', self)
+        title = SubtitleLabel(_('术语表管理'), self)
         setFont(title, 24)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.main_layout.addWidget(title, 0, 0, 1, 4)
@@ -879,30 +893,30 @@ class GlossaryInterface(QFrame):
         input_layout.setSpacing(10)
 
         # 源术语输入
-        src_label = BodyLabel('源术语:', input_frame)
+        src_label = BodyLabel(_('源术语：'), input_frame)
         self.src_edit = LineEdit(input_frame)
-        self.src_edit.setPlaceholderText("请输入源术语")
+        self.src_edit.setPlaceholderText(_("请输入源术语"))
         self.src_edit.setClearButtonEnabled(True)
 
         input_layout.addWidget(src_label, 0, 0)
         input_layout.addWidget(self.src_edit, 0, 1)
 
         # 目标术语输入
-        tgt_label = BodyLabel('目标术语:', input_frame)
+        tgt_label = BodyLabel(_('目标术语：'), input_frame)
         self.tgt_edit = LineEdit(input_frame)
-        self.tgt_edit.setPlaceholderText("请输入目标术语")
+        self.tgt_edit.setPlaceholderText(_("请输入目标术语"))
         self.tgt_edit.setClearButtonEnabled(True)
 
         input_layout.addWidget(tgt_label, 1, 0)
         input_layout.addWidget(self.tgt_edit, 1, 1)
 
         # 操作按钮
-        self.add_update_button = PushButton('添加/更新术语', input_frame)
+        self.add_update_button = PushButton(_('添加/更新术语'), input_frame)
         self.add_update_button.clicked.connect(self.add_update_term)
         input_layout.addWidget(self.add_update_button, 0, 2, 1, 1)
 
         # 清空输入按钮移动到添加/更新术语下方
-        self.clear_button = PushButton('清空输入', input_frame)
+        self.clear_button = PushButton(_('清空输入'), input_frame)
         self.clear_button.clicked.connect(self.clear_inputs)
         input_layout.addWidget(self.clear_button, 1, 2, 1, 1)
 
@@ -915,7 +929,7 @@ class GlossaryInterface(QFrame):
         self.table.setBorderRadius(8)
         self.table.setWordWrap(False)
         self.table.setColumnCount(2)
-        self.table.setHorizontalHeaderLabels(['源术语', '目标术语'])
+        self.table.setHorizontalHeaderLabels([_('源术语'), _('目标术语')])
         self.table.verticalHeader().hide()
         self.table.setSelectRightClickedRow(True)
 
@@ -929,11 +943,11 @@ class GlossaryInterface(QFrame):
         button_layout = QHBoxLayout(button_frame)
         button_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.delete_button = PushButton('删除选中术语', button_frame)
+        self.delete_button = PushButton(_('删除选中术语'), button_frame)
         self.delete_button.clicked.connect(self.delete_selected_term)
         self.delete_button.setEnabled(False)
 
-        self.clear_all_button = PushButton('清空术语', button_frame)
+        self.clear_all_button = PushButton(_('清空术语'), button_frame)
         self.clear_all_button.clicked.connect(self.clear_all_terms)
 
         button_layout.addWidget(self.delete_button)
@@ -1051,8 +1065,8 @@ class GlossaryInterface(QFrame):
 
         if not src_text:
             InfoBar.warning(
-                title='输入错误',
-                content='源术语不能为空',
+                title=_('输入错误'),
+                content=_('源术语不能为空'),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
@@ -1071,8 +1085,8 @@ class GlossaryInterface(QFrame):
         # 如果源术语已存在且不是当前编辑的术语，询问是否覆盖
         if src_text in self.glossary_rules and src_text != old_src:
             w = MessageBox(
-                "确认覆盖",
-                f'源术语 "{src_text}" 已存在，是否覆盖？',
+                _("确认覆盖"),
+                _('源术语 “{}” 已存在，是否覆盖？').format(src_text),
                 self.window()
             )
             if not w.exec():
@@ -1085,12 +1099,12 @@ class GlossaryInterface(QFrame):
         # 添加或更新术语
         self.glossary_rules[src_text] = tgt_text
 
-        action = "更新" if old_src else "添加"
-        logger.info(f"术语{action}: '{src_text}' -> '{tgt_text}'")
+        action = _("更新") if old_src else _("添加")
+        logger.info(f"Term {action}: '{src_text}' -> '{tgt_text}'")
 
         # 显示成功信息
         InfoBar.success(
-            title=f'术语{action}成功',
+            title=_('术语{}成功').format(action),
             content=f'"{src_text}" -> "{tgt_text}"',
             orient=Qt.Orientation.Horizontal,
             isClosable=True,
@@ -1117,11 +1131,11 @@ class GlossaryInterface(QFrame):
         # 直接删除，不需要确认
         if src_text in self.glossary_rules:
             del self.glossary_rules[src_text]
-            logger.info(f"术语删除: {src_text}")
+            logger.info(f"Term deleted: {src_text}")
 
             InfoBar.success(
-                title='删除成功',
-                content=f'术语 "{src_text}" 已删除',
+                title=_('删除成功'),
+                content=_('术语 “{}” 已删除').format(src_text),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
@@ -1144,8 +1158,8 @@ class GlossaryInterface(QFrame):
         """清空所有术语"""
         if not self.glossary_rules:
             InfoBar.info(
-                title='提示',
-                content='术语表为空，无需清空',
+                title=_('提示'),
+                content=_('术语表为空，无需清空'),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
@@ -1155,8 +1169,8 @@ class GlossaryInterface(QFrame):
             return
 
         w = MessageBox(
-            "确认清空",
-            "确定要清空所有术语吗？此操作不可恢复。",
+            _("确认清空"),
+            _("确定要清空所有术语吗？此操作不可恢复。"),
             self.window()  # 设置父级为主窗口
         )
 
@@ -1164,11 +1178,11 @@ class GlossaryInterface(QFrame):
             # 确认清空
             count = len(self.glossary_rules)
             self.glossary_rules.clear()
-            logger.info(f"术语表已清空，共删除 {count} 个术语")
+            logger.info(f"Glossary cleared, deleted {count} terms")
 
             InfoBar.success(
-                title='清空成功',
-                content=f'已清空 {count} 个术语',
+                title=_('清空成功'),
+                content=_('已清空 {} 个术语').format(count),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
@@ -1211,13 +1225,13 @@ class StartInterface(QFrame):
         self.main_layout.setSpacing(20)
 
         # 标题
-        title = SubtitleLabel('启动', self)
+        title = SubtitleLabel(_('启动'), self)
         setFont(title, 24)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.main_layout.addWidget(title)
 
         # 启动按钮
-        self.start_button = PushButton('获取并打印所有配置', self)
+        self.start_button = PushButton(_('获取并打印所有配置'), self)
         self.start_button.clicked.connect(self.print_all_configs)
         self.main_layout.addWidget(self.start_button, 0, Qt.AlignmentFlag.AlignCenter)
 
@@ -1425,16 +1439,16 @@ class AboutInterface(QFrame):
         layout.setSpacing(16)
 
         # 卡片标题
-        card_title = SubtitleLabel('应用信息', card)
+        card_title = SubtitleLabel(_('应用信息'), card)
         setFont(card_title, 16, weight=QFont.Weight.DemiBold)
         layout.addWidget(card_title)
 
         # 信息项目
         # noinspection PyUnresolvedReferences
         info_items = [
-            (FluentIcon.TAG, "版本", self.parent().info.version),
-            (FluentIcon.PEOPLE, "作者", self.parent().info.author),
-            (FluentIcon.MAIL, "邮箱", self.parent().info.email)
+            (FluentIcon.TAG, _("版本"), self.parent().info.version),
+            (FluentIcon.PEOPLE, _("作者"), self.parent().info.author),
+            (FluentIcon.MAIL, _("邮箱"), self.parent().info.email)
         ]
 
         for icon, label_text, value in info_items:
@@ -1454,7 +1468,7 @@ class AboutInterface(QFrame):
         layout.addWidget(icon_widget)
 
         # 标签
-        label = BodyLabel(f"{label_text}:", parent)
+        label = BodyLabel(label_text, parent)
         label.setFixedWidth(60)
         setFont(label, 12, weight=QFont.Weight.DemiBold)
         layout.addWidget(label)
@@ -1476,7 +1490,7 @@ class AboutInterface(QFrame):
         layout.setSpacing(16)
 
         # 卡片标题
-        card_title = SubtitleLabel('相关链接', card)
+        card_title = SubtitleLabel(_('相关链接'), card)
         setFont(card_title, 16, weight=QFont.Weight.DemiBold)
         layout.addWidget(card_title)
 
@@ -1488,7 +1502,7 @@ class AboutInterface(QFrame):
         github_icon.setFixedSize(20, 20)
         github_layout.addWidget(github_icon)
 
-        github_label = BodyLabel("GitHub:", card)
+        github_label = BodyLabel("GitHub", card)
         github_label.setFixedWidth(60)
         setFont(github_label, 12, weight=QFont.Weight.DemiBold)
         github_layout.addWidget(github_label)
@@ -1515,7 +1529,7 @@ class AboutInterface(QFrame):
         layout.setSpacing(12)
 
         # 卡片标题
-        card_title = SubtitleLabel('许可证', card)
+        card_title = SubtitleLabel(_('许可证'), card)
         setFont(card_title, 16, weight=QFont.Weight.DemiBold)
         layout.addWidget(card_title)
 
@@ -1550,7 +1564,7 @@ class UpdateDialog(MessageBoxBase):
         self.current_version = current_version
 
         # 设置标题
-        self.titleLabel = SubtitleLabel('发现新版本', self)
+        self.titleLabel = SubtitleLabel(_('发现新版本'), self)
         self.viewLayout.addWidget(self.titleLabel)
 
         try:
@@ -1576,11 +1590,11 @@ class UpdateDialog(MessageBoxBase):
         except Exception as e:
             logger.error(f"Error creating update dialog content: {e}")
             # 如果创建内容失败，显示简单的错误信息
-            error_label = BodyLabel(f'创建更新对话框时出错: {str(e)}', self)
+            error_label = BodyLabel(_('创建更新对话框时出错: {}').format(str(e)), self)
             self.viewLayout.addWidget(error_label)
 
-        self.yesButton.setText("下载更新")
-        self.cancelButton.setText("暂不更新")
+        self.yesButton.setText(_("下载更新"))
+        self.cancelButton.setText(_("暂不更新"))
 
         # 连接按钮信号
         self.yesButton.clicked.connect(self.accept)
@@ -1594,7 +1608,7 @@ class UpdateDialog(MessageBoxBase):
         layout.setSpacing(8)
 
         # 标题
-        title = BodyLabel('版本信息', card)
+        title = BodyLabel(_('版本信息'), card)
         setFont(title, 14, weight=QFont.Weight.DemiBold)
         layout.addWidget(title)
 
@@ -1603,20 +1617,20 @@ class UpdateDialog(MessageBoxBase):
         version_layout.setSpacing(12)
 
         # 当前版本
-        current_label = CaptionLabel('当前版本:', card)
+        current_label = CaptionLabel(_('当前版本：'), card)
         current_version = BodyLabel(f'v{self.current_version}', card)
         current_version.setStyleSheet("color: #666666;")
 
         # 最新版本
-        latest_label = CaptionLabel('最新版本:', card)
-        latest_version_text = self.latest_release.get('tag_name', '未知')
+        latest_label = CaptionLabel(_('最新版本：'), card)
+        latest_version_text = self.latest_release.get('tag_name', _('未知'))
         latest_version = BodyLabel(latest_version_text, card)
         latest_version.setStyleSheet("color: #0078d4; font-weight: bold;")
 
         # 发布时间
-        date_label = CaptionLabel('发布时间:', card)
-        published_at = self.latest_release.get('published_at', '未知')
-        if published_at != '未知':
+        date_label = CaptionLabel(_('发布时间：'), card)
+        published_at = self.latest_release.get('published_at', _('未知'))
+        if published_at != _('未知'):
             # 格式化日期
             try:
                 dt = datetime.fromisoformat(published_at.replace('Z', '+00:00'))
@@ -1626,9 +1640,9 @@ class UpdateDialog(MessageBoxBase):
         date_value = BodyLabel(published_at, card)
 
         # 发布者 - 安全地获取嵌套字典值
-        author_label = CaptionLabel('发布者:', card)
+        author_label = CaptionLabel(_('发布者：'), card)
         author_data = self.latest_release.get('author', {})
-        author_name = author_data.get('login', '未知') if isinstance(author_data, dict) else '未知'
+        author_name = author_data.get('login', _('未知')) if isinstance(author_data, dict) else _('未知')
         author_value = BodyLabel(author_name, card)
 
         # 添加到布局
@@ -1643,8 +1657,8 @@ class UpdateDialog(MessageBoxBase):
 
         # 预发布标记
         if self.latest_release.get('prerelease', False):
-            prerelease_label = CaptionLabel('版本类型:', card)
-            prerelease_value = BodyLabel('预发布版本', card)
+            prerelease_label = CaptionLabel(_('版本类型：'), card)
+            prerelease_value = BodyLabel(_('预发布版本'), card)
             prerelease_value.setStyleSheet("color: #ff6b6b;")
             version_layout.addWidget(prerelease_label, 4, 0)
             version_layout.addWidget(prerelease_value, 4, 1)
@@ -1662,7 +1676,7 @@ class UpdateDialog(MessageBoxBase):
         layout.setSpacing(8)
 
         # 标题
-        title = BodyLabel('更新说明', card)
+        title = BodyLabel(_('更新说明'), card)
         setFont(title, 14, weight=QFont.Weight.DemiBold)
         layout.addWidget(title)
 
@@ -1672,7 +1686,7 @@ class UpdateDialog(MessageBoxBase):
         self.note_browser.setMinimumHeight(200)
 
         # 获取 Release Note
-        release_body = self.latest_release.get('body', '暂无更新说明')
+        release_body = self.latest_release.get('body', _('暂无更新说明'))
 
         # 尝试将 Markdown 转换为 HTML
         try:
@@ -1740,7 +1754,7 @@ class UpdateDialog(MessageBoxBase):
 
             github_link = HyperlinkLabel(
                 QUrl(html_url),
-                '在 GitHub 上查看完整说明'
+                _('在 GitHub 上查看完整说明')
             )
             link_layout.addWidget(github_link)
 
@@ -1758,19 +1772,19 @@ class DownloadProgressDialog(MessageBoxBase):
         self._is_cancelled = False
         self.worker = None
 
-        self.titleLabel = SubtitleLabel('正在下载更新', self)
+        self.titleLabel = SubtitleLabel(_('正在下载更新'), self)
         self.viewLayout.addWidget(self.titleLabel)
 
         # 隐藏默认的确认按钮
         self.yesButton.hide()
 
         # 设置取消按钮文本
-        self.cancelButton.setText("取消")
+        self.cancelButton.setText(_("取消"))
         self.cancelButton.clicked.connect(self.on_cancel_clicked)
 
         # 版本信息
         version_label = BodyLabel(
-            f'正在下载版本 {release_info.get("tag_name", "未知")}...',
+            _('正在下载版本 {}...').format(release_info.get("tag_name", _("未知"))),
             self
         )
         self.viewLayout.addWidget(version_label)
@@ -1795,26 +1809,26 @@ class DownloadProgressDialog(MessageBoxBase):
         info_layout.addWidget(self.percent_label, 0, 0, 2, 1)
 
         # 下载大小信息
-        size_label = CaptionLabel('下载进度:', info_frame)
+        size_label = CaptionLabel(_('下载进度：'), info_frame)
         self.size_info_label = BodyLabel('0 KiB / 0 KiB', info_frame)
         info_layout.addWidget(size_label, 0, 1, Qt.AlignmentFlag.AlignRight)
         info_layout.addWidget(self.size_info_label, 0, 2, Qt.AlignmentFlag.AlignLeft)
 
         # 下载速度
-        speed_label = CaptionLabel('下载速度:', info_frame)
+        speed_label = CaptionLabel(_('下载速度：'), info_frame)
         self.speed_label = BodyLabel('0 KiB/s', info_frame)
         info_layout.addWidget(speed_label, 1, 1, Qt.AlignmentFlag.AlignRight)
         info_layout.addWidget(self.speed_label, 1, 2, Qt.AlignmentFlag.AlignLeft)
 
         # 剩余时间
-        time_label = CaptionLabel('剩余时间:', info_frame)
-        self.time_label = BodyLabel('计算中...', info_frame)
+        time_label = CaptionLabel(_('剩余时间：'), info_frame)
+        self.time_label = BodyLabel(_('计算中...'), info_frame)
         info_layout.addWidget(time_label, 2, 1, Qt.AlignmentFlag.AlignRight)
         info_layout.addWidget(self.time_label, 2, 2, Qt.AlignmentFlag.AlignLeft)
 
         # 下载线程数
-        thread_label = CaptionLabel('下载方式:', info_frame)
-        self.thread_info_label = BodyLabel('检测中...', info_frame)
+        thread_label = CaptionLabel(_('下载方式：'), info_frame)
+        self.thread_info_label = BodyLabel(_('检测中...'), info_frame)
         info_layout.addWidget(thread_label, 3, 1, Qt.AlignmentFlag.AlignRight)
         info_layout.addWidget(self.thread_info_label, 3, 2, Qt.AlignmentFlag.AlignLeft)
 
@@ -1834,9 +1848,9 @@ class DownloadProgressDialog(MessageBoxBase):
     def update_thread_count(self, count):
         """更新线程数显示"""
         if count > 1:
-            self.thread_info_label.setText(f'{count} 线程下载')
+            self.thread_info_label.setText(_('{} 线程下载').format(count))
         else:
-            self.thread_info_label.setText('单线程下载')
+            self.thread_info_label.setText(_('单线程下载'))
 
     def update_progress(self, downloaded, total, speed):
         """更新下载进度"""
@@ -1885,44 +1899,44 @@ class DownloadProgressDialog(MessageBoxBase):
                 def format_time(seconds):
                     """格式化剩余时间"""
                     if seconds < 60:
-                        return f'{int(seconds)} 秒'
+                        return _('{} 秒').format(int(seconds))
                     elif seconds < 3600:
                         minutes = int(seconds / 60)
                         secs = int(seconds % 60)
                         if secs > 0:
-                            return f'{minutes} 分 {secs} 秒'
+                            return _('{} 分 {} 秒').format(minutes, secs)
                         else:
-                            return f'{minutes} 分钟'
+                            return _('{} 分钟').format(minutes)
                     else:
                         hours = int(seconds / 3600)
                         minutes = int((seconds % 3600) / 60)
                         if minutes > 0:
-                            return f'{hours} 小时 {minutes} 分'
+                            return _('{} 小时 {} 分').format(hours, minutes)
                         else:
-                            return f'{hours} 小时'
+                            return _('{} 小时').format(hours)
 
                 self.time_label.setText(format_time(remaining_seconds))
             elif percent >= 100:
-                self.time_label.setText('完成')
+                self.time_label.setText(_('完成'))
             else:
-                self.time_label.setText('计算中...')
+                self.time_label.setText(_('计算中...'))
 
     def on_cancel_clicked(self):
         """处理取消按钮点击"""
         if not self._is_cancelled:
             self._is_cancelled = True
             self.cancelButton.setEnabled(False)
-            self.cancelButton.setText("正在取消...")
+            self.cancelButton.setText(_("正在取消..."))
             if self.worker:
                 self.worker.cancel()
 
     def set_error(self, error_msg):
         """设置错误状态"""
         self.progress_bar.error()
-        self.titleLabel.setText('下载失败')
-        self.percent_label.setText('错误')
+        self.titleLabel.setText(_('下载失败'))
+        self.percent_label.setText(_('错误'))
         self.size_info_label.setText(error_msg)
-        self.cancelButton.setText("关闭")
+        self.cancelButton.setText(_("关闭"))
         self.cancelButton.setEnabled(True)
 
 
@@ -1945,7 +1959,7 @@ class SettingInterface(QFrame):
         self.main_layout.setSpacing(20)
 
         # 标题
-        title = SubtitleLabel('设置', self)
+        title = SubtitleLabel(_('设置'), self)
         setFont(title, 24)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.main_layout.addWidget(title)
@@ -1975,7 +1989,7 @@ class SettingInterface(QFrame):
         card_layout.setSpacing(12)
 
         # 卡片标题
-        card_title = SubtitleLabel('语言设置', card)
+        card_title = SubtitleLabel(_('语言设置'), card)
         setFont(card_title, 16, weight=QFont.Weight.DemiBold)
         card_layout.addWidget(card_title)
 
@@ -1987,7 +2001,7 @@ class SettingInterface(QFrame):
         content_layout.setVerticalSpacing(12)
 
         # 界面语言
-        lang_label = BodyLabel('界面语言:', content_frame)
+        lang_label = BodyLabel(_('界面语言：'), content_frame)
         self.language_combo = ComboBox(content_frame)
         for lang_name, lang_code in supported_languages:
             self.language_combo.addItem(lang_name, userData=lang_code)
@@ -1998,12 +2012,12 @@ class SettingInterface(QFrame):
         content_layout.addWidget(self.language_combo, 0, 1)
 
         # 应用按钮
-        self.apply_lang_button = PushButton('应用', content_frame)
-        self.apply_lang_button.clicked.connect(self.apply_language_setting)
-        content_layout.addWidget(self.apply_lang_button, 0, 2)
+        self.save_lang_button = PushButton(_('保存'), content_frame)
+        self.save_lang_button.clicked.connect(self.apply_language_setting)
+        content_layout.addWidget(self.save_lang_button, 0, 2)
 
         # 提示信息
-        tip_label = CaptionLabel('* 语言更改将在重启后生效', content_frame)
+        tip_label = CaptionLabel(_('* 语言更改将在重启后生效'), content_frame)
         tip_label.setStyleSheet("color: #888888;")
         content_layout.addWidget(tip_label, 1, 1, 1, 2)
 
@@ -2021,7 +2035,7 @@ class SettingInterface(QFrame):
         card_layout.setSpacing(12)
 
         # 卡片标题
-        card_title = SubtitleLabel('更新设置', card)
+        card_title = SubtitleLabel(_('更新设置'), card)
         setFont(card_title, 16, weight=QFont.Weight.DemiBold)
         card_layout.addWidget(card_title)
 
@@ -2033,9 +2047,9 @@ class SettingInterface(QFrame):
         content_layout.setVerticalSpacing(16)
 
         # 自动检查更新
-        auto_check_label = BodyLabel('自动检查:', content_frame)
+        auto_check_label = BodyLabel(_('自动检查：'), content_frame)
         self.update_frequency_combo = ComboBox(content_frame)
-        self.update_frequency_combo.addItems(['启动时', '每天', '每周', '每月', '从不'])
+        self.update_frequency_combo.addItems([_('启动时'), _('每天'), _('每周'), _('每月'), _('从不')])
         self.update_frequency_combo.setCurrentIndex(0)
         self.update_frequency_combo.setFixedWidth(200)
 
@@ -2043,14 +2057,14 @@ class SettingInterface(QFrame):
         content_layout.addWidget(self.update_frequency_combo, 0, 1)
 
         # 包含预发布版本
-        prerelease_label = BodyLabel('预发布版本:', content_frame)
-        self.include_prerelease_check = CheckBox('包含预发布版本', content_frame)
+        prerelease_label = BodyLabel(_('预发布版本：'), content_frame)
+        self.include_prerelease_check = CheckBox(_('包含预发布版本'), content_frame)
 
         content_layout.addWidget(prerelease_label, 1, 0, Qt.AlignmentFlag.AlignRight)
         content_layout.addWidget(self.include_prerelease_check, 1, 1)
 
         # 手动检查更新
-        check_label = BodyLabel('手动检查:', content_frame)
+        check_label = BodyLabel(_('手动检查：'), content_frame)
 
         # 按钮和加载动画容器
         check_container = QFrame(content_frame)
@@ -2058,7 +2072,7 @@ class SettingInterface(QFrame):
         check_layout.setContentsMargins(0, 0, 0, 0)
         check_layout.setSpacing(8)
 
-        self.check_update_button = PushButton('检查更新', check_container)
+        self.check_update_button = PushButton(_('检查更新'), check_container)
         self.check_update_button.setIcon(FIF.UPDATE)
         self.check_update_button.clicked.connect(self.check_for_updates)
 
@@ -2075,11 +2089,11 @@ class SettingInterface(QFrame):
         content_layout.addWidget(check_container, 2, 1)
 
         # 当前版本信息
-        version_label = BodyLabel('当前版本:', content_frame)
+        version_label = BodyLabel(_('当前版本：'), content_frame)
         current_version_label = BodyLabel(
-            f'v{self.parent_window.updater.current_version if hasattr(self.parent_window, "updater") and self.parent_window.updater else "未知"}',
+            f'v{self.parent_window.updater.current_version if hasattr(self.parent_window, "updater") and self.parent_window.updater else _("未知")}',
             content_frame)
-        current_version_label.setStyleSheet("color: #666666;")
+        # current_version_label.setStyleSheet("color: #666666;")
 
         content_layout.addWidget(version_label, 3, 0, Qt.AlignmentFlag.AlignRight)
         content_layout.addWidget(current_version_label, 3, 1)
@@ -2102,8 +2116,8 @@ class SettingInterface(QFrame):
 
         # 显示成功提示
         InfoBar.success(
-            title='设置已保存',
-            content=f'界面语言已设置为 {current_text}，重启后生效。',
+            title=_('设置已保存'),
+            content=_('界面语言已设置为 {}，重启后生效。').format(current_text),
             orient=Qt.Orientation.Horizontal,
             isClosable=True,
             position=InfoBarPosition.TOP,
@@ -2115,8 +2129,8 @@ class SettingInterface(QFrame):
         """手动检查更新"""
         if not hasattr(self.parent_window, 'updater') or self.updater is None:
             InfoBar.error(
-                title='错误',
-                content='更新器未初始化',
+                title=_('错误'),
+                content=_('更新器未初始化'),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
@@ -2160,8 +2174,8 @@ class SettingInterface(QFrame):
         if hasattr(thread, 'error'):
             # 检查过程出错
             InfoBar.error(
-                title='检查更新失败',
-                content=f'错误: {thread.error}',
+                title=_('检查更新失败'),
+                content=_('错误: {}').format(thread.error),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
@@ -2180,15 +2194,16 @@ class SettingInterface(QFrame):
                 if dialog.exec():
                     self.start_download(thread.latest_release)
                 else:
-                    logger.info("用户选择暂不更新")
+                    logger.info("User chose to skip update")
 
             except Exception as e:
                 logger.error(f"Error showing update dialog: {e}")
                 # 如果详细对话框失败，使用简单的消息框
-                latest_version = thread.latest_release.get("tag_name", "未知版本")
+                latest_version = thread.latest_release.get("tag_name", _("未知版本"))
                 w = MessageBox(
-                    '发现新版本',
-                    f'最新版本: {latest_version}\n当前版本: v{self.updater.current_version}\n\n是否在浏览器中查看？',
+                    _('发现新版本'),
+                    _('最新版本: {}\n当前版本: v{}\n\n是否在浏览器中查看？').format(latest_version,
+                                                                                   self.updater.current_version),
                     self.window()
                 )
 
@@ -2199,8 +2214,8 @@ class SettingInterface(QFrame):
         else:
             # 已是最新版本
             InfoBar.success(
-                title='已是最新版本',
-                content=f'当前版本 v{self.updater.current_version} 已是最新版本',
+                title=_('您是最新的'),
+                content=_('当前版本 v{} 已是最新版本').format(self.updater.current_version),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
@@ -2257,15 +2272,15 @@ class SettingInterface(QFrame):
         if file_path:
             # 下载成功
             MessageBox(
-                '下载完成',
-                f'更新文件已下载到:\n{file_path}\n\n请手动安装更新。',
+                _('下载完成'),
+                _('更新文件已下载到:\n{}\n\n请手动安装更新。').format(file_path),
                 self.window()
             )
         else:
             # 下载被取消
             InfoBar.info(
-                title='下载已取消',
-                content='更新下载已取消',
+                title=_('下载已取消'),
+                content=_('更新下载已取消'),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
@@ -2392,16 +2407,16 @@ class MainWindow(FluentWindow):
 
     def init_navigation(self):
         # 添加主要功能界面
-        self.addSubInterface(self.message_capture_interface, FIF.MESSAGE, '消息捕获')
-        self.addSubInterface(self.translation_service_interface, FIF.LANGUAGE, '翻译服务')
-        self.addSubInterface(self.message_presentation_interface, FIF.VIEW, '翻译结果呈现')
-        self.addSubInterface(self.message_send_interface, FIF.SEND, '发送消息')
-        self.addSubInterface(self.glossary_interface, FIF.DICTIONARY, '术语表')
-        self.addSubInterface(self.start_interface, FIF.POWER_BUTTON, '启动')
+        self.addSubInterface(self.message_capture_interface, FIF.MESSAGE, _('消息捕获'))
+        self.addSubInterface(self.translation_service_interface, FIF.LANGUAGE, _('翻译服务'))
+        self.addSubInterface(self.message_presentation_interface, FIF.VIEW, _('翻译结果显示'))
+        self.addSubInterface(self.message_send_interface, FIF.SEND, _('发送消息'))
+        self.addSubInterface(self.glossary_interface, FIF.DICTIONARY, _('术语表'))
+        self.addSubInterface(self.start_interface, FIF.POWER_BUTTON, _('启动'))
 
         # 添加底部设置界面
-        self.addSubInterface(self.about_interface, FluentIcon.INFO, '关于', NavigationItemPosition.BOTTOM)
-        self.addSubInterface(self.setting_interface, FIF.SETTING, '设置', NavigationItemPosition.BOTTOM)
+        self.addSubInterface(self.about_interface, FluentIcon.INFO, _('关于'), NavigationItemPosition.BOTTOM)
+        self.addSubInterface(self.setting_interface, FIF.SETTING, _('设置'), NavigationItemPosition.BOTTOM)
 
     def on_traditional_service_changed(self, service_name, service_id):
         """统一处理传统翻译服务变更"""
@@ -2456,16 +2471,16 @@ class MainWindow(FluentWindow):
         if service_id == "player":
             # 更新 MessageCaptureInterface
             self.message_capture_interface.src_lang_combo.addItems(langs)
-            self.message_capture_interface.tgt_lang_combo.addItems(langs)
+            self.message_capture_interface.tgt_lang_combo.addItems(l for l in langs if l != 'auto')
 
             # 如果未启用独立设置，也更新 MessageSendInterface
             if not self.translation_service_interface.independent_service_check.isChecked():
                 self.message_send_interface.src_lang_combo.addItems(langs)
-                self.message_send_interface.tgt_lang_combo.addItems(langs)
+                self.message_send_interface.tgt_lang_combo.addItems(l for l in langs if l != 'auto')
         else:
             # 更新 MessageSendInterface（仅在独立设置时）
             self.message_send_interface.src_lang_combo.addItems(langs)
-            self.message_send_interface.tgt_lang_combo.addItems(langs)
+            self.message_send_interface.tgt_lang_combo.addItems(l for l in langs if l != 'auto')
 
         # 隐藏加载动画
         self.translation_service_interface.show_loading_spinner(False, service_id)
@@ -2478,7 +2493,7 @@ class MainWindow(FluentWindow):
 
     def on_language_error(self, error_msg, service_id):
         """语言列表加载失败"""
-        logger.error(f"获取支持语言失败 ({service_id}): {error_msg}")
+        logger.error(f"Failed to get supported languages ({service_id}): {error_msg}")
         self.translation_service_interface.show_loading_spinner(False, service_id)
 
         if service_id == "player":
@@ -2488,8 +2503,9 @@ class MainWindow(FluentWindow):
 
         # 添加错误提示信息
         InfoBar.error(
-            title='语言加载错误',
-            content=f"获取支持语言失败 ({service_id}): {error_msg}",
+            title=_('语言加载错误'),
+            content=_("获取支持语言失败 ({service_id}): {error_msg}").format(service_id=service_id,
+                                                                             error_msg=error_msg),
             orient=Qt.Orientation.Vertical,
             isClosable=True,
             position=InfoBarPosition.BOTTOM_RIGHT,
