@@ -153,7 +153,7 @@ def start_translation():
 def main():
     app = QApplication([])
     main_window = MainWindow(program_info, updater)
-    main_window.setting_interface.check_for_updates()
+    main_window.setting_interface.check_for_updates(silent=True)
     main_window.show()
     app.exec()
 

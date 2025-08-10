@@ -2125,23 +2125,29 @@ class SettingInterface(QFrame):
             parent=self
         )
 
-    def check_for_updates(self):
-        """手动检查更新"""
+    def check_for_updates(self, silent=False):
+        """检查更新
+        
+        Args:
+            silent: 是否静默检查，为True时不显示动画和提示
+        """
         if not hasattr(self.parent_window, 'updater') or self.updater is None:
-            InfoBar.error(
-                title=_('错误'),
-                content=_('更新器未初始化'),
-                orient=Qt.Orientation.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=3000,
-                parent=self
-            )
+            if not silent:
+                InfoBar.error(
+                    title=_('错误'),
+                    content=_('更新器未初始化'),
+                    orient=Qt.Orientation.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.TOP,
+                    duration=3000,
+                    parent=self
+                )
             return
 
-        # 显示加载动画，禁用按钮
-        self.check_update_button.setEnabled(False)
-        self.update_loading_spinner.show()
+        # 仅在非静默模式下显示加载动画和禁用按钮
+        if not silent:
+            self.check_update_button.setEnabled(False)
+            self.update_loading_spinner.show()
 
         # 设置是否包含预发布版本
         self.updater.include_prerelease = self.include_prerelease_check.isChecked()
@@ -2159,29 +2165,38 @@ class SettingInterface(QFrame):
 
         check_thread.run = run_check
         # noinspection PyUnresolvedReferences
-        check_thread.finished.connect(lambda: self.on_update_check_finished(check_thread))
+        check_thread.finished.connect(lambda: self.on_update_check_finished(check_thread, silent))
         check_thread.start()
 
         # 保存线程引用，防止被垃圾回收
         self.update_check_thread = check_thread
 
-    def on_update_check_finished(self, thread):
-        """更新检查完成的回调"""
-        # 隐藏加载动画，启用按钮
-        self.update_loading_spinner.hide()
-        self.check_update_button.setEnabled(True)
+    def on_update_check_finished(self, thread, silent=False):
+        """更新检查完成的回调
+        
+        Args:
+            thread: 检查更新的线程
+            silent: 是否静默检查，为True时不显示提示
+        """
+        # 仅在非静默模式下隐藏加载动画和启用按钮
+        if not silent:
+            self.update_loading_spinner.hide()
+            self.check_update_button.setEnabled(True)
 
         if hasattr(thread, 'error'):
-            # 检查过程出错
-            InfoBar.error(
-                title=_('检查更新失败'),
-                content=_('错误: {}').format(thread.error),
-                orient=Qt.Orientation.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=5000,
-                parent=self
-            )
+            # 检查过程出错，静默模式下只记录日志
+            if not silent:
+                InfoBar.error(
+                    title=_('检查更新失败'),
+                    content=_('错误: {}').format(thread.error),
+                    orient=Qt.Orientation.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.TOP,
+                    duration=5000,
+                    parent=self
+                )
+            else:
+                logger.error(f"Silent update check failed: {thread.error}")
         elif thread.latest_release:
             try:
                 # 发现新版本，显示更新对话框
@@ -2198,30 +2213,34 @@ class SettingInterface(QFrame):
 
             except Exception as e:
                 logger.error(f"Error showing update dialog: {e}")
-                # 如果详细对话框失败，使用简单的消息框
-                latest_version = thread.latest_release.get("tag_name", _("未知版本"))
-                w = MessageBox(
-                    _('发现新版本'),
-                    _('最新版本: {}\n当前版本: v{}\n\n是否在浏览器中查看？').format(latest_version,
-                                                                                   self.updater.current_version),
-                    self.window()
-                )
+                if not silent:
+                    # 如果详细对话框失败，使用简单的消息框
+                    latest_version = thread.latest_release.get("tag_name", _("未知版本"))
+                    w = MessageBox(
+                        _('发现新版本'),
+                        _('最新版本: {}\n当前版本: v{}\n\n是否在浏览器中查看？').format(latest_version,
+                                                                                        self.updater.current_version),
+                        self.window()
+                    )
 
-                if w.exec():
-                    release_url = thread.latest_release.get("html_url")
-                    if release_url:
-                        webbrowser.open(release_url)
+                    if w.exec():
+                        release_url = thread.latest_release.get("html_url")
+                        if release_url:
+                            webbrowser.open(release_url)
         else:
-            # 已是最新版本
-            InfoBar.success(
-                title=_('您是最新的'),
-                content=_('当前版本 v{} 已是最新版本').format(self.updater.current_version),
-                orient=Qt.Orientation.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=3000,
-                parent=self
-            )
+            # 已是最新版本，静默模式下不显示提示
+            if not silent:
+                InfoBar.success(
+                    title=_('您是最新的'),
+                    content=_('当前版本 v{} 已是最新版本').format(self.updater.current_version),
+                    orient=Qt.Orientation.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.TOP,
+                    duration=3000,
+                    parent=self
+                )
+            else:
+                logger.info(f"Current version v{self.updater.current_version} is up to date")
 
         # 清理线程引用
         self.update_check_thread = None
