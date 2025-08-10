@@ -130,6 +130,10 @@ msgstr "不翻譯不帶玩家名稱的伺服器訊息（系統訊息）"
 msgid "替换乱码字符"
 msgstr "替換亂碼字元"
 
+#: modless_chat_trans/new_interface.py:221
+msgid "将乱码字符（\\ufffd\\ufffd）替换为用于Minecraft格式化代码的分节符§（\\u00A7）"
+msgstr "將亂碼字元（\\ufffd\\ufffd）替換為用於 Minecraft 格式化代碼的分節符號 §（\\u00A7）"
+
 #: modless_chat_trans/new_interface.py:237
 #: modless_chat_trans/new_interface.py:816
 msgid "请输入源语言（格式不限，AI可智能识别）"

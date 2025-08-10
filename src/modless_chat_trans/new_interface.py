@@ -218,7 +218,7 @@ class MessageCaptureInterface(QFrame):
 
         self.replace_garbled_check = CheckBox(_('替换乱码字符'), self)
         set_tool_tip(self.replace_garbled_check,
-                     "将乱码字符（\\ufffd\\ufffd）替换为用于Minecraft格式化代码的分节符\u00A7（\\u00A7）")
+                     _("将乱码字符（\\ufffd\\ufffd）替换为用于Minecraft格式化代码的分节符\u00A7（\\u00A7）"))
 
         self.grid_layout.addWidget(log_encoding_label, 3, 0)
         self.grid_layout.addWidget(self.log_encoding_combo, 3, 1)

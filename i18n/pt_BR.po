@@ -130,6 +130,10 @@ msgstr "Não traduzir mensagens do servidor sem nome de jogador (mensagens do si
 msgid "替换乱码字符"
 msgstr "Substituir caracteres ilegíveis"
 
+#: modless_chat_trans/new_interface.py:221
+msgid "将乱码字符（\\ufffd\\ufffd）替换为用于Minecraft格式化代码的分节符§（\\u00A7）"
+msgstr "Substituir os caracteres corrompidos (\\ufffd\\ufffd) pelo sinal de seção § (\\u00A7) usado nos códigos de formatação do Minecraft"
+
 #: modless_chat_trans/new_interface.py:237
 #: modless_chat_trans/new_interface.py:816
 msgid "请输入源语言（格式不限，AI可智能识别）"

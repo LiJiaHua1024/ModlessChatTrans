@@ -100,6 +100,9 @@ msgstr "Ne pas traduire les messages du serveur sans nom de joueur (messages sys
 msgid "替换乱码字符"
 msgstr "Remplacer les caractères illisibles"
 
+msgid "将乱码字符（\\ufffd\\ufffd）替换为用于Minecraft格式化代码的分节符§（\\u00A7）"
+msgstr "Remplacer les caractères illisibles (\\ufffd\\ufffd) par le signe de section § (\\u00A7) utilisé pour les codes de formatage de Minecraft"
+
 msgid "请输入源语言（格式不限，AI可智能识别）"
 msgstr "Saisissez la langue source (n’importe quel format ; l’IA peut la reconnaître)"
 

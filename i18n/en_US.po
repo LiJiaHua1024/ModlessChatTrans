@@ -100,6 +100,9 @@ msgstr "Do not translate server messages without player names (system messages)"
 msgid "替换乱码字符"
 msgstr "Replace garbled characters"
 
+msgid "将乱码字符（\\ufffd\\ufffd）替换为用于Minecraft格式化代码的分节符§（\\u00A7）"
+msgstr "Replace garbled characters (\\ufffd\\ufffd) with the section sign § (\\u00A7) used for Minecraft formatting codes"
+
 msgid "请输入源语言（格式不限，AI可智能识别）"
 msgstr "Enter source language (any format; AI can recognize it)"
 

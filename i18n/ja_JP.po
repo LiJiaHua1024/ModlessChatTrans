@@ -100,6 +100,9 @@ msgstr "プレイヤー名を含まないサーバーメッセージ（システ
 msgid "替换乱码字符"
 msgstr "文字化けを置換"
 
+msgid "将乱码字符（\\ufffd\\ufffd）替换为用于Minecraft格式化代码的分节符§（\\u00A7）"
+msgstr "文字化けした文字（\\ufffd\\ufffd）を、Minecraft の書式コードで使用されるセクション記号 §（\\u00A7）に置き換える"
+
 msgid "请输入源语言（格式不限，AI可智能识别）"
 msgstr "ソース言語を入力（形式は不問。AI が自動認識）"
 

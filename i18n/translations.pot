@@ -128,6 +128,10 @@ msgstr ""
 msgid "替换乱码字符"
 msgstr ""
 
+#: modless_chat_trans/new_interface.py:221
+msgid "将乱码字符（\\ufffd\\ufffd）替换为用于Minecraft格式化代码的分节符\u00A7（\\u00A7）"
+msgstr ""
+
 #: modless_chat_trans/new_interface.py:237
 #: modless_chat_trans/new_interface.py:816
 msgid "请输入源语言（格式不限，AI可智能识别）"
