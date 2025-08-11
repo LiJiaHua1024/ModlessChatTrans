@@ -523,6 +523,21 @@ class TranslationServiceInterface(QFrame):
         layout.addWidget(model_label, 3, 0, Qt.AlignmentFlag.AlignRight)
         layout.addWidget(llm_model_edit, 3, 1)
 
+        # 深度翻译模式开关
+        optimization_label = BodyLabel(_('深度翻译模式：'), widget)
+        set_tool_tip(optimization_label,
+                     _("启用显式思维链（Chain of Thought）翻译策略\n"
+                       "优点：提供更高质量的翻译\n"
+                       "缺点：一定程度增加token消耗，响应延迟提高"))
+
+        llm_optimization_switch = SwitchButton(widget)
+        llm_optimization_switch.setOffText(_("关闭"))
+        llm_optimization_switch.setOnText(_("开启"))
+        llm_optimization_switch.setChecked(False)  # 默认关闭
+
+        layout.addWidget(optimization_label, 4, 0, Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(llm_optimization_switch, 4, 1)
+
         # 添加弹性空间
         layout.setColumnStretch(2, 1)
         layout.setRowStretch(5, 1)
@@ -533,6 +548,7 @@ class TranslationServiceInterface(QFrame):
         widget.llm_api_url_label = llm_api_url_label
         widget.llm_api_url_edit = llm_api_url_edit
         widget.llm_model_edit = llm_model_edit
+        widget.llm_optimization_switch = llm_optimization_switch
         widget.service_id = service_id
 
         return widget
@@ -1286,6 +1302,7 @@ class StartInterface(QFrame):
                     print(f"  API Key: {current_widget.llm_api_key_edit.text()}")
                     print(f"  API URL: {current_widget.llm_api_url_edit.currentText()}")
                     print(f"  模型代号: {current_widget.llm_model_edit.text()}")
+                    print(f"  深度翻译模式: {current_widget.llm_optimization_switch.isChecked()}")
             else:  # 传统翻译
                 if hasattr(current_widget, 'traditional_service_combo'):
                     print(f"  选择服务: {current_widget.traditional_service_combo.currentText()}")
@@ -1307,6 +1324,7 @@ class StartInterface(QFrame):
                         print(f"  API Key: {current_widget.llm_api_key_edit.text()}")
                         print(f"  API URL: {current_widget.llm_api_url_edit.currentText()}")
                         print(f"  模型代号: {current_widget.llm_model_edit.text()}")
+                        print(f"  深度翻译模式: {current_widget.llm_optimization_switch.isChecked()}")
                 else:  # 传统翻译
                     if hasattr(current_widget, 'traditional_service_combo'):
                         print(f"  选择服务: {current_widget.traditional_service_combo.currentText()}")
