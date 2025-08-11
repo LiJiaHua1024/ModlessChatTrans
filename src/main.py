@@ -126,8 +126,6 @@ def start_translation():
 
     init_processor(
         config.trans_sys_message,
-        config.skip_src_lang,
-        config.min_detect_len,
         config.glossary,
         config.replace_garbled_character
     )

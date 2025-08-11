@@ -19,31 +19,23 @@ from modless_chat_trans.i18n import _
 from modless_chat_trans.file_utils import cache
 from modless_chat_trans.translator import services, LLM_PROVIDERS
 from modless_chat_trans.logger import logger
-from langdetect import detect_langs, LangDetectException
 
-UNKNOWN_LANGUAGE = "unknown"
 
 trans_sys_message = True
-skip_src_lang = []
-min_detect_len = 100
 glossary = {}
 _compiled_glossary_patterns = {}
 glossary_compiled = False
 replace_garbled_character = False
 
 
-def init_processor(_trans_sys_message, _skip_src_lang, _min_detect_len, _glossary, _replace_garbled_character):
+def init_processor(_trans_sys_message, _glossary, _replace_garbled_character):
     """
     :param _trans_sys_message: 是否翻译系统（name为空）消息，仅对log类型有效
-    :param _skip_src_lang: 跳过不翻译的源语言集合
-    :param _min_detect_len: 触发源语言检测的最小消息长度
     :param _glossary: 自定义术语表
     :param _replace_garbled_character: 是否将乱码字符\ufffd\ufffd替换为\u00A7
     """
-    global trans_sys_message, skip_src_lang, min_detect_len, glossary, replace_garbled_character
+    global trans_sys_message, glossary, replace_garbled_character
     trans_sys_message = _trans_sys_message
-    skip_src_lang = _skip_src_lang
-    min_detect_len = _min_detect_len
     glossary = _glossary
     replace_garbled_character = _replace_garbled_character
 
@@ -237,30 +229,10 @@ def process_decorator(function):
         if data_type == "log" and not trans_sys_message and not name:
             return ""
         if original_chat_message:
-            if len(original_chat_message) >= min_detect_len:
-                try:
-                    langs = detect_langs(original_chat_message)
-                    best_lang = langs[0]
-                    if best_lang.prob >= 0.9:
-                        detected_lang = best_lang.lang
-                        logger.debug(f"Detected languages: {detected_lang}, confidence: {best_lang.prob}")
-                    else:
-                        detected_lang = UNKNOWN_LANGUAGE
-                        logger.debug(f"Detected languages: {detected_lang}, but confidence {best_lang.prob} is too low")
-                except LangDetectException as e:
-                    logger.info(f"Language detection failed: {e} Proceeding with translation")
-                    detected_lang = UNKNOWN_LANGUAGE
-            else:
-                detected_lang = UNKNOWN_LANGUAGE
-
             if matched_translated_message := match_and_translate(original_chat_message):
                 logger.debug(f"Using custom glossary: {original_chat_message} -> {matched_translated_message}")
                 translated_chat_message = matched_translated_message
                 info["glossary_match"] = True
-            elif detected_lang != UNKNOWN_LANGUAGE and detected_lang in skip_src_lang:
-                logger.debug(f"Skipping translation for \"{original_chat_message}\" due to skip_src_lang")
-                translated_chat_message = original_chat_message
-                info["skip_src_lang"] = True
             elif original_chat_message in cache:
                 logger.debug(f"Translation cache hit: {original_chat_message}")
                 translated_chat_message = cache[original_chat_message]
