@@ -214,6 +214,24 @@ msgstr "模型代號："
 msgid "请输入模型代号，如：gpt-3.5-turbo"
 msgstr "請輸入模型代號，如：gpt-3.5-turbo"
 
+#: modless_chat_trans/new_interface.py:536
+msgid "深度翻译模式："
+msgstr "深度翻譯模式："
+
+#: modless_chat_trans/new_interface.py:538
+msgid ""
+"启用显式思维链（Chain of Thought）翻译策略\n"
+"优点：提供更高质量的翻译\n"
+"缺点：一定程度增加token消耗，响应延迟提高"
+msgstr ""
+"啟用顯式思維鏈（Chain of Thought）翻譯策略\n"
+"優點：提供更高品質的翻譯\n"
+"缺點：在一定程度上增加 token 消耗，回應延遲提高"
+
+#: modless_chat_trans/new_interface.py:544
+msgid "开启"
+msgstr "開啟"
+
 #: modless_chat_trans/new_interface.py:579
 #: modless_chat_trans/new_interface.py:580
 msgid "不使用"

@@ -157,6 +157,21 @@ msgstr "モデルID："
 msgid "请输入模型代号，如：gpt-3.5-turbo"
 msgstr "モデルIDを入力してください（例：gpt-3.5-turbo）"
 
+msgid "深度翻译模式："
+msgstr "ディープ翻訳モード："
+
+msgid ""
+"启用显式思维链（Chain of Thought）翻译策略\n"
+"优点：提供更高质量的翻译\n"
+"缺点：一定程度增加token消耗，响应延迟提高"
+msgstr ""
+"明示的な思考連鎖（Chain of Thought）翻訳戦略を有効化\n"
+"長所：より高品質な翻訳を提供\n"
+"短所：トークン消費がある程度増加し、応答遅延が長くなる"
+
+msgid "开启"
+msgstr "有効化"
+
 msgid "不使用"
 msgstr "使用しない"
 

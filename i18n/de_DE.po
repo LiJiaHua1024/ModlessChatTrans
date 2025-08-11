@@ -157,6 +157,21 @@ msgstr "Modell-ID:"
 msgid "请输入模型代号，如：gpt-3.5-turbo"
 msgstr "Bitte eine Modell-ID eingeben, z. B.: gpt-3.5-turbo"
 
+msgid "深度翻译模式："
+msgstr "Modus für Tiefenübersetzung:"
+
+msgid ""
+"启用显式思维链（Chain of Thought）翻译策略\n"
+"优点：提供更高质量的翻译\n"
+"缺点：一定程度增加token消耗，响应延迟提高"
+msgstr ""
+"Aktiviert die explizite Chain-of-Thought-Übersetzungsstrategie\n"
+"Vorteile: Liefert Übersetzungen in höherer Qualität\n"
+"Nachteile: Erhöht bis zu einem gewissen Grad den Token-Verbrauch und die Antwortlatenz"
+
+msgid "开启"
+msgstr "Aktivieren"
+
 msgid "不使用"
 msgstr "Nicht verwenden"
 
