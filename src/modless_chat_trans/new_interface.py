@@ -234,7 +234,7 @@ class MessageCaptureInterface(QFrame):
     def create_all_language_widgets(self):
         # LLM 模式用的自由输入
         self.src_lang_edit = LineEdit(self)
-        self.src_lang_edit.setPlaceholderText(_("请输入源语言（格式不限，AI可智能识别）"))
+        self.src_lang_edit.setPlaceholderText(_("请输入源语言（格式不限，AI可智能识别；留空则自动检测）"))
         self.src_lang_edit.setClearButtonEnabled(True)
         src_completer = QCompleter([], self.src_lang_edit)
         src_completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
@@ -813,7 +813,7 @@ class MessageSendInterface(QFrame):
     def create_all_language_widgets(self):
         # LLM 模式
         self.src_lang_edit = LineEdit(self)
-        self.src_lang_edit.setPlaceholderText(_("请输入源语言（格式不限，AI可智能识别）"))
+        self.src_lang_edit.setPlaceholderText(_("请输入源语言（格式不限，AI可智能识别；留空则自动检测）"))
         self.src_lang_edit.setClearButtonEnabled(True)
         src_completer = QCompleter([], self.src_lang_edit)
         src_completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)

@@ -136,8 +136,8 @@ msgstr "Substituir os caracteres corrompidos (\\ufffd\\ufffd) pelo sinal de seç
 
 #: modless_chat_trans/new_interface.py:237
 #: modless_chat_trans/new_interface.py:816
-msgid "请输入源语言（格式不限，AI可智能识别）"
-msgstr "Insira o idioma de origem (formato livre; a IA reconhece automaticamente)"
+msgid "请输入源语言（格式不限，AI可智能识别；留空则自动检测）"
+msgstr "Insira o idioma de origem (formato livre; a IA reconhece automaticamente; deixe em branco para detecção automática)"
 
 #: modless_chat_trans/new_interface.py:244
 #: modless_chat_trans/new_interface.py:823

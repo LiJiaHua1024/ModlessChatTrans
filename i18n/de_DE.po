@@ -103,8 +103,8 @@ msgstr "Fehlerhafte Zeichen ersetzen"
 msgid "将乱码字符（\\ufffd\\ufffd）替换为用于Minecraft格式化代码的分节符§（\\u00A7）"
 msgstr "Ersetzt die fehlerhaften Zeichen (\\ufffd\\ufffd) durch das in Minecraft-Formatierungscodes verwendete Paragraphenzeichen § (\\u00A7)"
 
-msgid "请输入源语言（格式不限，AI可智能识别）"
-msgstr "Bitte Ausgangssprache eingeben (beliebiges Format; KI kann sie erkennen)"
+msgid "请输入源语言（格式不限，AI可智能识别；留空则自动检测）"
+msgstr "Bitte Ausgangssprache eingeben (beliebiges Format; KI kann sie erkennen; leer lassen für automatische Erkennung)"
 
 msgid "请输入目标语言（格式不限，AI可智能识别）"
 msgstr "Bitte Zielsprache eingeben (beliebiges Format; KI kann sie erkennen)"

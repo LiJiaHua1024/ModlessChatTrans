@@ -137,8 +137,8 @@ msgstr "Заменять повреждённые символы (\\ufffd\\ufffd
 
 #: modless_chat_trans/new_interface.py:237
 #: modless_chat_trans/new_interface.py:816
-msgid "请输入源语言（格式不限，AI可智能识别）"
-msgstr "Введите исходный язык (любой формат, ИИ определит автоматически)"
+msgid "请输入源语言（格式不限，AI可智能识别；留空则自动检测）"
+msgstr "Введите исходный язык (любой формат; ИИ определит автоматически; оставьте пустым для автоопределения)"
 
 #: modless_chat_trans/new_interface.py:244
 #: modless_chat_trans/new_interface.py:823

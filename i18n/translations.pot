@@ -134,7 +134,7 @@ msgstr ""
 
 #: modless_chat_trans/new_interface.py:237
 #: modless_chat_trans/new_interface.py:816
-msgid "请输入源语言（格式不限，AI可智能识别）"
+msgid "请输入源语言（格式不限，AI可智能识别；留空则自动检测）"
 msgstr ""
 
 #: modless_chat_trans/new_interface.py:244

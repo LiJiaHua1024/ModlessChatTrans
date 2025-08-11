@@ -136,8 +136,8 @@ msgstr "將亂碼字元（\\ufffd\\ufffd）替換為用於 Minecraft 格式化�
 
 #: modless_chat_trans/new_interface.py:237
 #: modless_chat_trans/new_interface.py:816
-msgid "请输入源语言（格式不限，AI可智能识别）"
-msgstr "請輸入來源語言（格式不限，AI 可智慧辨識）"
+msgid "请输入源语言（格式不限，AI可智能识别；留空则自动检测）"
+msgstr "請輸入來源語言（格式不限，AI 可智慧辨識；留空則自動偵測）"
 
 #: modless_chat_trans/new_interface.py:244
 #: modless_chat_trans/new_interface.py:823
