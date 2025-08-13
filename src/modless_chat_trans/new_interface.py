@@ -1482,12 +1482,14 @@ class StartInterface(QFrame):
                 "color:#107c10; background-color: rgba(16,124,16,0.12); "
                 "border-radius:14px; padding:4px 10px;"
             )
+            self.start_dd_btn.setEnabled(False)
         else:
             self.status_label.setText(_('已停止'))
             self.status_label.setStyleSheet(
                 "color:#d83b01; background-color: rgba(216,59,1,0.12); "
                 "border-radius:14px; padding:4px 10px;"
             )
+            self.start_dd_btn.setEnabled(True)
 
     def on_direct_start(self):
         """直接启动：不落盘，仅依据当前界面状态启动"""
