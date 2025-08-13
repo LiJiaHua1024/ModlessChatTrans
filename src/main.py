@@ -16,14 +16,16 @@
 import threading
 import time
 from importlib.metadata import version
+from datetime import datetime
 
-from modless_chat_trans.file_utils import read_config, get_platform
+from modless_chat_trans.file_utils import get_platform
+from modless_chat_trans.config import read_config
 from modless_chat_trans.i18n import set_language
 from modless_chat_trans.logger import init_logger, logger
 
-conf = read_config(logger_initialized=False)
-init_logger(conf.debug)
-set_language(conf.interface_lang)
+cfg = read_config()
+init_logger(cfg.settings.debug)
+set_language(cfg.settings.interface_language)
 
 from modless_chat_trans.web_display import start_httpserver_thread, display_message
 from modless_chat_trans.log_monitor import monitor_log_file
@@ -46,17 +48,15 @@ updater = Updater(
     program_info.version,
     program_info.author,
     "ModlessChatTrans",
-    include_prerelease=conf.include_prerelease
+    include_prerelease=cfg.settings.include_prerelease
 )
 
 logger.info(f"ModlessChatTrans {program_info.version} started, "
             f"Platform: {'Windows' if get_platform() == 0 else 'Linux'}, "
-            f"Debug mode: {conf.debug}")
+            f"Debug mode: {cfg.settings.debug}")
 
 
-def start_translation():
-    config = read_config()
-
+def start_translation(config):
     def callback(data, data_type):
         start_time = time.time()
         # 重试5次
@@ -148,10 +148,23 @@ def start_translation():
         clipboard_thread.start()
 
 
+def run_scheduled_update_check(update_check_func):
+    acuf = cfg.settings.auto_check_update_frequency
+    luct = cfg.settings.last_update_check_time
+    now = datetime.now()
+    luct_date = datetime.fromisoformat(luct)
+    if (
+            (acuf == "Daily" and now.date() > luct_date.date()) or
+            (acuf == "Weekly" and (now - luct_date).days >= 7) or
+            (acuf == "Monthly" and (now - luct_date).days >= 30)
+    ):
+        update_check_func(silent=True)
+
+
 def main():
     app = QApplication([])
-    main_window = MainWindow(program_info, updater)
-    main_window.setting_interface.check_for_updates(silent=True)
+    main_window = MainWindow(program_info, updater, cfg, start_translation)
+    run_scheduled_update_check(main_window.setting_interface.check_for_updates)
     main_window.show()
     app.exec()
 

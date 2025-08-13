@@ -1,0 +1,17 @@
+{
+  "interface_lang": "zh_CN",
+  "minecraft_log_folder": "%USERPROFILE%/AppData/Roaming/.minecraft/logs",
+  "output_method": "Httpserver",
+  "trans_service": "OpenAI",
+  "op_src_lang": "English",
+  "op_tgt_lang": "Simplified Chinese",
+  "self_trans_enabled": true,
+  "self_src_lang": "Simplified Chinese",
+  "self_tgt_lang": "English",
+  "api_url": "",
+  "api_key": "",
+  "model": "gpt-5-mini",
+  "http_port": 56552,
+  "max_messages": 150,
+  "always_on_top": false
+}

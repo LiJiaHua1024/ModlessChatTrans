@@ -129,6 +129,9 @@ class Translator:
                  失败时返回 None
         """
 
+        if source_language.lower() == "auto":
+            source_language = ""
+
         if self.enable_optimization:
             # scene = "Hypixel Bedwars"
             system_prompt = (

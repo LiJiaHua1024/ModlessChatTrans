@@ -15,6 +15,7 @@ main.onefile-build/
 main.spec
 
 ModlessChatTrans-config.json
+modless-chat-trans.toml
 update_requirements.py
 
 CTkScrollableDropdown/
