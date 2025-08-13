@@ -14,9 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import json
+import tomllib
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple, Type
+from typing import Any, Dict, List, Literal, Optional, Tuple, Type
 
 import tomli_w
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError
@@ -33,6 +35,7 @@ from modless_chat_trans.file_utils import get_path, is_file_exists
 
 def snake_to_kebab(field_name: str) -> str:
     return field_name.replace('_', '-')
+
 
 def kebab_to_snake(field_name: str) -> str:
     return field_name.replace('-', '_')
@@ -100,7 +103,7 @@ class SettingConfig(BaseConfigModel):
 
 
 class ConfigV3FromInit(BaseSettings):
-    model_config =SettingsConfigDict(
+    model_config = SettingsConfigDict(
         alias_generator=snake_to_kebab,
         populate_by_name=True,
     )
@@ -242,14 +245,120 @@ def convert_v2_to_v3(config_v2: ConfigV2) -> ConfigV3:
     )
 
 
+def deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
+    """深合并两个字典，override中的值会覆盖base中的值"""
+    result = base.copy()
+    for key, value in override.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = deep_merge(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+
+def load_default_v2_config() -> ConfigV2:
+    with open(get_path("modless-chat-trans.default.json"), 'r') as f:
+        default_dict = json.load(f)
+    return ConfigV2.model_validate(default_dict)
+
+
+def load_default_v3_config() -> ConfigV3FromInit:
+    with open(get_path("modless-chat-trans.default.toml"), 'rb') as f:
+        default_dict = tomllib.load(f)
+    return ConfigV3FromInit.model_validate(default_dict)
+
+
 # noinspection PyArgumentList
-def read_config() -> ConfigV3:
+def handle_v2_validation_error(error: ValidationError, config_dict: Dict[str, Any]) -> ConfigV2:
+    missing_fields = [
+        err for err in error.errors()
+        if err.get('type') == 'missing'
+    ]
+
+    if missing_fields:
+        try:
+            with open(get_path("modless-chat-trans.default.json"), 'r') as f:
+                default_dict = json.load(f)
+
+            merged_dict = deep_merge(default_dict, config_dict)
+
+            try:
+                # 尝试用合并后的配置创建ConfigV2
+                return ConfigV2.model_validate(merged_dict)
+            except ValidationError:
+                return ConfigV2.model_validate(default_dict)
+        except Exception:
+            return load_default_v2_config()
+    else:
+        return load_default_v2_config()
+
+
+# noinspection PyArgumentList
+def handle_v3_validation_error(error: ValidationError, config_dict: Dict[str, Any]) -> ConfigV3 | ConfigV3FromInit:
+    """处理V3配置的ValidationError"""
+    missing_fields = [
+        err for err in error.errors()
+        if err.get('type') == 'missing'
+    ]
+
+    if missing_fields:
+        try:
+            # 加载默认V3配置
+            with open(get_path("modless-chat-trans.default.toml"), 'rb') as f:
+                default_dict = tomllib.load(f)
+
+            # 深合并
+            merged_dict = deep_merge(default_dict, config_dict)
+
+            try:
+                # 使用ConfigV3FromInit避免再次触发文件读取
+                return ConfigV3FromInit(**merged_dict)
+            except ValidationError:
+                # 如果还是失败，使用完整的默认配置
+                return ConfigV3FromInit(**default_dict)
+        except Exception:
+            # 如果无法读取默认配置，使用ConfigV3的默认值
+            return ConfigV3()
+    else:
+        return ConfigV3()
+
+
+# noinspection PyArgumentList
+def read_v2_config_safely() -> ConfigV2:
+    try:
+        return ConfigV2()
+    except ValidationError as e:
+        try:
+            with open("ModlessChatTrans-config.json", 'r') as f:
+                config_dict = json.load(f)
+            return handle_v2_validation_error(e, config_dict)
+        except Exception:
+            # 如果无法读取配置文件，使用默认配置
+            return load_default_v2_config()
+
+
+# noinspection PyArgumentList
+def read_v3_config_safely() -> ConfigV3 | ConfigV3FromInit:
+    try:
+        return ConfigV3()
+    except ValidationError as e:
+        try:
+            with open("modless-chat-trans.toml", 'rb') as f:
+                config_dict = tomllib.load(f)
+            return handle_v3_validation_error(e, config_dict)
+        except Exception:
+            return load_default_v3_config()
+
+
+# noinspection PyArgumentList
+def read_config() -> ConfigV3 | ConfigV3FromInit:
     if not is_file_exists("modless-chat-trans.toml") and is_file_exists("ModlessChatTrans-config.json"):
-        return convert_v2_to_v3(ConfigV2())
-    return ConfigV3()
+        v2_config = read_v2_config_safely()
+        return convert_v2_to_v3(v2_config)
+    return read_v3_config_safely()
 
 
-def save_config(config: ConfigV3) -> bool:
+def save_config(config: ConfigV3 | ConfigV3FromInit) -> bool:
     try:
         with open("modless-chat-trans.toml", 'wb') as f:
             tomli_w.dump(config.model_dump(by_alias=True, mode='json', exclude_none=True), f)
@@ -272,9 +381,3 @@ def update_config(**updates) -> bool:
     except Exception:
         pass
     return False
-
-
-if __name__ == "__main__":
-    cfg = read_config()
-    print(cfg)
-    save_config(cfg)
