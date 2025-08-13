@@ -1592,7 +1592,7 @@ class StartInterface(QFrame):
             llm = LLMServiceConfig(
                 provider=player_widget.llm_service_combo.currentText(),
                 api_key=player_widget.llm_api_key_edit.text(),
-                api_base="" if player_widget.llm_api_url_edit.currentData()
+                api_base=None if player_widget.llm_api_url_edit.currentData()
                 else player_widget.llm_api_url_edit.currentText(),
                 model=player_widget.llm_model_edit.text(),
                 deep_translate=player_widget.llm_optimization_switch.isChecked()
@@ -1605,7 +1605,7 @@ class StartInterface(QFrame):
         else:
             trad = TraditionalServiceConfig(
                 provider=player_widget.traditional_service_combo.currentText(),
-                api_key="" if player_widget.traditional_api_key_edit.currentData()
+                api_key=None if player_widget.traditional_api_key_edit.currentData()
                 else player_widget.traditional_api_key_edit.currentText()
             )
             cfg.player_translation = TranslationServiceConfig(
@@ -1622,7 +1622,7 @@ class StartInterface(QFrame):
                 llm = LLMServiceConfig(
                     provider=send_widget.llm_service_combo.currentText(),
                     api_key=send_widget.llm_api_key_edit.text(),
-                    api_base="" if send_widget.llm_api_url_edit.currentData()
+                    api_base=None if send_widget.llm_api_url_edit.currentData()
                     else send_widget.llm_api_url_edit.currentText(),
                     model=send_widget.llm_model_edit.text(),
                     deep_translate=send_widget.llm_optimization_switch.isChecked()
@@ -1635,7 +1635,7 @@ class StartInterface(QFrame):
             else:
                 trad = TraditionalServiceConfig(
                     provider=send_widget.traditional_service_combo.currentText(),
-                    api_key="" if send_widget.traditional_api_key_edit.currentData()
+                    api_key=None if send_widget.traditional_api_key_edit.currentData()
                     else send_widget.traditional_api_key_edit.currentText()
                 )
                 cfg.send_translation = TranslationServiceConfig(

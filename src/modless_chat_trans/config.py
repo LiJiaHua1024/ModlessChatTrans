@@ -55,14 +55,14 @@ class MonitorMode(Enum):
 class LLMServiceConfig(BaseConfigModel):
     provider: str
     api_key: str
-    api_base: Optional[str]
+    api_base: Optional[str] = None
     model: str
     deep_translate: bool
 
 
 class TraditionalServiceConfig(BaseConfigModel):
     provider: str
-    api_key: Optional[str]
+    api_key: Optional[str] = None
 
 
 class TranslationServiceConfig(BaseConfigModel):
