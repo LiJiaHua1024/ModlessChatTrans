@@ -20,6 +20,7 @@ from datetime import datetime
 from typing import Tuple
 
 import markdown
+import netifaces
 
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, QTimer, QUrl, QObject
 from PyQt6.QtGui import QIcon, QFont, QColor, QDesktopServices
@@ -39,7 +40,6 @@ from qfluentwidgets import (
     TabCloseButtonDisplayMode, TableWidget, TitleLabel, ToolTipFilter,
     ToolTipPosition
 )
-from qfluentwidgets import FluentIcon as FIF
 
 from modless_chat_trans.file_utils import get_path
 from modless_chat_trans.i18n import supported_languages, _
@@ -1417,6 +1417,8 @@ class StartInterface(QFrame):
     def __init__(self, parent):
         super().__init__(parent=parent)
         self.setObjectName("start")
+        self.access_card = None  # 访问链接卡片
+        self._user_clicked_link = False  # 跟踪用户是否已点击链接
         self.init_ui()
 
     def init_ui(self):
@@ -1442,7 +1444,7 @@ class StartInterface(QFrame):
         row.setSpacing(12)
 
         # 启动下拉按钮
-        self.start_dd_btn = DropDownPushButton(FIF.PLAY, _('启动'), control_card)
+        self.start_dd_btn = DropDownPushButton(FluentIcon.PLAY, _('启动'), control_card)
         self.start_dd_btn.setFixedHeight(36)
 
         menu = RoundMenu(parent=self.start_dd_btn)
@@ -1491,6 +1493,116 @@ class StartInterface(QFrame):
             )
             self.start_dd_btn.setEnabled(True)
 
+    def _get_sorted_ips(self):
+        """获取所有IP地址并按优先级排序"""
+        ips = []
+
+        try:
+            for interface in netifaces.interfaces():
+                addrs = netifaces.ifaddresses(interface)
+
+                # 只处理IPv4地址
+                if netifaces.AF_INET in addrs:
+                    for addr in addrs[netifaces.AF_INET]:
+                        ip = addr['addr']
+
+                        # 局域网地址判断
+                        if ip.startswith('192.168.') or ip.startswith('10.'):
+                            ips.append((ip, 1))  # 局域网地址最优先
+                        elif ip.startswith('172.'):
+                            second_octet = int(ip.split('.')[1])
+                            if 16 <= second_octet <= 31:
+                                ips.append((ip, 1))  # 172.16-31.x.x 也是局域网
+                        elif ip in ['127.0.0.1', '0.0.0.0']:
+                            ips.append((ip, 2))  # 本地地址次优先
+                        # 其他地址（包括公网IP、169.254.x.x等）都不加入列表
+
+        except Exception as e:
+            logger.error(f"Failed to get network interfaces: {e}")
+            # 至少返回本地地址
+            ips = [('127.0.0.1', 2)]
+
+        # 添加localhost作为备选
+        ips.append(('localhost', 2))
+
+        # 按优先级排序并去重
+        seen = set()
+        sorted_ips = []
+        for ip, priority in sorted(ips, key=lambda x: (x[1], x[0])):
+            if ip not in seen:
+                seen.add(ip)
+                sorted_ips.append(ip)
+
+        return sorted_ips
+
+    def _create_access_card(self, port):
+        """创建访问链接卡片"""
+        # 如果已存在，先移除
+        if self.access_card:
+            self.main_layout.removeWidget(self.access_card)
+            self.access_card.deleteLater()
+
+        # 创建新卡片
+        self.access_card = SimpleCardWidget(self)
+        card_layout = QVBoxLayout(self.access_card)
+        card_layout.setContentsMargins(20, 16, 20, 16)
+        card_layout.setSpacing(12)
+
+        # 标题行
+        title_row = QHBoxLayout()
+        title_row.setSpacing(8)
+
+        # 图标和标题
+        icon_label = BodyLabel(self.access_card)
+        icon_label.setPixmap(FluentIcon.LINK.icon().pixmap(20, 20))
+        title_label = SubtitleLabel(_('Web访问链接'), self.access_card)
+
+        title_row.addWidget(icon_label)
+        title_row.addWidget(title_label)
+        title_row.addStretch()
+
+        # 说明文字
+        desc_label = CaptionLabel(_('请通过以下任一链接打开网页界面，查看翻译并即时发送消息'), self.access_card)
+
+        # 获取排序后的IP地址
+        ips = self._get_sorted_ips()
+
+        # 创建链接布局
+        links_layout = QVBoxLayout()
+        links_layout.setSpacing(8)
+
+        # 为每个IP创建超链接
+        for ip in ips:
+            address = f"{ip}:{port}"
+            url = f"http://{address}"
+            link = HyperlinkLabel(QUrl(url), address, self.access_card)
+            link.clicked.connect(self._on_link_clicked)
+            links_layout.addWidget(link)
+
+        # 如果没有找到任何IP，显示默认链接
+        if not ips:
+            url = f"http://localhost:{port}"
+            link = HyperlinkLabel(QUrl(url), f"localhost:{port}", self.access_card)
+            link.clicked.connect(self._on_link_clicked)
+            links_layout.addWidget(link)
+
+        # 添加所有组件到卡片
+        card_layout.addLayout(title_row)
+        card_layout.addWidget(desc_label)
+        card_layout.addLayout(links_layout)
+
+        # 将卡片插入到控制卡片之后
+        self.main_layout.insertWidget(2, self.access_card)
+
+    def _on_link_clicked(self):
+        """用户点击链接时的回调"""
+        self._user_clicked_link = True
+
+    def _auto_open_webpage(self, port):
+        """自动打开网页，但仅当用户未主动点击链接时"""
+        if not self._user_clicked_link:
+            webbrowser.open(f"http://127.0.0.1:{port}")
+
     def on_direct_start(self):
         """直接启动：不落盘，仅依据当前界面状态启动"""
         try:
@@ -1498,9 +1610,17 @@ class StartInterface(QFrame):
             cb = getattr(self.window(), 'start_callback', None)
             cb(cfg)
             self._set_status(True)
+
+            # 创建访问链接卡片
+            web_port = cfg.message_presentation.web_port
+            self._user_clicked_link = False  # 重置用户点击状态
+            self._create_access_card(web_port)
+
             InfoBar.success(title=_('已启动'), content=_('已根据当前界面配置启动'),
                             orient=Qt.Orientation.Horizontal, isClosable=True,
                             position=InfoBarPosition.TOP, duration=2000, parent=self)
+
+            QTimer.singleShot(1000, lambda: self._auto_open_webpage(web_port))
         except Exception as e:
             logger.error(f"Direct start failed: {e}")
             self._set_status(False)
@@ -1522,9 +1642,17 @@ class StartInterface(QFrame):
                 return
             cb(cfg)
             self._set_status(True)
+
+            # 创建访问链接卡片
+            web_port = cfg.message_presentation.web_port
+            self._user_clicked_link = False  # 重置用户点击状态
+            self._create_access_card(web_port)
+
             InfoBar.success(title=_('已保存并启动'), content=_('配置已保存并启动'),
                             orient=Qt.Orientation.Horizontal, isClosable=True,
                             position=InfoBarPosition.TOP, duration=2000, parent=self)
+
+            QTimer.singleShot(1000, lambda: self._auto_open_webpage(web_port))
         except Exception as e:
             logger.error(f"Save and start failed: {e}")
             self._set_status(False)
@@ -2412,7 +2540,7 @@ class SettingInterface(QFrame):
         check_layout.setSpacing(8)
 
         self.check_update_button = PushButton(_('检查更新'), check_container)
-        self.check_update_button.setIcon(FIF.UPDATE)
+        self.check_update_button.setIcon(FluentIcon.UPDATE)
         self.check_update_button.clicked.connect(self.check_for_updates)
 
         self.update_loading_spinner = IndeterminateProgressRing(check_container)
@@ -2848,16 +2976,16 @@ class MainWindow(FluentWindow):
 
     def init_navigation(self):
         # 添加主要功能界面
-        self.addSubInterface(self.message_capture_interface, FIF.MESSAGE, _('消息捕获'))
-        self.addSubInterface(self.translation_service_interface, FIF.LANGUAGE, _('翻译服务'))
-        self.addSubInterface(self.message_presentation_interface, FIF.VIEW, _('翻译结果显示'))
-        self.addSubInterface(self.message_send_interface, FIF.SEND, _('发送消息'))
-        self.addSubInterface(self.glossary_interface, FIF.DICTIONARY, _('术语表'))
-        self.addSubInterface(self.start_interface, FIF.POWER_BUTTON, _('启动'))
+        self.addSubInterface(self.message_capture_interface, FluentIcon.MESSAGE, _('消息捕获'))
+        self.addSubInterface(self.translation_service_interface, FluentIcon.LANGUAGE, _('翻译服务'))
+        self.addSubInterface(self.message_presentation_interface, FluentIcon.VIEW, _('翻译结果显示'))
+        self.addSubInterface(self.message_send_interface, FluentIcon.SEND, _('发送消息'))
+        self.addSubInterface(self.glossary_interface, FluentIcon.DICTIONARY, _('术语表'))
+        self.addSubInterface(self.start_interface, FluentIcon.POWER_BUTTON, _('启动'))
 
         # 添加底部设置界面
         self.addSubInterface(self.about_interface, FluentIcon.INFO, _('关于'), NavigationItemPosition.BOTTOM)
-        self.addSubInterface(self.setting_interface, FIF.SETTING, _('设置'), NavigationItemPosition.BOTTOM)
+        self.addSubInterface(self.setting_interface, FluentIcon.SETTING, _('设置'), NavigationItemPosition.BOTTOM)
 
     def on_traditional_service_changed(self, service_name, service_id):
         """统一处理传统翻译服务变更"""

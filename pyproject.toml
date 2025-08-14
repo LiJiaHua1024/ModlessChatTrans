@@ -28,6 +28,7 @@ dependencies = [
     "pydantic>=2.11.7",
     "pydantic-settings>=2.10.1",
     "tomli-w>=1.2.0",
+    "netifaces>=0.11.0",
 ]
 
 # 如需滚动和高度限制的下拉菜单，请按以下步骤操作：
