@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-08-14 14:51+0800\n"
+"POT-Creation-Date: 2025-08-14 17:16+0800\n"
 "PO-Revision-Date: 2025-08-08 10:00+0000\n"
 "Last-Translator: GPT-5 <noreply@example.com>\n"
 "Language-Team: Chinese (Taiwan)\n"
@@ -35,7 +35,7 @@ msgstr "輸入訊息..."
 msgid "要发送的消息翻译完成，翻译结果已复制到剪切板"
 msgstr "要傳送的訊息已翻譯完成，結果已複製到剪貼簿"
 
-#: modless_chat_trans/interface.py:126 modless_chat_trans/interface.py:2246
+#: modless_chat_trans/interface.py:126 modless_chat_trans/interface.py:2374
 msgid "下载失败"
 msgstr "下載失敗"
 
@@ -196,7 +196,7 @@ msgstr ""
 "優點：提供更高品質的翻譯\n"
 "缺點：在一定程度上增加 token 消耗，回應延遲提高"
 
-#: modless_chat_trans/interface.py:649 modless_chat_trans/interface.py:2249
+#: modless_chat_trans/interface.py:649 modless_chat_trans/interface.py:2377
 msgid "关闭"
 msgstr "關閉"
 
@@ -208,7 +208,7 @@ msgstr "開啟"
 msgid "不使用"
 msgstr "不使用"
 
-#: modless_chat_trans/interface.py:912 modless_chat_trans/interface.py:2853
+#: modless_chat_trans/interface.py:912 modless_chat_trans/interface.py:2981
 msgid "翻译结果显示"
 msgstr "翻譯結果顯示"
 
@@ -332,334 +332,342 @@ msgstr "清空成功"
 msgid "已清空 {} 个术语"
 msgstr "已清空 {} 個術語"
 
-#: modless_chat_trans/interface.py:1429 modless_chat_trans/interface.py:1445
-#: modless_chat_trans/interface.py:2856
+#: modless_chat_trans/interface.py:1431 modless_chat_trans/interface.py:1447
+#: modless_chat_trans/interface.py:2984
 msgid "启动"
 msgstr "啟動"
 
-#: modless_chat_trans/interface.py:1449
+#: modless_chat_trans/interface.py:1451
 msgid "直接启动"
 msgstr "直接啟動"
 
-#: modless_chat_trans/interface.py:1450
+#: modless_chat_trans/interface.py:1452
 msgid "保存配置并启动"
-msgstr ""
+msgstr "儲存設定並啟動"
 
-#: modless_chat_trans/interface.py:1454
+#: modless_chat_trans/interface.py:1456
 msgid "保存配置"
 msgstr "儲存設定"
 
-#: modless_chat_trans/interface.py:1480
+#: modless_chat_trans/interface.py:1482
 msgid "工作中"
-msgstr ""
+msgstr "工作中"
 
-#: modless_chat_trans/interface.py:1487
+#: modless_chat_trans/interface.py:1489
 msgid "已停止"
-msgstr ""
+msgstr "已停止"
 
-#: modless_chat_trans/interface.py:1501
+#: modless_chat_trans/interface.py:1558
+msgid "Web访问链接"
+msgstr "Web 存取連結"
+
+#: modless_chat_trans/interface.py:1565
+msgid "请通过以下任一链接打开网页界面，查看翻译并即时发送消息"
+msgstr "請透過以下任一連結開啟網頁介面，查看翻譯並即時傳送訊息"
+
+#: modless_chat_trans/interface.py:1619
 msgid "已启动"
 msgstr "已啟動"
 
-#: modless_chat_trans/interface.py:1501
+#: modless_chat_trans/interface.py:1619
 msgid "已根据当前界面配置启动"
-msgstr ""
+msgstr "已根據目前介面設定啟動"
 
-#: modless_chat_trans/interface.py:1507
+#: modless_chat_trans/interface.py:1627
 msgid "启动失败"
 msgstr "啟動失敗"
 
-#: modless_chat_trans/interface.py:1516
+#: modless_chat_trans/interface.py:1636
 msgid "保存配置失败"
-msgstr ""
+msgstr "儲存設定失敗"
 
-#: modless_chat_trans/interface.py:1519
+#: modless_chat_trans/interface.py:1639
 msgid "已保存"
 msgstr "已儲存"
 
-#: modless_chat_trans/interface.py:1519
+#: modless_chat_trans/interface.py:1639
 msgid "配置已保存，但未设置启动回调"
-msgstr ""
+msgstr "設定已儲存，但未設定啟動回呼"
 
-#: modless_chat_trans/interface.py:1525
+#: modless_chat_trans/interface.py:1651
 msgid "已保存并启动"
-msgstr ""
+msgstr "已儲存並啟動"
 
-#: modless_chat_trans/interface.py:1525
+#: modless_chat_trans/interface.py:1651
 msgid "配置已保存并启动"
 msgstr "設定已儲存並啟動"
 
-#: modless_chat_trans/interface.py:1531
+#: modless_chat_trans/interface.py:1659
 msgid "操作失败"
 msgstr "操作失敗"
 
-#: modless_chat_trans/interface.py:1540
+#: modless_chat_trans/interface.py:1668
 msgid "保存成功"
 msgstr "儲存成功"
 
-#: modless_chat_trans/interface.py:1540
+#: modless_chat_trans/interface.py:1668
 msgid "配置已保存至文件"
 msgstr "設定已儲存至檔案"
 
-#: modless_chat_trans/interface.py:1544 modless_chat_trans/interface.py:1549
+#: modless_chat_trans/interface.py:1672 modless_chat_trans/interface.py:1677
 msgid "保存失败"
 msgstr "儲存失敗"
 
-#: modless_chat_trans/interface.py:1544
+#: modless_chat_trans/interface.py:1672
 msgid "写入配置文件失败"
-msgstr ""
+msgstr "寫入設定檔失敗"
 
-#: modless_chat_trans/interface.py:1752
+#: modless_chat_trans/interface.py:1880
 msgid "应用信息"
 msgstr "應用資訊"
 
-#: modless_chat_trans/interface.py:1759
+#: modless_chat_trans/interface.py:1887
 msgid "版本"
 msgstr "版本"
 
-#: modless_chat_trans/interface.py:1760
+#: modless_chat_trans/interface.py:1888
 msgid "作者"
 msgstr "作者"
 
-#: modless_chat_trans/interface.py:1761
+#: modless_chat_trans/interface.py:1889
 msgid "邮箱"
 msgstr "電子郵件"
 
-#: modless_chat_trans/interface.py:1803
+#: modless_chat_trans/interface.py:1931
 msgid "相关链接"
 msgstr "相關連結"
 
-#: modless_chat_trans/interface.py:1842
+#: modless_chat_trans/interface.py:1970
 msgid "许可证"
 msgstr "授權條款"
 
-#: modless_chat_trans/interface.py:1877 modless_chat_trans/interface.py:2557
+#: modless_chat_trans/interface.py:2005 modless_chat_trans/interface.py:2685
 msgid "发现新版本"
 msgstr "發現新版本"
 
-#: modless_chat_trans/interface.py:1903
+#: modless_chat_trans/interface.py:2031
 msgid "创建更新对话框时出错: {}"
 msgstr "建立更新對話方塊時發生錯誤：{}"
 
-#: modless_chat_trans/interface.py:1906
+#: modless_chat_trans/interface.py:2034
 msgid "下载更新"
 msgstr "下載更新"
 
-#: modless_chat_trans/interface.py:1907
+#: modless_chat_trans/interface.py:2035
 msgid "暂不更新"
 msgstr "暫不更新"
 
-#: modless_chat_trans/interface.py:1921
+#: modless_chat_trans/interface.py:2049
 msgid "版本信息"
 msgstr "版本資訊"
 
-#: modless_chat_trans/interface.py:1930 modless_chat_trans/interface.py:2431
+#: modless_chat_trans/interface.py:2058 modless_chat_trans/interface.py:2559
 msgid "当前版本："
 msgstr "目前版本："
 
-#: modless_chat_trans/interface.py:1935
+#: modless_chat_trans/interface.py:2063
 msgid "最新版本："
 msgstr "最新版本："
 
-#: modless_chat_trans/interface.py:1936 modless_chat_trans/interface.py:1942
-#: modless_chat_trans/interface.py:1943 modless_chat_trans/interface.py:1955
-#: modless_chat_trans/interface.py:2097 modless_chat_trans/interface.py:2433
+#: modless_chat_trans/interface.py:2064 modless_chat_trans/interface.py:2070
+#: modless_chat_trans/interface.py:2071 modless_chat_trans/interface.py:2083
+#: modless_chat_trans/interface.py:2225 modless_chat_trans/interface.py:2561
 msgid "未知"
 msgstr "未知"
 
-#: modless_chat_trans/interface.py:1941
+#: modless_chat_trans/interface.py:2069
 msgid "发布时间："
 msgstr "發佈時間："
 
-#: modless_chat_trans/interface.py:1953
+#: modless_chat_trans/interface.py:2081
 msgid "发布者："
 msgstr "發佈者："
 
-#: modless_chat_trans/interface.py:1970
+#: modless_chat_trans/interface.py:2098
 msgid "版本类型："
 msgstr "版本類型："
 
-#: modless_chat_trans/interface.py:1971
+#: modless_chat_trans/interface.py:2099
 msgid "预发布版本"
 msgstr "預發布版本"
 
-#: modless_chat_trans/interface.py:1989
+#: modless_chat_trans/interface.py:2117
 msgid "更新说明"
 msgstr "更新說明"
 
-#: modless_chat_trans/interface.py:1999
+#: modless_chat_trans/interface.py:2127
 msgid "暂无更新说明"
 msgstr "暫無更新說明"
 
-#: modless_chat_trans/interface.py:2067
+#: modless_chat_trans/interface.py:2195
 msgid "在 GitHub 上查看完整说明"
 msgstr "在 GitHub 上查看完整說明"
 
-#: modless_chat_trans/interface.py:2085
+#: modless_chat_trans/interface.py:2213
 msgid "正在下载更新"
 msgstr "正在下載更新"
 
-#: modless_chat_trans/interface.py:2092
+#: modless_chat_trans/interface.py:2220
 msgid "取消"
 msgstr "取消"
 
-#: modless_chat_trans/interface.py:2097
+#: modless_chat_trans/interface.py:2225
 msgid "正在下载版本 {}..."
 msgstr "正在下載版本 {}..."
 
-#: modless_chat_trans/interface.py:2122
+#: modless_chat_trans/interface.py:2250
 msgid "下载进度："
 msgstr "下載進度："
 
-#: modless_chat_trans/interface.py:2128
+#: modless_chat_trans/interface.py:2256
 msgid "下载速度："
 msgstr "下載速度："
 
-#: modless_chat_trans/interface.py:2134
+#: modless_chat_trans/interface.py:2262
 msgid "剩余时间："
 msgstr "剩餘時間："
 
-#: modless_chat_trans/interface.py:2135 modless_chat_trans/interface.py:2232
+#: modless_chat_trans/interface.py:2263 modless_chat_trans/interface.py:2360
 msgid "计算中..."
 msgstr "計算中..."
 
-#: modless_chat_trans/interface.py:2140
+#: modless_chat_trans/interface.py:2268
 msgid "下载方式："
 msgstr "下載方式："
 
-#: modless_chat_trans/interface.py:2141
+#: modless_chat_trans/interface.py:2269
 msgid "检测中..."
 msgstr "檢測中..."
 
-#: modless_chat_trans/interface.py:2161
+#: modless_chat_trans/interface.py:2289
 msgid "{} 线程下载"
 msgstr "{} 執行緒下載"
 
-#: modless_chat_trans/interface.py:2163
+#: modless_chat_trans/interface.py:2291
 msgid "单线程下载"
 msgstr "單執行緒下載"
 
-#: modless_chat_trans/interface.py:2212
+#: modless_chat_trans/interface.py:2340
 msgid "{} 秒"
 msgstr "{} 秒"
 
-#: modless_chat_trans/interface.py:2217
+#: modless_chat_trans/interface.py:2345
 msgid "{} 分 {} 秒"
 msgstr "{} 分 {} 秒"
 
-#: modless_chat_trans/interface.py:2219
+#: modless_chat_trans/interface.py:2347
 msgid "{} 分钟"
 msgstr "{} 分鐘"
 
-#: modless_chat_trans/interface.py:2224
+#: modless_chat_trans/interface.py:2352
 msgid "{} 小时 {} 分"
 msgstr "{} 小時 {} 分"
 
-#: modless_chat_trans/interface.py:2226
+#: modless_chat_trans/interface.py:2354
 msgid "{} 小时"
 msgstr "{} 小時"
 
-#: modless_chat_trans/interface.py:2230
+#: modless_chat_trans/interface.py:2358
 msgid "完成"
 msgstr "完成"
 
-#: modless_chat_trans/interface.py:2239
+#: modless_chat_trans/interface.py:2367
 msgid "正在取消..."
 msgstr "正在取消..."
 
-#: modless_chat_trans/interface.py:2247 modless_chat_trans/interface.py:2474
+#: modless_chat_trans/interface.py:2375 modless_chat_trans/interface.py:2602
 msgid "错误"
 msgstr "錯誤"
 
-#: modless_chat_trans/interface.py:2273 modless_chat_trans/interface.py:2860
+#: modless_chat_trans/interface.py:2401 modless_chat_trans/interface.py:2988
 msgid "设置"
 msgstr "設定"
 
-#: modless_chat_trans/interface.py:2303
+#: modless_chat_trans/interface.py:2431
 msgid "语言设置"
 msgstr "語言設定"
 
-#: modless_chat_trans/interface.py:2315
+#: modless_chat_trans/interface.py:2443
 msgid "界面语言："
 msgstr "介面語言："
 
-#: modless_chat_trans/interface.py:2336
+#: modless_chat_trans/interface.py:2464
 msgid "保存"
 msgstr "儲存"
 
-#: modless_chat_trans/interface.py:2341
+#: modless_chat_trans/interface.py:2469
 msgid "* 语言更改将在重启后生效"
 msgstr "* 語言變更將在重新啟動後生效"
 
-#: modless_chat_trans/interface.py:2359
+#: modless_chat_trans/interface.py:2487
 msgid "更新设置"
 msgstr "更新設定"
 
-#: modless_chat_trans/interface.py:2371
+#: modless_chat_trans/interface.py:2499
 msgid "自动检查："
 msgstr "自動檢查："
 
-#: modless_chat_trans/interface.py:2373
+#: modless_chat_trans/interface.py:2501
 msgid "启动时"
 msgstr "啟動時"
 
-#: modless_chat_trans/interface.py:2374
+#: modless_chat_trans/interface.py:2502
 msgid "每天"
 msgstr "每天"
 
-#: modless_chat_trans/interface.py:2375
+#: modless_chat_trans/interface.py:2503
 msgid "每周"
 msgstr "每週"
 
-#: modless_chat_trans/interface.py:2376
+#: modless_chat_trans/interface.py:2504
 msgid "每月"
 msgstr "每月"
 
-#: modless_chat_trans/interface.py:2377
+#: modless_chat_trans/interface.py:2505
 msgid "从不"
 msgstr "從不"
 
-#: modless_chat_trans/interface.py:2395
+#: modless_chat_trans/interface.py:2523
 msgid "预发布版本："
 msgstr "預發布版本："
 
-#: modless_chat_trans/interface.py:2396
+#: modless_chat_trans/interface.py:2524
 msgid "包含预发布版本"
 msgstr "包含預發布版本"
 
-#: modless_chat_trans/interface.py:2406
+#: modless_chat_trans/interface.py:2534
 msgid "手动检查："
 msgstr "手動檢查："
 
-#: modless_chat_trans/interface.py:2414
+#: modless_chat_trans/interface.py:2542
 msgid "检查更新"
 msgstr "檢查更新"
 
-#: modless_chat_trans/interface.py:2456
+#: modless_chat_trans/interface.py:2584
 msgid "设置已保存"
 msgstr "設定已儲存"
 
-#: modless_chat_trans/interface.py:2457
+#: modless_chat_trans/interface.py:2585
 msgid "界面语言已设置为 {}，重启后生效。"
 msgstr "介面語言已設定為 {}，重新啟動後生效。"
 
-#: modless_chat_trans/interface.py:2475
+#: modless_chat_trans/interface.py:2603
 msgid "更新器未初始化"
 msgstr "更新程式未初始化"
 
-#: modless_chat_trans/interface.py:2527
+#: modless_chat_trans/interface.py:2655
 msgid "检查更新失败"
 msgstr "檢查更新失敗"
 
-#: modless_chat_trans/interface.py:2528
+#: modless_chat_trans/interface.py:2656
 msgid "错误: {}"
 msgstr "錯誤：{}"
 
-#: modless_chat_trans/interface.py:2555
+#: modless_chat_trans/interface.py:2683
 msgid "未知版本"
 msgstr "未知版本"
 
-#: modless_chat_trans/interface.py:2558
+#: modless_chat_trans/interface.py:2686
 msgid ""
 "最新版本: {}\n"
 "当前版本: v{}\n"
@@ -671,19 +679,19 @@ msgstr ""
 "\n"
 "是否在瀏覽器中查看？"
 
-#: modless_chat_trans/interface.py:2571
+#: modless_chat_trans/interface.py:2699
 msgid "您是最新的"
 msgstr "已是最新版本"
 
-#: modless_chat_trans/interface.py:2572
+#: modless_chat_trans/interface.py:2700
 msgid "当前版本 v{} 已是最新版本"
 msgstr "目前版本 v{} 已是最新版本"
 
-#: modless_chat_trans/interface.py:2631
+#: modless_chat_trans/interface.py:2759
 msgid "下载完成"
 msgstr "下載完成"
 
-#: modless_chat_trans/interface.py:2632
+#: modless_chat_trans/interface.py:2760
 msgid ""
 "更新文件已下载到:\n"
 "{}\n"
@@ -695,39 +703,39 @@ msgstr ""
 "\n"
 "請手動安裝更新。"
 
-#: modless_chat_trans/interface.py:2638
+#: modless_chat_trans/interface.py:2766
 msgid "下载已取消"
 msgstr "下載已取消"
 
-#: modless_chat_trans/interface.py:2639
+#: modless_chat_trans/interface.py:2767
 msgid "更新下载已取消"
 msgstr "更新下載已取消"
 
-#: modless_chat_trans/interface.py:2851
+#: modless_chat_trans/interface.py:2979
 msgid "消息捕获"
 msgstr "訊息捕獲"
 
-#: modless_chat_trans/interface.py:2852
+#: modless_chat_trans/interface.py:2980
 msgid "翻译服务"
 msgstr "翻譯服務"
 
-#: modless_chat_trans/interface.py:2854
+#: modless_chat_trans/interface.py:2982
 msgid "发送消息"
 msgstr "傳送訊息"
 
-#: modless_chat_trans/interface.py:2855
+#: modless_chat_trans/interface.py:2983
 msgid "术语表"
 msgstr "術語表"
 
-#: modless_chat_trans/interface.py:2859
+#: modless_chat_trans/interface.py:2987
 msgid "关于"
 msgstr "關於"
 
-#: modless_chat_trans/interface.py:2969
+#: modless_chat_trans/interface.py:3097
 msgid "语言加载错误"
 msgstr "語言載入錯誤"
 
-#: modless_chat_trans/interface.py:2970
+#: modless_chat_trans/interface.py:3098
 msgid "获取支持语言失败 ({service_id}): {error_msg}"
 msgstr "取得支援語言失敗（{service_id}）：{error_msg}"
 
