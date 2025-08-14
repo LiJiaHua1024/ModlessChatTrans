@@ -18,7 +18,6 @@ dependencies = [
     "pyperclip>=1.8.0,<2.0.0",
     "translators~=6.0.0",
     "watchdog>=6.0.0,<7.0.0",
-    "chardet>=5.0.0,<6.0.0",
     "loguru~=0.7.3",
     "packaging~=25.0",
     "setuptools>=61.0",

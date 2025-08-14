@@ -14,261 +14,516 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import threading
-import chardet
 import time
+import threading
+import locale
+from typing import Optional, Tuple
+
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+
 from modless_chat_trans.file_utils import find_latest_log
 from modless_chat_trans.logger import logger
+from modless_chat_trans.config import MonitorMode, MessageCaptureConfig
 
 
-class LogMonitorHandler(FileSystemEventHandler):
+# ------------------------------
+# 编码策略：BOM > 严格 UTF-8 > 区域回退（唯一回退）> 兜底 replace
+# ------------------------------
+
+def _has_bom(raw: bytes) -> Optional[str]:
+    if raw.startswith(b"\xEF\xBB\xBF"):
+        return "utf-8-sig"
+    if raw.startswith(b"\xFF\xFE\x00\x00"):
+        return "utf-32-le"
+    if raw.startswith(b"\x00\x00\xFE\xFF"):
+        return "utf-32-be"
+    if raw.startswith(b"\xFF\xFE"):
+        return "utf-16-le"
+    if raw.startswith(b"\xFE\xFF"):
+        return "utf-16-be"
+    # UTF-7 极少见
+    if raw.startswith(b"\x2B\x2F\x76"):
+        return "utf-7"
+    return None
+
+
+def _is_ascii_only(raw: bytes) -> bool:
+    return all(b < 0x80 for b in raw)
+
+
+def _looks_like_utf8(raw: bytes) -> bool:
+    try:
+        raw.decode("utf-8")
+        return True
+    except UnicodeDecodeError:
+        return False
+
+
+def _parse_lang_region() -> Tuple[Optional[str], Optional[str]]:
+    lang_code = None
+    try:
+        # 可能返回如 'zh_CN'、'ru_RU'
+        lang_code, _ = locale.getdefaultlocale()
+    except Exception:
+        pass
+    if not lang_code:
+        env = os.environ.get("LC_ALL") or os.environ.get("LANG") or os.environ.get("LC_CTYPE") or ""
+        lang_code = env.split(".", 1)[0] if env else ""
+    lang = region = None
+    if lang_code:
+        parts = lang_code.replace("-", "_").split("_")
+        if parts:
+            lang = parts[0].lower()
+        if len(parts) >= 2:
+            region = parts[1].upper()
+    return lang, region
+
+
+def _fallback_encoding_by_locale() -> str:
+    lang, region = _parse_lang_region()
+    if lang == "zh":
+        # 繁体偏 Big5，其余 GB18030
+        if region in {"TW", "HK", "MO"}:
+            return "big5"
+        return "gb18030"
+    if lang == "ja":
+        return "cp932"  # Shift_JIS
+    if lang == "ko":
+        return "cp949"  # EUC-KR 超集
+    if lang in {"ru", "uk", "bg", "sr"}:
+        return "cp1251"  # 西里尔
+    if lang == "el":
+        return "cp1253"
+    if lang == "tr":
+        return "cp1254"
+    if lang in {"ar", "fa", "ur"}:
+        return "cp1256"
+    if lang == "vi":
+        return "cp1258"
+    if lang == "th":
+        return "cp874"
+    if lang in {"pl", "cs", "sk", "hu", "ro", "hr", "sl", "bs"}:
+        return "cp1250"  # 中东欧
+    return "cp1252"  # 西欧拉丁（默认）
+
+
+def _sniff_encoding(file_path: str, sample_size: int = 262144) -> str:
     """
-    监控日志文件的变化
+    确定性判定：
+    1) BOM
+    2) ASCII-only 则 UTF-8
+    3) 严格 UTF-8 校验
+    4) 区域回退
+    """
+    try:
+        with open(file_path, "rb") as f:
+            raw = f.read(sample_size)
+    except Exception:
+        # 文件暂不可读，先用 UTF-8
+        return "utf-8"
+
+    enc = _has_bom(raw)
+    if enc:
+        return enc
+    if _is_ascii_only(raw):
+        return "utf-8"
+    if _looks_like_utf8(raw):
+        return "utf-8"
+    return _fallback_encoding_by_locale()
+
+
+# ------------------------------
+# 高效模式（watchdog 事件驱动）
+# ------------------------------
+
+class EfficientLogMonitor(FileSystemEventHandler):
+    """
+    事件驱动监控：适合能触发文件修改事件的环境
     """
 
-    def __init__(self, directory, callback, use_high_version_fix, encoding=None):
+    def __init__(self, log_path: str, user_encoding: Optional[str], callback):
         super().__init__()
-        logger.debug(f"Initializing LogMonitorHandler for directory: {directory}, "
-                     f"high_version_fix: {use_high_version_fix}, encoding: {encoding}")
-        self.directory = directory
         self.callback = callback
-        self.use_high_version_fix = use_high_version_fix
-        self.encoding = encoding
-        self.current_file = os.path.join(directory, "latest.log") if use_high_version_fix else find_latest_log(directory)
-        self.file_pointer = None
-        self.line_number = 0
-        while not self.current_file:
-            logger.info(f"No initial log file found in {directory}. Waiting and retrying in 5 seconds...")
-            time.sleep(5)
-            self.current_file = find_latest_log(directory)
 
-        logger.info(f"Monitoring initial log file: {self.current_file}")
-
-    def open_file(self, file_path):
-        """
-        打开指定文件并移动到末尾
-        """
-        if self.file_pointer:
-            try:
-                self.file_pointer.close()
-                logger.debug(f"Closed previous file pointer for: {self.file_pointer.name}")
-            except Exception as e:
-                logger.warning(f"Error closing previous file pointer: {str(e)}")
-
-        self.file_pointer = None
-        self.line_number = 0
-
-        try:
-            chunk_size = 65536  # 64KB
-            with open(file_path, 'rb') as f:
-                while True:
-                    chunk = f.read(chunk_size)
-                    if not chunk:
-                        break
-                    self.line_number += chunk.count(b'\n')
-
-            encoding = self.encoding or "utf-8"
-            self.file_pointer = open(file_path, 'r', encoding=encoding)
-            self.file_pointer.seek(0, os.SEEK_END)
-        except (PermissionError, FileNotFoundError) as e:
-            logger.warning(f"Error opening file {file_path}: {str(e)}. Will attempt retry shortly if needed.")
-            time.sleep(5)
-            if not self.use_high_version_fix:
-                logger.info(f"Attempting to find a potentially newer log file in {self.directory} due to error.")
-                latest_log = find_latest_log(self.directory)
-                if latest_log and latest_log != self.current_file:
-                    logger.info(f"Found newer log file: {latest_log}. Switching.")
-                    self.current_file = latest_log
-                elif latest_log:
-                    logger.info(f"No new log found, retrying same file.")
-                else:
-                    logger.error(f"Could not find any log file in {self.directory} after error.")
-                    while not self.current_file:
-                        logger.info(f"No log file found in {self.directory}. Waiting and retrying in 5 seconds...")
-                        time.sleep(5)
-                        self.current_file = find_latest_log(self.directory)
-            else:
-                logger.info(f"Continuing to monitor {self.current_file} despite error, hoping it becomes available.")
-            self.open_file(self.current_file)
-        except Exception as e:
-            logger.exception(f"An unexpected error occurred while opening or seeking file {file_path}: {str(e)}")
-
-    def activate_file(self):
-        """
-        激活 log 文件，解决高版本 Minecraft 优化导致的问题
-        """
-        logger.info(f"Activating high version fix for file: {self.current_file}")
-
-        def _read():
-            logger.debug(f"Background file activation thread started for {self.current_file}")
-            while True:
-                try:
-                    with open(self.current_file, 'rb'):
-                        pass
-                    time.sleep(0.2)
-                except (PermissionError, FileNotFoundError):
-                    logger.warning(f"Activation fix: File {self.current_file} not accessible. Retrying in 2 seconds.")
-                    time.sleep(2)
-                except Exception as e:
-                    logger.error(f"Activation fix: Unexpected error for {self.current_file}: {str(e)}. Retrying in 2 seconds.")
-                    time.sleep(2)
-
-        threading.Thread(target=_read, daemon=True).start()
-        logger.debug("Background file activation thread initiated.")
-
-    @staticmethod
-    def _detect_file_encoding(file_path):
-        """
-        检测文件的编码
-        """
-        logger.debug(f"Detecting encoding for file: {file_path}")
-        try:
-            with open(file_path, 'rb') as f:
-                raw_data = f.read(1024)
-                result = chardet.detect(raw_data)
-                encoding = result.get("encoding", "utf-8") or "utf-8"  # Ensure encoding is not None
-                confidence = result.get("confidence", 0.0) or 0.0
-
-                if confidence < 0.8 and confidence != 1.0:  # chardet sometimes returns 1.0 for utf-8 even on small reads
-                    logger.debug(f"Low confidence ({confidence:.2f}) for encoding '{encoding}'. Reading more data.")
-                    f.seek(0)
-                    raw_data = f.read(8192)
-                    result = chardet.detect(raw_data)
-                    encoding = result.get("encoding", "utf-8") or "utf-8"
-                    confidence = result.get("confidence", 0.0) or 0.0
-                    logger.debug(f"Re-evaluated encoding: '{encoding}' with confidence {confidence:.2f}")
-
-                if encoding.upper() in {"GB2312", "GBK"}:
-                    logger.info(f"Detected encoding {encoding} for {file_path}, "
-                                f"promoting to GB18030 for broader compatibility.")
-                    encoding = "GB18030"
-
-        except FileNotFoundError:
-            logger.error(f"File not found during encoding detection: {file_path}")
-            return "utf-8"
-        except Exception as e:
-            logger.error(f"Error during encoding detection for {file_path}: {str(e)}")
-            return "utf-8"
-
-        logger.debug(f"Final detected encoding for {file_path}: {encoding} (Confidence: {confidence:.2f})")
-        return encoding
-
-    def _read_new_lines(self):
-        """
-        读取当前文件的新内容
-        """
-        logger.debug(f"Starting to read new content from file {self.current_file}")
-        if self.file_pointer:
-            while True:
-                try:
-                    logger.debug(f"Attempting to read new lines from file, current line number: {self.line_number}")
-                    for line in self.file_pointer:
-                        self.line_number += 1
-                        # 使用线程调用回调函数，避免阻塞
-                        threading.Thread(target=self.callback, daemon=True, args=(line,),
-                                         kwargs={"data_type": "log"}).start()
-                    logger.debug("Finished reading the file")
-                    break
-                except UnicodeDecodeError:
-                    if self.encoding:
-                        logger.error(f"Failed to parse the file using user specified encoding {self.encoding}, "
-                                     f"skipping current line")
-                        self.line_number += 1
-                        continue
-
-                    logger.warning(f"Encoding parsing error occurred for file {self.current_file}, "
-                                   f"attempting to re-detect encoding")
-                    encoding = self._detect_file_encoding(self.current_file)
-                    logger.info(f"Detected file encoding as: {encoding}")
-                    self.file_pointer.close()
-                    self.file_pointer = open(self.current_file, 'r', encoding=encoding)
-                    try:
-                        logger.debug(f"Skipping {self.line_number} lines that have already been read")
-                        for i in range(self.line_number):
-                            self.file_pointer.readline()
-                        logger.debug("Starting to read new lines")
-                        for line in self.file_pointer:
-                            self.line_number += 1
-                            threading.Thread(target=self.callback, daemon=True, args=(line,),
-                                             kwargs={"data_type": "log"}).start()
-                        logger.debug("Finished reading the file")
-                        break
-                    except UnicodeDecodeError:
-                        logger.error(f"Failed to parse the file using detected encoding {encoding}, "
-                                     f"skipping current line")
-                        self.line_number += 1
+        # 路径解析：目录 -> 跟随最新日志；文件 -> 固定该文件
+        if os.path.isdir(log_path):
+            self.base_dir = os.path.abspath(log_path)
+            self.follow_latest = True
+            self.current_file = None
         else:
-            logger.warning("File pointer is empty, unable to read the file")
-        logger.debug("Finished executing _read_new_lines method")
+            self.base_dir = os.path.abspath(os.path.dirname(log_path) or ".")
+            self.follow_latest = False
+            self.current_file = os.path.abspath(log_path)
 
-    def on_modified(self, event):
-        if event.src_path == self.current_file:
-            logger.debug(f"File modified: {event.src_path}. Checking for new lines.")
-            self._read_new_lines()
+        # 编码策略
+        self.user_encoding_specified = bool(user_encoding and user_encoding.lower() != "auto")
+        self.user_encoding = user_encoding if self.user_encoding_specified else None
+        self.fallback_encoding = _fallback_encoding_by_locale()
+        self.decided_encoding = None
+        self.errors_mode = "strict"  # auto 模式下初始严格；用户指定时使用 'replace'
 
-    def on_created(self, event):
-        logger.debug(f"Detected file creation event for: {event.src_path}")
+        self.fp = None
+        self.line_count = 0
 
-        if self.use_high_version_fix and event.src_path.endswith(".log.gz"):
-            logger.info("Reopening log file due to high version fix")
-            self.open_file(self.current_file)
+        self._resolve_initial_file()
+        self._open_file(start_at_end=True)
+
+    def _resolve_initial_file(self):
+        if self.follow_latest:
+            while True:
+                latest = find_latest_log(self.base_dir)
+                if latest:
+                    self.current_file = latest
+                    break
+                logger.info(f"[Efficient] No .log file found in {self.base_dir}. Retry in 5s...")
+                time.sleep(5)
+        else:
+            while not os.path.isfile(self.current_file):
+                logger.info(f"[Efficient] File not found: {self.current_file}. Retry in 5s...")
+                time.sleep(5)
+        logger.info(f"[Efficient] Monitoring initial file: {self.current_file}")
+
+    def _decide_open_params(self, file_path: str) -> Tuple[str, str]:
+        if self.user_encoding_specified:
+            # 坚持用户编码，防止中断采用 replace
+            return self.user_encoding, "replace"
+        enc = _sniff_encoding(file_path)
+        self.decided_encoding = enc
+        return enc, "strict"
+
+    def _open_file(self, start_at_end: bool):
+        if self.fp:
+            try:
+                self.fp.close()
+            except Exception:
+                pass
+            self.fp = None
+
+        try:
+            enc, errors = self._decide_open_params(self.current_file)
+            self.errors_mode = errors
+            self.fp = open(self.current_file, "r", encoding=enc, errors=errors)
+            if start_at_end:
+                self.fp.seek(0, os.SEEK_END)
+            self.line_count = 0
+            logger.info(f"[Efficient] Opened {self.current_file} with encoding={enc}, errors={errors}")
+        except (FileNotFoundError, PermissionError) as e:
+            logger.warning(f"[Efficient] Cannot open {self.current_file}: {e}. Retry in 2s...")
+            time.sleep(2)
+            self._resolve_initial_file()
+            self._open_file(start_at_end=start_at_end)
+        except Exception as e:
+            logger.exception(f"[Efficient] Unexpected error opening {self.current_file}: {e}")
+            time.sleep(2)
+            self._open_file(start_at_end=start_at_end)
+
+    def _switch_encoding_after_error(self):
+        # 用户指定编码：坚持用户编码，升级 errors='replace'（已经是 replace 则继续）
+        if self.user_encoding_specified:
+            if self.errors_mode != "replace":
+                logger.info(f"[Efficient] Switching errors to 'replace' for user encoding {self.user_encoding}")
+            self._open_file(start_at_end=True)
             return
 
-        if event.src_path.endswith('.log'):
-            logger.info(f"New log file detected: {event.src_path}")
-            # 切换到新文件
-            logger.debug(f"Switching current file from {self.current_file} to {event.src_path}")
-            self.current_file = event.src_path
-            logger.debug(f"Opening new log file: {self.current_file}")
-            self.open_file(self.current_file)
+        # 自动模式：先切到区域回退编码；如果已在回退编码，改用 replace 兜底
+        target = self.fallback_encoding
+        if (self.decided_encoding or "").lower() != target.lower():
+            logger.info(f"[Efficient] Decode error; switching encoding to {target}")
+            self.decided_encoding = target
+            try:
+                if self.fp:
+                    self.fp.close()
+                self.fp = open(self.current_file, "r", encoding=target, errors="strict")
+                self.fp.seek(0, os.SEEK_END)  # 跳过问题行，继续追新
+                self.errors_mode = "strict"
+            except Exception as e:
+                logger.warning(f"[Efficient] Failed to switch to {target}: {e}. Using replace fallback.")
+                self.fp = open(self.current_file, "r", encoding=target, errors="replace")
+                self.fp.seek(0, os.SEEK_END)
+                self.errors_mode = "replace"
         else:
-            logger.debug(f"Ignoring non-log file creation: {event.src_path}")
+            if self.errors_mode != "replace":
+                logger.info(f"[Efficient] Still failing under {target}; switching errors='replace'")
+            try:
+                if self.fp:
+                    self.fp.close()
+                self.fp = open(self.current_file, "r", encoding=target, errors="replace")
+                self.fp.seek(0, os.SEEK_END)
+                self.errors_mode = "replace"
+            except Exception as e:
+                logger.error(f"[Efficient] Fallback replace failed: {e}")
+
+    def _read_new_lines(self):
+        if not self.fp:
+            logger.warning("[Efficient] File pointer is None; cannot read.")
+            return
+        try:
+            for line in self.fp:
+                self.line_count += 1
+                threading.Thread(
+                    target=self.callback, args=(line,), kwargs={"data_type": "log"}, daemon=True
+                ).start()
+        except UnicodeDecodeError:
+            self._switch_encoding_after_error()
+        except Exception as e:
+            logger.warning(f"[Efficient] Read error: {e}")
+
+    # watchdog 回调
+    def on_modified(self, event):
+        try:
+            if os.path.abspath(event.src_path) == os.path.abspath(self.current_file):
+                self._read_new_lines()
+        except Exception as e:
+            logger.debug(f"[Efficient] on_modified exception: {e}")
+
+    def on_created(self, event):
+        # 跟随最新 .log
+        if not self.follow_latest:
+            return
+        try:
+            if event.src_path.endswith(".log"):
+                latest = find_latest_log(self.base_dir) or event.src_path
+                if latest and os.path.abspath(latest) != os.path.abspath(self.current_file):
+                    logger.info(f"[Efficient] Newer log detected: {latest}. Switching.")
+                    self.current_file = latest
+                    self._open_file(start_at_end=False)
+        except Exception as e:
+            logger.debug(f"[Efficient] on_created exception: {e}")
 
 
-def monitor_log_file(directory, callback, use_high_version_fix, encoding):
+# ------------------------------
+# 兼容模式（轮询 tail）
+# ------------------------------
+
+class CompatiblePollingMonitor:
     """
-    启动日志文件监控
-
-    :param directory: 要监控的日志文件目录
-    :param callback: 检测到新内容的回调函数
-    :param use_high_version_fix: 是否使用高版本 Minecraft 修复
-    :param encoding: 用户指定的文件编码，如果为空则自动检测
+    简单轮询 tail，适用于高版本 MC 优化导致 watchdog 不触发行级事件的情况
     """
-    logger.info(f"Starting log file monitoring in directory: {directory}")
 
-    event_handler = LogMonitorHandler(directory, callback, use_high_version_fix, encoding)
-    if event_handler.current_file:
-        event_handler.open_file(event_handler.current_file)
-    else:
-        logger.error(f"Could not determine initial log file in {directory}. Monitoring might not start correctly.")
+    def __init__(self, log_path: str, user_encoding: Optional[str], callback, interval: float = 0.2):
+        self.callback = callback
+        self.interval = max(0.05, float(interval))
 
-    if use_high_version_fix and event_handler.current_file:
-        logger.debug("High version fix is enabled, activating file keep-alive.")
-        event_handler.activate_file()
+        # 路径策略：目录 -> 固定 latest.log；文件 -> 固定该文件
+        if os.path.isdir(log_path):
+            self.current_file = os.path.abspath(os.path.join(log_path, "latest.log"))
+        else:
+            self.current_file = os.path.abspath(log_path)
 
+        # 编码策略
+        self.user_encoding_specified = bool(user_encoding and user_encoding.lower() != "auto")
+        self.user_encoding = user_encoding if self.user_encoding_specified else None
+        self.fallback_encoding = _fallback_encoding_by_locale()
+        self.decided_encoding = None
+        self.errors_mode = "strict"
+
+        # 文件状态
+        self.fp = None
+        self.current_inode = None
+        self.last_size = 0
+        self._stop = False
+
+        self._resolve_initial_file()
+        self._open_file(start_at_end=True)
+
+    def _resolve_initial_file(self):
+        # latest.log 不存在时等待
+        while not os.path.exists(self.current_file):
+            base_dir = os.path.dirname(self.current_file)
+            logger.info(f"[Compat] Waiting for {self.current_file} in {base_dir} ... retry in 5s")
+            time.sleep(5)
+        logger.info(f"[Compat] Polling file: {self.current_file}")
+
+    def _decide_open_params(self, file_path: str) -> Tuple[str, str]:
+        if self.user_encoding_specified:
+            return self.user_encoding, "replace"  # 坚持用户编码，但容错 replace
+        enc = _sniff_encoding(file_path)
+        self.decided_encoding = enc
+        return enc, "strict"
+
+    def _open_file(self, start_at_end: bool):
+        if self.fp:
+            try:
+                self.fp.close()
+            except Exception:
+                pass
+            self.fp = None
+
+        try:
+            enc, errors = self._decide_open_params(self.current_file)
+            self.errors_mode = errors
+            self.fp = open(self.current_file, "r", encoding=enc, errors=errors)
+            if start_at_end:
+                self.fp.seek(0, os.SEEK_END)
+            st = os.stat(self.current_file)
+            self.current_inode = getattr(st, "st_ino", None)
+            self.last_size = st.st_size
+            logger.info(f"[Compat] Opened {self.current_file} with encoding={enc}, errors={errors}")
+        except (FileNotFoundError, PermissionError) as e:
+            logger.warning(f"[Compat] Cannot open {self.current_file}: {e}. Retry in 2s...")
+            time.sleep(2)
+            self._resolve_initial_file()
+            self._open_file(start_at_end=start_at_end)
+        except Exception as e:
+            logger.exception(f"[Compat] Unexpected error opening {self.current_file}: {e}")
+            time.sleep(2)
+            self._open_file(start_at_end=start_at_end)
+
+    def _switch_encoding_after_error(self):
+        if self.user_encoding_specified:
+            if self.errors_mode != "replace":
+                logger.info(f"[Compat] Switching errors to 'replace' for user encoding {self.user_encoding}")
+            self._open_file(start_at_end=True)
+            return
+
+        target = self.fallback_encoding
+        if (self.decided_encoding or "").lower() != target.lower():
+            logger.info(f"[Compat] Decode error; switching encoding to {target}")
+            self.decided_encoding = target
+            try:
+                if self.fp:
+                    self.fp.close()
+                self.fp = open(self.current_file, "r", encoding=target, errors="strict")
+                self.fp.seek(0, os.SEEK_END)
+                self.errors_mode = "strict"
+            except Exception as e:
+                logger.warning(f"[Compat] Failed to switch to {target}: {e}. Using replace fallback.")
+                self.fp = open(self.current_file, "r", encoding=target, errors="replace")
+                self.fp.seek(0, os.SEEK_END)
+                self.errors_mode = "replace"
+        else:
+            if self.errors_mode != "replace":
+                logger.info(f"[Compat] Still failing under {target}; switching errors='replace'")
+            try:
+                if self.fp:
+                    self.fp.close()
+                self.fp = open(self.current_file, "r", encoding=target, errors="replace")
+                self.fp.seek(0, os.SEEK_END)
+                self.errors_mode = "replace"
+            except Exception as e:
+                logger.error(f"[Compat] Fallback replace failed: {e}")
+
+    def _check_rotation_or_truncate(self) -> bool:
+        try:
+            st = os.stat(self.current_file)
+        except FileNotFoundError:
+            logger.warning(f"[Compat] File missing: {self.current_file}. Waiting to reappear...")
+            time.sleep(max(self.interval, 0.5))
+            self._resolve_initial_file()
+            self._open_file(start_at_end=False)
+            return True
+
+        inode = getattr(st, "st_ino", None)
+        size = st.st_size
+        rotated = False
+        if self.current_inode is not None and inode is not None and inode != self.current_inode:
+            rotated = True
+        if size < self.last_size:
+            rotated = True
+
+        self.current_inode = inode
+        self.last_size = size
+
+        if rotated:
+            logger.info(f"[Compat] Log rotated or truncated: {self.current_file}. Reopening from start.")
+            self._open_file(start_at_end=False)
+            return True
+        return False
+
+    def run(self):
+        try:
+            while not self._stop:
+                try:
+                    while True:
+                        line = self.fp.readline()
+                        if not line:
+                            break
+                        threading.Thread(
+                            target=self.callback, args=(line,), kwargs={"data_type": "log"}, daemon=True
+                        ).start()
+                except UnicodeDecodeError:
+                    self._switch_encoding_after_error()
+                except Exception as e:
+                    logger.debug(f"[Compat] Read loop exception: {e}")
+
+                if not self._check_rotation_or_truncate():
+                    # 兼容模式固定跟 latest.log 或指定文件，不做其它切换
+                    pass
+
+                time.sleep(self.interval)
+        except KeyboardInterrupt:
+            logger.info("[Compat] KeyboardInterrupt received, stopping polling...")
+        except Exception as e:
+            logger.error(f"[Compat] Unexpected error in polling loop: {e}")
+        finally:
+            self.close()
+
+    def close(self):
+        if self.fp:
+            try:
+                self.fp.close()
+            except Exception:
+                pass
+            self.fp = None
+
+    def stop(self):
+        self._stop = True
+
+
+# ------------------------------
+# 入口函数
+# ------------------------------
+
+def start_log_monitor(config: MessageCaptureConfig, callback):
+    """
+    启动日志监控。
+    - config.minecraft_log_path: 日志目录或文件路径
+    - config.log_encoding: 用户编码；为空或 "auto" 则自动判定
+    - config.monitor_mode: MonitorMode.EFFICIENT / MonitorMode.COMPATIBLE
+    - callback: 回调函数(line: str, data_type='log')
+    """
+
+    mode = config.monitor_mode
+
+    user_encoding = config.log_encoding
+    if not user_encoding or (isinstance(user_encoding, str) and user_encoding.lower() == "auto"):
+        user_encoding = None
+
+    log_path = config.minecraft_log_path
+    if not log_path:
+        raise ValueError("minecraft_log_path must not be empty")
+
+    logger.info(f"Starting log monitoring at: {log_path} with mode={mode.value}")
+
+    if mode == MonitorMode.COMPATIBLE:
+        # 兼容模式：轮询 tail
+        poller = CompatiblePollingMonitor(log_path=log_path, user_encoding=user_encoding, callback=callback,
+                                          interval=0.2)
+        poller.run()
+        return
+
+    # 高效模式：watchdog 事件驱动
+    handler = EfficientLogMonitor(log_path=log_path, user_encoding=user_encoding, callback=callback)
     observer = Observer()
-    observer.schedule(event_handler, directory, recursive=False)
-    logger.info(f"Observer scheduled for directory: {directory}. Starting observer thread.")
+    observer.schedule(handler, handler.base_dir, recursive=False)
+    logger.info(f"[Efficient] Observer scheduled for directory: {handler.base_dir}. Starting observer.")
     observer.start()
 
     try:
         observer.join()
     except KeyboardInterrupt:
-        logger.info("KeyboardInterrupt received. Stopping observer...")
+        logger.info("[Efficient] KeyboardInterrupt received. Stopping observer...")
         observer.stop()
     except Exception as e:
-        logger.error(f"An unexpected error occurred in the monitoring loop: {str(e)}")
+        logger.error(f"[Efficient] Unexpected error in monitoring loop: {e}")
         observer.stop()
-        logger.error("Observer stopped due to unexpected error.")
+        logger.error("[Efficient] Observer stopped due to unexpected error.")
 
     observer.join()
-    logger.info("Log file monitoring stopped.")
-
-    if event_handler.file_pointer:
-        try:
-            event_handler.file_pointer.close()
-            logger.debug(f"Closed final log file pointer for {event_handler.current_file}")
-        except Exception as e:
-            logger.warning(f"Error closing final log file pointer: {e}")
+    logger.info("Log monitoring stopped.")
+    try:
+        if handler.fp:
+            handler.fp.close()
+    except Exception:
+        pass

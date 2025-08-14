@@ -19,7 +19,7 @@ from importlib.metadata import version
 from datetime import datetime
 
 from modless_chat_trans.file_utils import get_platform
-from modless_chat_trans.config import read_config
+from modless_chat_trans.config import read_config, MonitorMode
 from modless_chat_trans.i18n import set_language
 from modless_chat_trans.logger import init_logger, logger
 
@@ -28,7 +28,7 @@ init_logger(cfg.settings.debug)
 set_language(cfg.settings.interface_language)
 
 from modless_chat_trans.web_display import start_httpserver_thread, display_message
-from modless_chat_trans.log_monitor import monitor_log_file
+from modless_chat_trans.log_monitor import start_log_monitor
 from modless_chat_trans.message_processor import init_processor, process_message
 from modless_chat_trans.translator import Translator
 from modless_chat_trans.new_interface import ProgramInfo, MainWindow, QApplication
@@ -131,12 +131,10 @@ def start_translation(config):
     )
 
     monitor_thread = threading.Thread(
-        target=monitor_log_file,
+        target=start_log_monitor,
         args=(
-            config.minecraft_log_folder,
-            callback,
-            config.use_high_version_fix,
-            config.encoding
+            config.message_capture,
+            callback
         )
     )
     monitor_thread.daemon = True
