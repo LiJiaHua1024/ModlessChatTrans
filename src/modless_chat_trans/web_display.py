@@ -32,7 +32,7 @@ def start_httpserver_thread(**kwargs):
         server_thread = threading.Thread(target=start_httpserver, args=(kwargs["http_port"], kwargs["callback"]))
         server_thread.daemon = True
         server_thread.start()
-        logger.info(f"HTTP server thread started on port {kwargs['port']}")
+        logger.info(f"HTTP server thread started on port {kwargs['http_port']}")
     except Exception as e:
         logger.error(f"Failed to start HTTP server thread: {str(e)}")
         raise e

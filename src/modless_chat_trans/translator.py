@@ -18,6 +18,7 @@ import json
 import re
 from modless_chat_trans.logger import logger
 from modless_chat_trans.file_utils import LazyImporter
+from modless_chat_trans.config import ServiceType
 
 # 新增支持的 LLM 服务商
 LLM_PROVIDERS_PREFIXES = {
@@ -97,23 +98,37 @@ service_supported_languages = _LazyLanguageDict()
 
 
 class Translator:
-    def __init__(self,
-                 enable_optimization=False,
-                 llm_kwargs=None,
-                 traditional_kwargs=None):
+    def __init__(self, translation_service_config):
         """
         初始化 Translator 类, 提供多种翻译相关选项及服务参数
 
-        :param enable_optimization: 是否启用翻译质量优化
-        :param llm_kwargs: 与大语言模型(LLM)翻译相关的关键字参数
-        :param traditional_kwargs: 与传统翻译相关的关键字参数
+        :param translation_service_config: config.TranslationServiceConfig
         """
 
-        self.enable_optimization = enable_optimization
-        self.llm_kwargs = llm_kwargs or {}
-        self.traditional_kwargs = traditional_kwargs or {}
+        self.translation_service_config = translation_service_config
 
-        logger.info(f"Initialized Translator with optimization {'enabled' if enable_optimization else 'disabled'}")
+        logger.info(f"Initialized Translator")
+
+    def translate(self, text, source_language, target_language):
+        if self.translation_service_config.service_type == ServiceType.LLM:
+            result = self.llm_translate(
+                text,
+                self.translation_service_config.llm.model,
+                source_language,
+                target_language,
+                self.translation_service_config.llm.provider
+            )
+            return result
+        elif self.translation_service_config.service_type == ServiceType.TRADITIONAL:
+            if translation := self.traditional_translate(
+                    text,
+                    self.translation_service_config.traditional.provider,
+                    source_language,
+                    target_language
+            ):
+                return {"result": translation, "usage": None}
+            else:
+                return None
 
     def llm_translate(self, text, model, source_language, target_language, provider):
         """
@@ -132,7 +147,7 @@ class Translator:
         if source_language.lower() == "auto":
             source_language = ""
 
-        if self.enable_optimization:
+        if self.translation_service_config.llm.deep_translate:
             # scene = "Hypixel Bedwars"
             system_prompt = (
                 "You are a Minecraft-specific intelligent translation engine, "
@@ -246,12 +261,12 @@ class Translator:
                     {"role": "user", "content": message}
                 ],
                 "temperature": 0,
-                "api_key": self.llm_kwargs["api_key"],
+                "api_key": self.translation_service_config.llm.api_key,
             }
 
             # API URL 留空自动
-            if api_url := self.llm_kwargs["api_url"]:
-                llm_params["api_base"] = api_url
+            if api_base := self.translation_service_config.llm.api_base:
+                llm_params["api_base"] = api_base
 
             response = llm_completion(**llm_params)
 
@@ -264,7 +279,7 @@ class Translator:
             logger.error(f"LLM translation failed ({provider}) via litellm: {e}")
             return None
 
-        if self.enable_optimization:
+        if self.translation_service_config.llm.deep_translate:
             try:
                 content_dict = json.loads(content_str)
             except json.JSONDecodeError as e1:
@@ -308,7 +323,7 @@ class Translator:
         :return: 翻译后的消息
         """
 
-        traditional_api_key: str = self.traditional_kwargs.get("api_key", "")
+        traditional_api_key: str = self.translation_service_config.traditional.api_key
         if traditional_api_key:
             service = service.lower()
 

@@ -17,27 +17,25 @@ from json import JSONDecodeError
 from requests.exceptions import HTTPError
 from modless_chat_trans.i18n import _
 from modless_chat_trans.file_utils import cache
-from modless_chat_trans.translator import services, LLM_PROVIDERS
+from modless_chat_trans.translator import services
 from modless_chat_trans.logger import logger
 
-
-trans_sys_message = True
+filter_server_messages = True
 glossary = {}
 _compiled_glossary_patterns = {}
 glossary_compiled = False
 replace_garbled_character = False
 
 
-def init_processor(_trans_sys_message, _glossary, _replace_garbled_character):
+def init_processor(message_capture_config, _glossary):
     """
-    :param _trans_sys_message: 是否翻译系统（name为空）消息，仅对log类型有效
+    :param message_capture_config: config.MessageCaptureConfig
     :param _glossary: 自定义术语表
-    :param _replace_garbled_character: 是否将乱码字符\ufffd\ufffd替换为\u00A7
     """
-    global trans_sys_message, glossary, replace_garbled_character
-    trans_sys_message = _trans_sys_message
+    global filter_server_messages, replace_garbled_character, glossary
+    filter_server_messages = message_capture_config.filter_server_messages
+    replace_garbled_character = message_capture_config.replace_garbled_chars
     glossary = _glossary
-    replace_garbled_character = _replace_garbled_character
 
 
 def _compile_glossary_patterns():
@@ -198,20 +196,17 @@ def process_decorator(function):
     为process_message添加翻译步骤
     """
 
-    def wrapper(data, data_type, translator, translation_service,
-                model=None, source_language=None, target_language=None):
+    def wrapper(data, data_type, translator, source_language, target_language):
         """
         处理日志文件中的一行（包括翻译）
 
         :param data: 需要处理的数据
         :param data_type: 数据类型
         :param translator: Translator类的实例
-        :param translation_service: 翻译服务
-        :param model: 模型名称
         :param source_language: 源语言
         :param target_language: 目标语言
         :return:
-            - None：应被丢弃的数据（可能是不包含[CHAT]的日志行，也可能是系统消息且trans_sys_message为False）
+            - None：应被丢弃的数据（可能是不包含[CHAT]的日志行，也可能是系统消息且filter_server_messages为True）
             - 长度为3的元组：
                 - data_type == "log":
                     - [0]: 名称（如果有）, if [0] == "[ERROR]": 翻译失败，此时[1]为错误信息
@@ -226,7 +221,7 @@ def process_decorator(function):
         name, original_chat_message = function(data, data_type)
         translated_chat_message: str = ""
         info: dict = {}
-        if data_type == "log" and not trans_sys_message and not name:
+        if data_type == "log" and filter_server_messages and not name:
             return ""
         if original_chat_message:
             if matched_translated_message := match_and_translate(original_chat_message):
@@ -239,27 +234,13 @@ def process_decorator(function):
                 info["cache_hit"] = True
             else:
                 try:
-                    # 向后兼容旧配置中的 "LLM" 值
-                    if translation_service == "LLM":
-                        translation_service = LLM_PROVIDERS[0]
-
-                    if translation_service in LLM_PROVIDERS:
-                        if result := translator.llm_translate(
+                    if result := translator.translate(
                             original_chat_message,
-                            model=model,
-                            source_language=source_language,
-                            target_language=target_language,
-                            provider=translation_service
-                        ):
-                            translated_chat_message = result["result"]
-                            info["usage"] = result["usage"]
-                    elif translation_service in services:
-                        translated_chat_message = translator.traditional_translate(
-                            original_chat_message,
-                            translation_service,
                             source_language=source_language,
                             target_language=target_language
-                        )
+                    ):
+                        translated_chat_message = result["result"]
+                        info["usage"] = result["usage"]
                 except HTTPError as http_err:
                     response = getattr(http_err, "response", None)
                     if response:
@@ -283,7 +264,8 @@ def process_decorator(function):
                     return "[ERROR]", f"{_('翻译失败，错误：')} {e}", info
 
                 if translated_chat_message:
-                    logger.debug(f"Translation successful, caching result: {original_chat_message} -> {translated_chat_message}")
+                    logger.debug(
+                        f"Translation successful, caching result: {original_chat_message} -> {translated_chat_message}")
                     cache[original_chat_message] = translated_chat_message
 
             if data_type == "log":

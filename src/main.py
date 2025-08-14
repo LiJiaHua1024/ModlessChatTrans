@@ -66,11 +66,9 @@ def start_translation(config):
                 if processed_message := process_message(
                         data,
                         data_type,
-                        translator,
-                        config.trans_service,
-                        model=config.model,
-                        source_language=config.op_src_lang,
-                        target_language=config.op_tgt_lang
+                        player_translator,
+                        source_language=config.message_capture.source_language,
+                        target_language=config.message_capture.target_language
                 ):
                     if processed_message[1]:
                         duration = time.time() - start_time
@@ -90,11 +88,9 @@ def start_translation(config):
                 if processed_message := process_message(
                         data,
                         data_type,
-                        translator,
-                        config.trans_service,
-                        model=config.model,
-                        source_language=config.self_src_lang,
-                        target_language=config.self_tgt_lang
+                        send_translator,
+                        source_language=config.message_send.source_language,
+                        target_language=config.message_send.target_language
                 ):
                     if not processed_message[0]:
                         modify_clipboard(processed_message[1])
@@ -107,28 +103,26 @@ def start_translation(config):
                         )
                         return processed_message[1]
                     else:
-                        display_message(*processed_message, config.output_method)
+                        display_message(*processed_message)
                         return None
                 return None
             return None
         return None
 
-    translator = Translator(
-        enable_optimization=config.enable_optimization,
-        llm_kwargs={"api_key": config.api_key, "api_url": config.api_url},
-        traditional_kwargs={"api_key": config.traditional_api_key}
-    )
+    player_translator = Translator(config.player_translation)
+    if config.send_translation_independent:
+        send_translator = Translator(config.send_translation)
+    else:
+        send_translator = player_translator
 
     start_httpserver_thread(
-        http_port=config.http_port,
-        max_messages=config.max_messages,
+        http_port=config.message_presentation.web_port,
         callback=callback
     )
 
     init_processor(
-        config.trans_sys_message,
-        config.glossary,
-        config.replace_garbled_character
+        config.message_capture,
+        config.glossary
     )
 
     monitor_thread = threading.Thread(
@@ -141,7 +135,7 @@ def start_translation(config):
     monitor_thread.daemon = True
     monitor_thread.start()
 
-    if config.self_trans_enabled:
+    if config.message_send.monitor_clipboard:
         clipboard_thread = threading.Thread(target=monitor_clipboard, args=(callback,))
         clipboard_thread.daemon = True
         clipboard_thread.start()
