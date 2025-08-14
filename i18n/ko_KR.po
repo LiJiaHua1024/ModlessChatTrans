@@ -7,159 +7,190 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-08-08 18:30+0800\n"
+"POT-Creation-Date: 2025-08-14 14:51+0800\n"
 "PO-Revision-Date: 2025-08-08 10:00+0000\n"
 "Last-Translator: GPT-5 <noreply@example.com>\n"
 "Language-Team: Korean\n"
-"Language: ko_KR\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=utf-8\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: ko_KR\n"
 "Generated-By: Babel 2.17.0\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: GPT-5\n"
 
+#: templates/index.html:8
 msgid "消息翻译结果"
 msgstr "메시지 번역 결과"
 
+#: templates/index.html:13
 msgid "消息"
 msgstr "메시지"
 
+#: templates/index.html:63
 msgid "输入消息..."
 msgstr "메시지를 입력..."
 
+#: main.py:100
 msgid "要发送的消息翻译完成，翻译结果已复制到剪切板"
 msgstr "보낼 메시지의 번역이 완료되었습니다. 결과가 클립보드에 복사되었습니다."
 
-msgid "翻译失败：请求次数过多，请稍后重试。"
-msgstr "번역 실패: 요청이 너무 많습니다. 잠시 후 다시 시도하세요."
-
-msgid "翻译失败：服务器错误，请稍后重试。"
-msgstr "번역 실패: 서버 오류입니다. 잠시 후 다시 시도하세요."
-
-msgid "翻译失败：发生HTTP错误。"
-msgstr "번역 실패: HTTP 오류가 발생했습니다."
-
-msgid "翻译失败：网络问题或发生HTTP错误。"
-msgstr "번역 실패: 네트워크 문제 또는 HTTP 오류가 발생했습니다."
-
-msgid "翻译失败：服务器响应无效，请检查网络连接。"
-msgstr "번역 실패: 서버 응답이 올바르지 않습니다. 네트워크 연결을 확인하세요."
-
-msgid "翻译失败，错误："
-msgstr "번역 실패, 오류: "
-
+#: modless_chat_trans/interface.py:126 modless_chat_trans/interface.py:2246
 msgid "下载失败"
 msgstr "다운로드 실패"
 
+#: modless_chat_trans/interface.py:166
 msgid "消息捕获设置"
 msgstr "메시지 캡처 설정"
 
+#: modless_chat_trans/interface.py:177
 msgid "Minecraft 日志位置："
 msgstr "Minecraft 로그 위치:"
 
+#: modless_chat_trans/interface.py:179
 msgid "请选择Minecraft日志文件夹路径"
 msgstr "Minecraft 로그 폴더 경로를 선택하세요"
 
+#: modless_chat_trans/interface.py:190 modless_chat_trans/interface.py:976
 msgid "源语言："
 msgstr "원본 언어:"
 
+#: modless_chat_trans/interface.py:191 modless_chat_trans/interface.py:977
 msgid "目标语言："
 msgstr "대상 언어:"
 
+#: modless_chat_trans/interface.py:199
 msgid "日志编码："
 msgstr "로그 인코딩:"
 
+#: modless_chat_trans/interface.py:200
 msgid "建议选择自动检测（auto），如果无效可以尝试手动指定GBK等编码"
-msgstr "자동 감지(auto)를 권장합니다. 작동하지 않으면 GBK 등의 인코딩을 수동으로 지정해 보세요."
+msgstr ""
+"자동 감지(auto)를 권장합니다. 작동하지 않으면 GBK 등의 인코딩을 수동으로 지정"
+"해 보세요."
 
+#: modless_chat_trans/interface.py:210
 msgid "监控模式："
 msgstr "모니터링 모드:"
 
+#: modless_chat_trans/interface.py:211
 msgid "建议优先尝试高效模式，若无法正常获取消息，再切换至兼容模式"
-msgstr "먼저 고효율 모드를 사용해 보세요. 메시지를 정상적으로 가져오지 못하면 호환 모드로 전환하세요."
+msgstr ""
+"먼저 고효율 모드를 사용해 보세요. 메시지를 정상적으로 가져오지 못하면 호환 모"
+"드로 전환하세요."
 
+#: modless_chat_trans/interface.py:212
 msgid "高效模式"
 msgstr "고효율 모드"
 
+#: modless_chat_trans/interface.py:213
 msgid "低版本 Minecraft 推荐使用"
 msgstr "구버전 Minecraft 권장"
 
+#: modless_chat_trans/interface.py:214
 msgid "兼容模式"
 msgstr "호환 모드"
 
+#: modless_chat_trans/interface.py:215
 msgid "高版本 Minecraft 使用"
 msgstr "신버전 Minecraft 사용"
 
+#: modless_chat_trans/interface.py:236
 msgid "过滤服务器消息"
 msgstr "서버 메시지 필터링"
 
+#: modless_chat_trans/interface.py:237
 msgid "不翻译不带玩家名称的服务器消息（系统消息）"
 msgstr "플레이어 이름이 없는 서버 메시지(시스템 메시지)는 번역하지 않기"
 
+#: modless_chat_trans/interface.py:242
 msgid "替换乱码字符"
 msgstr "깨진 문자 대체"
 
-msgid "将乱码字符（\\ufffd\\ufffd）替换为用于Minecraft格式化代码的分节符§（\\u00A7）"
-msgstr "깨진 문자(\\ufffd\\ufffd)를 Minecraft 서식 코드에 사용되는 섹션 기호 §(\\u00A7)로 바꿉니다"
+#: modless_chat_trans/interface.py:244
+msgid ""
+"将乱码字符（\\ufffd\\ufffd）替换为用于Minecraft格式化代码的分节符§（\\u00A7）"
+msgstr ""
+"깨진 문자(\\ufffd\\ufffd)를 Minecraft 서식 코드에 사용되는 섹션 기호 §"
+"(\\u00A7)로 바꿉니다"
 
+#: modless_chat_trans/interface.py:263 modless_chat_trans/interface.py:991
 msgid "请输入源语言（格式不限，AI可智能识别；留空则自动检测）"
 msgstr "원본 언어를 입력하세요(형식 무관, AI가 인식, 비워 두면 자동 감지)"
 
+#: modless_chat_trans/interface.py:270 modless_chat_trans/interface.py:998
 msgid "请输入目标语言（格式不限，AI可智能识别）"
 msgstr "대상 언어를 입력하세요(형식 무관, AI가 인식)"
 
+#: modless_chat_trans/interface.py:284 modless_chat_trans/interface.py:1012
 msgid "请选择源语言"
 msgstr "원본 언어를 선택하세요"
 
+#: modless_chat_trans/interface.py:288 modless_chat_trans/interface.py:1016
 msgid "请选择目标语言"
 msgstr "대상 언어를 선택하세요"
 
+#: modless_chat_trans/interface.py:353
 msgid "翻译服务设置"
 msgstr "번역 서비스 설정"
 
+#: modless_chat_trans/interface.py:394
 msgid "玩家消息翻译服务"
 msgstr "플레이어 메시지 번역 서비스"
 
+#: modless_chat_trans/interface.py:414
 msgid "独立设置消息发送翻译服务"
 msgstr "메시지 전송용 별도 번역 서비스를 설정"
 
-msgid "                AI翻译                "
-msgstr "                AI 번역                "
-
-msgid "                传统翻译                "
-msgstr "                기존 번역                "
-
+#: modless_chat_trans/interface.py:443
 msgid "消息发送翻译服务"
 msgstr "메시지 전송 번역 서비스"
 
+#: modless_chat_trans/interface.py:475
+msgid "                AI翻译                "
+msgstr "                AI 번역                "
+
+#: modless_chat_trans/interface.py:480
+msgid "                传统翻译                "
+msgstr "                기존 번역                "
+
+#: modless_chat_trans/interface.py:564 modless_chat_trans/interface.py:688
 msgid "选择服务："
 msgstr "서비스 선택:"
 
+#: modless_chat_trans/interface.py:567 modless_chat_trans/interface.py:698
 msgid "请选择翻译服务"
 msgstr "번역 서비스를 선택하세요"
 
+#: modless_chat_trans/interface.py:588 modless_chat_trans/interface.py:729
 msgid "API Key："
 msgstr "API 키:"
 
+#: modless_chat_trans/interface.py:590
 msgid "请输入您的API Key"
 msgstr "API 키를 입력하세요"
 
+#: modless_chat_trans/interface.py:604
 msgid "API地址："
 msgstr "API 엔드포인트:"
 
+#: modless_chat_trans/interface.py:606 modless_chat_trans/interface.py:607
 msgid "默认端点"
 msgstr "기본 엔드포인트"
 
+#: modless_chat_trans/interface.py:625
 msgid "模型代号："
 msgstr "모델 ID:"
 
+#: modless_chat_trans/interface.py:627
 msgid "请输入模型代号，如：gpt-3.5-turbo"
 msgstr "모델 ID를 입력하세요. 예: gpt-3.5-turbo"
 
+#: modless_chat_trans/interface.py:642
 msgid "深度翻译模式："
 msgstr "심층 번역 모드:"
 
+#: modless_chat_trans/interface.py:644
 msgid ""
 "启用显式思维链（Chain of Thought）翻译策略\n"
 "优点：提供更高质量的翻译\n"
@@ -169,300 +200,470 @@ msgstr ""
 "장점: 더 높은 품질의 번역 제공\n"
 "단점: 어느 정도 토큰 사용량이 증가하고 응답 지연이 늘어남"
 
-msgid "开启"
-msgstr "활성화"
-
-msgid "不使用"
-msgstr "사용 안 함"
-
-msgid "翻译结果显示"
-msgstr "번역 결과 표시"
-
-msgid "网页端口："
-msgstr "웹 포트:"
-
-msgid "消息发送设置"
-msgstr "메시지 전송 설정"
-
-msgid "监控剪切板"
-msgstr "클립보드 모니터링"
-
-msgid "从剪切板获取要发送的消息"
-msgstr "클립보드에서 전송할 메시지 가져오기"
-
-msgid "术语表管理"
-msgstr "용어집 관리"
-
-msgid "源术语："
-msgstr "원본 용어:"
-
-msgid "请输入源术语"
-msgstr "원본 용어를 입력하세요"
-
-msgid "目标术语："
-msgstr "대상 용어:"
-
-msgid "请输入目标术语"
-msgstr "대상 용어를 입력하세요"
-
-msgid "添加/更新术语"
-msgstr "용어 추가/업데이트"
-
-msgid "清空输入"
-msgstr "입력 지우기"
-
-msgid "源术语"
-msgstr "원본 용어"
-
-msgid "目标术语"
-msgstr "대상 용어"
-
-msgid "删除选中术语"
-msgstr "선택한 용어 삭제"
-
-msgid "清空术语"
-msgstr "용어 비우기"
-
-msgid "输入错误"
-msgstr "입력 오류"
-
-msgid "源术语不能为空"
-msgstr "원본 용어는 비워둘 수 없습니다"
-
-msgid "确认覆盖"
-msgstr "덮어쓰기 확인"
-
-msgid "源术语 “{}” 已存在，是否覆盖？"
-msgstr "원본 용어 “{}”가 이미 존재합니다. 덮어쓰시겠습니까?"
-
-msgid "更新"
-msgstr "업데이트"
-
-msgid "添加"
-msgstr "추가"
-
-msgid "术语{}成功"
-msgstr "용어 {} 성공"
-
-msgid "删除成功"
-msgstr "삭제 성공"
-
-msgid "术语 “{}” 已删除"
-msgstr "용어 “{}”가 삭제되었습니다"
-
-msgid "提示"
-msgstr "알림"
-
-msgid "术语表为空，无需清空"
-msgstr "용어집이 비어 있어 비울 필요가 없습니다"
-
-msgid "确认清空"
-msgstr "비우기 확인"
-
-msgid "确定要清空所有术语吗？此操作不可恢复。"
-msgstr "모든 용어를 비우시겠습니까? 이 작업은 복구할 수 없습니다."
-
-msgid "清空成功"
-msgstr "비우기 완료"
-
-msgid "已清空 {} 个术语"
-msgstr "{}개의 용어를 비웠습니다"
-
-msgid "启动"
-msgstr "시작"
-
-msgid "获取并打印所有配置"
-msgstr "모든 설정 가져와 출력"
-
-msgid "应用信息"
-msgstr "앱 정보"
-
-msgid "版本"
-msgstr "버전"
-
-msgid "作者"
-msgstr "작성자"
-
-msgid "邮箱"
-msgstr "이메일"
-
-msgid "相关链接"
-msgstr "관련 링크"
-
-msgid "许可证"
-msgstr "라이선스"
-
-msgid "发现新版本"
-msgstr "새 버전 발견"
-
-msgid "创建更新对话框时出错: {}"
-msgstr "업데이트 대화 상자 생성 중 오류: {}"
-
-msgid "下载更新"
-msgstr "업데이트 다운로드"
-
-msgid "暂不更新"
-msgstr "나중에"
-
-msgid "版本信息"
-msgstr "버전 정보"
-
-msgid "当前版本："
-msgstr "현재 버전:"
-
-msgid "最新版本："
-msgstr "최신 버전:"
-
-msgid "未知"
-msgstr "알 수 없음"
-
-msgid "发布时间："
-msgstr "출시일:"
-
-msgid "发布者："
-msgstr "게시자:"
-
-msgid "版本类型："
-msgstr "버전 유형:"
-
-msgid "预发布版本"
-msgstr "프리릴리스"
-
-msgid "更新说明"
-msgstr "업데이트 노트"
-
-msgid "暂无更新说明"
-msgstr "업데이트 노트가 없습니다"
-
-msgid "在 GitHub 上查看完整说明"
-msgstr "GitHub에서 전체 노트 보기"
-
-msgid "正在下载更新"
-msgstr "업데이트 다운로드 중"
-
-msgid "取消"
-msgstr "취소"
-
-msgid "正在下载版本 {}..."
-msgstr "버전 {} 다운로드 중..."
-
-msgid "下载进度："
-msgstr "다운로드 진행률:"
-
-msgid "下载速度："
-msgstr "다운로드 속도:"
-
-msgid "剩余时间："
-msgstr "남은 시간:"
-
-msgid "计算中..."
-msgstr "계산 중..."
-
-msgid "下载方式："
-msgstr "다운로드 방식:"
-
-msgid "检测中..."
-msgstr "감지 중..."
-
-msgid "{} 线程下载"
-msgstr "{} 스레드 다운로드"
-
-msgid "单线程下载"
-msgstr "단일 스레드 다운로드"
-
-msgid "{} 秒"
-msgstr "{}초"
-
-msgid "{} 分 {} 秒"
-msgstr "{}분 {}초"
-
-msgid "{} 分钟"
-msgstr "{}분"
-
-msgid "{} 小时 {} 分"
-msgstr "{}시간 {}분"
-
-msgid "{} 小时"
-msgstr "{}시간"
-
-msgid "完成"
-msgstr "완료"
-
-msgid "正在取消..."
-msgstr "취소 중..."
-
-msgid "错误"
-msgstr "오류"
-
+#: modless_chat_trans/interface.py:649 modless_chat_trans/interface.py:2249
 msgid "关闭"
 msgstr "닫기"
 
+#: modless_chat_trans/interface.py:650
+msgid "开启"
+msgstr "활성화"
+
+#: modless_chat_trans/interface.py:731 modless_chat_trans/interface.py:732
+msgid "不使用"
+msgstr "사용 안 함"
+
+#: modless_chat_trans/interface.py:912 modless_chat_trans/interface.py:2853
+msgid "翻译结果显示"
+msgstr "번역 결과 표시"
+
+#: modless_chat_trans/interface.py:922
+msgid "网页端口："
+msgstr "웹 포트:"
+
+#: modless_chat_trans/interface.py:956
+msgid "消息发送设置"
+msgstr "메시지 전송 설정"
+
+#: modless_chat_trans/interface.py:967
+msgid "监控剪切板"
+msgstr "클립보드 모니터링"
+
+#: modless_chat_trans/interface.py:968
+msgid "从剪切板获取要发送的消息"
+msgstr "클립보드에서 전송할 메시지 가져오기"
+
+#: modless_chat_trans/interface.py:1078
+msgid "术语表管理"
+msgstr "용어집 관리"
+
+#: modless_chat_trans/interface.py:1089
+msgid "源术语："
+msgstr "원본 용어:"
+
+#: modless_chat_trans/interface.py:1091
+msgid "请输入源术语"
+msgstr "원본 용어를 입력하세요"
+
+#: modless_chat_trans/interface.py:1098
+msgid "目标术语："
+msgstr "대상 용어:"
+
+#: modless_chat_trans/interface.py:1100
+msgid "请输入目标术语"
+msgstr "대상 용어를 입력하세요"
+
+#: modless_chat_trans/interface.py:1107
+msgid "添加/更新术语"
+msgstr "용어 추가/업데이트"
+
+#: modless_chat_trans/interface.py:1112
+msgid "清空输入"
+msgstr "입력 지우기"
+
+#: modless_chat_trans/interface.py:1125
+msgid "源术语"
+msgstr "원본 용어"
+
+#: modless_chat_trans/interface.py:1125
+msgid "目标术语"
+msgstr "대상 용어"
+
+#: modless_chat_trans/interface.py:1139
+msgid "删除选中术语"
+msgstr "선택한 용어 삭제"
+
+#: modless_chat_trans/interface.py:1143
+msgid "清空术语"
+msgstr "용어 비우기"
+
+#: modless_chat_trans/interface.py:1269
+msgid "输入错误"
+msgstr "입력 오류"
+
+#: modless_chat_trans/interface.py:1270
+msgid "源术语不能为空"
+msgstr "원본 용어는 비워둘 수 없습니다"
+
+#: modless_chat_trans/interface.py:1289
+msgid "确认覆盖"
+msgstr "덮어쓰기 확인"
+
+#: modless_chat_trans/interface.py:1290
+msgid "源术语 \"{}\" 已存在，是否覆盖？"
+msgstr "원본 용어 “{}”가 이미 존재합니다. 덮어쓰시겠습니까?"
+
+#: modless_chat_trans/interface.py:1303
+msgid "更新"
+msgstr "업데이트"
+
+#: modless_chat_trans/interface.py:1303
+msgid "添加"
+msgstr "추가"
+
+#: modless_chat_trans/interface.py:1308
+msgid "术语{}成功"
+msgstr "용어 {} 성공"
+
+#: modless_chat_trans/interface.py:1338
+msgid "删除成功"
+msgstr "삭제 성공"
+
+#: modless_chat_trans/interface.py:1339
+msgid "术语 \"{}\" 已删除"
+msgstr "용어 “{}”가 삭제되었습니다"
+
+#: modless_chat_trans/interface.py:1362
+msgid "提示"
+msgstr "알림"
+
+#: modless_chat_trans/interface.py:1363
+msgid "术语表为空，无需清空"
+msgstr "용어집이 비어 있어 비울 필요가 없습니다"
+
+#: modless_chat_trans/interface.py:1373
+msgid "确认清空"
+msgstr "비우기 확인"
+
+#: modless_chat_trans/interface.py:1374
+msgid "确定要清空所有术语吗？此操作不可恢复。"
+msgstr "모든 용어를 비우시겠습니까? 이 작업은 복구할 수 없습니다."
+
+#: modless_chat_trans/interface.py:1385
+msgid "清空成功"
+msgstr "비우기 완료"
+
+#: modless_chat_trans/interface.py:1386
+msgid "已清空 {} 个术语"
+msgstr "{}개의 용어를 비웠습니다"
+
+#: modless_chat_trans/interface.py:1429 modless_chat_trans/interface.py:1445
+#: modless_chat_trans/interface.py:2856
+msgid "启动"
+msgstr "시작"
+
+#: modless_chat_trans/interface.py:1449
+msgid "直接启动"
+msgstr "직접 시작"
+
+#: modless_chat_trans/interface.py:1450
+msgid "保存配置并启动"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1454
+msgid "保存配置"
+msgstr "설정 저장"
+
+#: modless_chat_trans/interface.py:1480
+msgid "工作中"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1487
+msgid "已停止"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1501
+msgid "已启动"
+msgstr "시작됨"
+
+#: modless_chat_trans/interface.py:1501
+msgid "已根据当前界面配置启动"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1507
+msgid "启动失败"
+msgstr "시작 실패"
+
+#: modless_chat_trans/interface.py:1516
+msgid "保存配置失败"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1519
+msgid "已保存"
+msgstr "저장됨"
+
+#: modless_chat_trans/interface.py:1519
+msgid "配置已保存，但未设置启动回调"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1525
+msgid "已保存并启动"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1525
+msgid "配置已保存并启动"
+msgstr "설정이 저장되고 시작되었습니다"
+
+#: modless_chat_trans/interface.py:1531
+msgid "操作失败"
+msgstr "작업 실패"
+
+#: modless_chat_trans/interface.py:1540
+msgid "保存成功"
+msgstr "저장 성공"
+
+#: modless_chat_trans/interface.py:1540
+msgid "配置已保存至文件"
+msgstr "설정이 파일에 저장되었습니다"
+
+#: modless_chat_trans/interface.py:1544 modless_chat_trans/interface.py:1549
+msgid "保存失败"
+msgstr "저장 실패"
+
+#: modless_chat_trans/interface.py:1544
+msgid "写入配置文件失败"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1752
+msgid "应用信息"
+msgstr "앱 정보"
+
+#: modless_chat_trans/interface.py:1759
+msgid "版本"
+msgstr "버전"
+
+#: modless_chat_trans/interface.py:1760
+msgid "作者"
+msgstr "작성자"
+
+#: modless_chat_trans/interface.py:1761
+msgid "邮箱"
+msgstr "이메일"
+
+#: modless_chat_trans/interface.py:1803
+msgid "相关链接"
+msgstr "관련 링크"
+
+#: modless_chat_trans/interface.py:1842
+msgid "许可证"
+msgstr "라이선스"
+
+#: modless_chat_trans/interface.py:1877 modless_chat_trans/interface.py:2557
+msgid "发现新版本"
+msgstr "새 버전 발견"
+
+#: modless_chat_trans/interface.py:1903
+msgid "创建更新对话框时出错: {}"
+msgstr "업데이트 대화 상자 생성 중 오류: {}"
+
+#: modless_chat_trans/interface.py:1906
+msgid "下载更新"
+msgstr "업데이트 다운로드"
+
+#: modless_chat_trans/interface.py:1907
+msgid "暂不更新"
+msgstr "나중에"
+
+#: modless_chat_trans/interface.py:1921
+msgid "版本信息"
+msgstr "버전 정보"
+
+#: modless_chat_trans/interface.py:1930 modless_chat_trans/interface.py:2431
+msgid "当前版本："
+msgstr "현재 버전:"
+
+#: modless_chat_trans/interface.py:1935
+msgid "最新版本："
+msgstr "최신 버전:"
+
+#: modless_chat_trans/interface.py:1936 modless_chat_trans/interface.py:1942
+#: modless_chat_trans/interface.py:1943 modless_chat_trans/interface.py:1955
+#: modless_chat_trans/interface.py:2097 modless_chat_trans/interface.py:2433
+msgid "未知"
+msgstr "알 수 없음"
+
+#: modless_chat_trans/interface.py:1941
+msgid "发布时间："
+msgstr "출시일:"
+
+#: modless_chat_trans/interface.py:1953
+msgid "发布者："
+msgstr "게시자:"
+
+#: modless_chat_trans/interface.py:1970
+msgid "版本类型："
+msgstr "버전 유형:"
+
+#: modless_chat_trans/interface.py:1971
+msgid "预发布版本"
+msgstr "프리릴리스"
+
+#: modless_chat_trans/interface.py:1989
+msgid "更新说明"
+msgstr "업데이트 노트"
+
+#: modless_chat_trans/interface.py:1999
+msgid "暂无更新说明"
+msgstr "업데이트 노트가 없습니다"
+
+#: modless_chat_trans/interface.py:2067
+msgid "在 GitHub 上查看完整说明"
+msgstr "GitHub에서 전체 노트 보기"
+
+#: modless_chat_trans/interface.py:2085
+msgid "正在下载更新"
+msgstr "업데이트 다운로드 중"
+
+#: modless_chat_trans/interface.py:2092
+msgid "取消"
+msgstr "취소"
+
+#: modless_chat_trans/interface.py:2097
+msgid "正在下载版本 {}..."
+msgstr "버전 {} 다운로드 중..."
+
+#: modless_chat_trans/interface.py:2122
+msgid "下载进度："
+msgstr "다운로드 진행률:"
+
+#: modless_chat_trans/interface.py:2128
+msgid "下载速度："
+msgstr "다운로드 속도:"
+
+#: modless_chat_trans/interface.py:2134
+msgid "剩余时间："
+msgstr "남은 시간:"
+
+#: modless_chat_trans/interface.py:2135 modless_chat_trans/interface.py:2232
+msgid "计算中..."
+msgstr "계산 중..."
+
+#: modless_chat_trans/interface.py:2140
+msgid "下载方式："
+msgstr "다운로드 방식:"
+
+#: modless_chat_trans/interface.py:2141
+msgid "检测中..."
+msgstr "감지 중..."
+
+#: modless_chat_trans/interface.py:2161
+msgid "{} 线程下载"
+msgstr "{} 스레드 다운로드"
+
+#: modless_chat_trans/interface.py:2163
+msgid "单线程下载"
+msgstr "단일 스레드 다운로드"
+
+#: modless_chat_trans/interface.py:2212
+msgid "{} 秒"
+msgstr "{}초"
+
+#: modless_chat_trans/interface.py:2217
+msgid "{} 分 {} 秒"
+msgstr "{}분 {}초"
+
+#: modless_chat_trans/interface.py:2219
+msgid "{} 分钟"
+msgstr "{}분"
+
+#: modless_chat_trans/interface.py:2224
+msgid "{} 小时 {} 分"
+msgstr "{}시간 {}분"
+
+#: modless_chat_trans/interface.py:2226
+msgid "{} 小时"
+msgstr "{}시간"
+
+#: modless_chat_trans/interface.py:2230
+msgid "完成"
+msgstr "완료"
+
+#: modless_chat_trans/interface.py:2239
+msgid "正在取消..."
+msgstr "취소 중..."
+
+#: modless_chat_trans/interface.py:2247 modless_chat_trans/interface.py:2474
+msgid "错误"
+msgstr "오류"
+
+#: modless_chat_trans/interface.py:2273 modless_chat_trans/interface.py:2860
 msgid "设置"
 msgstr "설정"
 
+#: modless_chat_trans/interface.py:2303
 msgid "语言设置"
 msgstr "언어 설정"
 
+#: modless_chat_trans/interface.py:2315
 msgid "界面语言："
 msgstr "인터페이스 언어:"
 
+#: modless_chat_trans/interface.py:2336
 msgid "保存"
 msgstr "저장"
 
+#: modless_chat_trans/interface.py:2341
 msgid "* 语言更改将在重启后生效"
 msgstr "* 언어 변경은 재시작 후 적용됩니다"
 
+#: modless_chat_trans/interface.py:2359
 msgid "更新设置"
 msgstr "업데이트 설정"
 
+#: modless_chat_trans/interface.py:2371
 msgid "自动检查："
 msgstr "자동 확인:"
 
+#: modless_chat_trans/interface.py:2373
 msgid "启动时"
 msgstr "시작 시"
 
+#: modless_chat_trans/interface.py:2374
 msgid "每天"
 msgstr "매일"
 
+#: modless_chat_trans/interface.py:2375
 msgid "每周"
 msgstr "매주"
 
+#: modless_chat_trans/interface.py:2376
 msgid "每月"
 msgstr "매월"
 
+#: modless_chat_trans/interface.py:2377
 msgid "从不"
 msgstr "안 함"
 
+#: modless_chat_trans/interface.py:2395
 msgid "预发布版本："
 msgstr "프리릴리스:"
 
+#: modless_chat_trans/interface.py:2396
 msgid "包含预发布版本"
 msgstr "프리릴리스를 포함"
 
+#: modless_chat_trans/interface.py:2406
 msgid "手动检查："
 msgstr "수동 확인:"
 
+#: modless_chat_trans/interface.py:2414
 msgid "检查更新"
 msgstr "업데이트 확인"
 
+#: modless_chat_trans/interface.py:2456
 msgid "设置已保存"
 msgstr "설정이 저장되었습니다"
 
+#: modless_chat_trans/interface.py:2457
 msgid "界面语言已设置为 {}，重启后生效。"
 msgstr "인터페이스 언어가 {}(으)로 설정되었습니다. 재시작 후 적용됩니다."
 
+#: modless_chat_trans/interface.py:2475
 msgid "更新器未初始化"
 msgstr "업데이터가 초기화되지 않았습니다"
 
+#: modless_chat_trans/interface.py:2527
 msgid "检查更新失败"
 msgstr "업데이트 확인 실패"
 
+#: modless_chat_trans/interface.py:2528
 msgid "错误: {}"
 msgstr "오류: {}"
 
+#: modless_chat_trans/interface.py:2555
 msgid "未知版本"
 msgstr "알 수 없는 버전"
 
+#: modless_chat_trans/interface.py:2558
 msgid ""
 "最新版本: {}\n"
 "当前版本: v{}\n"
@@ -474,15 +675,19 @@ msgstr ""
 "\n"
 "브라우저에서 보시겠습니까?"
 
+#: modless_chat_trans/interface.py:2571
 msgid "您是最新的"
 msgstr "이미 최신 버전입니다"
 
+#: modless_chat_trans/interface.py:2572
 msgid "当前版本 v{} 已是最新版本"
 msgstr "현재 버전 v{}은(는) 최신입니다"
 
+#: modless_chat_trans/interface.py:2631
 msgid "下载完成"
 msgstr "다운로드 완료"
 
+#: modless_chat_trans/interface.py:2632
 msgid ""
 "更新文件已下载到:\n"
 "{}\n"
@@ -494,29 +699,62 @@ msgstr ""
 "\n"
 "수동으로 업데이트를 설치하세요."
 
+#: modless_chat_trans/interface.py:2638
 msgid "下载已取消"
 msgstr "다운로드가 취소되었습니다"
 
+#: modless_chat_trans/interface.py:2639
 msgid "更新下载已取消"
 msgstr "업데이트 다운로드가 취소되었습니다"
 
+#: modless_chat_trans/interface.py:2851
 msgid "消息捕获"
 msgstr "메시지 캡처"
 
+#: modless_chat_trans/interface.py:2852
 msgid "翻译服务"
 msgstr "번역 서비스"
 
+#: modless_chat_trans/interface.py:2854
 msgid "发送消息"
 msgstr "메시지 보내기"
 
+#: modless_chat_trans/interface.py:2855
 msgid "术语表"
 msgstr "용어집"
 
+#: modless_chat_trans/interface.py:2859
 msgid "关于"
 msgstr "정보"
 
+#: modless_chat_trans/interface.py:2969
 msgid "语言加载错误"
 msgstr "언어 로딩 오류"
 
+#: modless_chat_trans/interface.py:2970
 msgid "获取支持语言失败 ({service_id}): {error_msg}"
 msgstr "지원되는 언어를 가져오지 못했습니다({service_id}): {error_msg}"
+
+#: modless_chat_trans/message_processor.py:249
+msgid "翻译失败：请求次数过多，请稍后重试。"
+msgstr "번역 실패: 요청이 너무 많습니다. 잠시 후 다시 시도하세요."
+
+#: modless_chat_trans/message_processor.py:252
+msgid "翻译失败：服务器错误，请稍后重试。"
+msgstr "번역 실패: 서버 오류입니다. 잠시 후 다시 시도하세요."
+
+#: modless_chat_trans/message_processor.py:255
+msgid "翻译失败：发生HTTP错误。"
+msgstr "번역 실패: HTTP 오류가 발생했습니다."
+
+#: modless_chat_trans/message_processor.py:258
+msgid "翻译失败：网络问题或发生HTTP错误。"
+msgstr "번역 실패: 네트워크 문제 또는 HTTP 오류가 발생했습니다."
+
+#: modless_chat_trans/message_processor.py:261
+msgid "翻译失败：服务器响应无效，请检查网络连接。"
+msgstr "번역 실패: 서버 응답이 올바르지 않습니다. 네트워크 연결을 확인하세요."
+
+#: modless_chat_trans/message_processor.py:264
+msgid "翻译失败，错误："
+msgstr "번역 실패, 오류: "
