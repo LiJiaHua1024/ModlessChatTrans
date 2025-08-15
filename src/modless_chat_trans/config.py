@@ -170,7 +170,9 @@ class ConfigV2(BaseSettings):
     glossary: Optional[dict] = {}
 
     model_config = SettingsConfigDict(
-        json_file=[get_path("modless-chat-trans.default.json"), "ModlessChatTrans-config.json"])
+        json_file=[get_path("modless-chat-trans.default.json"), "ModlessChatTrans-config.json"],
+        json_file_encoding="utf-8"
+    )
 
     @classmethod
     def settings_customise_sources(
@@ -257,7 +259,7 @@ def deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]
 
 
 def load_default_v2_config() -> ConfigV2:
-    with open(get_path("modless-chat-trans.default.json"), 'r') as f:
+    with open(get_path("modless-chat-trans.default.json"), 'r', encoding='utf-8') as f:
         default_dict = json.load(f)
     return ConfigV2.model_validate(default_dict)
 
@@ -277,7 +279,7 @@ def handle_v2_validation_error(error: ValidationError, config_dict: Dict[str, An
 
     if missing_fields:
         try:
-            with open(get_path("modless-chat-trans.default.json"), 'r') as f:
+            with open(get_path("modless-chat-trans.default.json"), 'r', encoding='utf-8') as f:
                 default_dict = json.load(f)
 
             merged_dict = deep_merge(default_dict, config_dict)
@@ -329,7 +331,7 @@ def read_v2_config_safely() -> ConfigV2:
         return ConfigV2()
     except ValidationError as e:
         try:
-            with open("ModlessChatTrans-config.json", 'r') as f:
+            with open("ModlessChatTrans-config.json", 'r', encoding='utf-8') as f:
                 config_dict = json.load(f)
             return handle_v2_validation_error(e, config_dict)
         except Exception:
