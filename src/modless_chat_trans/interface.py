@@ -22,9 +22,9 @@ from typing import Tuple
 import markdown
 import netifaces
 
-from PyQt6.QtCore import Qt, pyqtSignal, QThread, QTimer, QUrl, QObject
-from PyQt6.QtGui import QIcon, QFont, QColor, QDesktopServices
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, Signal, QThread, QTimer, QUrl, QObject
+from PySide6.QtGui import QIcon, QFont, QColor, QDesktopServices
+from PySide6.QtWidgets import (
     QApplication, QButtonGroup, QCompleter, QFileDialog, QFrame,
     QGridLayout, QHBoxLayout, QStackedWidget, QTableWidgetItem,
     QTextBrowser, QVBoxLayout
@@ -71,10 +71,10 @@ class ProgramInfo:
 
 class DownloadWorker(QObject):
     """下载工作器，用于在线程中执行下载并发送进度信号"""
-    progress_updated: pyqtSignal = pyqtSignal(int, int, float)  # downloaded, total, speed
-    download_finished: pyqtSignal = pyqtSignal(str)  # file_path
-    download_error: pyqtSignal = pyqtSignal(str)  # error_message
-    thread_count_updated: pyqtSignal = pyqtSignal(int)  # thread_count
+    progress_updated = Signal(int, int, float)  # downloaded, total, speed
+    download_finished = Signal(str)  # file_path
+    download_error = Signal(str)  # error_message
+    thread_count_updated = Signal(int)  # thread_count
 
     def __init__(self, updater, release_info):
         super().__init__()
@@ -131,8 +131,8 @@ class DownloadWorker(QObject):
 
 class LanguageLoaderThread(QThread):
     """用于异步加载语言列表的线程"""
-    languages_loaded: pyqtSignal = pyqtSignal(list)
-    error_occurred: pyqtSignal = pyqtSignal(str)
+    languages_loaded = Signal(list)
+    error_occurred = Signal(str)
 
     def __init__(self, service_name: str):
         super().__init__()
@@ -333,9 +333,9 @@ class TranslationServiceInterface(QFrame):
     """翻译服务界面组件"""
 
     # 添加服务类型改变信号
-    service_type_changed: pyqtSignal = pyqtSignal(ServiceType)
+    service_type_changed = Signal(ServiceType)
     # 新增：发送消息服务类型改变信号
-    send_service_type_changed: pyqtSignal = pyqtSignal(ServiceType)
+    send_service_type_changed = Signal(ServiceType)
 
     def __init__(self, parent, config=None):
         super().__init__(parent=parent)
