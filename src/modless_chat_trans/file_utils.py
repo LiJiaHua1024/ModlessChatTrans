@@ -16,13 +16,13 @@
 import os
 import glob
 import json
-import shelve
 import importlib
 from dataclasses import dataclass
+from diskcache import Cache
 from modless_chat_trans.logger import logger
 
 base_path = os.path.dirname(os.path.dirname(__file__))
-cache = shelve.open("MCT_cache")
+cache = Cache("mct-cache")
 
 
 def get_path(path: str, temp_path=True) -> str:

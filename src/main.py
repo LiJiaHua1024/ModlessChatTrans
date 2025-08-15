@@ -15,11 +15,10 @@
 
 import threading
 import time
-import atexit
 from importlib.metadata import version
 from datetime import datetime
 
-from modless_chat_trans.file_utils import get_platform, cache
+from modless_chat_trans.file_utils import get_platform
 from modless_chat_trans.config import read_config, MonitorMode
 from modless_chat_trans.i18n import set_language
 from modless_chat_trans.logger import init_logger, logger
@@ -155,8 +154,6 @@ def run_scheduled_update_check(update_check_func):
 
 
 def main():
-    atexit.register(lambda: cache.close() if hasattr(cache, 'close') else None)
-
     app = QApplication([])
     main_window = MainWindow(program_info, updater, cfg, start_translation)
     run_scheduled_update_check(main_window.setting_interface.check_for_updates)
