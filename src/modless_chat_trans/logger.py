@@ -17,5 +17,5 @@ from loguru import logger
 
 
 def init_logger(debug: bool):
-    logger.add("MCT.log", rotation="10 MB", enqueue=True, encoding="utf-8",
+    logger.add("mct.log", rotation="10 MB", enqueue=True, encoding="utf-8",
                level="DEBUG" if debug else "INFO")
