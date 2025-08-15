@@ -146,9 +146,9 @@ def run_scheduled_update_check(update_check_func):
     now = datetime.now()
     luct_date = datetime.fromisoformat(luct)
     if (
-            (acuf == "Daily" and now.date() > luct_date.date()) or
-            (acuf == "Weekly" and (now - luct_date).days >= 7) or
-            (acuf == "Monthly" and (now - luct_date).days >= 30)
+            (acuf == "daily" and now.date() > luct_date.date()) or
+            (acuf == "weekly" and (now - luct_date).days >= 7) or
+            (acuf == "monthly" and (now - luct_date).days >= 30)
     ):
         update_check_func(silent=True)
 

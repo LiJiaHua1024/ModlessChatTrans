@@ -2707,6 +2707,10 @@ class SettingInterface(QFrame):
             else:
                 logger.info(f"Current version v{self.updater.current_version} is up to date")
 
+        luct = datetime.now().isoformat(timespec='seconds')
+        self.window().config.settings.last_update_check_time = luct
+        update_config(settings__last_update_check_time=luct)
+
         # 清理线程引用
         self.update_check_thread = None
 
