@@ -16,8 +16,8 @@
 import requests
 import json
 import re
+import lazy_loader as lazy
 from modless_chat_trans.logger import logger
-from modless_chat_trans.file_utils import LazyImporter
 from modless_chat_trans.config import ServiceType
 
 # 新增支持的 LLM 服务商
@@ -73,8 +73,8 @@ TRADITIONAL_SERVICES = [
 ]
 services = LLM_PROVIDERS + TRADITIONAL_SERVICES
 
-llm_completion = LazyImporter("litellm", "completion")
-ts = LazyImporter("translators")
+ts = lazy.load("translators")
+litellm = lazy.load("litellm")
 
 
 def get_supported_languages(service):
@@ -268,7 +268,7 @@ class Translator:
             if api_base := self.translation_service_config.llm.api_base:
                 llm_params["api_base"] = api_base
 
-            response = llm_completion(**llm_params)
+            response = litellm.completion(**llm_params)
 
             # litellm 的返回对象与 OpenAI SDK 高度兼容
             content_str = response.choices[0].message.content or ""

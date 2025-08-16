@@ -30,7 +30,7 @@ set_language(cfg.settings.interface_language)
 from modless_chat_trans.web_display import start_httpserver_thread, display_message
 from modless_chat_trans.log_monitor import start_log_monitor
 from modless_chat_trans.message_processor import init_processor, process_message
-from modless_chat_trans.translator import Translator, ts, llm_completion
+from modless_chat_trans.translator import Translator, ts, litellm
 from modless_chat_trans.interface import ProgramInfo, MainWindow, QApplication
 from modless_chat_trans.clipboard_monitor import monitor_clipboard, modify_clipboard
 from modless_chat_trans.i18n import _
@@ -140,12 +140,12 @@ def start_translation(config):
         clipboard_thread.start()
 
     def load_litellm():
-        llm_completion.load()
-        logger.info("'litellm' library preloaded")
+        litellm_name = litellm.__name__
+        logger.info(f"'litellm'(name: {litellm_name}) library preloaded")
 
     def load_translators():
-        ts.load()
-        logger.info("'translators' library preloaded")
+        ts_version = ts.__version__
+        logger.info(f"'translators'(version: {ts_version}) library preloaded")
 
     services_to_load = {config.player_translation.service_type}
     if config.send_translation_independent:

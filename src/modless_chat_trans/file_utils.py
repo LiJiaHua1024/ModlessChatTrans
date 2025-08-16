@@ -41,50 +41,6 @@ def get_platform() -> int:
     return {"nt": 0, "posix": 1}.get(os.name, 2)
 
 
-class LazyImporter:
-    def __init__(self, module_name, attr_name=None):
-        self.module_name = module_name
-        self.attr_name = attr_name
-        self._module = None
-        self._loading = False
-        self._imported = False
-
-    def _ensure_module_loaded(self):
-        if self._module is None and not self._loading:
-            self._loading = True
-            logger.debug(f"Lazily importing '{self.module_name}' library now...")
-            try:
-                module = importlib.import_module(self.module_name)
-                if self.attr_name:
-                    self._module = getattr(module, self.attr_name)
-                else:
-                    self._module = module
-                self._imported = True
-                logger.info(f"'{self.module_name}' library imported successfully.")
-            except (ImportError, AttributeError) as e:
-                logger.error(f"Failed to import '{self.module_name}' library: {e}")
-                self._loading = False
-                raise
-            finally:
-                self._loading = False
-
-    def load(self):
-        """手动触发模块导入"""
-        self._ensure_module_loaded()
-
-    def is_loaded(self):
-        """检查模块是否已加载"""
-        return self._imported
-
-    def __getattr__(self, name):
-        self._ensure_module_loaded()
-        return getattr(self._module, name)
-
-    def __call__(self, *args, **kwargs):
-        self._ensure_module_loaded()
-        return self._module(*args, **kwargs)
-
-
 def find_latest_log(directory: str) -> str:
     """
     获取目录中最新的日志文件
