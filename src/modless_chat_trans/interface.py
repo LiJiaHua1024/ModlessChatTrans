@@ -612,10 +612,12 @@ class TranslationServiceInterface(QFrame):
             if service_id == "player" and self.config.player_translation and self.config.player_translation.llm:
                 api_base = self.config.player_translation.llm.api_base
                 if api_base:
+                    llm_api_url_edit.addItem(api_base)
                     llm_api_url_edit.setCurrentText(api_base)
             elif service_id == "send" and self.config.send_translation and self.config.send_translation.llm:
                 api_base = self.config.send_translation.llm.api_base
                 if api_base:
+                    llm_api_url_edit.addItem(api_base)
                     llm_api_url_edit.setCurrentText(api_base)
 
         layout.addWidget(llm_api_url_label, 2, 0, Qt.AlignmentFlag.AlignRight)
@@ -737,10 +739,12 @@ class TranslationServiceInterface(QFrame):
             if service_id == "player" and self.config.player_translation and self.config.player_translation.traditional:
                 api_key = self.config.player_translation.traditional.api_key
                 if api_key:
+                    traditional_api_key_edit.addItem(api_key)
                     traditional_api_key_edit.setCurrentText(api_key)
             elif service_id == "send" and self.config.send_translation and self.config.send_translation.traditional:
                 api_key = self.config.send_translation.traditional.api_key
                 if api_key:
+                    traditional_api_key_edit.addItem(api_key)
                     traditional_api_key_edit.setCurrentText(api_key)
 
         layout.addWidget(traditional_api_key_label, 1, 0, Qt.AlignmentFlag.AlignRight)
