@@ -46,27 +46,27 @@ class LazyImporter:
         self.module_name = module_name
         self.attr_name = attr_name
         self._module = None
-        self._lock = threading.Lock()
+        self._loading = False
         self._imported = False
 
     def _ensure_module_loaded(self):
-        # 双重检查锁定模式
-        if not self._imported:
-            with self._lock:
-                # 再次检查，避免等待锁的线程重复导入
-                if not self._imported:
-                    logger.debug(f"Lazily importing '{self.module_name}' library now...")
-                    try:
-                        module = importlib.import_module(self.module_name)
-                        if self.attr_name:
-                            self._module = getattr(module, self.attr_name)
-                        else:
-                            self._module = module
-                        self._imported = True
-                        logger.info(f"'{self.module_name}' library imported successfully.")
-                    except (ImportError, AttributeError) as e:
-                        logger.error(f"Failed to import '{self.module_name}' library: {e}")
-                        raise
+        if self._module is None and not self._loading:
+            self._loading = True
+            logger.debug(f"Lazily importing '{self.module_name}' library now...")
+            try:
+                module = importlib.import_module(self.module_name)
+                if self.attr_name:
+                    self._module = getattr(module, self.attr_name)
+                else:
+                    self._module = module
+                self._imported = True
+                logger.info(f"'{self.module_name}' library imported successfully.")
+            except (ImportError, AttributeError) as e:
+                logger.error(f"Failed to import '{self.module_name}' library: {e}")
+                self._loading = False
+                raise
+            finally:
+                self._loading = False
 
     def load(self):
         """手动触发模块导入"""
