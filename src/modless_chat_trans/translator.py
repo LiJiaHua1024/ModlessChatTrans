@@ -347,7 +347,8 @@ class Translator:
                 response = requests.post(url, headers=headers, data=data)
                 if response.status_code == 200:
                     return response.json()["translations"][0]["text"]
-                return None
+                else:
+                    raise Exception(f"DeepL API translation failed: {response.status_code} {response.text}")
 
             # Google API
             elif service == "google":
@@ -363,7 +364,8 @@ class Translator:
                 response = requests.post(url, params=params)
                 if response.status_code == 200:
                     return response.json()["data"]["translations"][0]["translatedText"]
-                return None
+                else:
+                    raise Exception(f"Google API translation failed: {response.status_code} {response.text}")
 
             # Yandex API
             elif service == "yandex":
@@ -382,7 +384,8 @@ class Translator:
                 response = requests.post(url, headers=headers, json=data)
                 if response.status_code == 200:
                     return response.json()["translations"][0]["text"]
-                return None
+                else:
+                    raise Exception(f"Yandex API translation failed: {response.status_code} {response.text}")
 
             # Alibaba (阿里云) API
             elif service == "alibaba":
@@ -433,7 +436,8 @@ class Translator:
 
                 if response.status_code == 200:
                     return response.json().get("Data", {}).get("Translated")
-                return None
+                else:
+                    raise Exception(f"Alibaba API translation failed: {response.status_code} {response.text}")
 
             # Caiyun (彩云小译) API
             elif service == "caiyun":
@@ -450,7 +454,8 @@ class Translator:
                 response = requests.post(url, headers=headers, json=payload)
                 if response.status_code == 200:
                     return response.json()["target"][0]
-                return None
+                else:
+                    raise Exception(f"Caiyun API translation failed: {response.status_code} {response.text}")
 
             # Youdao (有道) API
             elif service == "youdao":
@@ -491,7 +496,8 @@ class Translator:
                 response = requests.post(url, data=data)
                 if response.status_code == 200:
                     return response.json()["translation"][0]
-                return None
+                else:
+                    raise Exception(f"Youdao API translation failed: {response.status_code} {response.text}")
 
             # Bing/Microsoft API
             elif service == "bing":
@@ -512,7 +518,8 @@ class Translator:
                 response = requests.post(endpoint, headers=headers, params=params, json=body)
                 if response.status_code == 200:
                     return response.json()[0]["translations"][0]["text"]
-                return None
+                else:
+                    raise Exception(f"Bing API translation failed: {response.status_code} {response.text}")
 
             else:
                 raise ValueError(f"Unsupported translation service: {service}")
@@ -521,4 +528,4 @@ class Translator:
                                                        from_language=source_language, to_language=target_language):
                 return translated_message
             else:
-                return None
+                raise Exception(f"Traditional translation failed: {translated_message}")
