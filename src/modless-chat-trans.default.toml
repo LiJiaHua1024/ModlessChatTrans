@@ -11,7 +11,7 @@ source-language = "English"
 target-language = "Simplified Chinese"
 
 [player-translation]
-service-type = "LLM"
+service-type = "llm"
 
 [player-translation.llm]
 provider = "OpenAI"

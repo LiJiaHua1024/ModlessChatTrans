@@ -46,8 +46,8 @@ class BaseConfigModel(BaseModel):
 
 
 class ServiceType(Enum):
-    LLM = "LLM"
-    TRADITIONAL = "Traditional"
+    LLM = "llm"
+    TRADITIONAL = "traditional"
 
 
 class MonitorMode(Enum):
