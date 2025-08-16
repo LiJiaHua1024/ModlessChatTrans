@@ -277,7 +277,7 @@ class Translator:
 
         except Exception as e:
             logger.error(f"LLM translation failed ({provider}) via litellm: {e}")
-            return None
+            raise
 
         if self.translation_service_config.llm.deep_translate:
             try:
