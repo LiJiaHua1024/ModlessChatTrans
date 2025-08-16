@@ -17,6 +17,7 @@ import os
 import glob
 import json
 import importlib
+import threading
 from dataclasses import dataclass
 from diskcache import Cache
 from modless_chat_trans.logger import logger
@@ -45,20 +46,35 @@ class LazyImporter:
         self.module_name = module_name
         self.attr_name = attr_name
         self._module = None
+        self._lock = threading.Lock()
+        self._imported = False
 
     def _ensure_module_loaded(self):
-        if self._module is None:
-            logger.debug(f"Lazily importing '{self.module_name}' library now...")
-            try:
-                module = importlib.import_module(self.module_name)
-                if self.attr_name:
-                    self._module = getattr(module, self.attr_name)
-                else:
-                    self._module = module
-            except (ImportError, AttributeError) as e:
-                logger.error(f"Failed to import '{self.module_name}' library: {e}")
-                raise
-            logger.info(f"'{self.module_name}' library imported successfully.")
+        # 双重检查锁定模式
+        if not self._imported:
+            with self._lock:
+                # 再次检查，避免等待锁的线程重复导入
+                if not self._imported:
+                    logger.debug(f"Lazily importing '{self.module_name}' library now...")
+                    try:
+                        module = importlib.import_module(self.module_name)
+                        if self.attr_name:
+                            self._module = getattr(module, self.attr_name)
+                        else:
+                            self._module = module
+                        self._imported = True
+                        logger.info(f"'{self.module_name}' library imported successfully.")
+                    except (ImportError, AttributeError) as e:
+                        logger.error(f"Failed to import '{self.module_name}' library: {e}")
+                        raise
+
+    def load(self):
+        """手动触发模块导入"""
+        self._ensure_module_loaded()
+
+    def is_loaded(self):
+        """检查模块是否已加载"""
+        return self._imported
 
     def __getattr__(self, name):
         self._ensure_module_loaded()

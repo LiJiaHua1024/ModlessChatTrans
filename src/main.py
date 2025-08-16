@@ -19,7 +19,7 @@ from importlib.metadata import version
 from datetime import datetime
 
 from modless_chat_trans.file_utils import get_platform
-from modless_chat_trans.config import read_config, MonitorMode
+from modless_chat_trans.config import read_config, MonitorMode, ServiceType
 from modless_chat_trans.i18n import set_language
 from modless_chat_trans.logger import init_logger, logger
 
@@ -30,7 +30,7 @@ set_language(cfg.settings.interface_language)
 from modless_chat_trans.web_display import start_httpserver_thread, display_message
 from modless_chat_trans.log_monitor import start_log_monitor
 from modless_chat_trans.message_processor import init_processor, process_message
-from modless_chat_trans.translator import Translator
+from modless_chat_trans.translator import Translator, ts, llm_completion
 from modless_chat_trans.interface import ProgramInfo, MainWindow, QApplication
 from modless_chat_trans.clipboard_monitor import monitor_clipboard, modify_clipboard
 from modless_chat_trans.i18n import _
@@ -138,6 +138,23 @@ def start_translation(config):
         clipboard_thread = threading.Thread(target=monitor_clipboard, args=(callback,))
         clipboard_thread.daemon = True
         clipboard_thread.start()
+
+    def load_litellm():
+        llm_completion.load()
+        logger.info("'litellm' library preloaded")
+
+    def load_translators():
+        ts.load()
+        logger.info("'translators' library preloaded")
+
+    services_to_load = {config.player_translation.service_type}
+    if config.send_translation_independent:
+        services_to_load.add(config.send_translation.service_type)
+
+    if ServiceType.LLM in services_to_load:
+        threading.Thread(target=load_litellm, daemon=True).start()
+    if ServiceType.TRADITIONAL in services_to_load:
+        threading.Thread(target=load_translators, daemon=True).start()
 
 
 def run_scheduled_update_check(update_check_func):
