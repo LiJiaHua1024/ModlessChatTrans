@@ -108,9 +108,9 @@ def start_translation(config):
             return None
         return None
 
-    player_translator = Translator(config.player_translation)
+    player_translator = Translator(config.player_translation, config.glossary)
     if config.send_translation_independent:
-        send_translator = Translator(config.send_translation)
+        send_translator = Translator(config.send_translation, config.glossary)
     else:
         send_translator = player_translator
 
