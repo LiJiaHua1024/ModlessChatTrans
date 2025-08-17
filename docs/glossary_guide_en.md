@@ -1,147 +1,147 @@
-## Glossary Feature Guide
+## **Glossary Feature Guide**
 
 **Introduction**
 
-The "Glossary" feature allows you to create custom translation rules. This ensures that specific terms, common phrases,
-or messages containing dynamic information (like player names) are translated exactly how you want. You can add, modify,
-and delete these rules in the "Glossary" window.
+The "Glossary" feature allows you to create custom translation rules to ensure that specific terms, common phrases, or
+structured messages containing dynamic information (like player names) will always be translated exactly as you wish.
+This feature improves translation quality in two main ways:
 
-**Opening the Glossary Window**
+1. **Keyword Injection (no variables):** For general chat messages, the system recognizes the specific terms you define
+   and "guides" the Large Language Model (LLM) to use your specified translations, ensuring consistency and accuracy.
+2. **Template Matching (with variables):** For fixed-format messages (such as system notifications), the system can
+   precisely parse and translate them according to your predefined template.
 
-In the main interface, open this feature window via the path "More Settings" -> "Glossary".
+**Accessing the Glossary**
+
+In the program's main interface, click the "**Glossary**" icon on the left navigation bar to enter the glossary
+management interface.
 
 **Interface Overview**
 
-Once you open the "Glossary" window, you will see:
+The glossary management interface is divided into several main areas:
 
 1. **Input Area:**
-    * **Source Term:** Enter the original text pattern you want to match.
-    * **Target Term:** Enter the corresponding translation result.
-    * **Add/Update Term:** Use this button to add a new rule or save changes to an existing one.
-2. **Glossary Rules List:** Displays all the rules you have defined. You can click on a rule in the list to select it,
-   and the selected rule will automatically populate the input fields above.
-3. **Action Buttons Area:**
-    * **Delete Selected:** Deletes the rule currently selected in the list.
-    * **Save Glossary and Close:** Saves all your changes and closes this window.
+    * **Source term:** Enter the raw text pattern or keyword you wish to match.
+    * **Target term:** Enter the corresponding translation.
+2. **Action Buttons:**
+    * **Add/Update term:** Add a new rule or save changes to an existing rule.
+    * **Clear input:** Clear the contents of the "Source Term" and "Target Term" input boxes.
+3. **Glossary Rule List:**
+    * All rules you have defined are displayed as a list. You can click a rule in the list to select it.
+4. **List Management Buttons:**
+    * **Delete selected terms:** Deletes the selected rule from the list.
+    * **Clear terms:** Deletes all glossary rules in the list.
 
 **How to Add and Use Translation Rules**
 
-**1. Adding Exact Match Rules**
+The Glossary supports two core types of rules. **For most users, Type 1 will satisfy everyday needs.**
 
-This is the simplest type of rule, used for directly replacing text that matches exactly.
+### **Type 1: Add Keywords to Guide LLM Translation (No Variables)**
 
-* **Steps:**
-    1. In the "**Source Term**" input field, enter the **exact** original text you want to replace (e.g., `gg`).
-    2. In the "**Target Term**" input field, enter the translation you want to display (e.g., `good game`).
-    3. Click the "**Add/Update Term**" button.
-* **Effect:** When the program receives a message that is **exactly** "gg" (ignoring leading/trailing spaces), it will
-  be translated to "good game".
+This is the most common, simplest, and recommended rule type for most users. It tells the translation engine: "Whenever
+you see this word or phrase in any message, please always translate it to my specified target."
 
-**2. Handling Dynamic Content with Variables (`{{variable_name}}`)**
+* **Important Note:**  
+  This feature works by providing contextual guidance to LLMs, so you must use a translation service that supports LLMs.
+  If you use traditional translation engines (like Google Translate, DeepL, etc.), this type of rule will NOT take
+  effect.
+* **How it Works:**  
+  When a message is sent to an LLM for translation, the program first checks whether the message contains any of the "
+  Source Terms" you've defined here. If so, the program will send these terms and their translations to the LLM as
+  mandatory instructions. This is not a simple text replacement; rather, it gives the LLM precise context, making the
+  result more in line with your expectations.
+* **How to Use:**
+    1. Enter an individual word or phrase in the `Source Term` input (e.g. `gg`).
+    2. Enter its standard translation in the `Target Term` input (e.g. `well played`).
+    3. Click the `Add/Update Term` button.
+* **Effect:**
+    * **Original Message:** "That was a fun match, gg"
+    * **Translation process:** The program recognizes `gg` in the message. It instructs the LLM: "Please translate ‘That
+      was a fun match, gg’, and make sure to translate ‘gg’ as ‘well played’."
+    * **Final Output:** "That was a fun match, well played."
 
-Use variables when the original message contains parts that can change (like usernames, item names, etc.).
+### **Type 2: Use Templates and Variables to Handle Dynamic Content (Advanced Feature)**
+
+**This is for advanced users.** When you need to handle original messages with a fixed structure but variable parts (
+like usernames, item names, etc.—common in system tips in games), you can use template-matching rules with variables.
+**These rules only trigger when the entire message exactly matches the template.**
 
 * **Syntax:**
-    * Use `{{variable_name}}` in the "**Source Term**" field to mark the dynamic part you want to match and capture.
-    * Variable names can contain **letters, numbers, underscores (`_`), and hyphens (`-`)**.
-    * Use the **same** `{{variable_name}}` in the "**Target Term**" field to insert the content captured earlier.
-* **Steps & Examples:**
-    * **Example 1: Player Join**
+    * Use `{{variable_name}}` in the `Source Term` input to mark dynamic parts to capture.
+    * Variable names may contain **letters, numbers, underscores (`_`), and hyphens (`-`)**.
+    * Use the **same** `{{variable_name}}` in the `Target Term` to insert the previously captured content.
+* **Usage & Examples:**
+    * **Example 1: Player Joined**
         1. Source Term: `{{player}} joined the game.`
         2. Target Term: `{{player}} has joined the game.`
-        3. Click "Add/Update Term".
+        3. Click `Add/Update Term`.
 
-        * Effect: Input `"Alice joined the game."` will be translated to `"Alice has joined the game."`. The system
-          automatically identifies that `player` corresponds to "Alice".
-    * **Example 2: Multiple Variables & Transformation**
+        * **Effect:** Input "Alice joined the game." will be directly translated to "Alice has joined the game."
+    * **Example 2: Multiple Variables**
         1. Source Term: `{{actor}} gave {{item}} to {{receiver}}.`
-        2. Target Term: `The item {{item}} was given to {{receiver}} by {{actor}}.` (Target structure differs from
-           source)
-        3. Click "Add/Update Term".
+        2. Target Term: `{{actor}} gave {{item}} to {{receiver}}.`
 
-        * Effect: `"Bob gave an apple to Charlie."` -> `"The item an apple was given to Charlie by Bob."` (Demonstrates
-          variable capture and reordering in the translation).
+        * **Effect:** "Bob gave an apple to Charlie." → "Bob gave an apple to Charlie."
     * **Example 3: Variable Reordering or Discarding**
         1. Source Term: `[{{channel}}] {{user}}: {{message}}`
-        2. Target Term: `{{user}} says: {{message}}` (The `channel` variable is discarded here)
-        3. Click "Add/Update Term".
+        2. Target Term: `{{user}} says: {{message}}` (the channel variable is discarded)
 
-        * Effect: `"[Global] Eve: Hi!"` -> `"Eve says: Hi!"`
-        * **Important:** All `{{variables}}` used in the "**Target Term**" **must** also exist in the corresponding "*
-          *Source Term**".
+        * **Effect:** "[Global] Eve: Hi!" → "Eve says: Hi!"
+        * **Important:** Every `{{variable}}` used in the `Target Term` **must** also appear in the corresponding
+          `Source Term`.
 
-**3. Handling Repeated Variables**
+**Advanced Template Matching Tips**
 
-If you use the **same variable name** multiple times in the "**Source Term**" (e.g., `{{name}} ... {{name}}`), the text
-in the original message corresponding to both these positions **must be identical** for the rule to match.
+The following tips only apply to **Type 2 (template with variables)** rules.
+
+**1. Handling Repeated Variables**
+
+If a **variable name** appears more than once in `Source Term` (e.g. `{{name}} ... {{name}}`), then the corresponding
+pieces of text in the original message **must be exactly the same** for the rule to match.
 
 * **Example:**
     1. Source Term: `{{admin}} kicked {{admin}} from the server.`
     2. Target Term: `Admin {{admin}} kicked themselves from the server.`
-    3. Click "Add/Update Term".
 
-    * Effect:
-        * `"Operator kicked Operator from the server."` -> Matches successfully, translated to
-          `"Admin Operator kicked themselves from the server."`
-        * `"Admin kicked User from the server."` -> Does **not match** this rule, because the first `{{admin}}`
-          captures "Admin", and the second captures "User" (they are different).
+    * **Effect:**
+        * "Operator kicked Operator from the server." → Matched, becomes "Admin Operator kicked themselves from the
+          server."
+        * "Admin kicked User from the server." → **Does not match** this rule, because the two `{{admin}}` capture
+          different texts.
 
-**4. Advanced Tip: Using Regular Expressions to Restrict Variable Format (`{{variable_name:regex_pattern}}`)**
+**2. Using Regular Expressions to Restrict Variable Format (`{{variable_name:regex}}`)**
 
-This feature allows you, within the "**Source Term**" field, to specify a precise pattern (format requirement) for a
-variable, instead of just matching any text. It's useful when you need to ensure a variable is a number, a specific code
-format, etc.
+This feature allows you to specify a strict match pattern for a variable, instead of capturing any text.
 
-* **Syntax:** In the "**Source Term**" field, immediately follow the variable name with an **English colon (`:`)** and a
-  regular expression pattern.
-    * **Please note:** You must use the standard English colon `:`, not any other similar-looking character (like a
-      full-width colon sometimes used in East Asian typography). Using the wrong character will prevent the rule from
-      working as expected.
-* **What is a Regular Expression?**
-    * It's a special sequence of characters that defines a search pattern, mainly for use in pattern matching with
-      strings.
-    * If you are unfamiliar with regular expressions, you can ignore this advanced feature for now, or learn more from
-      resources like:
-        * **Python's Official `re` Module Documentation:
-          ** [https://docs.python.org/3/library/re.html](https://docs.python.org/3/library/re.html)
-        * (You can also find many tutorials online by searching "regex tutorial")
-    * Simple examples:
-        * `\d+` : Requires matching one or more digits.
-        * `[a-zA-Z]+`: Requires matching one or more English letters.
-* **Example: Ensuring Player ID is Numeric**
-    1. Source Term: `Player {{player_id:\d+}} disconnected.` (**Note:** The English colon `:` after `player_id`)
+* **Syntax:** Add an **English colon (:)** and a regular expression pattern right after the variable name in
+  `Source Term`.
+    * **Important:** Use the standard half-width English colon `:`, *not* a full-width colon `：`!
+* **What is a regular expression?**
+    * It's a special symbolic language for describing patterns of text. It lets you precisely match the text format you
+      want.
+    * If you are unfamiliar with regular expressions, you may skip this advanced feature, or learn from resources like:
+        * **Python Official `re` documentation:**
+          [https://docs.python.org/3/library/re.html](https://docs.python.org/3/library/re.html)
+* **Example: Ensure Player ID is Numeric**
+    1. Source Term: `Player {{player_id:\d+}} disconnected.`
     2. Target Term: `Player {{player_id}} has disconnected.`
-    3. Click "Add/Update Term".
 
-    * Effect:
-        * `"Player 12345 disconnected."` -> Matches successfully (because "12345" fits `\d+`), translated to
-          `"Player 12345 has disconnected."`
-        * `"Player abc disconnected."` -> Does **not match** this rule (because "abc" does not fit `\d+`).
+    * **Effect:**
+        * "Player 12345 disconnected." → matched, translates as "Player 12345 has disconnected."
+        * "Player abc disconnected." → **does not match** this rule.
 
 **Managing Existing Rules**
 
-* **Viewing:** All rules are displayed in the "**Glossary Rules**" list in the format `"Source Term" → "Target Term"`.
-* **Selecting & Deselecting:**
-    * **Click** on any rule in the list to **select** it. The selected rule will be highlighted, the "Delete Selected"
-      button will become enabled, and the rule's "Source Term" and "Target Term" will be **automatically filled** into
-      the input fields above.
-    * **Click** the currently selected rule again to **deselect** it. Upon deselection, the rule will no longer be
-      highlighted, the "Delete Selected" button will become disabled.
-* **Modifying:**
-    1. Click the rule you want to modify; its content will automatically appear in the input fields above.
-    2. Modify the "Source Term" or "Target Term" directly in the input fields.
-    3. Click the "**Add/Update Term**" button.
-        * If you **did not** change the "Source Term" in the input field, the system will only update the "Target Term"
-          for this rule.
-        * If you **did** change the "Source Term" in the input field, the system will attempt to **replace** the
-          originally selected rule with the new "Source Term" and "Target Term" (effectively renaming the source term).
-          If the new source term conflicts with another existing rule, you will be asked to confirm the overwrite.
+* **Selecting:** **Click** any rule in the list to **select** it. The selected rule's content will auto-populate the
+  input fields above for easy modification.
+* **Editing:**
+    1. Click the rule you want to modify.
+    2. Edit the `Source Term` or `Target Term` as desired.
+    3. Click the `Add/Update Term` button. The system will update the currently selected rule with the contents of the
+       input fields.
 * **Deleting:**
     1. Click the rule you want to delete.
-    2. Click the "**Delete Selected**" button.
-    3. The rule will be removed from the list.
+    2. Click the `Delete Selected Term` button.
+* **Clearing:** Click the `Clear Glossary` button to delete all rules in the list.
 
-**Saving Changes**
-
-After you have finished adding, modifying, or deleting rules, **it is crucial** to click the "**Save Glossary and Close
-**" button to save all your work and close the window. Otherwise, the changes you made in this session will be lost.
+All changes (adding, updating, deleting) take effect immediately and are saved automatically.
