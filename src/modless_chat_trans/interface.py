@@ -22,7 +22,7 @@ from typing import Tuple
 import markdown
 import netifaces
 
-from PySide6.QtCore import Qt, Signal, QThread, QTimer, QUrl, QObject
+from PySide6.QtCore import QObject, QSize, Qt, QThread, QTimer, QUrl, Signal
 from PySide6.QtGui import QIcon, QFont, QColor, QDesktopServices
 from PySide6.QtWidgets import (
     QApplication, QButtonGroup, QCompleter, QFileDialog, QFrame,
@@ -33,12 +33,13 @@ from qfluentwidgets import (
     Action, BodyLabel, CaptionLabel, CheckBox, ComboBox,
     DropDownPushButton, EditableComboBox, ElevatedCardWidget,
     FluentIcon, FluentWindow, HyperlinkLabel, IconWidget,
-    IndeterminateProgressRing, InfoBar, InfoBarPosition, LineEdit,
-    MessageBox, MessageBoxBase, NavigationItemPosition, ProgressBar,
-    PushButton, RadioButton, RoundMenu, SegmentedWidget, setFont,
-    SimpleCardWidget, SpinBox, SubtitleLabel, SwitchButton, TabBar,
-    TabCloseButtonDisplayMode, TableWidget, TitleLabel, ToolTipFilter,
-    ToolTipPosition
+    IndeterminateProgressRing, InfoBar, InfoBarIcon, InfoBarPosition,
+    LineEdit, MessageBox, MessageBoxBase, NavigationItemPosition,
+    ProgressBar, PushButton, RadioButton, RoundMenu, SegmentedWidget,
+    setFont, SimpleCardWidget, SpinBox, SubtitleLabel, SwitchButton,
+    TabBar, TabCloseButtonDisplayMode, TableWidget, TeachingTip,
+    TeachingTipTailPosition, TitleLabel, ToolTipFilter, ToolTipPosition,
+    TransparentToolButton
 )
 
 from modless_chat_trans.file_utils import get_path
@@ -58,6 +59,83 @@ from modless_chat_trans.translator import (
 def set_tool_tip(widget, tip, duration=400, position=ToolTipPosition.TOP_LEFT):
     widget.setToolTip(tip)
     widget.installEventFilter(ToolTipFilter(widget, showDelay=duration, position=position))
+
+
+class TeachingTipManager:
+    """全局TeachingTip管理器，确保同时只有一个TeachingTip显示"""
+    _current_tip = None
+
+    @classmethod
+    def show_tip(cls, parent, content: str, target_widget):
+        """显示新的TeachingTip，自动关闭之前的"""
+        # 如果有正在显示的tip，先关闭它
+        if cls._current_tip:
+            try:
+                cls._current_tip.close()
+            except:
+                pass  # tip可能已经被关闭了
+            cls._current_tip = None
+
+        # 创建新的tip
+        # noinspection PyNoneFunctionAssignment
+        tip = TeachingTip.create(
+            target=target_widget,
+            icon=InfoBarIcon.INFORMATION,
+            title='',  # 空标题
+            content=content,
+            isClosable=True,
+            tailPosition=TeachingTipTailPosition.TOP,
+            duration=-1,  # 不自动消失
+            parent=parent
+        )
+
+        cls._current_tip = tip
+
+        # 当TeachingTip关闭时，清除引用
+        if hasattr(tip, 'view'):
+            tip.view.closed.connect(lambda: cls._on_tip_closed(tip))
+
+        return tip
+
+    @classmethod
+    def _on_tip_closed(cls, tip):
+        """当tip关闭时清除引用"""
+        if cls._current_tip == tip:
+            cls._current_tip = None
+
+    @classmethod
+    def close_current(cls):
+        """关闭当前显示的TeachingTip"""
+        if cls._current_tip:
+            try:
+                cls._current_tip.close()
+            except:
+                pass
+            cls._current_tip = None
+
+
+def create_help_button(parent, content: str, target_widget=None):
+    """
+    创建一个帮助按钮，点击时显示TeachingTip
+
+    Args:
+        parent: 父组件
+        content: TeachingTip的内容
+        target_widget: 目标控件，如果为None则以按钮自身为目标
+
+    Returns:
+        TransparentToolButton: 帮助按钮
+    """
+    help_button = TransparentToolButton(FluentIcon.INFO, parent)
+    help_button.setFixedSize(24, 24)
+    help_button.setIconSize(QSize(18, 18))
+
+    def show_teaching_tip():
+        target = target_widget if target_widget else help_button
+        TeachingTipManager.show_tip(parent, content, target)
+
+    help_button.clicked.connect(show_teaching_tip)
+    return help_button
 
 
 @dataclass
@@ -156,6 +234,11 @@ class MessageCaptureInterface(QFrame):
         self.config = config
         self.init_ui(service_type)
 
+    def hideEvent(self, event):
+        """当界面隐藏时，关闭TeachingTip"""
+        TeachingTipManager.close_current()
+        super().hideEvent(event)
+
     def init_ui(self, service_type):
         # 主布局
         self.main_layout = QVBoxLayout(self)
@@ -195,9 +278,13 @@ class MessageCaptureInterface(QFrame):
         # 语言控件
         self.create_all_language_widgets()
 
-        # 日志编码
+        # 日志编码 - 帮助按钮放在控件后面
         log_encoding_label = BodyLabel(_('日志编码：'), self)
-        set_tool_tip(log_encoding_label, _("建议选择自动检测（auto），如果无效可以尝试手动指定GBK等编码"))
+
+        # 创建编码选择框和帮助按钮的容器
+        encoding_container = QHBoxLayout()
+        encoding_container.setSpacing(5)
+
         self.log_encoding_combo = EditableComboBox(self)
         self.log_encoding_combo.addItems(['auto', 'UTF-8', 'GBK', 'GB2312', 'GB18030', 'ISO-8859-1'])
         # 设置默认值
@@ -206,9 +293,18 @@ class MessageCaptureInterface(QFrame):
         else:
             self.log_encoding_combo.setCurrentText('auto')
 
-        # 监控模式
+        help_button_encoding = create_help_button(
+            self,
+            _("建议选择自动检测（auto），如果无效可以尝试手动指定GBK等编码"),
+            self.log_encoding_combo
+        )
+
+        encoding_container.addWidget(self.log_encoding_combo)
+        encoding_container.addWidget(help_button_encoding)
+        encoding_container.addStretch()
+
         monitor_mode_label = BodyLabel(_('监控模式：'), self)
-        set_tool_tip(monitor_mode_label, _("建议优先尝试高效模式，若无法正常获取消息，再切换至兼容模式"))
+
         self.efficient_mode_radio = RadioButton(_('高效模式'), self)
         set_tool_tip(self.efficient_mode_radio, _("低版本 Minecraft 推荐使用"))
         self.compatible_mode_radio = RadioButton(_('兼容模式'), self)
@@ -228,30 +324,61 @@ class MessageCaptureInterface(QFrame):
         self.monitor_mode_group.addButton(self.compatible_mode_radio)
 
         mode_layout = QHBoxLayout()
+        mode_layout.setSpacing(10)
         mode_layout.addWidget(self.efficient_mode_radio)
         mode_layout.addWidget(self.compatible_mode_radio)
+
+        help_button_monitor = create_help_button(
+            self,
+            _("建议优先尝试高效模式，若无法正常获取消息，再切换至兼容模式")
+        )
+        mode_layout.addWidget(help_button_monitor)
         mode_layout.addStretch()
 
-        # 翻译设置
+        # 翻译设置 - 复选框后直接跟帮助按钮
+        filter_layout = QHBoxLayout()
+        filter_layout.setSpacing(5)
+
         self.translate_non_player_check = CheckBox(_('过滤服务器消息'), self)
-        set_tool_tip(self.translate_non_player_check, _("不翻译不带玩家名称的服务器消息（系统消息）"))
+        help_button_filter = create_help_button(
+            self,
+            _("不翻译不带玩家名称的服务器消息（系统消息）"),
+            self.translate_non_player_check
+        )
+
+        filter_layout.addWidget(self.translate_non_player_check)
+        filter_layout.addWidget(help_button_filter)
+        filter_layout.addStretch()
+
         # 设置默认值
         if self.config and hasattr(self.config, 'message_capture'):
             self.translate_non_player_check.setChecked(self.config.message_capture.filter_server_messages)
 
+        # 替换乱码 - 复选框后直接跟帮助按钮
+        garbled_layout = QHBoxLayout()
+        garbled_layout.setSpacing(5)
+
         self.replace_garbled_check = CheckBox(_('替换乱码字符'), self)
-        set_tool_tip(self.replace_garbled_check,
-                     _("将乱码字符（\\ufffd\\ufffd）替换为用于Minecraft格式化代码的分节符\u00A7（\\u00A7）"))
+        help_button_garbled = create_help_button(
+            self,
+            _("将乱码字符（\\ufffd\\ufffd）替换为用于Minecraft格式化代码的分节符\u00A7（\\u00A7）"),
+            self.replace_garbled_check
+        )
+
+        garbled_layout.addWidget(self.replace_garbled_check)
+        garbled_layout.addWidget(help_button_garbled)
+        garbled_layout.addStretch()
+
         # 设置默认值
         if self.config and hasattr(self.config, 'message_capture'):
             self.replace_garbled_check.setChecked(self.config.message_capture.replace_garbled_chars)
 
         self.grid_layout.addWidget(log_encoding_label, 3, 0)
-        self.grid_layout.addWidget(self.log_encoding_combo, 3, 1)
+        self.grid_layout.addLayout(encoding_container, 3, 1)
         self.grid_layout.addWidget(monitor_mode_label, 4, 0)
         self.grid_layout.addLayout(mode_layout, 4, 1)
-        self.grid_layout.addWidget(self.translate_non_player_check, 5, 0, 1, 2)
-        self.grid_layout.addWidget(self.replace_garbled_check, 6, 0, 1, 2)
+        self.grid_layout.addLayout(filter_layout, 5, 0, 1, 2)
+        self.grid_layout.addLayout(garbled_layout, 6, 0, 1, 2)
 
         self.main_layout.addLayout(self.grid_layout)
         self.main_layout.addStretch()
@@ -342,6 +469,11 @@ class TranslationServiceInterface(QFrame):
         self.setObjectName("translationService")
         self.config = config
         self.init_ui()
+
+    def hideEvent(self, event):
+        """当界面隐藏时，关闭TeachingTip"""
+        TeachingTipManager.close_current()
+        super().hideEvent(event)
 
     def init_ui(self):
         # 创建主网格布局
@@ -642,14 +774,26 @@ class TranslationServiceInterface(QFrame):
 
         # 深度翻译模式开关
         optimization_label = BodyLabel(_('深度翻译模式：'), widget)
-        set_tool_tip(optimization_label,
-                     _("启用显式思维链（Chain of Thought）翻译策略\n"
-                       "优点：提供更高质量的翻译\n"
-                       "缺点：一定程度增加token消耗，响应延迟提高"))
+
+        # 创建开关和帮助按钮的容器
+        switch_container = QHBoxLayout()
+        switch_container.setSpacing(5)
 
         llm_optimization_switch = SwitchButton(widget)
         llm_optimization_switch.setOffText(_("关闭"))
         llm_optimization_switch.setOnText(_("开启"))
+
+        help_button_optimization = create_help_button(
+            widget,
+            _("启用显式思维链（Chain of Thought）翻译策略\n"
+              "优点：提供更高质量的翻译\n"
+              "缺点：一定程度增加token消耗，响应延迟提高"),
+            llm_optimization_switch
+        )
+
+        switch_container.addWidget(llm_optimization_switch)
+        switch_container.addWidget(help_button_optimization)
+        switch_container.addStretch()
 
         # 根据配置设置默认值
         if self.config:
@@ -661,7 +805,7 @@ class TranslationServiceInterface(QFrame):
             llm_optimization_switch.setChecked(False)  # 默认关闭
 
         layout.addWidget(optimization_label, 4, 0, Qt.AlignmentFlag.AlignRight)
-        layout.addWidget(llm_optimization_switch, 4, 1)
+        layout.addLayout(switch_container, 4, 1)
 
         # 添加弹性空间
         layout.setColumnStretch(2, 1)
@@ -950,6 +1094,11 @@ class MessageSendInterface(QFrame):
         self.config = config
         self.init_ui(service_type)
 
+    def hideEvent(self, event):
+        """当界面隐藏时，关闭TeachingTip"""
+        TeachingTipManager.close_current()
+        super().hideEvent(event)
+
     def init_ui(self, service_type):
         # 主布局
         self.main_layout = QVBoxLayout(self)
@@ -967,14 +1116,25 @@ class MessageSendInterface(QFrame):
         self.grid_layout.setSpacing(15)
         self.grid_layout.setColumnStretch(1, 1)
 
-        # 是否监控剪切板
+        clipboard_layout = QHBoxLayout()
+        clipboard_layout.setSpacing(5)
+
         self.clipboard_monitor_check = CheckBox(_('监控剪切板'), self)
-        set_tool_tip(self.clipboard_monitor_check, _("从剪切板获取要发送的消息"))
+        help_button_clipboard = create_help_button(
+            self,
+            _("从剪切板获取要发送的消息"),
+            self.clipboard_monitor_check
+        )
+
+        clipboard_layout.addWidget(self.clipboard_monitor_check)
+        clipboard_layout.addWidget(help_button_clipboard)
+        clipboard_layout.addStretch()
+
         # 设置默认值
         if self.config and hasattr(self.config, 'message_send'):
             self.clipboard_monitor_check.setChecked(self.config.message_send.monitor_clipboard)
 
-        self.grid_layout.addWidget(self.clipboard_monitor_check, 0, 0, 1, 2)
+        self.grid_layout.addLayout(clipboard_layout, 0, 0, 1, 2)
 
         # 源/目标语言标签
         src_label = BodyLabel(_('源语言：'), self)
@@ -2859,6 +3019,18 @@ class MainWindow(FluentWindow):
 
         # 初始化后加载传统翻译服务的语言（如果需要）
         self.load_initial_languages()
+
+    def mousePressEvent(self, event):
+        """鼠标点击时关闭TeachingTip"""
+        # 检查点击位置是否在TeachingTip内部
+        if TeachingTipManager._current_tip:
+            tip_widget = TeachingTipManager._current_tip
+            if hasattr(tip_widget, 'geometry'):
+                # 如果点击不在TeachingTip内部，则关闭它
+                if not tip_widget.geometry().contains(event.pos()):
+                    TeachingTipManager.close_current()
+
+        super().mousePressEvent(event)
 
     def load_initial_languages(self):
         """加载初始的传统翻译服务语言列表"""
