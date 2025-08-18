@@ -16,8 +16,9 @@
 import requests
 import json
 import re
+import lazy_loader as lazy
 from modless_chat_trans.logger import logger
-from modless_chat_trans.file_utils import read_config, save_config, LazyImporter
+from modless_chat_trans.config import ServiceType
 
 # 新增支持的 LLM 服务商
 LLM_PROVIDERS_PREFIXES = {
@@ -48,31 +49,32 @@ LLM_PROVIDERS_PREFIXES = {
 
 LLM_PROVIDERS = list(LLM_PROVIDERS_PREFIXES.keys())
 
-_PENDING_TOKENS = 0
-_SAVE_THRESHOLD = 5000  # 每累计5000 token 就落盘
-
-
-def flush_pending_tokens():
-    """将内存中待处理的 tokens 写入配置文件"""
-    global _PENDING_TOKENS
-    if _PENDING_TOKENS > 0:
-        try:
-            logger.info(f"Flushing {_PENDING_TOKENS} pending tokens to config.")
-            conf = read_config()
-            save_config(total_tokens=getattr(conf, "total_tokens", 0) + _PENDING_TOKENS)
-        except Exception as e:
-            logger.warning(f"Failed to flush pending tokens: {e}")
-        finally:
-            _PENDING_TOKENS = 0
+# _PENDING_TOKENS = 0
+# _SAVE_THRESHOLD = 5000  # 每累计5000 token 就落盘
+#
+#
+# def flush_pending_tokens():
+#     """将内存中待处理的 tokens 写入配置文件"""
+#     global _PENDING_TOKENS
+#     if _PENDING_TOKENS > 0:
+#         try:
+#             logger.info(f"Flushing {_PENDING_TOKENS} pending tokens to config.")
+#             conf = read_config()
+#             save_config(total_tokens=getattr(conf, "total_tokens", 0) + _PENDING_TOKENS)
+#         except Exception as e:
+#             logger.warning(f"Failed to flush pending tokens: {e}")
+#         finally:
+#             _PENDING_TOKENS = 0
 
 
 # 所有可用翻译服务列表（LLM + 传统翻译服务）
-services = LLM_PROVIDERS + [
+TRADITIONAL_SERVICES = [
     "DeepL", "Bing", "Google", "Yandex", "Alibaba", "Caiyun", "Youdao", "Sogou", "Iflyrec"
 ]
+services = LLM_PROVIDERS + TRADITIONAL_SERVICES
 
-llm_completion = LazyImporter("litellm", "completion")
-ts = LazyImporter("translators")
+ts = lazy.load("translators")
+litellm = lazy.load("litellm")
 
 
 def get_supported_languages(service):
@@ -96,23 +98,45 @@ service_supported_languages = _LazyLanguageDict()
 
 
 class Translator:
-    def __init__(self,
-                 enable_optimization=False,
-                 llm_kwargs=None,
-                 traditional_kwargs=None):
+    def __init__(self, translation_service_config, glossary):
         """
         初始化 Translator 类, 提供多种翻译相关选项及服务参数
 
-        :param enable_optimization: 是否启用翻译质量优化
-        :param llm_kwargs: 与大语言模型(LLM)翻译相关的关键字参数
-        :param traditional_kwargs: 与传统翻译相关的关键字参数
+        :param translation_service_config: config.TranslationServiceConfig
+        :param glossary: config.glossary
         """
 
-        self.enable_optimization = enable_optimization
-        self.llm_kwargs = llm_kwargs or {}
-        self.traditional_kwargs = traditional_kwargs or {}
+        self.translation_service_config = translation_service_config
+        self.glossary = glossary
+        self._variable_pattern = re.compile(r"\{\{([a-zA-Z0-9_-]+)(?::[^}]+)?\}\}")
+        self._literal_glossary = {
+            k: v for k, v in self.glossary.items()
+            if not self._variable_pattern.search(str(k))
+        }
 
-        logger.info(f"Initialized Translator with optimization {'enabled' if enable_optimization else 'disabled'}")
+        logger.info(f"Initialized Translator")
+        logger.debug(f"Literal glossary terms loaded: {len(self._literal_glossary)}")
+
+    def translate(self, text, source_language, target_language):
+        if self.translation_service_config.service_type == ServiceType.LLM:
+            result = self.llm_translate(
+                text,
+                self.translation_service_config.llm.model,
+                source_language,
+                target_language,
+                self.translation_service_config.llm.provider
+            )
+            return result
+        elif self.translation_service_config.service_type == ServiceType.TRADITIONAL:
+            if translation := self.traditional_translate(
+                    text,
+                    self.translation_service_config.traditional.provider,
+                    source_language,
+                    target_language
+            ):
+                return {"result": translation, "usage": None}
+            else:
+                return None
 
     def llm_translate(self, text, model, source_language, target_language, provider):
         """
@@ -128,99 +152,107 @@ class Translator:
                  失败时返回 None
         """
 
-        if self.enable_optimization:
+        if source_language.lower() == "auto":
+            source_language = ""
+
+        if self.translation_service_config.llm.deep_translate:
             # scene = "Hypixel Bedwars"
             system_prompt = (
-                "You are a Minecraft-specific intelligent translation engine, "
-                "focused on providing high-quality localization transformations "
-                "in terms of cultural adaptation and language naturalization.\n"
-                "\n"
-                # f"Your translation scenario is: {scene}.\n"
-                # "\n"
-                "[Translation Guidelines]\n"
-                "\n"
-                "1. Cultural Adaptability: Identify culture-specific elements in the "
-                "source text (memes, allusions, puns, etc.) and find culturally "
-                "equivalent expressions in the target language.\n"
-                "2. Language Modernization: Use the latest slang in the target language.\n"
-                "3. Natural Language Processing:\n"
+                "You are a Minecraft-specific intelligent translation engine, focused on providing "
+                "high-quality localization transformations in terms of cultural adaptation and "
+                "language naturalization.\n\n"
+                "## Translation Guidelines\n\n"
+                "1. Custom Term Priority: If a `Custom Terms` section is provided in the user's "
+                "prompt, its mappings are mandatory and take the highest priority. You MUST use "
+                "the specified translation for any term found in this section, overriding all "
+                "other guidelines or your own knowledge.\n"
+                "2. Cultural Adaptability: Identify culture-specific elements in the source text "
+                "(memes, allusions, puns, etc.) and find culturally equivalent expressions in "
+                "the target language.\n"
+                "3. Language Modernization: Use the latest slang in the target language.\n"
+                "4. Natural Language Processing:\n"
                 "    - Maintain spoken sentence structures.\n"
-                "    - Consider that player messages during gameplay will not be too "
-                "long or have complex grammatical structures.\n"
-                "    - Avoid formal language structures such as capitalization of "
-                "initial letters/proper nouns and ending punctuation marks.\n"
-                "    - Simulate human conversation characteristics (add appropriate "
-                "filler words, reasonable repetition).\n"
-                "4. Minecraft Formatting Codes: Minecraft formatting codes (e.g., `§l`, "
-                "`§c`, `§1`, `§k`) must be preserved exactly as they appear in the "
-                "source text. These codes should not be translated, modified, or "
-                "removed. They are instructions for text display, not content to be "
-                "translated.\n"
-                "\n"
-                "[Output Specifications]\n"
-                "\n"
-                "Strictly follow the JSON structure below. Your entire response MUST be "
-                "*only* this JSON object. Do not use Markdown code block markers, and "
-                "absolutely do not add any introductory text, concluding remarks, "
-                "explanations, apologies, or any other content outside of the "
-                "specified JSON structure.\n"
-                "\n"
+                "    - Consider that player messages during gameplay will not be too long or have "
+                "complex grammatical structures.\n"
+                "    - Avoid formal language structures such as capitalization of initial letters/"
+                "proper nouns and ending punctuation marks.\n"
+                "    - Simulate human conversation characteristics (add appropriate filler words, "
+                "reasonable repetition).\n"
+                "5. Formatting Code Preservation (CRITICAL): Minecraft formatting codes (e.g., "
+                "`§l`, `§c`, `§1`, `§k`) must be preserved exactly as they appear in the source "
+                "text. These codes must NEVER be translated, modified, or removed.\n"
+                "6. Proper Nouns and Player Names: Do not translate player IDs, server names, or "
+                "non-standard game terms without a widely accepted translation.\n"
+                "7. Untranslatable Content: For meaningless keyboard mashing (e.g., \"asdasd\") "
+                "or garbled text, keep the original text as is.\n\n"
+                "## Output Specifications\n\n"
+                "Strictly follow the JSON structure below. Your entire response MUST be *only* "
+                "this JSON object. Do not use Markdown code block markers, and absolutely do not "
+                "add any introductory text, concluding remarks, explanations, apologies, or any "
+                "other content outside of the specified JSON structure.\n\n"
                 "{\n"
-                '  "terms": [\n'
-                '    {"term": "Original term", "meaning": "Definition"} // '
-                "Include game terms, slang, abbreviations, memes, puns, and other "
-                "vocabulary requiring special handling.\n"
-                "  ],\n"
-                '  "result": "Final translation result" // Natural translation '
-                "after cultural adaptation and colloquial processing.\n"
+                "\"terms\": [\n"
+                "{\"term\": \"Original term\", \"meaning\": \"Definition\"} // Include game terms, "
+                "slang, abbreviations, memes, puns, and other vocabulary requiring special handling.\n"
+                "],\n"
+                "\"result\": \"Final translation result\" // Natural translation after cultural "
+                "adaptation and colloquial processing.\n"
                 "}"
             )
 
-            if source_language:
-                message = f"Translate this sentence from {source_language} to {target_language}: {text}"
-            else:
-                message = f"Translate this sentence to {target_language}: {text}"
         else:
             system_prompt = (
-                "You are a top-tier game localization expert, specializing in providing "
-                "high-quality, stylistically natural real-time chat translations for "
-                "the Minecraft community.\n"
-                "\n"
-                "[Translation Guidelines]\n"
-                "\n"
-                "1. Style and Context: Use colloquial and internet slang that is "
-                "natural within the target language's player community. Avoid stiff, "
-                "formal language. Sentences are often short and simple.\n"
-                "2. Formatting Code Preservation (CRITICAL): You MUST completely "
-                "preserve all Minecraft formatting codes (e.g., `§c`, `§l`). These "
-                "codes must NEVER be translated, modified, or removed.\n"
-                "3. Proper Nouns and Player Names: Do not translate player IDs, "
-                "server names, or non-standard game terms without a widely accepted "
-                "translation.\n"
-                "4. Untranslatable Content: For meaningless keyboard mashing (e.g., "
-                "\"asdasd\") or garbled text, keep the original text as is.\n"
-                "\n"
-                "[Output Requirement]\n"
-                "\n"
-                "Your response MUST ONLY contain the final translated text. Do not "
-                "add any prefixes, suffixes, explanations, or notes."
+                "You are a Minecraft-specific intelligent translation engine, focused on providing "
+                "high-quality localization transformations in terms of cultural adaptation and "
+                "language naturalization.\n\n"
+                "## Translation Guidelines\n\n"
+                "1. Custom Term Priority: If a `Custom Terms` section is provided in the user's "
+                "prompt, its mappings are mandatory and take the highest priority. You MUST use "
+                "the specified translation for any term found in this section, overriding all "
+                "other guidelines or your own knowledge.\n"
+                "2. Cultural Adaptability: Identify culture-specific elements in the source text "
+                "(memes, allusions, puns, etc.) and find culturally equivalent expressions in "
+                "the target language.\n"
+                "3. Language Modernization: Use the latest slang in the target language.\n"
+                "4. Natural Language Processing:\n"
+                "    - Maintain spoken sentence structures.\n"
+                "    - Consider that player messages during gameplay will not be too long or have "
+                "complex grammatical structures.\n"
+                "    - Avoid formal language structures such as capitalization of initial letters/"
+                "proper nouns and ending punctuation marks.\n"
+                "    - Simulate human conversation characteristics (add appropriate filler words, "
+                "reasonable repetition).\n"
+                "5. Formatting Code Preservation (CRITICAL): Minecraft formatting codes (e.g., "
+                "`§l`, `§c`, `§1`, `§k`) must be preserved exactly as they appear in the source "
+                "text. These codes must NEVER be translated, modified, or removed.\n"
+                "6. Proper Nouns and Player Names: Do not translate player IDs, server names, or "
+                "non-standard game terms without a widely accepted translation.\n"
+                "7. Untranslatable Content: For meaningless keyboard mashing (e.g., \"asdasd\") "
+                "or garbled text, keep the original text as is.\n\n"
+                "## Output Requirement\n\n"
+                "Your response MUST ONLY contain the final translated text. Do not add any "
+                "prefixes, suffixes, explanations, or notes."
             )
 
-            # User Prompt 采用 XML 风格标签
-            if source_language:
-                message = (
-                    f"Translate the following text from {source_language} to {target_language}.\n\n"
-                    f"<text_to_translate>\n"
-                    f"{text}\n"
-                    f"</text_to_translate>"
-                )
-            else:
-                message = (
-                    f"Translate the following text to {target_language}.\n\n"
-                    f"<text_to_translate>\n"
-                    f"{text}\n"
-                    f"</text_to_translate>"
-                )
+        if source_language:
+            base_prompt = f"Translate the following text from {source_language} to {target_language}"
+        else:
+            base_prompt = f"Translate the following text to {target_language}"
+
+        try:
+            matched_terms = self._collect_in_text_terms(text)
+        except Exception as _e:
+            logger.warning(f"Collect in-text terms failed: {_e}")
+            matched_terms = []
+
+        is_provider_anthropic = provider == "Anthropic"
+
+        if is_provider_anthropic:
+            base_prompt += f".\n<text_to_translate>{text}</text_to_translate>\n\n"
+        else:
+            base_prompt += f":\n{text}\n\n"
+
+        message = base_prompt + self._terminology_block(matched_terms, is_provider_anthropic)
 
         # 使用 litellm 统一调用各类大模型
         try:
@@ -242,14 +274,14 @@ class Translator:
                     {"role": "user", "content": message}
                 ],
                 "temperature": 0,
-                "api_key": self.llm_kwargs["api_key"],
+                "api_key": self.translation_service_config.llm.api_key,
             }
 
             # API URL 留空自动
-            if api_url := self.llm_kwargs["api_url"]:
-                llm_params["api_base"] = api_url
+            if api_base := self.translation_service_config.llm.api_base:
+                llm_params["api_base"] = api_base
 
-            response = llm_completion(**llm_params)
+            response = litellm.completion(**llm_params)
 
             # litellm 的返回对象与 OpenAI SDK 高度兼容
             content_str = response.choices[0].message.content or ""
@@ -258,9 +290,9 @@ class Translator:
 
         except Exception as e:
             logger.error(f"LLM translation failed ({provider}) via litellm: {e}")
-            return None
+            raise
 
-        if self.enable_optimization:
+        if self.translation_service_config.llm.deep_translate:
             try:
                 content_dict = json.loads(content_str)
             except json.JSONDecodeError as e1:
@@ -276,17 +308,17 @@ class Translator:
         else:
             translated_message = content_str
 
-        # 更新累计 token 使用量
-        if usage_info and usage_info.get("total_tokens", None):
-            try:
-                global _PENDING_TOKENS
-                _PENDING_TOKENS += usage_info["total_tokens"]
-
-                if _PENDING_TOKENS >= _SAVE_THRESHOLD:
-                    flush_pending_tokens()
-            except Exception as e:
-                # 避免因为读取或写入配置失败阻止翻译结果返回
-                logger.warning(f"Failed to update total token usage: {e}")
+        # # 更新累计 token 使用量
+        # if usage_info and usage_info.get("total_tokens", None):
+        #     try:
+        #         global _PENDING_TOKENS
+        #         _PENDING_TOKENS += usage_info["total_tokens"]
+        #
+        #         if _PENDING_TOKENS >= _SAVE_THRESHOLD:
+        #             flush_pending_tokens()
+        #     except Exception as e:
+        #         # 避免因为读取或写入配置失败阻止翻译结果返回
+        #         logger.warning(f"Failed to update total token usage: {e}")
 
         return {
             "result": translated_message,
@@ -304,7 +336,7 @@ class Translator:
         :return: 翻译后的消息
         """
 
-        traditional_api_key: str = self.traditional_kwargs.get("api_key", "")
+        traditional_api_key: str = self.translation_service_config.traditional.api_key
         if traditional_api_key:
             service = service.lower()
 
@@ -328,7 +360,8 @@ class Translator:
                 response = requests.post(url, headers=headers, data=data)
                 if response.status_code == 200:
                     return response.json()["translations"][0]["text"]
-                return None
+                else:
+                    raise Exception(f"DeepL API translation failed: {response.status_code} {response.text}")
 
             # Google API
             elif service == "google":
@@ -344,7 +377,8 @@ class Translator:
                 response = requests.post(url, params=params)
                 if response.status_code == 200:
                     return response.json()["data"]["translations"][0]["translatedText"]
-                return None
+                else:
+                    raise Exception(f"Google API translation failed: {response.status_code} {response.text}")
 
             # Yandex API
             elif service == "yandex":
@@ -363,7 +397,8 @@ class Translator:
                 response = requests.post(url, headers=headers, json=data)
                 if response.status_code == 200:
                     return response.json()["translations"][0]["text"]
-                return None
+                else:
+                    raise Exception(f"Yandex API translation failed: {response.status_code} {response.text}")
 
             # Alibaba (阿里云) API
             elif service == "alibaba":
@@ -414,7 +449,8 @@ class Translator:
 
                 if response.status_code == 200:
                     return response.json().get("Data", {}).get("Translated")
-                return None
+                else:
+                    raise Exception(f"Alibaba API translation failed: {response.status_code} {response.text}")
 
             # Caiyun (彩云小译) API
             elif service == "caiyun":
@@ -431,7 +467,8 @@ class Translator:
                 response = requests.post(url, headers=headers, json=payload)
                 if response.status_code == 200:
                     return response.json()["target"][0]
-                return None
+                else:
+                    raise Exception(f"Caiyun API translation failed: {response.status_code} {response.text}")
 
             # Youdao (有道) API
             elif service == "youdao":
@@ -472,7 +509,8 @@ class Translator:
                 response = requests.post(url, data=data)
                 if response.status_code == 200:
                     return response.json()["translation"][0]
-                return None
+                else:
+                    raise Exception(f"Youdao API translation failed: {response.status_code} {response.text}")
 
             # Bing/Microsoft API
             elif service == "bing":
@@ -493,7 +531,8 @@ class Translator:
                 response = requests.post(endpoint, headers=headers, params=params, json=body)
                 if response.status_code == 200:
                     return response.json()[0]["translations"][0]["text"]
-                return None
+                else:
+                    raise Exception(f"Bing API translation failed: {response.status_code} {response.text}")
 
             else:
                 raise ValueError(f"Unsupported translation service: {service}")
@@ -502,4 +541,68 @@ class Translator:
                                                        from_language=source_language, to_language=target_language):
                 return translated_message
             else:
-                return None
+                raise Exception(f"Traditional translation failed: {translated_message}")
+
+    def _collect_in_text_terms(self, text: str, max_terms: int = 50):
+        """
+        从纯文本术语表中筛选“在 text 中出现过”的术语，按出现顺序返回 [(src, tgt), ...]
+        为了控制提示长度，默认最多取前 max_terms 项。
+        """
+        if not text or not self._literal_glossary:
+            return []
+
+        matches = []
+        for src, tgt in self._literal_glossary.items():
+            try:
+                if src and src in text:
+                    pos = text.index(src)
+                    matches.append((pos, src, tgt))
+            except Exception:
+                # 极少数情况下 index 可能抛异常，忽略即可
+                continue
+
+        if not matches:
+            return []
+
+        # 按首次出现位置排序，去重并截断
+        matches.sort(key=lambda x: x[0])
+        result, seen = [], set()
+        for _, src, tgt in matches:
+            if src not in seen:
+                result.append((src, tgt))
+                seen.add(src)
+            if len(result) >= max_terms:
+                break
+        return result
+
+    def _terminology_block(self, matched_terms, is_provider_anthropic=False):
+        """
+        根据匹配到的术语列表，生成用于Prompt的XML格式术语块。
+
+        Args:
+            matched_terms: 一个元组列表，每个元组包含 (source_term, target_term)
+                           例如: [("gg", "打得不错"), ("afk", "挂机")]
+            is_provider_anthropic: 是否为Anthropic模型
+
+        Returns:
+            一个格式化好的Markdown列表格式术语块，格式为: - "source": "target"
+            如果为Anthropic模型，返回XML格式
+        """
+        if not matched_terms:
+            return ""
+
+        if is_provider_anthropic:
+            entries_str = "".join(
+                f"<entry><source>{src}</source><target>{tgt}</target></entry>"
+                for src, tgt in matched_terms
+            )
+            return f"<custom_terms>{entries_str}</custom_terms>"
+        else:
+            entries_str = "\n".join(
+                f'- "{src}": "{tgt}"'
+                for src, tgt in matched_terms
+            )
+            return (
+                "Custom Terms:\n"
+                f"{entries_str}"
+            )

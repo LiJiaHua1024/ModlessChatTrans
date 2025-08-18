@@ -15,6 +15,7 @@
 
 import time
 import json
+import threading
 from flask import Flask, render_template, Response, request, jsonify
 from datetime import datetime
 from modless_chat_trans.i18n import _
@@ -23,6 +24,18 @@ from modless_chat_trans.logger import logger
 
 http_messages = []
 sse_clients = []
+
+
+def start_httpserver_thread(**kwargs):
+    """启动HTTP服务器线程"""
+    try:
+        server_thread = threading.Thread(target=start_httpserver, args=(kwargs["http_port"], kwargs["callback"]))
+        server_thread.daemon = True
+        server_thread.start()
+        logger.info(f"HTTP server thread started on port {kwargs['http_port']}")
+    except Exception as e:
+        logger.error(f"Failed to start HTTP server thread: {str(e)}")
+        raise e
 
 
 def start_httpserver(port, callback):
@@ -145,8 +158,25 @@ def start_httpserver(port, callback):
         logger.error(f"Failed to start HTTP server: {str(e)}")
 
 
-def httpserver_display(name, message, duration, info):
+def display_message(name, message, info, duration=None):
+    """
+    呈现消息到Web页面
+
+    :param name: 名称
+    :param message: 消息内容
+    :param info: 相关信息（如是否命中缓存、消耗token等）
+    :param duration: 消息处理耗时（秒）
+    """
     global http_messages
+
+    if duration is not None:
+        if duration < 0.001:
+            duration = "instant"
+        elif duration < 1:
+            duration = f"{round(duration * 1000)}ms"
+        else:
+            duration = f"{round(duration, 2)}s"
+
     try:
         current_time = datetime.now().strftime("%H:%M")
         logger.debug(f"Adding message from {name if name else 'System'} to HTTP server queue")

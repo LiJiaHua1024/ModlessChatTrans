@@ -2,8 +2,10 @@ __pycache__/
 *.log
 .venv
 ModlessChatTrans.egg-info
+babel.cfg
 
 .idea/
+.trae/
 
 build/
 dist/
@@ -13,13 +15,16 @@ main.onefile-build/
 main.spec
 
 ModlessChatTrans-config.json
+modless-chat-trans.toml
 update_requirements.py
+network.py
 
 CTkScrollableDropdown/
 
 MCT_cache.bak
 MCT_cache.dat
 MCT_cache.dir
+mct-cache/
 
 MoreSettingsDocs.md
 plan.md

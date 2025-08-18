@@ -1,0 +1,38 @@
+config-version = "3.0.0"
+send-translation-independent = false
+
+[message-capture]
+minecraft-log-path = "%USERPROFILE%/AppData/Roaming/.minecraft/logs"
+log-encoding = "auto"
+monitor-mode = "compatible"
+filter-server-messages = false
+replace-garbled-chars = false
+source-language = "English"
+target-language = "Simplified Chinese"
+
+[player-translation]
+service-type = "llm"
+
+[player-translation.llm]
+provider = "OpenAI"
+api-key = ""
+api-base = ""
+model = "gpt-5-mini"
+deep-translate = false
+
+[message-presentation]
+web-port = 56552
+
+[message-send]
+monitor-clipboard = true
+source-language = "Simplified Chinese"
+target-language = "English"
+
+[settings]
+debug = false
+interface-language = "zh_CN"
+auto-check-update-frequency = "weekly"
+include-prerelease = false
+last-update-check-time = "1970-01-01T00:00:00"
+
+[glossary]

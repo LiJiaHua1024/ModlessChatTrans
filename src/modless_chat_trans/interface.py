@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 LiJiaHua1024
+# Copyright (C) 2025 LiJiaHua1024
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,33 +13,129 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import tkinter as tk
-import customtkinter as ctk
+import sys
 import webbrowser
-import datetime
-import tksvg
 from dataclasses import dataclass
-from collections import deque
+from datetime import datetime
 from typing import Tuple
-from tkinter import messagebox
-from tktooltip import ToolTip
-from modless_chat_trans.file_utils import read_config, save_config, get_path, get_platform
-from modless_chat_trans.i18n import _, supported_languages, lang_window_size_map
-from modless_chat_trans.translator import services, service_supported_languages, LLM_PROVIDERS
+
+import markdown
+import netifaces
+
+from PySide6.QtCore import QObject, QSize, Qt, QThread, QTimer, QUrl, Signal
+from PySide6.QtGui import QIcon, QFont, QColor, QDesktopServices
+from PySide6.QtWidgets import (
+    QApplication, QButtonGroup, QCompleter, QFileDialog, QFrame,
+    QGridLayout, QHBoxLayout, QStackedWidget, QTableWidgetItem,
+    QTextBrowser, QVBoxLayout
+)
+from qfluentwidgets import (
+    Action, BodyLabel, CaptionLabel, CheckBox, ComboBox,
+    DropDownPushButton, EditableComboBox, ElevatedCardWidget,
+    FluentIcon, FluentWindow, HyperlinkLabel, IconWidget,
+    IndeterminateProgressRing, InfoBar, InfoBarIcon, InfoBarPosition,
+    LineEdit, MessageBox, MessageBoxBase, NavigationItemPosition,
+    ProgressBar, PushButton, RadioButton, RoundMenu, SegmentedWidget,
+    setFont, SimpleCardWidget, SpinBox, SubtitleLabel, SwitchButton,
+    TabBar, TabCloseButtonDisplayMode, TableWidget, TeachingTip,
+    TeachingTipTailPosition, TitleLabel, ToolTipFilter, ToolTipPosition,
+    TransparentToolButton
+)
+
+from modless_chat_trans.file_utils import get_path
+from modless_chat_trans.i18n import supported_languages, _
 from modless_chat_trans.logger import logger
+from modless_chat_trans.config import (
+    ServiceType, MonitorMode, update_config, save_config,
+    TranslationServiceConfig, LLMServiceConfig, TraditionalServiceConfig
+)
+from modless_chat_trans.translator import (
+    service_supported_languages,
+    TRADITIONAL_SERVICES,
+    LLM_PROVIDERS
+)
 
-try:
-    from CTkScrollableDropdown import CTkScrollableDropdown  # 提供滚动和高度限制的下拉菜单
 
-    logger.info("CTkScrollableDropdown imported successfully")
-except ImportError:
-    CTkScrollableDropdown = None
-    logger.info("CTkScrollableDropdown not found, using default dropdown")
+def set_tool_tip(widget, tip, duration=400, position=ToolTipPosition.TOP_LEFT):
+    widget.setToolTip(tip)
+    widget.installEventFilter(ToolTipFilter(widget, showDelay=duration, position=position))
 
-if (platform := get_platform()) == 0:
-    import hPyT
 
-updater = None
+class TeachingTipManager:
+    """全局TeachingTip管理器，确保同时只有一个TeachingTip显示"""
+    _current_tip = None
+
+    @classmethod
+    def show_tip(cls, parent, content: str, target_widget):
+        """显示新的TeachingTip，自动关闭之前的"""
+        # 如果有正在显示的tip，先关闭它
+        if cls._current_tip:
+            try:
+                cls._current_tip.close()
+            except:
+                pass  # tip可能已经被关闭了
+            cls._current_tip = None
+
+        # 创建新的tip
+        # noinspection PyNoneFunctionAssignment
+        tip = TeachingTip.create(
+            target=target_widget,
+            icon=InfoBarIcon.INFORMATION,
+            title='',  # 空标题
+            content=content,
+            isClosable=True,
+            tailPosition=TeachingTipTailPosition.TOP,
+            duration=-1,  # 不自动消失
+            parent=parent
+        )
+
+        cls._current_tip = tip
+
+        # 当TeachingTip关闭时，清除引用
+        if hasattr(tip, 'view'):
+            tip.view.closed.connect(lambda: cls._on_tip_closed(tip))
+
+        return tip
+
+    @classmethod
+    def _on_tip_closed(cls, tip):
+        """当tip关闭时清除引用"""
+        if cls._current_tip == tip:
+            cls._current_tip = None
+
+    @classmethod
+    def close_current(cls):
+        """关闭当前显示的TeachingTip"""
+        if cls._current_tip:
+            try:
+                cls._current_tip.close()
+            except:
+                pass
+            cls._current_tip = None
+
+
+def create_help_button(parent, content: str, target_widget=None):
+    """
+    创建一个帮助按钮，点击时显示TeachingTip
+
+    Args:
+        parent: 父组件
+        content: TeachingTip的内容
+        target_widget: 目标控件，如果为None则以按钮自身为目标
+
+    Returns:
+        TransparentToolButton: 帮助按钮
+    """
+    help_button = TransparentToolButton(FluentIcon.INFO, parent)
+    help_button.setFixedSize(24, 24)
+    help_button.setIconSize(QSize(18, 18))
+
+    def show_teaching_tip():
+        target = target_widget if target_widget else help_button
+        TeachingTipManager.show_tip(parent, content, target)
+
+    help_button.clicked.connect(show_teaching_tip)
+    return help_button
 
 
 @dataclass
@@ -51,1318 +147,3139 @@ class ProgramInfo:
     license: Tuple[str, str]
 
 
-def destroy_widgets(*widgets):
-    """
-    销毁一组控件对象并返回一个包含相同长度的None值的元组
-    :param widgets: 需要被销毁的控件对象
-    :return: 一个长度与输入控件数量相同的None值元组
-    """
-    length = len(widgets)
-    destroyed_widgets = (None,) * length
-    for i in range(length):
-        widgets[i].destroy()
-    return destroyed_widgets
-
-
-def normalize_port_number(http_port_entry):
-    """
-    规范化端口号，确保端口号在0到65535之间。
-    如果端口号为浮点数，将其四舍五入到最近的整数
-    如果端口号>65535，将其设置为65535；如果端口号<1，将其设置为1
-
-    :param http_port_entry: 端口号输入框
-    """
-
-    http_port = http_port_entry.get()
-    try:
-        http_port = float(http_port)
-        http_port = int(round(http_port))
-    except ValueError:
-        http_port = 5000
-        logger.warning("Invalid port number, set to default 5000")
-
-    if http_port > 65535:
-        http_port = 65535
-        logger.warning("Port number too large, set to 65535")
-    elif http_port < 1:
-        http_port = 1
-        logger.warning("Port number too small, set to 1")
-
-    http_port_entry.delete(0, ctk.END)
-    http_port_entry.insert(0, str(http_port))
-
-
-def normalize_max_messages(max_messages_entry):
-    """
-    规范化最大消息数，确保其为正整数。
-    如果输入为浮点数，将其四舍五入到最近的整数
-    如果输入小于10，将其设置为10
-    如果输入无法转换为数字，则设置一个默认值（100）
-
-    :param max_messages_entry: 最大消息数输入框
-    """
-
-    max_messages_str = max_messages_entry.get()
-    try:
-        max_messages = float(max_messages_str)
-        max_messages = int(max_messages + 0.5)
-    except ValueError:
-        max_messages = 100
-        logger.warning("Invalid max messages, set to default 100")
-
-    if max_messages < 10:
-        max_messages = 10
-        logger.warning("Max messages too small, set to 10")
-
-    max_messages_entry.delete(0, ctk.END)
-    max_messages_entry.insert(0, str(max_messages))
-
-
-# noinspection PyUnresolvedReferences
-def check_and_update(manual_check=False):
-    logger.info("Checking for updates")
-    if new_release := updater.check_update():
-        logger.info(f"New release found: {new_release.get('tag_name')}")
-        if messagebox.askyesno(_("Update available"),
-                               f"{_('A new version of ModlessChatTrans is available:')} "
-                               f"{new_release.get('tag_name')}\n"
-                               f"{_('Do you want to download it now?')}"):
-            if file_path := updater.download_update(new_release):
-                messagebox.showinfo(_("Update downloaded"),
-                                    f"{_('Update downloaded')}: {file_path}")
-            else:
-                messagebox.showerror(_("Update download failed"),
-                                     _("Failed to download the update. "
-                                       "Please check your internet connection and try again."))
-    elif manual_check:
-        logger.info("No update available")
-        messagebox.showinfo(_("No update available"), _("No update available."))
-
-    save_config(last_check_time=datetime.datetime.now().isoformat())
-
-
-class MainInterfaceManager:
-    def __init__(self, info: ProgramInfo, updater_object):
-        self.info = info
-        self.config = read_config()
-        logger.info("Configuration loaded")
-
-        self.main_window = None
-        self.start_button = None
-        self.http_port_entry = None
-        self.http_port_label = None
-        self.max_messages_entry = None
-        self.max_messages_label = None
-
-        self.llm_widgets = None
-        self.traditional_widgets = None
-        self.widgets = None
-        self.service_var = None
-
-        self.self_src_lang_var = None
-        self.self_tgt_lang_var = None
-
-        self.minecraft_log_folder_entry = None
-        self.output_method_var = None
-        self.self_translation_var = None
-        self.always_on_top_var = None
-
-        global updater
-        updater = updater_object
-
-    def create_main_window(self, **functions):
-        """
-        创建程序主窗口
-
-        :param functions: 函数字典
-        """
-
-        # 创建主窗口
-        self.main_window = ctk.CTk()
-        self.main_window.title(f"Modless Chat Trans {self.info.version}")
-        logger.info("Main window created")
-
-        self.main_window.geometry(lang_window_size_map[read_config().interface_lang])
-
-        self.main_window.resizable(False, False)
-
-        self.main_window.rowconfigure(10, weight=1)
-        self.main_window.columnconfigure(9, weight=1)
-
-        self.main_window.protocol("WM_DELETE_WINDOW", self.on_closing)
-
-        language_menu = tk.Menu(self.main_window, tearoff=0)
-
-        language_menu.add_command(label="* Changes take effect after reboot")
-        for lang, lang_code in supported_languages:
-            language_menu.add_command(
-                label=lang,
-                command=lambda lc=lang_code: save_config(interface_lang=lc)
-            )
-
-        def show_language_menu(event):
-            nonlocal language_menu
-            try:
-                language_menu.tk_popup(event.x_root, event.y_root)
-            finally:
-                language_menu.grab_release()
-
-        self.create_config_widgets(self.main_window)
-
-        self.start_button = ctk.CTkButton(
-            self.main_window,
-            text=_("Start"),
-            font=("default", 60),
-            command=lambda: self.prepare_translation_config(
-                functions["start_translation"]
-            )
-        )
-        self.start_button.grid(row=10, column=0, columnspan=2, padx=20, pady=10)
-
-        choose_language_photo = tksvg.SvgImage(file=get_path("choose_language.svg"), scaletowidth=50)
-        choose_language_button = ctk.CTkButton(self.main_window, image=choose_language_photo, text="",
-                                               width=50, height=50, fg_color="transparent", hover_color="white")
-        choose_language_button.bind("<Button-1>", show_language_menu)
-        choose_language_button.grid(row=11, column=0, padx=(0, 150))
-
-        self.always_on_top_var = ctk.BooleanVar(value=self.config.always_on_top)
-        always_on_top_button = ctk.CTkSwitch(self.main_window, text=_("Always on top"), font=("Arial", 15),
-                                             variable=self.always_on_top_var, onvalue=True, offvalue=False)
-        always_on_top_button.grid(row=11, column=1, padx=(0, 200), pady=15)
-
-        more_settings_button = ctk.CTkButton(self.main_window, text="\u2699\uFE0F", font=("default", 36),
-                                             width=50, height=60, fg_color="transparent", text_color="black",
-                                             hover_color="white", command=functions["more_settings"])
-        more_settings_button.grid(row=10, column=0, pady=10, sticky="w")
-
-        about_button = ctk.CTkButton(self.main_window, text=_("About"), width=50, height=25,
-                                     command=self.show_about_window)
-        about_button.grid(row=11, column=2, padx=0, pady=15)
-
-        # --------------- Check for updates ---------------
-        ucf = self.config.update_check_frequency
-        lct = self.config.last_check_time
-        now = datetime.datetime.now()
-        lct_date = datetime.datetime.fromisoformat(lct)
-
-        if (
-                (ucf == "Daily" and now.date() > lct_date.date()) or
-                (ucf == "Weekly" and (now - lct_date).days >= 7) or
-                (ucf == "Monthly" and (now - lct_date).days >= 30)
-        ):
-            check_and_update()
-        # -------------------------------------------------
-
-        self.main_window.mainloop()
-
-    def show_about_window(self):
-        """
-        显示关于窗口
-        """
-
-        # 创建关于窗口
-        about_window = ctk.CTkToplevel(self.main_window)
-        about_window.title(_("About"))
-        about_window.geometry("350x200")
-        # noinspection PyTypeChecker
-        about_window.after(50, about_window.grab_set)
-        about_window.resizable(False, False)
-        if platform == 0:
-            hPyT.maximize_minimize_button.hide(about_window)
-            hPyT.window_frame.center_relative(self.main_window, about_window)
-
-        # 添加关于窗口的内容
-        ctk.CTkLabel(about_window, text="Modless Chat Trans", font=("Arial", 20, "bold")).pack()
-        ctk.CTkLabel(about_window, text=f"{_('Version')}: {self.info.version}").pack()
-        ctk.CTkLabel(about_window, text=f"{_('Author')}: {self.info.author}").pack()
-        ctk.CTkLabel(about_window, text=f"{_('Email')}: {self.info.email}").pack()
-        github_url_label = ctk.CTkLabel(about_window, text=f"GitHub: {self.info.github}", cursor="hand2")
-        github_url_label.bind("<Button-1>", lambda event: webbrowser.open_new(self.info.github))
-        github_url_label.pack()
-        license_label = ctk.CTkLabel(about_window, text=f"{_('License')}: {self.info.license[0]}", cursor="hand2")
-        license_label.bind("<Button-1>", lambda event: webbrowser.open_new(self.info.license[1]))
-        license_label.pack()
-
-    def prepare_translation_config(self, start_translation):
-        """
-        准备翻译配置并启动翻译流程
-
-        :param start_translation: 启动翻译流程的函数
-        """
-
-        self.start_button.configure(state="disabled")
-
-        minecraft_log_folder = self.minecraft_log_folder_entry.get()
-
-        output_method_map = {_("Graphical"): "Graphical", _("Speech"): "Speech", _("Httpserver"): "Httpserver"}
-        output_method = output_method_map[self.output_method_var.get()]
-        if output_method == "Httpserver" and hasattr(self.http_port_entry, "get"):
-            http_port = int(self.http_port_entry.get())
-            save_config(http_port=http_port)
-            webbrowser.open_new(f"http://localhost:{http_port}")
-        elif output_method == "Graphical":
-            max_messages = int(self.max_messages_entry.get())
-            save_config(max_messages=max_messages)
-
-        self_translation_enabled = self.self_translation_var.get()
-
-        always_on_top = self.always_on_top_var.get()
-
-        trans_service = self.service_var.get()
-
-        if trans_service in LLM_PROVIDERS:
-            op_src_lang = self.widgets[0]["source_language_entry"].get()
-            op_tgt_lang = self.widgets[0]["target_language_entry"].get()
-            api_url = self.widgets[0]["api_url_entry"].get()
-            api_key = self.widgets[0]["api_key_entry"].get()
-            model = self.widgets[0]["model_entry"].get()
-
-            save_config(op_src_lang=op_src_lang, op_tgt_lang=op_tgt_lang, api_url=api_url, api_key=api_key, model=model)
-
-            if (
-                    self_translation_enabled
-                    and hasattr(self.widgets[0]["self_source_language_entry"], "get")
-                    and hasattr(self.widgets[0]["self_target_language_entry"], "get")
-            ):
-                self_src_lang = self.widgets[0]["self_source_language_entry"].get()
-                self_tgt_lang = self.widgets[0]["self_target_language_entry"].get()
-                save_config(self_src_lang=self_src_lang, self_tgt_lang=self_tgt_lang)
-
-        elif trans_service in services and trans_service not in LLM_PROVIDERS:
-            op_src_lang = self.widgets[1]["source_language_menu"].get()
-            op_tgt_lang = self.widgets[1]["target_language_menu"].get()
-            save_config(op_src_lang=op_src_lang, op_tgt_lang=op_tgt_lang)
-
-            if (
-                    self_translation_enabled
-                    and hasattr(self.widgets[1]["self_source_language_menu"], "get")
-                    and hasattr(self.widgets[1]["self_target_language_menu"], "get")
-            ):
-                self_src_lang = self.widgets[1]["self_source_language_menu"].get()
-                self_tgt_lang = self.widgets[1]["self_target_language_menu"].get()
-                save_config(self_src_lang=self_src_lang, self_tgt_lang=self_tgt_lang)
-
-            if self.widgets[1]["use_api_key_var"].get():
-                traditional_api_key = self.widgets[1]["api_key_entry"].get()
-            else:
-                traditional_api_key = ""
-            save_config(traditional_api_key=traditional_api_key)
-
-        save_config(minecraft_log_folder=minecraft_log_folder, output_method=output_method, trans_service=trans_service,
-                    self_trans_enabled=self_translation_enabled, always_on_top=always_on_top)
-
-        logger.info(f"Starting translation with config: minecraft_log_folder={minecraft_log_folder}, "
-                    f"output_method={output_method}, trans_service={trans_service}, "
-                    f"self_translation_enabled={self_translation_enabled}, always_on_top={always_on_top}")
-
-        start_translation()
-
-    # noinspection PyUnresolvedReferences,PyTypedDict
-    def update_service_widgets(self, service):
-        """根据选择的翻译服务更新控件"""
-
-        logger.info(f"Updating widgets for service: {service}")
-
-        for i in range(len(self.widgets)):
-            widgets = self.widgets[i]
-            keys_to_destroy = [key for key in widgets if hasattr(widgets[key], "destroy")]
-            widgets_to_destroy = [widgets[key] for key in keys_to_destroy]
-            destroyed_dict = dict(zip(keys_to_destroy, destroy_widgets(*widgets_to_destroy)))
-            self.widgets[i].update(destroyed_dict)
-
-        if service in LLM_PROVIDERS:
-            self.llm_widgets["source_language_entry"] = ctk.CTkEntry(self.main_window, width=400)
-            self.llm_widgets["source_language_entry"].insert(0, self.config.op_src_lang)
-            self.llm_widgets["source_language_entry"].grid(row=2, column=1, padx=20, pady=10, sticky="w")
-
-            self.llm_widgets["target_language_entry"] = ctk.CTkEntry(self.main_window, width=400)
-            self.llm_widgets["target_language_entry"].insert(0, self.config.op_tgt_lang)
-            self.llm_widgets["target_language_entry"].grid(row=3, column=1, padx=20, pady=10, sticky="w")
-
-            self.llm_widgets["api_url_label"] = ctk.CTkLabel(self.main_window, text=_("API URL(Auto if blank):"))
-            self.llm_widgets["api_url_label"].grid(row=4, column=0, padx=20, pady=10, sticky="w")
-            self.llm_widgets["api_url_entry"] = ctk.CTkEntry(self.main_window, width=400)
-            preset_url = (
-                self.config.api_url
-                if self.config.trans_service == service and self.config.api_url
-                else ""
-            )
-            self.llm_widgets["api_url_entry"].insert(0, preset_url)
-            self.llm_widgets["api_url_entry"].grid(row=4, column=1, padx=20, pady=10, sticky="w")
-
-            self.llm_widgets["api_key_label"] = ctk.CTkLabel(self.main_window, text=_("API Key:"))
-            self.llm_widgets["api_key_label"].grid(row=5, column=0, padx=20, pady=10, sticky="w")
-            self.llm_widgets["api_key_entry"] = ctk.CTkEntry(self.main_window, width=400)
-            self.llm_widgets["api_key_entry"].insert(0, self.config.api_key)
-            self.llm_widgets["api_key_entry"].grid(row=5, column=1, padx=20, pady=10, sticky="w")
-
-            self.llm_widgets["model_label"] = ctk.CTkLabel(self.main_window, text=_("Model:"))
-            self.llm_widgets["model_label"].grid(row=6, column=0, padx=20, pady=10, sticky="w")
-            self.llm_widgets["model_entry"] = ctk.CTkEntry(self.main_window, width=400)
-            self.llm_widgets["model_entry"].insert(0, self.config.model)
-            self.llm_widgets["model_entry"].grid(row=6, column=1, padx=20, pady=10, sticky="w")
-
-        elif service in services and service not in LLM_PROVIDERS:
-            self.main_window.title(f"Modless Chat Trans {self.info.version} - {_('Loading supported languages')}...")
-
-            src_lang_var = ctk.StringVar(
-                value=self.config.op_src_lang if self.config.op_src_lang in service_supported_languages[service]
-                else service_supported_languages[service][0]
-            )
-            tgt_lang_var = ctk.StringVar(
-                value=self.config.op_tgt_lang
-                if self.config.op_tgt_lang in [l for l in service_supported_languages[service] if l != 'auto']
-                else [l for l in service_supported_languages[service] if l != 'auto'][0]
-            )
-
-            self.traditional_widgets["source_language_menu"] = ctk.CTkOptionMenu(
-                self.main_window, values=service_supported_languages[service], variable=src_lang_var)
-            self.traditional_widgets["source_language_menu"].grid(row=2, column=1, padx=20, pady=10, sticky="w")
-
-            if CTkScrollableDropdown is not None:
-                try:
-                    CTkScrollableDropdown(self.traditional_widgets["source_language_menu"],
-                                          values=service_supported_languages[service])
-                except Exception as e:
-                    logger.debug(f"Failed to attach scrollable dropdown (src): {e}")
-
-            self.traditional_widgets["target_language_menu"] = ctk.CTkOptionMenu(
-                self.main_window,
-                values=[l for l in service_supported_languages[service] if l != 'auto'],
-                variable=tgt_lang_var
-            )
-            self.traditional_widgets["target_language_menu"].grid(row=3, column=1, padx=20, pady=10, sticky="w")
-
-            if CTkScrollableDropdown is not None:
-                try:
-                    CTkScrollableDropdown(self.traditional_widgets["target_language_menu"],
-                                          values=[l for l in service_supported_languages[service] if l != 'auto'])
-                except Exception as e:
-                    logger.debug(f"Failed to attach scrollable dropdown (tgt): {e}")
-
-            self.traditional_widgets["use_api_key_var"] = ctk.BooleanVar(value=bool(self.config.traditional_api_key))
-            self.traditional_widgets["use_api_key_checkbox"] = ctk.CTkCheckBox(
-                self.main_window,
-                text=_("I have an API Key"),
-                variable=self.traditional_widgets["use_api_key_var"],
-                command=self.on_use_api_key_toggle
-            )
-            self.traditional_widgets["use_api_key_checkbox"].grid(row=4, column=1, padx=20, pady=10, sticky="w")
-
-            self.on_use_api_key_toggle()
-
-            self.main_window.title(f"Modless Chat Trans {self.info.version}")
-
-        self.on_self_translation_toggle()
-
-    def create_service_widgets(self):
-        """
-        根据选定的翻译服务创建/删除配置控件
-        """
-
-        # global tgt_lang_var, src_lang_var
-
-        self.llm_widgets = {
-            "source_language_entry": None,
-            "target_language_entry": None,
-            "api_url_label": None,
-            "api_url_entry": None,
-            "api_key_label": None,
-            "api_key_entry": None,
-            "model_label": None,
-            "model_entry": None,
-            "self_source_language_entry": None,
-            "self_target_language_entry": None,
-            "self_source_language_label": None,
-            "self_target_language_label": None
-        }
-
-        self.traditional_widgets = {
-            "source_language_menu": None,
-            "target_language_menu": None,
-            "self_source_language_menu": None,
-            "self_target_language_menu": None,
-            "self_source_language_label": None,
-            "self_target_language_label": None,
-            "use_api_key_var": None,
-            "use_api_key_checkbox": None,
-            "api_key_entry": None,
-            "api_key_label": None
-        }
-
-        self.widgets = [self.llm_widgets, self.traditional_widgets]
-        default_service = self.config.trans_service if self.config.trans_service in services else LLM_PROVIDERS[0]
-        self.service_var = ctk.StringVar(value=default_service)
-        service_option_menu = ctk.CTkOptionMenu(self.main_window,
-                                                values=services,
-                                                variable=self.service_var,
-                                                command=self.update_service_widgets)
-        service_option_menu.grid(row=7, column=0, padx=20, pady=10, sticky="w")
-
-        # if CTkScrollableDropdown is not None:
-        #     try:
-        #         CTkScrollableDropdown(service_option_menu, values=services, width=200)
-        #     except Exception as e:
-        #         logger.debug(f"Failed to attach scrollable dropdown (service): {e}")
-
-        self.update_service_widgets(self.service_var.get())  # 初始化控件
-
-    def on_use_api_key_toggle(self):
-        """
-        切换是否使用 API Key 的复选框时的回调函数
-        """
-        if self.traditional_widgets["use_api_key_var"].get():
-            logger.info("API key enabled")
-            if not self.traditional_widgets.get("api_key_entry"):
-                self.traditional_widgets["api_key_label"] = ctk.CTkLabel(self.main_window, text=_("API Key:"))
-                self.traditional_widgets["api_key_label"].grid(row=5, column=0, padx=20, pady=10, sticky="w")
-                self.traditional_widgets["api_key_entry"] = ctk.CTkEntry(self.main_window, width=400)
-                self.traditional_widgets["api_key_entry"].grid(row=5, column=1, padx=20, pady=10, sticky="w")
-                self.traditional_widgets["api_key_entry"].insert(0, self.config.traditional_api_key)
-
-        else:
-            logger.info("API key disabled")
-            if self.traditional_widgets.get("api_key_entry"):
-                (self.traditional_widgets["api_key_label"],
-                 self.traditional_widgets["api_key_entry"]) = destroy_widgets(
-                    self.traditional_widgets["api_key_label"],
-                    self.traditional_widgets["api_key_entry"]
-                )
-
-    def on_output_method_change(self, choice):
-        """
-        输出方式选择改变时的回调函数
-
-        :param choice: 选择的输出方式
-        """
-
-        logger.info(f"Output method changed to: {choice}")
-
-        if self.http_port_entry:
-            self.http_port_label, self.http_port_entry = destroy_widgets(self.http_port_label,
-                                                                         self.http_port_entry)
-        if self.max_messages_entry:
-            self.max_messages_label, self.max_messages_entry = destroy_widgets(self.max_messages_label,
-                                                                               self.max_messages_entry)
-
-        if choice == _("Httpserver"):
-            self.http_port_label = ctk.CTkLabel(self.main_window, text=_("HTTP Port:"))
-            self.http_port_label.grid(row=1, column=1, padx=(200, 0), pady=10, sticky="w")
-            self.http_port_entry = ctk.CTkEntry(self.main_window, width=100)
-            self.http_port_entry.grid(row=1, column=1, padx=(270, 0), pady=10, sticky="w")
-            self.http_port_entry.insert(0, self.config.http_port)
-            self.http_port_entry.bind("<FocusOut>", lambda event: normalize_port_number(self.http_port_entry))
-        elif choice == _("Graphical"):
-            self.max_messages_label = ctk.CTkLabel(self.main_window, text=_("Max Messages:"))
-            self.max_messages_label.grid(row=1, column=1, padx=(190, 0), pady=10, sticky="w")
-            self.max_messages_entry = ctk.CTkEntry(self.main_window, width=100)
-            self.max_messages_entry.grid(row=1, column=1, padx=(320, 0), pady=10, sticky="w")
-            self.max_messages_entry.insert(0, self.config.max_messages)
-            self.max_messages_entry.bind("<FocusOut>", lambda event: normalize_max_messages(self.max_messages_entry))
-
-    def on_self_translation_toggle(self):
-        """
-        自翻译开关切换时的回调函数
-        """
-
-        if self.self_translation_var.get():
-            logger.info("Self translation enabled")
-        else:
-            logger.info("Self translation disabled")
-
-        service = self.service_var.get()
-
-        if self.self_translation_var.get():
-
-            if service in LLM_PROVIDERS:
-                if not self.widgets[0]["self_source_language_entry"]:
-                    self.widgets[0]["self_source_language_label"] = ctk.CTkLabel(self.main_window,
-                                                                                 text=_("Self Source Language:"))
-                    self.widgets[0]["self_source_language_label"].grid(row=8, column=0, padx=20, pady=10, sticky="w")
-                    self.widgets[0]["self_source_language_entry"] = ctk.CTkEntry(self.main_window, width=400)
-                    self.widgets[0]["self_source_language_entry"].grid(row=8, column=1, padx=20, pady=10, sticky="w")
-                    self.widgets[0]["self_source_language_entry"].insert(0, self.config.self_src_lang)
-                if not self.widgets[0]["self_target_language_entry"]:
-                    self.widgets[0]["self_target_language_label"] = ctk.CTkLabel(self.main_window,
-                                                                                 text=_("Self Target Language:"))
-                    self.widgets[0]["self_target_language_label"].grid(row=9, column=0, padx=20, pady=10, sticky="w")
-                    self.widgets[0]["self_target_language_entry"] = ctk.CTkEntry(self.main_window, width=400)
-                    self.widgets[0]["self_target_language_entry"].grid(row=9, column=1, padx=20, pady=10, sticky="w")
-                    self.widgets[0]["self_target_language_entry"].insert(0, self.config.self_tgt_lang)
-            elif service in services and service not in LLM_PROVIDERS:
-                if not self.widgets[1]["self_source_language_menu"]:
-                    self.widgets[1]["self_source_language_label"] = ctk.CTkLabel(self.main_window,
-                                                                                 text=_("Self Source Language:"))
-                    self.widgets[1]["self_source_language_label"].grid(row=8, column=0, padx=20, pady=10, sticky="w")
-                    self.self_src_lang_var = ctk.StringVar(
-                        value=self.config.self_src_lang if self.config.self_src_lang in service_supported_languages[
-                            service]
-                        else service_supported_languages[service][0]
-                    )
-                    self.widgets[1]["self_source_language_menu"] = ctk.CTkOptionMenu(
-                        self.main_window, values=service_supported_languages[service], variable=self.self_src_lang_var)
-                    self.widgets[1]["self_source_language_menu"].grid(row=8, column=1, padx=20, pady=10, sticky="w")
-                    if CTkScrollableDropdown is not None:
-                        try:
-                            CTkScrollableDropdown(self.widgets[1]["self_source_language_menu"],
-                                                  values=service_supported_languages[service])
-                        except Exception as e:
-                            logger.debug(f"Failed to attach scrollable dropdown (self src): {e}")
-                if not self.widgets[1]["self_target_language_menu"]:
-                    self.widgets[1]["self_target_language_label"] = ctk.CTkLabel(self.main_window,
-                                                                                 text=_("Self Target Language:"))
-                    self.widgets[1]["self_target_language_label"].grid(row=9, column=0, padx=20, pady=10, sticky="w")
-                    self.self_tgt_lang_var = ctk.StringVar(
-                        value=self.config.self_tgt_lang
-                        if self.config.self_tgt_lang in [l for l in service_supported_languages[service] if l != 'auto']
-                        else [l for l in service_supported_languages[service] if l != 'auto'][0]
-                    )
-                    self.widgets[1]["self_target_language_menu"] = ctk.CTkOptionMenu(
-                        self.main_window,
-                        values=[l for l in service_supported_languages[service] if l != 'auto'],
-                        variable=self.self_tgt_lang_var
-                    )
-                    self.widgets[1]["self_target_language_menu"].grid(row=9, column=1, padx=20, pady=10, sticky="w")
-                    if CTkScrollableDropdown is not None:
-                        try:
-                            CTkScrollableDropdown(self.widgets[1]["self_target_language_menu"],
-                                                  values=[l for l in service_supported_languages[service] if
-                                                          l != 'auto'])
-                        except Exception as e:
-                            logger.debug(f"Failed to attach scrollable dropdown (self tgt): {e}")
-        else:
-            if service in LLM_PROVIDERS:
-                if self.widgets[0]["self_source_language_entry"]:
-                    (self.widgets[0]["self_source_language_label"],
-                     self.widgets[0]["self_source_language_entry"]) = destroy_widgets(
-                        self.widgets[0]["self_source_language_label"],
-                        self.widgets[0]["self_source_language_entry"]
-                    )
-                if self.widgets[0]["self_target_language_entry"]:
-                    (self.widgets[0]["self_target_language_label"],
-                     self.widgets[0]["self_target_language_entry"]) = destroy_widgets(
-                        self.widgets[0]["self_target_language_label"],
-                        self.widgets[0]["self_target_language_entry"]
-                    )
-            elif service in services and service not in LLM_PROVIDERS:
-                if self.widgets[1]["self_source_language_menu"]:
-                    (self.widgets[1]["self_source_language_label"],
-                     self.widgets[1]["self_source_language_menu"]) = destroy_widgets(
-                        self.widgets[1]["self_source_language_label"],
-                        self.widgets[1]["self_source_language_menu"]
-                    )
-                if self.widgets[1]["self_target_language_menu"]:
-                    (self.widgets[1]["self_target_language_label"],
-                     self.widgets[1]["self_target_language_menu"]) = destroy_widgets(
-                        self.widgets[1]["self_target_language_label"],
-                        self.widgets[1]["self_target_language_menu"]
-                    )
-
-        self.main_window.update()
-
-    def create_config_widgets(self, main_window):
-        """
-        创建配置控件
-
-        :param main_window: 配置窗口对象
-        """
-
-        if self.config.output_method not in {"Graphical", "Speech", "Httpserver"}:
-            self.config.output_method = "Graphical"
-
-        # Minecraft Log Folder
-        minecraft_log_folder_label = ctk.CTkLabel(main_window, text=_("Minecraft Log Folder:"))
-        minecraft_log_folder_label.grid(row=0, column=0, padx=20, pady=10, sticky="w")
-        self.minecraft_log_folder_entry = ctk.CTkEntry(main_window, width=400)
-        self.minecraft_log_folder_entry.insert(0, self.config.minecraft_log_folder)
-        self.minecraft_log_folder_entry.grid(row=0, column=1, padx=20, pady=10, sticky="w")
-
-        # Output Method
-        self.on_output_method_change(_(self.config.output_method))
-        output_method_label = ctk.CTkLabel(main_window, text=_("Output Method:"))
-        output_method_label.grid(row=1, column=0, padx=20, pady=10, sticky="w")
-        self.output_method_var = ctk.StringVar(value=_(self.config.output_method))
-        output_method_optionmenu = ctk.CTkOptionMenu(main_window,
-                                                     values=[_("Graphical"), _("Speech"), _("Httpserver")],
-                                                     variable=self.output_method_var,
-                                                     command=self.on_output_method_change)
-        output_method_optionmenu.grid(row=1, column=1, padx=20, pady=10, sticky="w")
-
-        # Source Language
-        source_language_label = ctk.CTkLabel(main_window, text=_("Source Language(Auto if blank):"))
-        source_language_label.grid(row=2, column=0, padx=20, pady=10, sticky="w")
-
-        # Target Language
-        target_language_label = ctk.CTkLabel(main_window, text=_("Target Language:"))
-        target_language_label.grid(row=3, column=0, padx=20, pady=10, sticky="w")
-
-        # Self Translation Toggle
-        self.self_translation_var = ctk.BooleanVar(value=self.config.self_trans_enabled)
-        self_translation_toggle = ctk.CTkCheckBox(main_window, text=_("Translate Player's Own Message"),
-                                                  variable=self.self_translation_var,
-                                                  command=self.on_self_translation_toggle)
-        self_translation_toggle.grid(row=7, column=1, padx=20, pady=10, sticky="w")
-
-        self.create_service_widgets()
-
-        # self.on_self_translation_toggle()
-
-    def on_closing(self):
-        self.main_window.title(f"Modless Chat Trans {self.info.version} - Exiting...")
-        from modless_chat_trans.translator import flush_pending_tokens
-        flush_pending_tokens()
-        logger.info(f"Cumulative tokens consumed")
-        from modless_chat_trans.file_utils import cache
-        cache.close()
-        logger.info("Cache saved")
-        self.main_window.destroy()
-        logger.info("Application closed")
-
-
-class MoreSettingsManager:
-    def __init__(self, main_window, config):
-        self.main_window = main_window
-        self.config = config
-        self.more_settings_window = None
-        self.variables = {}
-
-    def create_more_settings_window(self):
-        self.more_settings_window = ctk.CTkToplevel(self.main_window)
-        self.more_settings_window.title(_("More Settings"))
-        self.more_settings_window.geometry(
-            "460x420" if self.config.interface_lang in {"fr_FR", "es_ES", "ru_RU", "pt_BR"} else "400x420"
-        )
-        # noinspection PyTypeChecker
-        self.more_settings_window.after(50, self.more_settings_window.grab_set)
-        self.more_settings_window.resizable(False, False)
-        logger.info("More settings window created")
-
-        # 在打开窗口时刷新配置，确保显示最新的累计 token 数
-        self.config = read_config()
-
-        if platform == 0:
-            hPyT.maximize_minimize_button.hide(self.more_settings_window)
-
-        self.create_additional_widgets()
-
-    def open_glossary_window(self):
-        logger.info("Opening Glossary window")
-        self.config = read_config()
-        glossary_manager = GlossaryManager(self.more_settings_window, self.config)
-        glossary_manager.create_glossary_window()
-
-    def create_additional_widgets(self):
-        # 定义所有控件的配置
-        widgets_config = [
-            {
-                'type': 'label_optionmenu',
-                'label': _("Automatic Update Frequency"),
-                'var_name': 'update_check_frequency',
-                'var_type': 'string',
-                'default': _(
-                    self.config.update_check_frequency
-                    if self.config.update_check_frequency in {
-                        "On Startup", "Daily", "Weekly", "Monthly", "Never"
-                    }
-                    else "Daily"
-                ),
-                'options': [_("On Startup"), _("Daily"), _("Weekly"), _("Monthly"), _("Never")],
-                'row': 0
-            },
-            {
-                'type': 'checkbox',
-                'text': _("Include Pre-release"),
-                'var_name': 'include_prerelease',
-                'var_type': 'boolean',
-                'default': self.config.include_prerelease,
-                'row': 1,
-                'column': 0
-            },
-            {
-                'type': 'button',
-                'text': _("Check for Updates"),
-                'command': lambda: check_and_update(manual_check=True),
-                'row': 1,
-                'column': 1
-            },
-            {
-                'type': 'checkbox',
-                'text': _("Enable Translation Quality Optimization"),
-                'var_name': 'enable_optimization',
-                'var_type': 'boolean',
-                'default': self.config.enable_optimization,
-                'tooltip': (
-                        _("Enabling this will improve translation quality, "
-                          "but will increase latency and consume more tokens")
-                        + f"\n{_('Cumulative tokens consumed')}: {self.config.total_tokens}"
-                ),
-                'row': 2,
-                'columnspan': 2
-            },
-            {
-                'type': 'checkbox',
-                'text': _("Enable High Version Fix"),
-                'var_name': 'use_high_version_fix',
-                'var_type': 'boolean',
-                'default': self.config.use_high_version_fix,
-                'tooltip': _(
-                    "Enabling this will temporarily fix the issue of logs "
-                    "not being captured in high versions of Minecraft\n"
-                    "If it doesn't work, restart this program"
-                ),
-                'row': 3,
-                'columnspan': 2
-            },
-            {
-                'type': 'checkbox',
-                'text': _("Translate System Messages"),
-                'var_name': 'trans_sys_message',
-                'var_type': 'boolean',
-                'default': self.config.trans_sys_message,
-                'tooltip': _(
-                    "Enable this will translate system messages "
-                    "(messages without names)"
-                ),
-                'row': 4,
-                'columnspan': 2
-            },
-            {
-                'type': 'checkbox',
-                'text': _("Replace Garbled Characters"),
-                'var_name': 'replace_garbled_character',
-                'var_type': 'boolean',
-                'default': self.config.replace_garbled_character,
-                'tooltip': _(
-                    "Replace all garbled characters with "
-                    "Minecraft formatting codes"
-                ),
-                'row': 5,
-                'columnspan': 2
-            },
-            {
-                'type': 'label_entry',
-                'label': _("Log Encoding"),
-                'var_name': 'encoding',
-                'var_type': 'string',
-                'default': self.config.encoding,
-                'tooltip': _(
-                    "Manually specify the log encoding\n"
-                    "If there are garbled characters, try changing this value\n"
-                    "Leave it blank for automatic detection"
-                ),
-                'row': 6
-            },
-            {
-                'type': 'button',
-                'text': _("Glossary"),
-                'command': self.open_glossary_window,
-                'row': 7,
-                'columnspan': 2,
-                'sticky': 'ew'
-            },
-            {
-                'type': 'button',
-                'text': _("Save Settings"),
-                'command': self.save_more_settings,
-                'row': 8,
-                'columnspan': 2,
-                'pady': 20,
-                'sticky': ''
-            }
-        ]
-
-        # 创建所有控件
-        for config in widgets_config:
-            self._create_widget(config)
-
-    def _create_widget(self, config):
-        """根据配置创建单个控件"""
-        widget_type = config['type']
-        row = config['row']
-        column = config.get('column', 0)
-        columnspan = config.get('columnspan', 1)
-        padx = config.get('padx', 20)
-        pady = config.get('pady', 10)
-        sticky = config.get('sticky', 'w')
-
-        # 创建变量
-        if 'var_name' in config:
-            var_type = config['var_type']
-            if var_type == 'string':
-                self.variables[config['var_name']] = ctk.StringVar(value=config['default'])
-            elif var_type == 'boolean':
-                self.variables[config['var_name']] = ctk.BooleanVar(value=config['default'])
-
-        # 创建控件
-        if widget_type == 'label_optionmenu':
-            # 创建标签
-            ctk.CTkLabel(
-                self.more_settings_window,
-                text=config['label']
-            ).grid(row=row, column=0, padx=padx, pady=pady, sticky=sticky)
-
-            # 创建选项菜单
-            ctk.CTkOptionMenu(
-                self.more_settings_window,
-                values=config['options'],
-                variable=self.variables[config['var_name']]
-            ).grid(row=row, column=1, padx=padx, pady=pady, sticky=sticky)
-
-        elif widget_type == 'checkbox':
-            checkbox = ctk.CTkCheckBox(
-                self.more_settings_window,
-                text=config['text'],
-                variable=self.variables[config['var_name']]
-            )
-            checkbox.grid(row=row, column=column, columnspan=columnspan,
-                          padx=padx, pady=pady, sticky=sticky)
-
-            # 添加工具提示（如果有）
-            if 'tooltip' in config:
-                ToolTip(checkbox, config['tooltip'], delay=0.3)
-
-        elif widget_type == 'button':
-            ctk.CTkButton(
-                self.more_settings_window,
-                text=config['text'],
-                command=config['command']
-            ).grid(row=row, column=column, columnspan=columnspan,
-                   padx=padx, pady=pady, sticky=sticky)
-
-        elif widget_type == 'label_entry':
-            # 创建标签
-            label = ctk.CTkLabel(
-                self.more_settings_window,
-                text=config['label']
-            )
-            label.grid(row=row, column=0, padx=padx, pady=pady, sticky=sticky)
-
-            # 添加工具提示（如果有）
-            if 'tooltip' in config:
-                ToolTip(label, config['tooltip'], delay=0.3)
-
-            # 创建输入框
-            ctk.CTkEntry(
-                self.more_settings_window,
-                textvariable=self.variables[config['var_name']]
-            ).grid(row=row, column=1, padx=padx, pady=pady, sticky=sticky)
-
-    def save_more_settings(self):
-        update_check_frequency_map = {
-            _("On Startup"): "On Startup",
-            _("Daily"): "Daily",
-            _("Weekly"): "Weekly",
-            _("Monthly"): "Monthly",
-            _("Never"): "Never"
-        }
-
-        config_keys = [
-            "include_prerelease",
-            "enable_optimization",
-            "use_high_version_fix",
-            "trans_sys_message",
-            "encoding",
-            "replace_garbled_character"
-        ]
-
-        # 批量获取配置值
-        config_values = {key: self.variables[key].get() for key in config_keys}
-
-        config_values["update_check_frequency"] = update_check_frequency_map[
-            self.variables["update_check_frequency"].get()
-        ]
-
-        logger.info("Saving more settings")
-        save_config(**config_values)
-        self.more_settings_window.destroy()
-
-
-class ChatInterfaceManager:
-    def __init__(self, main_window, max_messages=150, always_on_top=False):
-        self.main_window = main_window
-        self.chat_window = None
-        self.chat_frame = None
-        self.canvas = None
-        self.scrollbar = None
-        self.messages = deque(maxlen=max_messages)
-        self.displayed_messages = []
-        self.always_on_top = always_on_top
-
-    def start(self):
-        self.chat_window = ctk.CTkToplevel(self.main_window)
-        self.chat_window.title(_("Translated Message"))
-        self.chat_window.geometry("700x400")
-        logger.info("Chat window created")
-
-        self.chat_window.attributes("-topmost", self.always_on_top)
-
-        self.canvas = ctk.CTkCanvas(self.chat_window, bg="#EAF6FF", highlightthickness=0)
-        self.scrollbar = ctk.CTkScrollbar(self.chat_window, command=self.canvas.yview)
-        self.chat_frame = ctk.CTkFrame(self.canvas, fg_color="#EAF6FF")
-
-        self.canvas.create_window((0, 0), window=self.chat_frame, anchor="nw")
-        self.canvas.configure(yscrollcommand=self.scrollbar.set)
-
-        self.canvas.pack(side="left", fill="both", expand=True)
-        self.scrollbar.pack(side="right", fill="y")
-
-        self.chat_frame.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
-        self.chat_window.bind("<MouseWheel>", self._on_mouse_wheel)
-        self.canvas.bind("<MouseWheel>", self._on_mouse_wheel)
-
-    def display(self, name, message):
-        """
-        显示消息，使用聊天气泡样式，并添加逐字展开的动画效果
-        :param name: 发送者名称
-        :param message: 消息内容
-        """
-        logger.debug(f"Displaying message from {name}: {message}")
-        self.messages.append((name, message))
-        self._append_message(name, message)
-
-        # 自动滚动到最新消息
-        self.canvas.update_idletasks()
-        self.canvas.yview_moveto(1.0)
-
-    def _append_message(self, name, message):
-        """
-        追加单条消息到显示区域，并添加逐字展开动画
-        """
-        message_frame = ctk.CTkFrame(
-            self.chat_frame,
-            fg_color="#FFFFFF",
-            corner_radius=10,
-            border_width=1,
-            border_color="#D0E8FF",
-        )
-        message_frame.pack(fill="x", pady=5, padx=10, anchor="w")
-
-        # 当显示的message_frame数量大于等于消息的最大限制数量时，移除最旧的message_frame
-        if len(self.displayed_messages) >= self.messages.maxlen:
-            oldest_message_frame = self.displayed_messages.pop(0)
-            oldest_message_frame.destroy()
-
-        self.displayed_messages.append(message_frame)
-
-        # 显示昵称
-        if name:
-            name_label = ctk.CTkLabel(
-                message_frame,
-                text=name,
-                font=("SimSun", 12, "bold"),
-                text_color="#007ACC",
-            )
-            name_label.pack(anchor="w", padx=10, pady=(5, 0))
-
-        message_label = ctk.CTkLabel(
-            message_frame,
-            text="",  # 初始内容为空
-            font=("SimSun", 14),
-            text_color="#333333",
-            wraplength=500,  # 自动换行
-            justify="left",
-        )
-        message_label.pack(anchor="w", padx=10, pady=(0, 5))
-
-        # 开始逐字展开动画
+class DownloadWorker(QObject):
+    """下载工作器，用于在线程中执行下载并发送进度信号"""
+    progress_updated = Signal(int, int, float)  # downloaded, total, speed
+    download_finished = Signal(str)  # file_path
+    download_error = Signal(str)  # error_message
+    thread_count_updated = Signal(int)  # thread_count
+
+    def __init__(self, updater, release_info):
+        super().__init__()
+        self.updater = updater
+        self.release_info = release_info
+        self.is_cancelled = False
+        self.speed_history = []
+        self.max_history = 10
+
+    def cancel(self):
+        """取消下载"""
+        self.is_cancelled = True
+
+    def download(self):
+        """执行下载"""
         try:
-            self._animate_text(message_label, message)
+            def progress_callback(downloaded, total, speed):
+                if self.is_cancelled:
+                    return False
+
+                # 添加速度到历史记录
+                self.speed_history.append(speed)
+                if len(self.speed_history) > self.max_history:
+                    self.speed_history.pop(0)
+
+                # 计算平均速度
+                if self.speed_history:
+                    weights = [i + 1 for i in range(len(self.speed_history))]
+                    weighted_sum = sum(s * w for s, w in zip(self.speed_history, weights))
+                    weight_total = sum(weights)
+                    avg_speed = weighted_sum / weight_total
+                else:
+                    avg_speed = speed
+
+                self.progress_updated.emit(downloaded, total, avg_speed)
+                return True
+
+            def thread_count_callback(count):
+                """线程数回调"""
+                self.thread_count_updated.emit(count)
+
+            file_path = self.updater.download_update(self.release_info, progress_callback, thread_count_callback)
+
+            if file_path:
+                self.download_finished.emit(file_path)
+            elif self.is_cancelled:
+                self.download_finished.emit("")
+            else:
+                self.download_error.emit(_("下载失败"))
+
         except Exception as e:
-            logger.error(f"Error in animation: {str(e)}")
-            message_label.configure(text=message)
-
-    def _animate_text(self, label, full_text, index=0, delay=5, step=5):
-        """
-        动画效果：按 step 个字符为单位逐步展开消息内容
-        :param label: 消息标签
-        :param full_text: 完整的消息内容
-        :param index: 当前显示到的字符索引
-        :param delay: 每帧的延迟时间（毫秒）
-        :param step: 每次更新的字符数量
-        """
-        if index < len(full_text):
-            new_index = min(index + step, len(full_text))
-            label.configure(text=full_text[:new_index])
-            label.after(delay, self._animate_text, label, full_text, new_index, delay, step)
-
-    def _on_mouse_wheel(self, event):
-        """
-        鼠标滚轮事件处理函数，用于滚动聊天窗口。
-        """
-        self.canvas.yview_scroll(-1 * (event.delta // 120), "units")
+            self.download_error.emit(str(e))
 
 
-class GlossaryManager:
-    def __init__(self, main_window, config):
-        self.main_window = main_window
+class LanguageLoaderThread(QThread):
+    """用于异步加载语言列表的线程"""
+    languages_loaded = Signal(list)
+    error_occurred = Signal(str)
+
+    def __init__(self, service_name: str):
+        super().__init__()
+        self.service_name = service_name
+
+    def run(self):
+        try:
+            langs = service_supported_languages[self.service_name]
+            self.languages_loaded.emit(langs)
+        except Exception as e:
+            self.error_occurred.emit(str(e))
+
+
+class MessageCaptureInterface(QFrame):
+    """消息捕获界面组件"""
+
+    def __init__(self, parent, service_type, config=None):
+        super().__init__(parent=parent)
+        self.setObjectName("messageCapture")
+        self.current_service_type = service_type
         self.config = config
-        self.glossary_window = None
-        # 输入控件
-        self.src_entry = None
-        self.tgt_entry = None
-        self.add_button = None
-        # 列表显示控件
-        self.glossary_frame = None  # 将使用 CTkScrollableFrame
-        self.term_buttons = {}  # 存储按钮以便更新状态 {src: button_widget}
-        # 删除和保存控件
-        self.delete_button = None
-        self.save_button = None
-        # 状态变量
-        self.selected_term_src = None  # 当前选中的源术语
-        self.glossary_rules = {}
-        if hasattr(config, 'glossary') and isinstance(config.glossary, dict):
-            self.glossary_rules = config.glossary.copy()
-            logger.info(f"Loaded glossary rules: {len(self.glossary_rules)}")
+        self.init_ui(service_type)
+
+    def hideEvent(self, event):
+        """当界面隐藏时，关闭TeachingTip"""
+        TeachingTipManager.close_current()
+        super().hideEvent(event)
+
+    def init_ui(self, service_type):
+        # 主布局
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(30, 30, 30, 30)
+        self.main_layout.setSpacing(20)
+
+        # 标题
+        title = SubtitleLabel(_('消息捕获设置'), self)
+        setFont(title, 24)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.main_layout.addWidget(title)
+
+        # 表单网格
+        self.grid_layout = QGridLayout()
+        self.grid_layout.setSpacing(15)
+        self.grid_layout.setColumnStretch(1, 1)
+
+        # MC 日志位置
+        log_label = BodyLabel(_('Minecraft 日志位置：'), self)
+        self.log_location_edit = LineEdit(self)
+        self.log_location_edit.setPlaceholderText(_("请选择Minecraft日志文件夹路径"))
+        self.log_location_edit.setClearButtonEnabled(True)
+        # 设置默认值
+        if self.config and hasattr(self.config, 'message_capture'):
+            self.log_location_edit.setText(self.config.message_capture.minecraft_log_path)
+        file_action = Action(FluentIcon.FOLDER, "", triggered=self.select_log_folder)
+        self.log_location_edit.addAction(file_action, LineEdit.ActionPosition.TrailingPosition)
+        self.grid_layout.addWidget(log_label, 0, 0)
+        self.grid_layout.addWidget(self.log_location_edit, 0, 1)
+
+        # 源/目标语言标签
+        self.src_label = BodyLabel(_('源语言：'), self)
+        self.tgt_label = BodyLabel(_('目标语言：'), self)
+        self.grid_layout.addWidget(self.src_label, 1, 0)
+        self.grid_layout.addWidget(self.tgt_label, 2, 0)
+
+        # 语言控件
+        self.create_all_language_widgets()
+
+        # 日志编码 - 帮助按钮放在控件后面
+        log_encoding_label = BodyLabel(_('日志编码：'), self)
+
+        # 创建编码选择框和帮助按钮的容器
+        encoding_container = QHBoxLayout()
+        encoding_container.setSpacing(5)
+
+        self.log_encoding_combo = EditableComboBox(self)
+        self.log_encoding_combo.addItems(['auto', 'UTF-8', 'GBK', 'GB2312', 'GB18030', 'ISO-8859-1'])
+        # 设置默认值
+        if self.config and hasattr(self.config, 'message_capture'):
+            self.log_encoding_combo.setCurrentText(self.config.message_capture.log_encoding)
         else:
-            logger.warning("Glossary in config is not a dictionary or missing. Initializing as empty.")
+            self.log_encoding_combo.setCurrentText('auto')
 
-    def create_glossary_window(self):
-        """创建术语表窗口"""
-        self.glossary_window = ctk.CTkToplevel(self.main_window)
-        self.glossary_window.title(_("Glossary"))
-        self.glossary_window.geometry("550x450")
-        # noinspection PyTypeChecker
-        self.glossary_window.after(50, self.glossary_window.grab_set)
-        self.glossary_window.resizable(False, False)
-        logger.info("Glossary window created")
+        help_button_encoding = create_help_button(
+            self,
+            _("建议选择自动检测（auto），如果无效可以尝试手动指定GBK等编码"),
+            self.log_encoding_combo
+        )
 
-        if platform == 0:
-            hPyT.maximize_minimize_button.hide(self.glossary_window)
-            hPyT.window_frame.center_relative(self.main_window, self.glossary_window)
+        encoding_container.addWidget(self.log_encoding_combo)
+        encoding_container.addWidget(help_button_encoding)
+        encoding_container.addStretch()
 
-        self._create_widgets()
-        self._update_glossary_display()  # 初始加载并显示术语列表
+        monitor_mode_label = BodyLabel(_('监控模式：'), self)
 
-    def _create_widgets(self):
-        """在术语表窗口中创建控件"""
-        # --- 输入区域 ---
-        input_frame = ctk.CTkFrame(self.glossary_window)
-        input_frame.pack(pady=10, padx=10, fill="x")
+        self.efficient_mode_radio = RadioButton(_('高效模式'), self)
+        set_tool_tip(self.efficient_mode_radio, _("低版本 Minecraft 推荐使用"))
+        self.compatible_mode_radio = RadioButton(_('兼容模式'), self)
+        set_tool_tip(self.compatible_mode_radio, _("高版本 Minecraft 使用"))
 
-        ctk.CTkLabel(input_frame, text=_("Source Term:")).grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        self.src_entry = ctk.CTkEntry(input_frame, width=180)
-        self.src_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        # 设置默认值
+        if self.config and hasattr(self.config, 'message_capture'):
+            if self.config.message_capture.monitor_mode == MonitorMode.EFFICIENT:
+                self.efficient_mode_radio.setChecked(True)
+            else:
+                self.compatible_mode_radio.setChecked(True)
+        else:
+            self.efficient_mode_radio.setChecked(True)
 
-        ctk.CTkLabel(input_frame, text=_("Target Term:")).grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        self.tgt_entry = ctk.CTkEntry(input_frame, width=180)
-        self.tgt_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+        self.monitor_mode_group = QButtonGroup(self)
+        self.monitor_mode_group.addButton(self.efficient_mode_radio)
+        self.monitor_mode_group.addButton(self.compatible_mode_radio)
 
-        self.add_button = ctk.CTkButton(input_frame, text=_("Add/Update Term"), command=self._add_update_term)
-        self.add_button.grid(row=0, column=2, rowspan=2, padx=10, pady=5)
+        mode_layout = QHBoxLayout()
+        mode_layout.setSpacing(10)
+        mode_layout.addWidget(self.efficient_mode_radio)
+        mode_layout.addWidget(self.compatible_mode_radio)
 
-        input_frame.columnconfigure(1, weight=1)
+        help_button_monitor = create_help_button(
+            self,
+            _("建议优先尝试高效模式，若无法正常获取消息，再切换至兼容模式")
+        )
+        mode_layout.addWidget(help_button_monitor)
+        mode_layout.addStretch()
 
-        # --- 术语列表显示区域 ---
-        self.glossary_frame = ctk.CTkScrollableFrame(self.glossary_window, label_text=_("Glossary Rules"))
-        self.glossary_frame.pack(pady=10, padx=10, fill="both", expand=True)
+        # 翻译设置 - 复选框后直接跟帮助按钮
+        filter_layout = QHBoxLayout()
+        filter_layout.setSpacing(5)
 
-        # --- 操作按钮区域 ---
-        button_frame = ctk.CTkFrame(self.glossary_window)
-        button_frame.pack(pady=10, padx=10, fill="x")
+        self.translate_non_player_check = CheckBox(_('过滤服务器消息'), self)
+        help_button_filter = create_help_button(
+            self,
+            _("不翻译不带玩家名称的服务器消息（系统消息）"),
+            self.translate_non_player_check
+        )
 
-        self.delete_button = ctk.CTkButton(button_frame, text=_("Delete Selected"), command=self._delete_selected_term,
-                                           state="disabled")
-        self.delete_button.pack(side="left", padx=10)
+        filter_layout.addWidget(self.translate_non_player_check)
+        filter_layout.addWidget(help_button_filter)
+        filter_layout.addStretch()
 
-        self.save_button = ctk.CTkButton(button_frame, text=_("Save Glossary and Close"), command=self._save_glossary)
-        self.save_button.pack(side="right", padx=10)
+        # 设置默认值
+        if self.config and hasattr(self.config, 'message_capture'):
+            self.translate_non_player_check.setChecked(self.config.message_capture.filter_server_messages)
 
-    def _update_glossary_display(self):
-        """清空并重新填充术语列表显示区域"""
-        # 清空旧按钮
-        for widget in self.glossary_frame.winfo_children():
-            widget.destroy()
-        self.term_buttons.clear()
-        self.selected_term_src = None
-        self.delete_button.configure(state="disabled")
+        # 替换乱码 - 复选框后直接跟帮助按钮
+        garbled_layout = QHBoxLayout()
+        garbled_layout.setSpacing(5)
+
+        self.replace_garbled_check = CheckBox(_('替换乱码字符'), self)
+        help_button_garbled = create_help_button(
+            self,
+            _("将乱码字符（\\ufffd\\ufffd）替换为用于Minecraft格式化代码的分节符\u00A7（\\u00A7）"),
+            self.replace_garbled_check
+        )
+
+        garbled_layout.addWidget(self.replace_garbled_check)
+        garbled_layout.addWidget(help_button_garbled)
+        garbled_layout.addStretch()
+
+        # 设置默认值
+        if self.config and hasattr(self.config, 'message_capture'):
+            self.replace_garbled_check.setChecked(self.config.message_capture.replace_garbled_chars)
+
+        self.grid_layout.addWidget(log_encoding_label, 3, 0)
+        self.grid_layout.addLayout(encoding_container, 3, 1)
+        self.grid_layout.addWidget(monitor_mode_label, 4, 0)
+        self.grid_layout.addLayout(mode_layout, 4, 1)
+        self.grid_layout.addLayout(filter_layout, 5, 0, 1, 2)
+        self.grid_layout.addLayout(garbled_layout, 6, 0, 1, 2)
+
+        self.main_layout.addLayout(self.grid_layout)
+        self.main_layout.addStretch()
+        self.update_service_type(service_type)
+
+    def create_all_language_widgets(self):
+        # LLM 模式用的自由输入
+        self.src_lang_edit = LineEdit(self)
+        self.src_lang_edit.setPlaceholderText(_("请输入源语言（格式不限，AI可智能识别；留空则自动检测）"))
+        self.src_lang_edit.setClearButtonEnabled(True)
+        src_completer = QCompleter([], self.src_lang_edit)
+        src_completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self.src_lang_edit.setCompleter(src_completer)
+
+        self.tgt_lang_edit = LineEdit(self)
+        self.tgt_lang_edit.setPlaceholderText(_("请输入目标语言（格式不限，AI可智能识别）"))
+        self.tgt_lang_edit.setClearButtonEnabled(True)
+        tgt_completer = QCompleter([], self.tgt_lang_edit)
+        tgt_completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self.tgt_lang_edit.setCompleter(tgt_completer)
+
+        # 设置LLM模式语言默认值
+        if self.config and hasattr(self.config, 'message_capture'):
+            if self.current_service_type == ServiceType.LLM:
+                self.src_lang_edit.setText(self.config.message_capture.source_language)
+                self.tgt_lang_edit.setText(self.config.message_capture.target_language)
+
+        # 传统翻译服务用的下拉
+        self.src_lang_combo = ComboBox(self)
+        self.src_lang_combo.setPlaceholderText(_("请选择源语言"))
+        self.src_lang_combo.setCurrentIndex(-1)
+
+        self.tgt_lang_combo = ComboBox(self)
+        self.tgt_lang_combo.setPlaceholderText(_("请选择目标语言"))
+        self.tgt_lang_combo.setCurrentIndex(-1)
+
+        # 添加到布局（先隐藏）
+        self.grid_layout.addWidget(self.src_lang_edit, 1, 1)
+        self.grid_layout.addWidget(self.src_lang_combo, 1, 1)
+        self.grid_layout.addWidget(self.tgt_lang_edit, 2, 1)
+        self.grid_layout.addWidget(self.tgt_lang_combo, 2, 1)
+        self.src_lang_edit.hide()
+        self.src_lang_combo.hide()
+        self.tgt_lang_edit.hide()
+        self.tgt_lang_combo.hide()
+
+    def update_service_type(self, service_type):
+        """切换 LLM / 传统 翻译服务时，显示对应的语言输入方式"""
+        self.current_service_type = service_type
+        self.src_lang_edit.hide()
+        self.src_lang_combo.hide()
+        self.tgt_lang_edit.hide()
+        self.tgt_lang_combo.hide()
+        if service_type == ServiceType.LLM:
+            self.src_lang_edit.show()
+            self.tgt_lang_edit.show()
+        else:
+            self.src_lang_combo.show()
+            self.tgt_lang_combo.show()
+
+    def select_log_folder(self):
+        folder = QFileDialog.getExistingDirectory(self)
+        if folder:
+            self.log_location_edit.setText(folder)
+
+    def set_traditional_languages(self, src_lang, tgt_lang):
+        """设置传统翻译服务的语言默认值"""
+        if src_lang:
+            index = self.src_lang_combo.findText(src_lang)
+            if index >= 0:
+                self.src_lang_combo.setCurrentIndex(index)
+        if tgt_lang:
+            index = self.tgt_lang_combo.findText(tgt_lang)
+            if index >= 0:
+                self.tgt_lang_combo.setCurrentIndex(index)
+
+
+class TranslationServiceInterface(QFrame):
+    """翻译服务界面组件"""
+
+    # 添加服务类型改变信号
+    service_type_changed = Signal(ServiceType)
+    # 新增：发送消息服务类型改变信号
+    send_service_type_changed = Signal(ServiceType)
+
+    def __init__(self, parent, config=None):
+        super().__init__(parent=parent)
+        self.setObjectName("translationService")
+        self.config = config
+        self.init_ui()
+
+    def hideEvent(self, event):
+        """当界面隐藏时，关闭TeachingTip"""
+        TeachingTipManager.close_current()
+        super().hideEvent(event)
+
+    def init_ui(self):
+        # 创建主网格布局
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(30, 30, 30, 30)
+        self.main_layout.setSpacing(20)
+
+        # 标题
+        title = SubtitleLabel(_('翻译服务设置'), self)
+        setFont(title, 24)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.main_layout.addWidget(title)
+
+        # 创建内容容器
+        self.content_widget = QFrame(self)
+        self.content_layout = QVBoxLayout(self.content_widget)
+        self.content_layout.setContentsMargins(0, 0, 0, 0)
+        self.content_layout.setSpacing(20)
+
+        # 创建TabBar（初始隐藏）
+        self.tab_bar = TabBar(self)
+        self.tab_bar.setAddButtonVisible(False)
+        self.tab_bar.setCloseButtonDisplayMode(TabCloseButtonDisplayMode.NEVER)
+        # 设置TabBar的最小宽度，使其更长
+        self.tab_bar.setMinimumWidth(600)
+
+        # 美化TabBar
+        self.tab_bar.setTabShadowEnabled(True)  # 启用阴影效果
+        # 设置选中标签的背景色（浅色主题/深色主题）
+        self.tab_bar.setTabSelectedBackgroundColor(
+            QColor(230, 230, 230),  # 浅色主题下的选中背景
+            QColor(60, 60, 60)  # 深色主题下的选中背景
+        )
+
+        self.tab_bar.hide()
+
+        # 创建堆叠窗口用于切换不同的标签页内容
+        self.tab_stacked_widget = QStackedWidget(self)
+
+        # 创建玩家消息服务界面
+        self.player_service_widget = self.create_service_widget("player")
+        self.tab_stacked_widget.addWidget(self.player_service_widget)
+
+        # 创建发送消息服务界面（初始不添加）
+        self.send_service_widget = None
+
+        # 添加第一个标签
+        self.tab_bar.addTab(
+            routeKey="playerService",
+            text=_("玩家消息翻译服务"),
+            onClick=lambda: self.switch_tab(0)
+        )
+
+        # 创建TabBar容器，用于居左显示
+        self.tab_container = QFrame(self)
+        tab_container_layout = QHBoxLayout(self.tab_container)
+        tab_container_layout.setContentsMargins(0, 0, 0, 10)  # 底部留出一些间距
+        tab_container_layout.addWidget(self.tab_bar)
+        tab_container_layout.addStretch()  # 添加弹性空间，让TabBar居左
+
+        # 添加到内容布局
+        self.content_layout.addWidget(self.tab_container)
+        self.content_layout.addWidget(self.tab_stacked_widget)
+
+        # 添加内容到主布局
+        self.main_layout.addWidget(self.content_widget)
+        self.main_layout.addStretch()
+
+        # 添加独立设置复选框到底部
+        self.independent_service_check = CheckBox(_('独立设置消息发送翻译服务'), self)
+        # 设置默认值
+        if self.config:
+            self.independent_service_check.setChecked(self.config.send_translation_independent)
+            # 如果配置中启用了独立设置，立即创建发送服务界面
+            if self.config.send_translation_independent:
+                self.create_send_service_widget()
+
+        self.independent_service_check.toggled.connect(self.on_independent_service_toggled)
+
+        # 创建底部容器
+        bottom_container = QFrame(self)
+        bottom_layout = QHBoxLayout(bottom_container)
+        bottom_layout.setContentsMargins(0, 0, 0, 0)
+        bottom_layout.addWidget(self.independent_service_check)
+        bottom_layout.addStretch()
+
+        self.main_layout.addWidget(bottom_container)
+
+    def create_send_service_widget(self):
+        """创建发送消息服务界面"""
+        if self.send_service_widget is None:
+            self.send_service_widget = self.create_service_widget("send")
+            self.tab_stacked_widget.addWidget(self.send_service_widget)
+
+        # 添加第二个标签
+        if self.tab_bar.count() == 1:
+            self.tab_bar.addTab(
+                routeKey="sendService",
+                text=_("消息发送翻译服务"),
+                onClick=lambda: self.switch_tab(1)
+            )
+
+        # 显示TabBar
+        self.tab_container.show()
+        self.tab_bar.show()
+
+    def create_service_widget(self, service_id):
+        """创建服务配置界面"""
+        widget = QFrame(self)
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(0, 20, 0, 0)
+        layout.setSpacing(20)
+
+        # 创建分段导航控件
+        segmented_widget = SegmentedWidget(widget)
+
+        # 创建堆叠窗口用于切换不同服务类型
+        stacked_widget = QStackedWidget(widget)
+
+        # 创建LLM服务界面
+        llm_service_widget = self.create_llm_service_widget(widget, service_id)
+        stacked_widget.addWidget(llm_service_widget)
+
+        # 创建传统翻译服务界面
+        traditional_service_widget = self.create_traditional_service_widget(widget, service_id)
+        stacked_widget.addWidget(traditional_service_widget)
+
+        # 添加服务类型选项
+        segmented_widget.addItem(
+            routeKey=f"llm_service_{service_id}",
+            text=_("                AI翻译                "),
+            onClick=lambda: self.switch_service_type(stacked_widget, ServiceType.LLM, service_id)
+        )
+        segmented_widget.addItem(
+            routeKey=f"traditional_service_{service_id}",
+            text=_("                传统翻译                "),
+            onClick=lambda: self.switch_service_type(stacked_widget, ServiceType.TRADITIONAL, service_id)
+        )
+
+        # 根据配置设置默认选择
+        if self.config:
+            if service_id == "player":
+                service_config = self.config.player_translation
+            elif service_id == "send" and self.config.send_translation:
+                service_config = self.config.send_translation
+            else:
+                service_config = None
+
+            if service_config:
+                if service_config.service_type == ServiceType.LLM:
+                    segmented_widget.setCurrentItem(f"llm_service_{service_id}")
+                    stacked_widget.setCurrentIndex(0)
+                else:
+                    segmented_widget.setCurrentItem(f"traditional_service_{service_id}")
+                    stacked_widget.setCurrentIndex(1)
+        else:
+            # 设置默认选择
+            segmented_widget.setCurrentItem(f"llm_service_{service_id}")
+            stacked_widget.setCurrentIndex(0)
+
+        # 保存引用
+        widget.segmented_widget = segmented_widget
+        widget.stacked_widget = stacked_widget
+        widget.service_id = service_id
+
+        layout.addWidget(segmented_widget, 0, Qt.AlignmentFlag.AlignHCenter)
+        layout.addWidget(stacked_widget)
+
+        return widget
+
+    def on_independent_service_toggled(self, checked):
+        """处理独立设置复选框状态变化"""
+        if checked:
+            # 创建发送服务界面
+            self.create_send_service_widget()
+        else:
+            # 隐藏TabBar
+            self.tab_bar.hide()
+            self.tab_container.hide()
+
+            # 移除第二个标签页
+            if self.tab_bar.count() > 1:
+                self.tab_bar.removeTab(1)
+
+            # 切换回第一个标签
+            self.tab_bar.setCurrentTab("playerService")
+            self.tab_stacked_widget.setCurrentIndex(0)
+
+    def switch_tab(self, index):
+        """切换标签页"""
+        self.tab_stacked_widget.setCurrentIndex(index)
+
+    def switch_service_type(self, stacked_widget, service_type, service_id):
+        """切换服务类型"""
+        # 将ServiceType枚举转换为索引
+        if service_type == ServiceType.LLM:
+            index = 0
+        elif service_type == ServiceType.TRADITIONAL:
+            index = 1
+        else:
+            index = 0  # 默认使用LLM
+
+        stacked_widget.setCurrentIndex(index)
+
+        # 根据service_id发射不同的信号
+        if service_id == "player":
+            self.service_type_changed.emit(service_type)
+        elif service_id == "send":
+            self.send_service_type_changed.emit(service_type)
+
+    def create_llm_service_widget(self, parent, service_id):
+        """创建LLM服务界面"""
+        widget = QFrame(parent)
+        layout = QGridLayout(widget)
+        layout.setContentsMargins(0, 20, 0, 0)
+        layout.setHorizontalSpacing(15)
+        layout.setVerticalSpacing(15)
+
+        # 服务选择
+        service_label = BodyLabel(_('选择服务：'), widget)
+        llm_service_combo = ComboBox(widget)
+        llm_service_combo.addItems(LLM_PROVIDERS)
+        llm_service_combo.setPlaceholderText(_("请选择翻译服务"))
+        llm_service_combo.setCurrentIndex(-1)
+        llm_service_combo.setFixedWidth(200)
+
+        # 根据配置设置默认值
+        if self.config:
+            if service_id == "player" and self.config.player_translation and self.config.player_translation.llm:
+                provider = self.config.player_translation.llm.provider
+                index = llm_service_combo.findText(provider)
+                if index >= 0:
+                    llm_service_combo.setCurrentIndex(index)
+            elif service_id == "send" and self.config.send_translation and self.config.send_translation.llm:
+                provider = self.config.send_translation.llm.provider
+                index = llm_service_combo.findText(provider)
+                if index >= 0:
+                    llm_service_combo.setCurrentIndex(index)
+
+        layout.addWidget(service_label, 0, 0, Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(llm_service_combo, 0, 1)
+
+        # API Key输入
+        api_key_label = BodyLabel(_('API Key：'), widget)
+        llm_api_key_edit = LineEdit(widget)
+        llm_api_key_edit.setPlaceholderText(_("请输入您的API Key"))
+        llm_api_key_edit.setFixedWidth(300)
+
+        # 根据配置设置默认值
+        if self.config:
+            if service_id == "player" and self.config.player_translation and self.config.player_translation.llm:
+                llm_api_key_edit.setText(self.config.player_translation.llm.api_key)
+            elif service_id == "send" and self.config.send_translation and self.config.send_translation.llm:
+                llm_api_key_edit.setText(self.config.send_translation.llm.api_key)
+
+        layout.addWidget(api_key_label, 1, 0, Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(llm_api_key_edit, 1, 1)
+
+        # API URL输入
+        llm_api_url_label = BodyLabel(_('API地址：'), widget)
+        llm_api_url_edit = EditableComboBox(widget)
+        llm_api_url_edit.addItem(_("默认端点"), userData="Ciallo～")
+        llm_api_url_edit.setCurrentText(_("默认端点"))
+        llm_api_url_edit.setFixedWidth(300)
+
+        # 根据配置设置默认值
+        if self.config:
+            if service_id == "player" and self.config.player_translation and self.config.player_translation.llm:
+                api_base = self.config.player_translation.llm.api_base
+                if api_base:
+                    llm_api_url_edit.addItem(api_base)
+                    llm_api_url_edit.setCurrentText(api_base)
+            elif service_id == "send" and self.config.send_translation and self.config.send_translation.llm:
+                api_base = self.config.send_translation.llm.api_base
+                if api_base:
+                    llm_api_url_edit.addItem(api_base)
+                    llm_api_url_edit.setCurrentText(api_base)
+
+        layout.addWidget(llm_api_url_label, 2, 0, Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(llm_api_url_edit, 2, 1)
+
+        # 模型代号输入
+        model_label = BodyLabel(_('模型代号：'), widget)
+        llm_model_edit = LineEdit(widget)
+        llm_model_edit.setPlaceholderText(_("请输入模型代号，如：gpt-3.5-turbo"))
+        llm_model_edit.setClearButtonEnabled(True)
+        llm_model_edit.setFixedWidth(300)
+
+        # 根据配置设置默认值
+        if self.config:
+            if service_id == "player" and self.config.player_translation and self.config.player_translation.llm:
+                llm_model_edit.setText(self.config.player_translation.llm.model)
+            elif service_id == "send" and self.config.send_translation and self.config.send_translation.llm:
+                llm_model_edit.setText(self.config.send_translation.llm.model)
+
+        layout.addWidget(model_label, 3, 0, Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(llm_model_edit, 3, 1)
+
+        # 深度翻译模式开关
+        optimization_label = BodyLabel(_('深度翻译模式：'), widget)
+
+        # 创建开关和帮助按钮的容器
+        switch_container = QHBoxLayout()
+        switch_container.setSpacing(5)
+
+        llm_optimization_switch = SwitchButton(widget)
+        llm_optimization_switch.setOffText(_("关闭"))
+        llm_optimization_switch.setOnText(_("开启"))
+
+        help_button_optimization = create_help_button(
+            widget,
+            _("启用显式思维链（Chain of Thought）翻译策略\n"
+              "优点：提供更高质量的翻译\n"
+              "缺点：一定程度增加token消耗，响应延迟提高"),
+            llm_optimization_switch
+        )
+
+        switch_container.addWidget(llm_optimization_switch)
+        switch_container.addWidget(help_button_optimization)
+        switch_container.addStretch()
+
+        # 根据配置设置默认值
+        if self.config:
+            if service_id == "player" and self.config.player_translation and self.config.player_translation.llm:
+                llm_optimization_switch.setChecked(self.config.player_translation.llm.deep_translate)
+            elif service_id == "send" and self.config.send_translation and self.config.send_translation.llm:
+                llm_optimization_switch.setChecked(self.config.send_translation.llm.deep_translate)
+        else:
+            llm_optimization_switch.setChecked(False)  # 默认关闭
+
+        layout.addWidget(optimization_label, 4, 0, Qt.AlignmentFlag.AlignRight)
+        layout.addLayout(switch_container, 4, 1)
+
+        # 添加弹性空间
+        layout.setColumnStretch(2, 1)
+        layout.setRowStretch(5, 1)
+
+        # 保存控件引用
+        widget.llm_service_combo = llm_service_combo
+        widget.llm_api_key_edit = llm_api_key_edit
+        widget.llm_api_url_label = llm_api_url_label
+        widget.llm_api_url_edit = llm_api_url_edit
+        widget.llm_model_edit = llm_model_edit
+        widget.llm_optimization_switch = llm_optimization_switch
+        widget.service_id = service_id
+
+        return widget
+
+    def create_traditional_service_widget(self, parent, service_id):
+        """创建传统翻译服务界面"""
+        widget = QFrame(parent)
+        layout = QGridLayout(widget)
+        layout.setContentsMargins(0, 20, 0, 0)
+        layout.setHorizontalSpacing(15)
+        layout.setVerticalSpacing(15)
+
+        # 服务选择
+        service_label = BodyLabel(_('选择服务：'), widget)
+
+        # 创建一个水平布局来容纳ComboBox和加载动画
+        service_container = QFrame(widget)
+        service_layout = QHBoxLayout(service_container)
+        service_layout.setContentsMargins(0, 0, 0, 0)
+        service_layout.setSpacing(10)
+
+        traditional_service_combo = ComboBox(service_container)
+        traditional_service_combo.addItems(TRADITIONAL_SERVICES)
+        traditional_service_combo.setPlaceholderText(_("请选择翻译服务"))
+        traditional_service_combo.setCurrentIndex(-1)
+        traditional_service_combo.setFixedWidth(200)
+
+        # 根据配置设置默认值
+        if self.config:
+            if service_id == "player" and self.config.player_translation and self.config.player_translation.traditional:
+                provider = self.config.player_translation.traditional.provider
+                index = traditional_service_combo.findText(provider)
+                if index >= 0:
+                    traditional_service_combo.setCurrentIndex(index)
+            elif service_id == "send" and self.config.send_translation and self.config.send_translation.traditional:
+                provider = self.config.send_translation.traditional.provider
+                index = traditional_service_combo.findText(provider)
+                if index >= 0:
+                    traditional_service_combo.setCurrentIndex(index)
+
+        # 创建加载动画
+        loading_spinner = IndeterminateProgressRing(service_container)
+        loading_spinner.setFixedSize(24, 24)
+        loading_spinner.setStrokeWidth(3)
+        loading_spinner.hide()
+
+        service_layout.addWidget(traditional_service_combo)
+        service_layout.addWidget(loading_spinner)
+        service_layout.addStretch()
+
+        layout.addWidget(service_label, 0, 0, Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(service_container, 0, 1)
+
+        # API Key标签和输入
+        traditional_api_key_label = BodyLabel(_('API Key：'), widget)
+        traditional_api_key_edit = EditableComboBox(widget)
+        traditional_api_key_edit.addItem(_("不使用"), userData="Ciallo～")
+        traditional_api_key_edit.setCurrentText(_("不使用"))
+        traditional_api_key_edit.setFixedWidth(300)
+
+        # 根据配置设置默认值
+        if self.config:
+            if service_id == "player" and self.config.player_translation and self.config.player_translation.traditional:
+                api_key = self.config.player_translation.traditional.api_key
+                if api_key:
+                    traditional_api_key_edit.addItem(api_key)
+                    traditional_api_key_edit.setCurrentText(api_key)
+            elif service_id == "send" and self.config.send_translation and self.config.send_translation.traditional:
+                api_key = self.config.send_translation.traditional.api_key
+                if api_key:
+                    traditional_api_key_edit.addItem(api_key)
+                    traditional_api_key_edit.setCurrentText(api_key)
+
+        layout.addWidget(traditional_api_key_label, 1, 0, Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(traditional_api_key_edit, 1, 1)
+
+        # 添加弹性空间
+        layout.setColumnStretch(2, 1)
+        layout.setRowStretch(3, 1)
+
+        # 保存控件引用
+        widget.traditional_service_combo = traditional_service_combo
+        widget.loading_spinner = loading_spinner
+        widget.traditional_api_key_label = traditional_api_key_label
+        widget.traditional_api_key_edit = traditional_api_key_edit
+        widget.service_id = service_id
+
+        # 连接信号
+        # noinspection PyUnresolvedReferences
+        traditional_service_combo.currentTextChanged.connect(
+            lambda text: self.parent().on_traditional_service_changed(text, service_id)
+            if hasattr(self.parent(), 'on_traditional_service_changed') else None
+        )
+
+        return widget
+
+    def show_loading_spinner(self, show: bool, service_id: str = "player"):
+        """显示或隐藏加载动画"""
+        # 根据service_id获取对应的widget
+        if service_id == "player":
+            widget = self.player_service_widget
+        elif service_id == "send" and self.send_service_widget:
+            widget = self.send_service_widget
+        else:
+            return
+
+        if widget and hasattr(widget, 'stacked_widget'):
+            service_widget = widget.stacked_widget.currentWidget()
+            if hasattr(service_widget, 'loading_spinner'):
+                if show:
+                    service_widget.loading_spinner.show()
+                    if hasattr(service_widget, 'traditional_service_combo'):
+                        service_widget.traditional_service_combo.setEnabled(False)
+
+                    # 根据service_id锁定对应的界面
+                    if service_id == "player":
+                        # 锁定 MessageCaptureInterface 的语言下拉框
+                        message_capture = self.parent().findChild(MessageCaptureInterface)
+                        if message_capture and hasattr(message_capture, 'src_lang_combo'):
+                            message_capture.src_lang_combo.setEnabled(False)
+                            # noinspection PyUnresolvedReferences
+                            message_capture.tgt_lang_combo.setEnabled(False)
+                    elif service_id == "send":
+                        # 锁定 MessageSendInterface 的语言下拉框
+                        message_send = self.parent().findChild(MessageSendInterface)
+                        if message_send and hasattr(message_send, 'src_lang_combo'):
+                            message_send.src_lang_combo.setEnabled(False)
+                            # noinspection PyUnresolvedReferences
+                            message_send.tgt_lang_combo.setEnabled(False)
+                else:
+                    service_widget.loading_spinner.hide()
+                    if hasattr(service_widget, 'traditional_service_combo'):
+                        service_widget.traditional_service_combo.setEnabled(True)
+
+                    # 根据service_id解锁对应的界面
+                    if service_id == "player":
+                        # 解锁 MessageCaptureInterface 的语言下拉框
+                        message_capture = self.parent().findChild(MessageCaptureInterface)
+                        if message_capture and hasattr(message_capture, 'src_lang_combo'):
+                            message_capture.src_lang_combo.setEnabled(True)
+                            # noinspection PyUnresolvedReferences
+                            message_capture.tgt_lang_combo.setEnabled(True)
+                    elif service_id == "send":
+                        # 解锁 MessageSendInterface 的语言下拉框
+                        message_send = self.parent().findChild(MessageSendInterface)
+                        if message_send and hasattr(message_send, 'src_lang_combo'):
+                            message_send.src_lang_combo.setEnabled(True)
+                            # noinspection PyUnresolvedReferences
+                            message_send.tgt_lang_combo.setEnabled(True)
+
+    def get_current_service_type(self, service_id: str = "player"):
+        """获取当前服务类型"""
+        if service_id == "player" and self.player_service_widget:
+            if hasattr(self.player_service_widget, 'stacked_widget'):
+                index = self.player_service_widget.stacked_widget.currentIndex()
+                return ServiceType.LLM if index == 0 else ServiceType.TRADITIONAL
+        elif service_id == "send" and self.send_service_widget:
+            if hasattr(self.send_service_widget, 'stacked_widget'):
+                index = self.send_service_widget.stacked_widget.currentIndex()
+                return ServiceType.LLM if index == 0 else ServiceType.TRADITIONAL
+        return ServiceType.LLM
+
+    def get_current_service(self, service_id: str = "player"):
+        """获取当前选择的服务"""
+        widget = None
+        if service_id == "player":
+            widget = self.player_service_widget
+        elif service_id == "send" and self.send_service_widget:
+            widget = self.send_service_widget
+
+        if widget and hasattr(widget, 'stacked_widget'):
+            current_widget = widget.stacked_widget.currentWidget()
+            if hasattr(current_widget, 'llm_service_combo'):
+                return current_widget.llm_service_combo.currentText()
+            elif hasattr(current_widget, 'traditional_service_combo'):
+                return current_widget.traditional_service_combo.currentText()
+        return None
+
+    def get_current_api_key(self, service_id: str = "player"):
+        """获取当前API Key"""
+        widget = None
+        if service_id == "player":
+            widget = self.player_service_widget
+        elif service_id == "send" and self.send_service_widget:
+            widget = self.send_service_widget
+
+        if widget and hasattr(widget, 'stacked_widget'):
+            current_widget = widget.stacked_widget.currentWidget()
+            if hasattr(current_widget, 'llm_api_key_edit'):
+                return current_widget.llm_api_key_edit.text()
+            elif hasattr(current_widget, 'traditional_api_key_edit'):
+                return current_widget.traditional_api_key_edit.currentText()
+        return None
+
+    def get_current_api_url(self, service_id: str = "player"):
+        """获取当前API URL（仅LLM服务）"""
+        widget = None
+        if service_id == "player":
+            widget = self.player_service_widget
+        elif service_id == "send" and self.send_service_widget:
+            widget = self.send_service_widget
+
+        if widget and hasattr(widget, 'stacked_widget'):
+            current_widget = widget.stacked_widget.currentWidget()
+            if hasattr(current_widget, 'llm_api_url_edit'):
+                return current_widget.llm_api_url_edit.currentText()
+        return None
+
+    def get_current_model(self, service_id: str = "player"):
+        """获取当前模型代号（仅LLM服务）"""
+        widget = None
+        if service_id == "player":
+            widget = self.player_service_widget
+        elif service_id == "send" and self.send_service_widget:
+            widget = self.send_service_widget
+
+        if widget and hasattr(widget, 'stacked_widget'):
+            current_widget = widget.stacked_widget.currentWidget()
+            if hasattr(current_widget, 'llm_model_edit'):
+                return current_widget.llm_model_edit.text()
+        return None
+
+
+class MessagePresentationInterface(QFrame):
+    """翻译结果呈现界面组件"""
+
+    def __init__(self, parent, config=None):
+        super().__init__(parent=parent)
+        self.setObjectName("messagePresentation")
+        self.config = config
+        self.init_ui()
+
+    def init_ui(self):
+        # 创建主布局
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(30, 30, 30, 30)
+        self.main_layout.setSpacing(20)
+
+        # 标题
+        title = SubtitleLabel(_('翻译结果显示'), self)
+        setFont(title, 24)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.main_layout.addWidget(title)
+
+        # 创建网格布局用于表单
+        self.grid_layout = QGridLayout()
+        self.grid_layout.setSpacing(15)
+
+        # 网页端口
+        self.web_port_label = BodyLabel(_('网页端口：'), self)
+        self.web_port_spin = SpinBox(self)
+        self.web_port_spin.setRange(1024, 65535)
+
+        # 设置默认值
+        if self.config and hasattr(self.config, 'message_presentation'):
+            self.web_port_spin.setValue(self.config.message_presentation.web_port)
+        else:
+            self.web_port_spin.setValue(8080)
+
+        self.grid_layout.addWidget(self.web_port_label, 0, 0)
+        self.grid_layout.addWidget(self.web_port_spin, 0, 1)
+
+        self.main_layout.addLayout(self.grid_layout)
+        self.main_layout.addStretch()
+
+
+class MessageSendInterface(QFrame):
+    """消息发送界面组件"""
+
+    def __init__(self, parent, service_type, config=None):
+        super().__init__(parent=parent)
+        self.setObjectName("messageSend")
+        self.current_service_type = service_type
+        self.config = config
+        self.init_ui(service_type)
+
+    def hideEvent(self, event):
+        """当界面隐藏时，关闭TeachingTip"""
+        TeachingTipManager.close_current()
+        super().hideEvent(event)
+
+    def init_ui(self, service_type):
+        # 主布局
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(30, 30, 30, 30)
+        self.main_layout.setSpacing(20)
+
+        # 标题
+        title = SubtitleLabel(_('消息发送设置'), self)
+        setFont(title, 24)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.main_layout.addWidget(title)
+
+        # 表单网格
+        self.grid_layout = QGridLayout()
+        self.grid_layout.setSpacing(15)
+        self.grid_layout.setColumnStretch(1, 1)
+
+        clipboard_layout = QHBoxLayout()
+        clipboard_layout.setSpacing(5)
+
+        self.clipboard_monitor_check = CheckBox(_('监控剪切板'), self)
+        help_button_clipboard = create_help_button(
+            self,
+            _("从剪切板获取要发送的消息"),
+            self.clipboard_monitor_check
+        )
+
+        clipboard_layout.addWidget(self.clipboard_monitor_check)
+        clipboard_layout.addWidget(help_button_clipboard)
+        clipboard_layout.addStretch()
+
+        # 设置默认值
+        if self.config and hasattr(self.config, 'message_send'):
+            self.clipboard_monitor_check.setChecked(self.config.message_send.monitor_clipboard)
+
+        self.grid_layout.addLayout(clipboard_layout, 0, 0, 1, 2)
+
+        # 源/目标语言标签
+        src_label = BodyLabel(_('源语言：'), self)
+        tgt_label = BodyLabel(_('目标语言：'), self)
+        self.grid_layout.addWidget(src_label, 1, 0)
+        self.grid_layout.addWidget(tgt_label, 2, 0)
+
+        # 语言控件
+        self.create_all_language_widgets()
+
+        self.main_layout.addLayout(self.grid_layout)
+        self.main_layout.addStretch()
+        self.update_service_type(service_type)
+
+    def create_all_language_widgets(self):
+        # LLM 模式
+        self.src_lang_edit = LineEdit(self)
+        self.src_lang_edit.setPlaceholderText(_("请输入源语言（格式不限，AI可智能识别；留空则自动检测）"))
+        self.src_lang_edit.setClearButtonEnabled(True)
+        src_completer = QCompleter([], self.src_lang_edit)
+        src_completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self.src_lang_edit.setCompleter(src_completer)
+
+        self.tgt_lang_edit = LineEdit(self)
+        self.tgt_lang_edit.setPlaceholderText(_("请输入目标语言（格式不限，AI可智能识别）"))
+        self.tgt_lang_edit.setClearButtonEnabled(True)
+        tgt_completer = QCompleter([], self.tgt_lang_edit)
+        tgt_completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self.tgt_lang_edit.setCompleter(tgt_completer)
+
+        # 设置LLM模式语言默认值
+        if self.config and hasattr(self.config, 'message_send'):
+            if self.current_service_type == ServiceType.LLM:
+                self.src_lang_edit.setText(self.config.message_send.source_language)
+                self.tgt_lang_edit.setText(self.config.message_send.target_language)
+
+        # 传统翻译服务
+        self.src_lang_combo = ComboBox(self)
+        self.src_lang_combo.setPlaceholderText(_("请选择源语言"))
+        self.src_lang_combo.setCurrentIndex(-1)
+
+        self.tgt_lang_combo = ComboBox(self)
+        self.tgt_lang_combo.setPlaceholderText(_("请选择目标语言"))
+        self.tgt_lang_combo.setCurrentIndex(-1)
+
+        # 添加到布局（先隐藏）
+        self.grid_layout.addWidget(self.src_lang_edit, 1, 1)
+        self.grid_layout.addWidget(self.src_lang_combo, 1, 1)
+        self.grid_layout.addWidget(self.tgt_lang_edit, 2, 1)
+        self.grid_layout.addWidget(self.tgt_lang_combo, 2, 1)
+        self.src_lang_edit.hide()
+        self.src_lang_combo.hide()
+        self.tgt_lang_edit.hide()
+        self.tgt_lang_combo.hide()
+
+    def update_service_type(self, service_type):
+        """切换 LLM / 传统 翻译服务时，显示对应的语言输入方式"""
+        self.current_service_type = service_type
+        self.src_lang_edit.hide()
+        self.src_lang_combo.hide()
+        self.tgt_lang_edit.hide()
+        self.tgt_lang_combo.hide()
+        if service_type == ServiceType.LLM:
+            self.src_lang_edit.show()
+            self.tgt_lang_edit.show()
+        else:
+            self.src_lang_combo.show()
+            self.tgt_lang_combo.show()
+
+    def set_traditional_languages(self, src_lang, tgt_lang):
+        """设置传统翻译服务的语言默认值"""
+        if src_lang:
+            index = self.src_lang_combo.findText(src_lang)
+            if index >= 0:
+                self.src_lang_combo.setCurrentIndex(index)
+        if tgt_lang:
+            index = self.tgt_lang_combo.findText(tgt_lang)
+            if index >= 0:
+                self.tgt_lang_combo.setCurrentIndex(index)
+
+
+class GlossaryInterface(QFrame):
+    """术语表界面组件"""
+
+    def __init__(self, parent, config=None):
+        super().__init__(parent=parent)
+        self.setObjectName("glossary")
+        self.parent_ref = parent
+        self.config = config
+
+        # 状态变量
+        self.selected_row = -1
+        self.glossary_rules = {}
+
+        self.init_ui()
+        self.load_glossary_data()
+
+    def init_ui(self):
+        # 主布局
+        self.main_layout = QGridLayout(self)
+        self.main_layout.setContentsMargins(30, 30, 30, 30)
+        self.main_layout.setSpacing(20)
+
+        # 标题
+        title = SubtitleLabel(_('术语表管理'), self)
+        setFont(title, 24)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.main_layout.addWidget(title, 0, 0, 1, 4)
+
+        # 输入区域
+        input_frame = QFrame(self)
+        input_layout = QGridLayout(input_frame)
+        input_layout.setSpacing(10)
+
+        # 源术语输入
+        src_label = BodyLabel(_('源术语：'), input_frame)
+        self.src_edit = LineEdit(input_frame)
+        self.src_edit.setPlaceholderText(_("请输入源术语"))
+        self.src_edit.setClearButtonEnabled(True)
+
+        input_layout.addWidget(src_label, 0, 0)
+        input_layout.addWidget(self.src_edit, 0, 1)
+
+        # 目标术语输入
+        tgt_label = BodyLabel(_('目标术语：'), input_frame)
+        self.tgt_edit = LineEdit(input_frame)
+        self.tgt_edit.setPlaceholderText(_("请输入目标术语"))
+        self.tgt_edit.setClearButtonEnabled(True)
+
+        input_layout.addWidget(tgt_label, 1, 0)
+        input_layout.addWidget(self.tgt_edit, 1, 1)
+
+        # 操作按钮
+        self.add_update_button = PushButton(_('添加/更新术语'), input_frame)
+        self.add_update_button.clicked.connect(self.add_update_term)
+        input_layout.addWidget(self.add_update_button, 0, 2, 1, 1)
+
+        # 清空输入按钮移动到添加/更新术语下方
+        self.clear_button = PushButton(_('清空输入'), input_frame)
+        self.clear_button.clicked.connect(self.clear_inputs)
+        input_layout.addWidget(self.clear_button, 1, 2, 1, 1)
+
+        input_layout.setColumnStretch(1, 1)
+        self.main_layout.addWidget(input_frame, 1, 0, 1, 4)
+
+        # 术语表表格
+        self.table = TableWidget(self)
+        self.table.setBorderVisible(True)
+        self.table.setBorderRadius(8)
+        self.table.setWordWrap(False)
+        self.table.setColumnCount(2)
+        self.table.setHorizontalHeaderLabels([_('源术语'), _('目标术语')])
+        self.table.verticalHeader().hide()
+        self.table.setSelectRightClickedRow(True)
+
+        # 连接选择变化信号
+        self.table.itemSelectionChanged.connect(self.on_selection_changed)
+
+        self.main_layout.addWidget(self.table, 2, 0, 1, 4)
+
+        # 底部操作按钮
+        button_frame = QFrame(self)
+        button_layout = QHBoxLayout(button_frame)
+        button_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.delete_button = PushButton(_('删除选中术语'), button_frame)
+        self.delete_button.clicked.connect(self.delete_selected_term)
+        self.delete_button.setEnabled(False)
+
+        self.clear_all_button = PushButton(_('清空术语'), button_frame)
+        self.clear_all_button.clicked.connect(self.clear_all_terms)
+
+        button_layout.addWidget(self.delete_button)
+        button_layout.addStretch()
+        button_layout.addWidget(self.clear_all_button)
+
+        self.main_layout.addWidget(button_frame, 3, 0, 1, 4)
+
+        # 设置行拉伸
+        self.main_layout.setRowStretch(2, 1)
+
+    def load_glossary_data(self):
+        """从配置加载术语表数据"""
+        try:
+            # 从config加载，如果没有则从parent_ref加载
+            if self.config and hasattr(self.config, 'glossary'):
+                if isinstance(self.config.glossary, dict):
+                    self.glossary_rules = self.config.glossary.copy()
+                    logger.info(f"Loaded glossary rules from config: {len(self.glossary_rules)}")
+                else:
+                    logger.warning("Glossary in config is not a dictionary. Initializing as empty.")
+                    self.glossary_rules = {}
+            elif hasattr(self.parent_ref, 'config') and hasattr(self.parent_ref.config, 'glossary'):
+                if isinstance(self.parent_ref.config.glossary, dict):
+                    self.glossary_rules = self.parent_ref.config.glossary.copy()
+                    logger.info(f"Loaded glossary rules from parent config: {len(self.glossary_rules)}")
+                else:
+                    logger.warning("Glossary in parent config is not a dictionary. Initializing as empty.")
+                    self.glossary_rules = {}
+            else:
+                logger.info("No glossary found in config. Initializing as empty.")
+                self.glossary_rules = {}
+        except Exception as e:
+            logger.error(f"Error loading glossary data: {e}")
+            self.glossary_rules = {}
+
+        self.update_table_display()
+
+    def update_table_display(self):
+        """更新表格显示"""
+        self.table.setRowCount(len(self.glossary_rules))
 
         if not self.glossary_rules:
-            ctk.CTkLabel(self.glossary_frame, text=_("<No glossary rules defined>")).pack(pady=5)
+            # 表格为空时，设置两列各占一半
+            self._set_equal_column_widths()
             return
 
         # 按源术语排序显示
-        sorted_sources = sorted(self.glossary_rules.keys())
+        sorted_items = sorted(self.glossary_rules.items())
 
-        for src in sorted_sources:
-            tgt = self.glossary_rules[src]
-            display_text = f"\"{src}\" → \"{tgt}\""
+        for row, (src, tgt) in enumerate(sorted_items):
+            src_item = QTableWidgetItem(src)
+            tgt_item = QTableWidgetItem(tgt)
 
-            # 为每个条目创建一个按钮
-            term_button = ctk.CTkButton(
-                self.glossary_frame,
-                text=display_text,
-                anchor="w",  # 文本左对齐
-                fg_color="transparent",  # 默认透明背景
-                text_color=ctk.ThemeManager.theme["CTkLabel"]["text_color"],  # 使用标签的文本颜色
-                hover_color=ctk.ThemeManager.theme["CTkButton"]["hover_color"],  # 悬停颜色
-                command=lambda s=src: self._on_term_select(s)  # 使用 lambda 传递当前 src
+            self.table.setItem(row, 0, src_item)
+            self.table.setItem(row, 1, tgt_item)
+
+        # 智能调整列宽
+        self._adjust_column_widths()
+
+    def _set_equal_column_widths(self):
+        """设置两列等宽"""
+        table_width = self.table.viewport().width()
+        half_width = (table_width - 20) // 2  # 减去20像素作为边距
+        self.table.setColumnWidth(0, half_width)
+        self.table.setColumnWidth(1, half_width)
+
+    def _adjust_column_widths(self):
+        """智能调整列宽度"""
+        # 先按内容调整列宽
+        self.table.resizeColumnsToContents()
+
+        # 获取表格总宽度（减去滚动条等）
+        table_width = self.table.viewport().width()
+
+        # 获取当前列宽
+        col0_width = self.table.columnWidth(0)
+        col1_width = self.table.columnWidth(1)
+
+        # 计算总内容宽度
+        total_content_width = col0_width + col1_width
+
+        # 如果内容总宽度小于表格宽度的80%，则平分宽度
+        if total_content_width < table_width * 0.8:
+            self._set_equal_column_widths()
+        else:
+            # 内容较长时，保持resizeColumnsToContents的结果
+            # 但确保不超过合理范围
+            max_col_width = table_width * 0.7  # 单列最大不超过70%
+
+            if col0_width > max_col_width:
+                self.table.setColumnWidth(0, int(max_col_width))
+            if col1_width > max_col_width:
+                self.table.setColumnWidth(1, int(max_col_width))
+
+    def on_selection_changed(self):
+        """表格选择变化时的处理"""
+        selected_items = self.table.selectedItems()
+
+        if selected_items:
+            # 获取选中行
+            self.selected_row = selected_items[0].row()
+
+            # 获取选中行的数据
+            src_item = self.table.item(self.selected_row, 0)
+            tgt_item = self.table.item(self.selected_row, 1)
+
+            if src_item and tgt_item:
+                # 填充输入框
+                self.src_edit.setText(src_item.text())
+                self.tgt_edit.setText(tgt_item.text())
+
+                # 启用删除按钮
+                self.delete_button.setEnabled(True)
+        else:
+            self.selected_row = -1
+            self.delete_button.setEnabled(False)
+
+    def add_update_term(self):
+        """添加或更新术语"""
+        src_text = self.src_edit.text().strip()
+        tgt_text = self.tgt_edit.text().strip()
+
+        if not src_text:
+            InfoBar.warning(
+                title=_('输入错误'),
+                content=_('源术语不能为空'),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self
             )
-            term_button.pack(fill="x", pady=2, padx=5)
-            self.term_buttons[src] = term_button
-
-    def _on_term_select(self, clicked_src):
-        """当用户点击列表中的术语按钮时调用"""
-        logger.debug(f"Term button clicked: {clicked_src}")
-
-        # --- 检查是否点击了当前已选项，如果是则取消选择 ---
-        if clicked_src == self.selected_term_src:
-
-            # 恢复按钮视觉效果为未选中
-            if clicked_src in self.term_buttons:
-                try:
-                    self.term_buttons[clicked_src].configure(
-                        fg_color="transparent",
-                        text_color=ctk.ThemeManager.theme["CTkLabel"]["text_color"]
-                    )
-                except tk.TclError as e:
-                    logger.warning(f"TclError resetting style for deselected button '{clicked_src}': {e}")
-                except KeyError:
-                    logger.warning(f"KeyError: Button for '{clicked_src}' not found during deselect.")
-
-            # 更新状态变量
-            self.selected_term_src = None
-
-            # 更新UI状态
-            self.delete_button.configure(state="disabled")
-            self.src_entry.delete(0, ctk.END)
-            self.tgt_entry.delete(0, ctk.END)
-
-            return  # 取消选择操作完成，提前退出
-
-        # --- 如果未点击已选项，则执行原有的选择逻辑 ---
-
-        # --- 更新视觉效果 ---
-        # 取消之前选中项的高亮
-        if self.selected_term_src and self.selected_term_src in self.term_buttons:
-            try:
-                # 恢复按钮的默认外观
-                self.term_buttons[self.selected_term_src].configure(
-                    fg_color="transparent",
-                    text_color=ctk.ThemeManager.theme["CTkLabel"]["text_color"]
-                )
-            except tk.TclError:
-                logger.warning(f"Could not reset style for button: {self.selected_term_src}")
-
-        # 高亮新选中项
-        self.selected_term_src = clicked_src
-        if self.selected_term_src in self.term_buttons:
-            try:
-                # 设置选中时的外观
-                self.term_buttons[self.selected_term_src].configure(
-                    fg_color=ctk.ThemeManager.theme["CTkButton"]["hover_color"],  # 使用悬停色作为选中色
-                    text_color=ctk.ThemeManager.theme["CTkButton"]["text_color"]  # 使用按钮的文本颜色
-                )
-            except tk.TclError:
-                logger.warning(f"Could not set style for selected button: {self.selected_term_src}")
-
-        # --- 启用删除按钮 ---
-        self.delete_button.configure(state="normal")
-
-        # --- 填充输入框以便编辑 ---
-        if clicked_src in self.glossary_rules:
-            try:
-                tgt_term = self.glossary_rules[clicked_src]
-                # 先清空当前输入框内容
-                self.src_entry.delete(0, ctk.END)
-                self.tgt_entry.delete(0, ctk.END)
-                # 插入选中的术语
-                self.src_entry.insert(0, clicked_src)
-                self.tgt_entry.insert(0, tgt_term)
-                logger.debug(f"Populated input fields with: '{clicked_src}' -> '{tgt_term}'")
-            except Exception as e:
-                logger.error(f"Error populating input fields for '{clicked_src}': {e}")
-                self.src_entry.delete(0, ctk.END)
-                self.tgt_entry.delete(0, ctk.END)
-        else:
-            # 理论上不应该发生，因为 selected_src 来自 glossary_rules 的键
-            logger.warning(
-                f"Selected source term '{clicked_src}' not found in glossary_rules dict when trying to populate fields.")
-            # 清空输入框
-            self.src_entry.delete(0, ctk.END)
-            self.tgt_entry.delete(0, ctk.END)
-
-    def _add_update_term(self):
-        """添加或更新一个术语对。优先处理选中的规则进行修改。"""
-        current_src = self.src_entry.get().strip()
-        current_tgt = self.tgt_entry.get().strip()
-
-        if not current_src:
-            messagebox.showwarning(_("Input Error"), _("Source term cannot be empty."), parent=self.glossary_window)
             return
 
-        original_selected_src = self.selected_term_src  # 获取当前选中的源术语（可能是 None）
+        # 检查是否是更新现有术语
+        old_src = None
+        if self.selected_row >= 0:
+            old_src_item = self.table.item(self.selected_row, 0)
+            if old_src_item:
+                old_src = old_src_item.text()
 
-        if original_selected_src is not None:
-            # --- 处理选中的规则 ---
-            logger.debug(
-                f"Processing with selected rule: Original='{original_selected_src}', Current Input='{current_src}'")
+        # 如果源术语已存在且不是当前编辑的术语，询问是否覆盖
+        if src_text in self.glossary_rules and src_text != old_src:
+            w = MessageBox(
+                _("确认覆盖"),
+                _('源术语 "{}" 已存在，是否覆盖？').format(src_text),
+                self.window()
+            )
+            if not w.exec():
+                return
 
-            if original_selected_src == current_src:
-                # Case 1: 源术语未变，仅更新目标术语
-                if self.glossary_rules.get(original_selected_src) != current_tgt:
-                    self.glossary_rules[original_selected_src] = current_tgt
-                    logger.info(f"Glossary rule target updated: '{original_selected_src}' -> '{current_tgt}'")
-                else:
-                    logger.info(f"Glossary rule target unchanged for '{original_selected_src}'.")
-                    # 可选：给用户提示"无更改"
+        # 如果是编辑现有术语且源术语发生变化，先删除旧的
+        if old_src and old_src != src_text and old_src in self.glossary_rules:
+            del self.glossary_rules[old_src]
+
+        # 添加或更新术语
+        self.glossary_rules[src_text] = tgt_text
+
+        action = _("更新") if old_src else _("添加")
+        logger.info(f"Term {action}: '{src_text}' -> '{tgt_text}'")
+
+        # 显示成功信息
+        InfoBar.success(
+            title=_('术语{}成功').format(action),
+            content=f'"{src_text}" -> "{tgt_text}"',
+            orient=Qt.Orientation.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=2000,
+            parent=self
+        )
+
+        # 更新显示
+        self.update_table_display()
+        self.clear_inputs()
+
+    def delete_selected_term(self):
+        """删除选中的术语"""
+        if self.selected_row < 0:
+            return
+
+        src_item = self.table.item(self.selected_row, 0)
+        if not src_item:
+            return
+
+        src_text = src_item.text()
+
+        # 直接删除，不需要确认
+        if src_text in self.glossary_rules:
+            del self.glossary_rules[src_text]
+            logger.info(f"Term deleted: {src_text}")
+
+            InfoBar.success(
+                title=_('删除成功'),
+                content=_('术语 "{}" 已删除').format(src_text),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self
+            )
+
+            self.update_table_display()
+            self.clear_inputs()
+
+    def clear_inputs(self):
+        """清空输入框"""
+        self.src_edit.clear()
+        self.tgt_edit.clear()
+        self.table.clearSelection()
+        self.selected_row = -1
+        self.delete_button.setEnabled(False)
+
+    def clear_all_terms(self):
+        """清空所有术语"""
+        if not self.glossary_rules:
+            InfoBar.info(
+                title=_('提示'),
+                content=_('术语表为空，无需清空'),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self
+            )
+            return
+
+        w = MessageBox(
+            _("确认清空"),
+            _("确定要清空所有术语吗？此操作不可恢复。"),
+            self.window()  # 设置父级为主窗口
+        )
+
+        if w.exec():
+            # 确认清空
+            count = len(self.glossary_rules)
+            self.glossary_rules.clear()
+            logger.info(f"Glossary cleared, deleted {count} terms")
+
+            InfoBar.success(
+                title=_('清空成功'),
+                content=_('已清空 {} 个术语').format(count),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self
+            )
+
+            self.update_table_display()
+            self.clear_inputs()
+
+    def get_glossary_data(self):
+        """获取当前术语表数据，供保存时使用"""
+        return self.glossary_rules.copy()
+
+    def resizeEvent(self, event):
+        """窗口大小改变时重新调整列宽"""
+        super().resizeEvent(event)
+        # 延迟调整，确保布局已经完成
+        if hasattr(self, 'table'):
+            self.table.viewport().update()
+            # 使用QTimer延迟调整，避免在resize过程中频繁调整
+            if self.table.rowCount() > 0:
+                QTimer.singleShot(100, self._adjust_column_widths)
             else:
-                # Case 2: 源术语被修改，需要"重命名"规则键
-                # 检查新源术语是否与 其他 现有规则冲突 (除了原本选中的那个)
-                if current_src in self.glossary_rules and current_src != original_selected_src:
-                    if not messagebox.askyesno(_("Confirm Overwrite"),
-                                               _("The new source term '{0}' already exists. Overwrite it?").format(
-                                                   current_src),
-                                               parent=self.glossary_window):
-                        logger.info("Rule modification cancelled by user due to potential overwrite.")
-                        return  # 用户取消操作
+                QTimer.singleShot(100, self._set_equal_column_widths)
 
-                # 先删除旧规则
-                del self.glossary_rules[original_selected_src]
-                logger.debug(f"Removed old rule key: '{original_selected_src}'")
-                # 添加新规则（使用新源作为键）
-                self.glossary_rules[current_src] = current_tgt
-                logger.info(
-                    f"Glossary rule modified (source changed): '{current_src}' -> '{current_tgt}' (Original was '{original_selected_src}')")
 
-            # 操作完成后，清除选中状态和输入框
-            self.selected_term_src = None  # 重置选中状态
-            self.src_entry.delete(0, ctk.END)
-            self.tgt_entry.delete(0, ctk.END)
-            self._update_glossary_display()  # 刷新列表
+class StartInterface(QFrame):
+    """启动界面组件（卡片式布局）"""
 
+    def __init__(self, parent):
+        super().__init__(parent=parent)
+        self.setObjectName("start")
+        self.access_card = None  # 访问链接卡片
+        self._user_clicked_link = False  # 跟踪用户是否已点击链接
+        self.init_ui()
+
+    def init_ui(self):
+        # 主布局
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(30, 30, 30, 30)
+        self.main_layout.setSpacing(20)
+
+        # 标题
+        title = SubtitleLabel(_('启动'), self)
+        setFont(title, 24)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.main_layout.addWidget(title)
+
+        # 控制卡片
+        control_card = SimpleCardWidget(self)
+        card_layout = QVBoxLayout(control_card)
+        card_layout.setContentsMargins(20, 16, 20, 16)
+        card_layout.setSpacing(12)
+
+        # 按钮行
+        row = QHBoxLayout()
+        row.setSpacing(12)
+
+        # 启动下拉按钮
+        self.start_dd_btn = DropDownPushButton(FluentIcon.PLAY, _('启动'), control_card)
+        self.start_dd_btn.setFixedHeight(36)
+
+        menu = RoundMenu(parent=self.start_dd_btn)
+        menu.addAction(Action(FluentIcon.PLAY, _('直接启动'), triggered=self.on_direct_start))
+        menu.addAction(Action(FluentIcon.SAVE, _('保存配置并启动'), triggered=self.on_save_and_start))
+        self.start_dd_btn.setMenu(menu)
+
+        # 保存配置按钮
+        self.save_btn = PushButton(FluentIcon.SAVE, _('保存配置'), control_card)
+        self.save_btn.setFixedHeight(36)
+        self.save_btn.clicked.connect(self.on_save_clicked)
+
+        # 状态显示
+        self.status_label = BodyLabel('', control_card)
+        setFont(self.status_label, 12, weight=QFont.Weight.DemiBold)
+        self.status_label.setFixedHeight(28)
+        self.status_label.setContentsMargins(10, 0, 10, 0)
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._set_status(False)
+
+        row.addWidget(self.start_dd_btn)
+        row.addWidget(self.save_btn)
+        row.addStretch()
+        row.addWidget(self.status_label)
+
+        card_layout.addLayout(row)
+        self.main_layout.addWidget(control_card)
+
+        # 弹性空间
+        self.main_layout.addStretch()
+
+    def _set_status(self, working: bool):
+        """内部：更新状态显示"""
+        if working:
+            self.status_label.setText(_('工作中'))
+            self.status_label.setStyleSheet(
+                "color:#107c10; background-color: rgba(16,124,16,0.12); "
+                "border-radius:14px; padding:4px 10px;"
+            )
+            self.start_dd_btn.setEnabled(False)
         else:
-            # --- 没有选中规则，执行旧逻辑：添加或更新 ---
-            action = "updated (no selection)" if current_src in self.glossary_rules else "added"
-            # 检查是否有实际更改，避免不必要的日志和刷新
-            if self.glossary_rules.get(current_src) != current_tgt:
-                self.glossary_rules[current_src] = current_tgt
-                logger.info(f"Glossary rule {action}: '{current_src}' -> '{current_tgt}'")
-                # 清空输入框
-                self.src_entry.delete(0, ctk.END)
-                self.tgt_entry.delete(0, ctk.END)
+            self.status_label.setText(_('已停止'))
+            self.status_label.setStyleSheet(
+                "color:#d83b01; background-color: rgba(216,59,1,0.12); "
+                "border-radius:14px; padding:4px 10px;"
+            )
+            self.start_dd_btn.setEnabled(True)
 
-                # 刷新列表显示
-                self._update_glossary_display()
+    def _get_sorted_ips(self):
+        """获取所有IP地址并按优先级排序"""
+        ips = []
 
-    def _delete_selected_term(self):
-        """删除当前选中的术语"""
-        if self.selected_term_src is None:
-            logger.warning("Delete button clicked but no term selected.")
+        try:
+            for interface in netifaces.interfaces():
+                addrs = netifaces.ifaddresses(interface)
+
+                # 只处理IPv4地址
+                if netifaces.AF_INET in addrs:
+                    for addr in addrs[netifaces.AF_INET]:
+                        ip = addr['addr']
+
+                        # 局域网地址判断
+                        if ip.startswith('192.168.') or ip.startswith('10.'):
+                            ips.append((ip, 1))  # 局域网地址最优先
+                        elif ip.startswith('172.'):
+                            second_octet = int(ip.split('.')[1])
+                            if 16 <= second_octet <= 31:
+                                ips.append((ip, 1))  # 172.16-31.x.x 也是局域网
+                        elif ip in ['127.0.0.1', '0.0.0.0']:
+                            ips.append((ip, 2))  # 本地地址次优先
+                        # 其他地址（包括公网IP、169.254.x.x等）都不加入列表
+
+        except Exception as e:
+            logger.error(f"Failed to get network interfaces: {e}")
+            # 至少返回本地地址
+            ips = [('127.0.0.1', 2)]
+
+        # 添加localhost作为备选
+        ips.append(('localhost', 2))
+
+        # 按优先级排序并去重
+        seen = set()
+        sorted_ips = []
+        for ip, priority in sorted(ips, key=lambda x: (x[1], x[0])):
+            if ip not in seen:
+                seen.add(ip)
+                sorted_ips.append(ip)
+
+        return sorted_ips
+
+    def _create_access_card(self, port):
+        """创建访问链接卡片"""
+        # 如果已存在，先移除
+        if self.access_card:
+            self.main_layout.removeWidget(self.access_card)
+            self.access_card.deleteLater()
+
+        # 创建新卡片
+        self.access_card = SimpleCardWidget(self)
+        card_layout = QVBoxLayout(self.access_card)
+        card_layout.setContentsMargins(20, 16, 20, 16)
+        card_layout.setSpacing(12)
+
+        # 标题行
+        title_row = QHBoxLayout()
+        title_row.setSpacing(8)
+
+        # 图标和标题
+        icon_label = BodyLabel(self.access_card)
+        icon_label.setPixmap(FluentIcon.LINK.icon().pixmap(20, 20))
+        title_label = SubtitleLabel(_('Web访问链接'), self.access_card)
+
+        title_row.addWidget(icon_label)
+        title_row.addWidget(title_label)
+        title_row.addStretch()
+
+        # 说明文字
+        desc_label = CaptionLabel(_('请通过以下任一链接打开网页界面，查看翻译并即时发送消息'), self.access_card)
+
+        # 获取排序后的IP地址
+        ips = self._get_sorted_ips()
+
+        # 创建链接布局
+        links_layout = QVBoxLayout()
+        links_layout.setSpacing(8)
+
+        # 为每个IP创建超链接
+        for ip in ips:
+            address = f"{ip}:{port}"
+            url = f"http://{address}"
+            link = HyperlinkLabel(QUrl(url), address, self.access_card)
+            link.clicked.connect(self._on_link_clicked)
+            links_layout.addWidget(link)
+
+        # 如果没有找到任何IP，显示默认链接
+        if not ips:
+            url = f"http://localhost:{port}"
+            link = HyperlinkLabel(QUrl(url), f"localhost:{port}", self.access_card)
+            link.clicked.connect(self._on_link_clicked)
+            links_layout.addWidget(link)
+
+        # 添加所有组件到卡片
+        card_layout.addLayout(title_row)
+        card_layout.addWidget(desc_label)
+        card_layout.addLayout(links_layout)
+
+        # 将卡片插入到控制卡片之后
+        self.main_layout.insertWidget(2, self.access_card)
+
+    def _on_link_clicked(self):
+        """用户点击链接时的回调"""
+        self._user_clicked_link = True
+
+    def _auto_open_webpage(self, port):
+        """自动打开网页，但仅当用户未主动点击链接时"""
+        if not self._user_clicked_link:
+            webbrowser.open(f"http://127.0.0.1:{port}")
+
+    def on_direct_start(self):
+        """直接启动：不落盘，仅依据当前界面状态启动"""
+        try:
+            cfg = self._gather_config_from_ui(update_memory=True, persist=False)
+            cb = getattr(self.window(), 'start_callback', None)
+            cb(cfg)
+            self._set_status(True)
+
+            # 创建访问链接卡片
+            web_port = cfg.message_presentation.web_port
+            self._user_clicked_link = False  # 重置用户点击状态
+            self._create_access_card(web_port)
+
+            InfoBar.success(title=_('已启动'), content=_('已根据当前界面配置启动'),
+                            orient=Qt.Orientation.Horizontal, isClosable=True,
+                            position=InfoBarPosition.TOP, duration=2000, parent=self)
+
+            QTimer.singleShot(1000, lambda: self._auto_open_webpage(web_port))
+        except Exception as e:
+            logger.error(f"Direct start failed: {e}")
+            self._set_status(False)
+            InfoBar.error(title=_('启动失败'), content=str(e), orient=Qt.Orientation.Horizontal,
+                          isClosable=True, position=InfoBarPosition.TOP, duration=5000, parent=self)
+
+    def on_save_and_start(self):
+        """保存配置并启动"""
+        try:
+            cfg = self._gather_config_from_ui(update_memory=True, persist=True)
+            ok = save_config(cfg)
+            if not ok:
+                raise RuntimeError(_('保存配置失败'))
+            cb = getattr(self.window(), 'start_callback', None)
+            if cb is None:
+                InfoBar.success(title=_('已保存'), content=_('配置已保存，但未设置启动回调'),
+                                orient=Qt.Orientation.Horizontal, isClosable=True,
+                                position=InfoBarPosition.TOP, duration=3000, parent=self)
+                return
+            cb(cfg)
+            self._set_status(True)
+
+            # 创建访问链接卡片
+            web_port = cfg.message_presentation.web_port
+            self._user_clicked_link = False  # 重置用户点击状态
+            self._create_access_card(web_port)
+
+            InfoBar.success(title=_('已保存并启动'), content=_('配置已保存并启动'),
+                            orient=Qt.Orientation.Horizontal, isClosable=True,
+                            position=InfoBarPosition.TOP, duration=2000, parent=self)
+
+            QTimer.singleShot(1000, lambda: self._auto_open_webpage(web_port))
+        except Exception as e:
+            logger.error(f"Save and start failed: {e}")
+            self._set_status(False)
+            InfoBar.error(title=_('操作失败'), content=str(e), orient=Qt.Orientation.Horizontal,
+                          isClosable=True, position=InfoBarPosition.TOP, duration=5000, parent=self)
+
+    def on_save_clicked(self):
+        """仅保存配置"""
+        try:
+            cfg = self._gather_config_from_ui(update_memory=True, persist=True)
+            ok = save_config(cfg)
+            if ok:
+                InfoBar.success(title=_('保存成功'), content=_('配置已保存至文件'),
+                                orient=Qt.Orientation.Horizontal, isClosable=True,
+                                position=InfoBarPosition.TOP, duration=2000, parent=self)
+            else:
+                InfoBar.error(title=_('保存失败'), content=_('写入配置文件失败'),
+                              orient=Qt.Orientation.Horizontal, isClosable=True,
+                              position=InfoBarPosition.TOP, duration=4000, parent=self)
+        except Exception as e:
+            logger.error(f"Save config failed: {e}")
+            InfoBar.error(title=_('保存失败'), content=str(e),
+                          orient=Qt.Orientation.Horizontal, isClosable=True,
+                          position=InfoBarPosition.TOP, duration=5000, parent=self)
+
+    # noinspection PyUnresolvedReferences
+    def _gather_config_from_ui(self, update_memory: bool = True, persist: bool = False):
+        """将界面上的所有设置汇总到 MainWindow.config 中并返回该对象
+        update_memory: 是否写回到内存中的 config 实例
+        persist: 是否为落盘保存做准备（该参数仅用于语义说明；真正保存在 on_save_* 中完成）
+        """
+        main = self.window()
+        cfg = main.config
+
+        # 便捷引用
+        msg_capture = main.message_capture_interface
+        trans_service = main.translation_service_interface
+        msg_present = main.message_presentation_interface
+        msg_send = main.message_send_interface
+        glossary = main.glossary_interface
+        setting = main.setting_interface
+
+        # 1) 消息捕获
+        cfg.message_capture.minecraft_log_path = msg_capture.log_location_edit.text()
+        cfg.message_capture.log_encoding = msg_capture.log_encoding_combo.currentText()
+        cfg.message_capture.monitor_mode = (
+            MonitorMode.EFFICIENT if msg_capture.efficient_mode_radio.isChecked()
+            else MonitorMode.COMPATIBLE
+        )
+        cfg.message_capture.filter_server_messages = msg_capture.translate_non_player_check.isChecked()
+        cfg.message_capture.replace_garbled_chars = msg_capture.replace_garbled_check.isChecked()
+
+        if msg_capture.current_service_type == ServiceType.LLM:
+            cfg.message_capture.source_language = msg_capture.src_lang_edit.text().strip()
+            cfg.message_capture.target_language = msg_capture.tgt_lang_edit.text().strip()
+        else:
+            cfg.message_capture.source_language = msg_capture.src_lang_combo.currentText()
+            cfg.message_capture.target_language = msg_capture.tgt_lang_combo.currentText()
+
+        # 2) 翻译服务（玩家 & 发送）
+        cfg.send_translation_independent = trans_service.independent_service_check.isChecked()
+
+        # 玩家消息翻译服务
+        player_type = trans_service.get_current_service_type("player")
+        player_widget = trans_service.player_service_widget.stacked_widget.currentWidget()
+        if player_type == ServiceType.LLM:
+            llm = LLMServiceConfig(
+                provider=player_widget.llm_service_combo.currentText(),
+                api_key=player_widget.llm_api_key_edit.text(),
+                api_base=None if player_widget.llm_api_url_edit.currentData()
+                else player_widget.llm_api_url_edit.currentText(),
+                model=player_widget.llm_model_edit.text(),
+                deep_translate=player_widget.llm_optimization_switch.isChecked()
+            )
+            cfg.player_translation = TranslationServiceConfig(
+                service_type=ServiceType.LLM,
+                llm=llm,
+                traditional=None
+            )
+        else:
+            trad = TraditionalServiceConfig(
+                provider=player_widget.traditional_service_combo.currentText(),
+                api_key=None if player_widget.traditional_api_key_edit.currentData()
+                else player_widget.traditional_api_key_edit.currentText()
+            )
+            cfg.player_translation = TranslationServiceConfig(
+                service_type=ServiceType.TRADITIONAL,
+                llm=None,
+                traditional=trad
+            )
+
+        # 发送消息翻译服务（独立时才保存）
+        if cfg.send_translation_independent and trans_service.send_service_widget:
+            send_type = trans_service.get_current_service_type("send")
+            send_widget = trans_service.send_service_widget.stacked_widget.currentWidget()
+            if send_type == ServiceType.LLM:
+                llm = LLMServiceConfig(
+                    provider=send_widget.llm_service_combo.currentText(),
+                    api_key=send_widget.llm_api_key_edit.text(),
+                    api_base=None if send_widget.llm_api_url_edit.currentData()
+                    else send_widget.llm_api_url_edit.currentText(),
+                    model=send_widget.llm_model_edit.text(),
+                    deep_translate=send_widget.llm_optimization_switch.isChecked()
+                )
+                cfg.send_translation = TranslationServiceConfig(
+                    service_type=ServiceType.LLM,
+                    llm=llm,
+                    traditional=None
+                )
+            else:
+                trad = TraditionalServiceConfig(
+                    provider=send_widget.traditional_service_combo.currentText(),
+                    api_key=None if send_widget.traditional_api_key_edit.currentData()
+                    else send_widget.traditional_api_key_edit.currentText()
+                )
+                cfg.send_translation = TranslationServiceConfig(
+                    service_type=ServiceType.TRADITIONAL,
+                    llm=None,
+                    traditional=trad
+                )
+        else:
+            cfg.send_translation = None
+
+        # 3) 翻译结果呈现
+        cfg.message_presentation.web_port = msg_present.web_port_spin.value()
+
+        # 4) 消息发送
+        cfg.message_send.monitor_clipboard = msg_send.clipboard_monitor_check.isChecked()
+        if msg_send.current_service_type == ServiceType.LLM:
+            cfg.message_send.source_language = msg_send.src_lang_edit.text().strip()
+            cfg.message_send.target_language = msg_send.tgt_lang_edit.text().strip()
+        else:
+            cfg.message_send.source_language = msg_send.src_lang_combo.currentText()
+            cfg.message_send.target_language = msg_send.tgt_lang_combo.currentText()
+
+        # 5) 术语表
+        cfg.glossary = glossary.get_glossary_data()
+
+        # 6) 设置
+        cfg.settings.interface_language = setting.language_combo.currentData()
+        cfg.settings.auto_check_update_frequency = setting.update_frequency_combo.currentData()
+        cfg.settings.include_prerelease = setting.include_prerelease_check.isChecked()
+        # 其余 settings 字段（debug/last_update_check_time 等）保持不变
+
+        # 返回内存中的配置对象（调用方可选择是否落盘）
+        return cfg
+
+
+class AboutInterface(QFrame):
+    """关于界面组件"""
+
+    def __init__(self, parent):
+        super().__init__(parent=parent)
+        self.setObjectName("about")
+        self.init_ui()
+
+    def init_ui(self):
+        # 主布局
+        vbox = QVBoxLayout(self)
+        vbox.setContentsMargins(40, 40, 40, 40)
+        vbox.setSpacing(24)
+
+        # 标题卡片
+        title_card = self.create_title_card()
+        vbox.addWidget(title_card)
+
+        # 信息卡片
+        info_card = self.create_info_card()
+        vbox.addWidget(info_card)
+
+        # 链接卡片
+        links_card = self.create_links_card()
+        vbox.addWidget(links_card)
+
+        # 许可证卡片
+        license_card = self.create_license_card()
+        vbox.addWidget(license_card)
+
+        vbox.addStretch()
+
+    def create_title_card(self):
+        """创建标题卡片"""
+        card = ElevatedCardWidget(self)
+        card.setFixedHeight(120)
+
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(32, 24, 32, 24)
+        layout.setSpacing(8)
+
+        # 应用图标和标题
+        title_layout = QHBoxLayout()
+
+        # 图标
+        icon = IconWidget(FluentIcon.INFO, card)
+        icon.setFixedSize(32, 32)
+        title_layout.addWidget(icon)
+
+        title_layout.addSpacing(12)
+
+        # 标题
+        title = TitleLabel('Modless Chat Trans', card)
+        setFont(title, 28, weight=QFont.Weight.Bold)
+        title_layout.addWidget(title)
+
+        title_layout.addStretch()
+        layout.addLayout(title_layout)
+
+        # 副标题
+        subtitle = CaptionLabel('ModlessChatTransは、高性能ですから！', card)
+        subtitle.setStyleSheet("color: rgb(96, 96, 96);")
+        setFont(subtitle, 18, weight=QFont.Weight.Bold)
+        layout.addWidget(subtitle)
+
+        return card
+
+    def create_info_card(self):
+        """创建基本信息卡片"""
+        card = SimpleCardWidget(self)
+
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(24, 20, 24, 20)
+        layout.setSpacing(16)
+
+        # 卡片标题
+        card_title = SubtitleLabel(_('应用信息'), card)
+        setFont(card_title, 16, weight=QFont.Weight.DemiBold)
+        layout.addWidget(card_title)
+
+        # 信息项目
+        # noinspection PyUnresolvedReferences
+        info_items = [
+            (FluentIcon.TAG, _("版本"), self.parent().info.version),
+            (FluentIcon.PEOPLE, _("作者"), self.parent().info.author),
+            (FluentIcon.MAIL, _("邮箱"), self.parent().info.email)
+        ]
+
+        for icon, label_text, value in info_items:
+            item_layout = self.create_info_item(icon, label_text, value, card)
+            layout.addLayout(item_layout)
+
+        return card
+
+    def create_info_item(self, icon, label_text, value, parent):
+        """创建信息项目"""
+        layout = QHBoxLayout()
+        layout.setSpacing(12)
+
+        # 图标
+        icon_widget = IconWidget(icon, parent)
+        icon_widget.setFixedSize(20, 20)
+        layout.addWidget(icon_widget)
+
+        # 标签
+        label = BodyLabel(label_text, parent)
+        label.setFixedWidth(60)
+        setFont(label, 12, weight=QFont.Weight.DemiBold)
+        layout.addWidget(label)
+
+        # 值
+        value_label = BodyLabel(value, parent)
+        setFont(value_label, 12)
+        layout.addWidget(value_label)
+
+        layout.addStretch()
+        return layout
+
+    def create_links_card(self):
+        """创建链接卡片"""
+        card = SimpleCardWidget(self)
+
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(24, 20, 24, 20)
+        layout.setSpacing(16)
+
+        # 卡片标题
+        card_title = SubtitleLabel(_('相关链接'), card)
+        setFont(card_title, 16, weight=QFont.Weight.DemiBold)
+        layout.addWidget(card_title)
+
+        # GitHub 链接
+        github_layout = QHBoxLayout()
+        github_layout.setSpacing(12)
+
+        github_icon = IconWidget(FluentIcon.GITHUB, card)
+        github_icon.setFixedSize(20, 20)
+        github_layout.addWidget(github_icon)
+
+        github_label = BodyLabel("GitHub", card)
+        github_label.setFixedWidth(60)
+        setFont(github_label, 12, weight=QFont.Weight.DemiBold)
+        github_layout.addWidget(github_label)
+
+        # noinspection PyUnresolvedReferences
+        github_link = HyperlinkLabel(
+            QUrl(self.parent().info.github),
+            self.parent().info.github
+        )
+        setFont(github_link, 12)
+        github_layout.addWidget(github_link)
+
+        github_layout.addStretch()
+        layout.addLayout(github_layout)
+
+        return card
+
+    def create_license_card(self):
+        """创建许可证卡片"""
+        card = SimpleCardWidget(self)
+
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(24, 20, 24, 20)
+        layout.setSpacing(12)
+
+        # 卡片标题
+        card_title = SubtitleLabel(_('许可证'), card)
+        setFont(card_title, 16, weight=QFont.Weight.DemiBold)
+        layout.addWidget(card_title)
+
+        # 许可证信息
+        license_layout = QHBoxLayout()
+        license_layout.setSpacing(12)
+
+        license_icon = IconWidget(FluentIcon.CERTIFICATE, card)
+        license_icon.setFixedSize(20, 20)
+        license_layout.addWidget(license_icon)
+
+        # noinspection PyUnresolvedReferences
+        license_link = HyperlinkLabel(
+            QUrl(self.parent().info.license[1]),
+            self.parent().info.license[0]
+        )
+        setFont(license_link, 12)
+        license_layout.addWidget(license_link)
+
+        license_layout.addStretch()
+        layout.addLayout(license_layout)
+
+        return card
+
+
+class UpdateDialog(MessageBoxBase):
+    """更新对话框"""
+
+    def __init__(self, latest_release, current_version, parent=None):
+        super().__init__(parent)
+        self.latest_release = latest_release
+        self.current_version = current_version
+
+        # 设置标题
+        self.titleLabel = SubtitleLabel(_('发现新版本'), self)
+        self.viewLayout.addWidget(self.titleLabel)
+
+        try:
+            # 创建内容区域
+            self.content_widget = QFrame(self)
+            self.content_layout = QVBoxLayout(self.content_widget)
+            self.content_layout.setContentsMargins(0, 16, 0, 0)
+            self.content_layout.setSpacing(16)
+
+            # 版本信息卡片
+            self.version_card = self.create_version_card()
+            self.content_layout.addWidget(self.version_card)
+
+            # Release Note 卡片
+            self.release_note_card = self.create_release_note_card()
+            self.content_layout.addWidget(self.release_note_card)
+
+            self.viewLayout.addWidget(self.content_widget)
+
+            # 设置对话框大小
+            self.widget.setMinimumSize(700, 500)
+
+        except Exception as e:
+            logger.error(f"Error creating update dialog content: {e}")
+            # 如果创建内容失败，显示简单的错误信息
+            error_label = BodyLabel(_('创建更新对话框时出错: {}').format(str(e)), self)
+            self.viewLayout.addWidget(error_label)
+
+        self.yesButton.setText(_("下载更新"))
+        self.cancelButton.setText(_("暂不更新"))
+
+        # 连接按钮信号
+        self.yesButton.clicked.connect(self.accept)
+        self.cancelButton.clicked.connect(self.reject)
+
+    def create_version_card(self):
+        """创建版本信息卡片"""
+        card = SimpleCardWidget(self)
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(16, 12, 16, 12)
+        layout.setSpacing(8)
+
+        # 标题
+        title = BodyLabel(_('版本信息'), card)
+        setFont(title, 14, weight=QFont.Weight.DemiBold)
+        layout.addWidget(title)
+
+        # 版本对比
+        version_layout = QGridLayout()
+        version_layout.setSpacing(12)
+
+        # 当前版本
+        current_label = CaptionLabel(_('当前版本：'), card)
+        current_version = BodyLabel(f'v{self.current_version}', card)
+        current_version.setStyleSheet("color: #666666;")
+
+        # 最新版本
+        latest_label = CaptionLabel(_('最新版本：'), card)
+        latest_version_text = self.latest_release.get('tag_name', _('未知'))
+        latest_version = BodyLabel(latest_version_text, card)
+        latest_version.setStyleSheet("color: #0078d4; font-weight: bold;")
+
+        # 发布时间
+        date_label = CaptionLabel(_('发布时间：'), card)
+        published_at = self.latest_release.get('published_at', _('未知'))
+        if published_at != _('未知'):
+            # 格式化日期
+            try:
+                dt = datetime.fromisoformat(published_at.replace('Z', '+00:00'))
+                published_at = dt.strftime('%Y-%m-%d %H:%M')
+            except Exception as e:
+                logger.warning(f"Error formatting date: {e}")
+        date_value = BodyLabel(published_at, card)
+
+        # 发布者 - 安全地获取嵌套字典值
+        author_label = CaptionLabel(_('发布者：'), card)
+        author_data = self.latest_release.get('author', {})
+        author_name = author_data.get('login', _('未知')) if isinstance(author_data, dict) else _('未知')
+        author_value = BodyLabel(author_name, card)
+
+        # 添加到布局
+        version_layout.addWidget(current_label, 0, 0)
+        version_layout.addWidget(current_version, 0, 1)
+        version_layout.addWidget(latest_label, 1, 0)
+        version_layout.addWidget(latest_version, 1, 1)
+        version_layout.addWidget(date_label, 2, 0)
+        version_layout.addWidget(date_value, 2, 1)
+        version_layout.addWidget(author_label, 3, 0)
+        version_layout.addWidget(author_value, 3, 1)
+
+        # 预发布标记
+        if self.latest_release.get('prerelease', False):
+            prerelease_label = CaptionLabel(_('版本类型：'), card)
+            prerelease_value = BodyLabel(_('预发布版本'), card)
+            prerelease_value.setStyleSheet("color: #ff6b6b;")
+            version_layout.addWidget(prerelease_label, 4, 0)
+            version_layout.addWidget(prerelease_value, 4, 1)
+
+        version_layout.setColumnStretch(2, 1)
+        layout.addLayout(version_layout)
+
+        return card
+
+    def create_release_note_card(self):
+        """创建 Release Note 卡片"""
+        card = SimpleCardWidget(self)
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(16, 12, 16, 12)
+        layout.setSpacing(8)
+
+        # 标题
+        title = BodyLabel(_('更新说明'), card)
+        setFont(title, 14, weight=QFont.Weight.DemiBold)
+        layout.addWidget(title)
+
+        # Release Note 内容
+        self.note_browser = QTextBrowser(card)
+        self.note_browser.setOpenExternalLinks(True)
+        self.note_browser.setMinimumHeight(200)
+
+        # 获取 Release Note
+        release_body = self.latest_release.get('body', _('暂无更新说明'))
+
+        # 尝试将 Markdown 转换为 HTML
+        try:
+            html_content = markdown.markdown(
+                release_body,
+                extensions=['extra', 'nl2br']
+            )
+
+            # 添加基础样式
+            styled_html = f"""
+            <style>
+                body {{ 
+                    font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif; 
+                    font-size: 13px;
+                    line-height: 1.6;
+                    color: #333;
+                    margin: 8px;
+                }}
+                h1, h2, h3, h4, h5, h6 {{ 
+                    font-weight: bold; 
+                    margin-top: 12px; 
+                    margin-bottom: 8px;
+                }}
+                h1 {{ font-size: 20px; }}
+                h2 {{ font-size: 18px; }}
+                h3 {{ font-size: 16px; }}
+                code {{
+                    background-color: #f4f4f4;
+                    padding: 2px 4px;
+                    border-radius: 3px;
+                    font-family: 'Consolas', 'Monaco', monospace;
+                }}
+                pre {{
+                    background-color: #f4f4f4;
+                    padding: 10px;
+                    border-radius: 5px;
+                    overflow-x: auto;
+                }}
+                ul, ol {{
+                    margin-left: 20px;
+                }}
+                a {{
+                    color: #0078d4;
+                    text-decoration: none;
+                }}
+                a:hover {{
+                    text-decoration: underline;
+                }}
+            </style>
+            <body>{html_content}</body>
+            """
+
+            self.note_browser.setHtml(styled_html)
+        except Exception as e:
+            logger.error(f"Error processing release note: {e}")
+            self.note_browser.setPlainText(release_body)
+
+        layout.addWidget(self.note_browser)
+
+        # 查看完整说明链接
+        html_url = self.latest_release.get('html_url', '')
+        if html_url:
+            link_layout = QHBoxLayout()
+            link_layout.addStretch()
+
+            github_link = HyperlinkLabel(
+                QUrl(html_url),
+                _('在 GitHub 上查看完整说明')
+            )
+            link_layout.addWidget(github_link)
+
+            layout.addLayout(link_layout)
+
+        return card
+
+
+class DownloadProgressDialog(MessageBoxBase):
+    """下载进度对话框"""
+
+    def __init__(self, release_info, parent=None):
+        super().__init__(parent)
+        self.release_info = release_info
+        self._is_cancelled = False
+        self.worker = None
+
+        self.titleLabel = SubtitleLabel(_('正在下载更新'), self)
+        self.viewLayout.addWidget(self.titleLabel)
+
+        # 隐藏默认的确认按钮
+        self.yesButton.hide()
+
+        # 设置取消按钮文本
+        self.cancelButton.setText(_("取消"))
+        self.cancelButton.clicked.connect(self.on_cancel_clicked)
+
+        # 版本信息
+        version_label = BodyLabel(
+            _('正在下载版本 {}...').format(release_info.get("tag_name", _("未知"))),
+            self
+        )
+        self.viewLayout.addWidget(version_label)
+
+        # 进度条
+        self.progress_bar = ProgressBar(self)
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.viewLayout.addWidget(self.progress_bar)
+
+        # 进度信息容器
+        info_frame = QFrame(self)
+        info_layout = QGridLayout(info_frame)
+        info_layout.setContentsMargins(0, 10, 0, 10)
+        info_layout.setHorizontalSpacing(20)
+        info_layout.setVerticalSpacing(5)
+
+        # 百分比
+        self.percent_label = BodyLabel('0%', info_frame)
+        self.percent_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        setFont(self.percent_label, 16, weight=QFont.Weight.DemiBold)
+        info_layout.addWidget(self.percent_label, 0, 0, 2, 1)
+
+        # 下载大小信息
+        size_label = CaptionLabel(_('下载进度：'), info_frame)
+        self.size_info_label = BodyLabel('0 KiB / 0 KiB', info_frame)
+        info_layout.addWidget(size_label, 0, 1, Qt.AlignmentFlag.AlignRight)
+        info_layout.addWidget(self.size_info_label, 0, 2, Qt.AlignmentFlag.AlignLeft)
+
+        # 下载速度
+        speed_label = CaptionLabel(_('下载速度：'), info_frame)
+        self.speed_label = BodyLabel('0 KiB/s', info_frame)
+        info_layout.addWidget(speed_label, 1, 1, Qt.AlignmentFlag.AlignRight)
+        info_layout.addWidget(self.speed_label, 1, 2, Qt.AlignmentFlag.AlignLeft)
+
+        # 剩余时间
+        time_label = CaptionLabel(_('剩余时间：'), info_frame)
+        self.time_label = BodyLabel(_('计算中...'), info_frame)
+        info_layout.addWidget(time_label, 2, 1, Qt.AlignmentFlag.AlignRight)
+        info_layout.addWidget(self.time_label, 2, 2, Qt.AlignmentFlag.AlignLeft)
+
+        # 下载线程数
+        thread_label = CaptionLabel(_('下载方式：'), info_frame)
+        self.thread_info_label = BodyLabel(_('检测中...'), info_frame)
+        info_layout.addWidget(thread_label, 3, 1, Qt.AlignmentFlag.AlignRight)
+        info_layout.addWidget(self.thread_info_label, 3, 2, Qt.AlignmentFlag.AlignLeft)
+
+        info_layout.setColumnStretch(0, 1)
+        info_layout.setColumnStretch(3, 1)
+
+        self.viewLayout.addWidget(info_frame)
+
+        self.widget.setMinimumWidth(500)
+
+    def set_worker(self, worker):
+        """设置下载工作器"""
+        self.worker = worker
+        # 连接线程数更新信号
+        worker.thread_count_updated.connect(self.update_thread_count)
+
+    def update_thread_count(self, count):
+        """更新线程数显示"""
+        if count > 1:
+            self.thread_info_label.setText(_('{} 线程下载').format(count))
+        else:
+            self.thread_info_label.setText(_('单线程下载'))
+
+    def update_progress(self, downloaded, total, speed):
+        """更新下载进度"""
+        if self._is_cancelled:
             return
 
-        if self.selected_term_src in self.glossary_rules:
-            del self.glossary_rules[self.selected_term_src]
-            logger.info(f"Glossary rule deleted: {self.selected_term_src}")
-            # 刷新列表显示 (这会自动取消选择并禁用删除按钮)
-            self._update_glossary_display()
-        else:
-            logger.error(f"Selected term '{self.selected_term_src}' not found in rules for deletion.")
-            self._update_glossary_display()
+        # 计算百分比
+        if total > 0:
+            percent = int(downloaded * 100 / total)
+            self.progress_bar.setValue(percent)
+            self.percent_label.setText(f'{percent}%')
 
-    def _save_glossary(self):
-        try:
-            save_config(glossary=self.glossary_rules)
-            logger.info(f"Glossary dictionary saved successfully with {len(self.glossary_rules)} rules.")
-            self.glossary_window.destroy()
-        except Exception as e:
-            logger.error(f"Failed to save glossary: {e}")
+            # 格式化文件大小显示
+            def format_size(bytes_size):
+                """格式化文件大小为合适的单位"""
+                if bytes_size < 1024:
+                    return f"{bytes_size} B"
+                elif bytes_size < 1024 * 1024:
+                    return f"{bytes_size / 1024:.1f} KiB"
+                elif bytes_size < 1024 * 1024 * 1024:
+                    return f"{bytes_size / (1024 * 1024):.1f} MiB"
+                else:
+                    return f"{bytes_size / (1024 * 1024 * 1024):.2f} GiB"
+
+            # 显示下载大小
+            self.size_info_label.setText(f'{format_size(downloaded)} / {format_size(total)}')
+
+            # 格式化速度显示
+            def format_speed(bytes_per_sec):
+                """格式化下载速度"""
+                if bytes_per_sec < 1024:
+                    return f"{bytes_per_sec:.0f} B/s"
+                elif bytes_per_sec < 1024 * 1024:
+                    return f"{bytes_per_sec / 1024:.1f} KiB/s"
+                else:
+                    return f"{bytes_per_sec / (1024 * 1024):.1f} MiB/s"
+
+            self.speed_label.setText(format_speed(speed))
+
+            # 计算剩余时间
+            if speed > 0 and percent < 100:
+                remaining_bytes = total - downloaded
+                remaining_seconds = remaining_bytes / speed
+
+                # 格式化时间显示
+                def format_time(seconds):
+                    """格式化剩余时间"""
+                    if seconds < 60:
+                        return _('{} 秒').format(int(seconds))
+                    elif seconds < 3600:
+                        minutes = int(seconds / 60)
+                        secs = int(seconds % 60)
+                        if secs > 0:
+                            return _('{} 分 {} 秒').format(minutes, secs)
+                        else:
+                            return _('{} 分钟').format(minutes)
+                    else:
+                        hours = int(seconds / 3600)
+                        minutes = int((seconds % 3600) / 60)
+                        if minutes > 0:
+                            return _('{} 小时 {} 分').format(hours, minutes)
+                        else:
+                            return _('{} 小时').format(hours)
+
+                self.time_label.setText(format_time(remaining_seconds))
+            elif percent >= 100:
+                self.time_label.setText(_('完成'))
+            else:
+                self.time_label.setText(_('计算中...'))
+
+    def on_cancel_clicked(self):
+        """处理取消按钮点击"""
+        if not self._is_cancelled:
+            self._is_cancelled = True
+            self.cancelButton.setEnabled(False)
+            self.cancelButton.setText(_("正在取消..."))
+            if self.worker:
+                self.worker.cancel()
+
+    def set_error(self, error_msg):
+        """设置错误状态"""
+        self.progress_bar.error()
+        self.titleLabel.setText(_('下载失败'))
+        self.percent_label.setText(_('错误'))
+        self.size_info_label.setText(error_msg)
+        self.cancelButton.setText(_("关闭"))
+        self.cancelButton.setEnabled(True)
+
+
+class SettingInterface(QFrame):
+    """设置界面组件"""
+
+    def __init__(self, parent, config=None):
+        super().__init__(parent=parent)
+        self.setObjectName("setting")
+        self.parent_window = parent
+        self.config = config
+        self.init_ui()
+
+        # noinspection PyUnresolvedReferences
+        self.updater = parent.updater
+
+    def init_ui(self):
+        # 创建主布局
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(30, 30, 30, 30)
+        self.main_layout.setSpacing(20)
+
+        # 标题
+        title = SubtitleLabel(_('设置'), self)
+        setFont(title, 24)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.main_layout.addWidget(title)
+
+        # 创建滚动区域以防内容过多
+        scroll_widget = QFrame(self)
+        scroll_layout = QVBoxLayout(scroll_widget)
+        scroll_layout.setContentsMargins(0, 0, 0, 0)
+        scroll_layout.setSpacing(20)
+
+        # 语言设置卡片
+        language_card = self.create_language_card()
+        scroll_layout.addWidget(language_card)
+
+        # 更新设置卡片
+        update_card = self.create_update_card()
+        scroll_layout.addWidget(update_card)
+
+        scroll_layout.addStretch()
+        self.main_layout.addWidget(scroll_widget)
+
+    def create_language_card(self):
+        """创建语言设置卡片"""
+        card = SimpleCardWidget(self)
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(20, 16, 20, 16)
+        card_layout.setSpacing(12)
+
+        # 卡片标题
+        card_title = SubtitleLabel(_('语言设置'), card)
+        setFont(card_title, 16, weight=QFont.Weight.DemiBold)
+        card_layout.addWidget(card_title)
+
+        # 语言设置内容区域
+        content_frame = QFrame(card)
+        content_layout = QGridLayout(content_frame)
+        content_layout.setContentsMargins(0, 8, 0, 0)
+        content_layout.setHorizontalSpacing(16)
+        content_layout.setVerticalSpacing(12)
+
+        # 界面语言
+        lang_label = BodyLabel(_('界面语言：'), content_frame)
+        self.language_combo = ComboBox(content_frame)
+        for lang_name, lang_code in supported_languages:
+            self.language_combo.addItem(lang_name, userData=lang_code)
+
+        # 设置默认值
+        if self.config and hasattr(self.config, 'settings'):
+            current_lang = self.config.settings.interface_language
+            for i in range(self.language_combo.count()):
+                if self.language_combo.itemData(i) == current_lang:
+                    self.language_combo.setCurrentIndex(i)
+                    break
+        else:
+            self.language_combo.setCurrentIndex(0)
+
+        self.language_combo.setFixedWidth(200)
+
+        content_layout.addWidget(lang_label, 0, 0, Qt.AlignmentFlag.AlignRight)
+        content_layout.addWidget(self.language_combo, 0, 1)
+
+        # 应用按钮
+        self.save_lang_button = PushButton(_('保存'), content_frame)
+        self.save_lang_button.clicked.connect(self.apply_language_setting)
+        content_layout.addWidget(self.save_lang_button, 0, 2)
+
+        # 提示信息
+        tip_label = CaptionLabel(_('* 语言更改将在重启后生效'), content_frame)
+        tip_label.setStyleSheet("color: #888888;")
+        content_layout.addWidget(tip_label, 1, 1, 1, 2)
+
+        # 设置列拉伸
+        content_layout.setColumnStretch(3, 1)
+
+        card_layout.addWidget(content_frame)
+        return card
+
+    def create_update_card(self):
+        """创建更新设置卡片"""
+        card = SimpleCardWidget(self)
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(20, 16, 20, 16)
+        card_layout.setSpacing(12)
+
+        # 卡片标题
+        card_title = SubtitleLabel(_('更新设置'), card)
+        setFont(card_title, 16, weight=QFont.Weight.DemiBold)
+        card_layout.addWidget(card_title)
+
+        # 更新设置内容区域
+        content_frame = QFrame(card)
+        content_layout = QGridLayout(content_frame)
+        content_layout.setContentsMargins(0, 8, 0, 0)
+        content_layout.setHorizontalSpacing(16)
+        content_layout.setVerticalSpacing(16)
+
+        # 自动检查更新
+        auto_check_label = BodyLabel(_('自动检查：'), content_frame)
+        self.update_frequency_combo = ComboBox(content_frame)
+        self.update_frequency_combo.addItem(_('启动时'), userData="startup")
+        self.update_frequency_combo.addItem(_('每天'), userData="daily")
+        self.update_frequency_combo.addItem(_('每周'), userData="weekly")
+        self.update_frequency_combo.addItem(_('每月'), userData="monthly")
+        self.update_frequency_combo.addItem(_('从不'), userData="never")
+
+        # 设置默认值
+        if self.config and hasattr(self.config, 'settings'):
+            frequency = self.config.settings.auto_check_update_frequency
+            for i in range(self.update_frequency_combo.count()):
+                if self.update_frequency_combo.itemData(i) == frequency:
+                    self.update_frequency_combo.setCurrentIndex(i)
+                    break
+        else:
+            self.update_frequency_combo.setCurrentIndex(0)
+
+        self.update_frequency_combo.setFixedWidth(200)
+
+        content_layout.addWidget(auto_check_label, 0, 0, Qt.AlignmentFlag.AlignRight)
+        content_layout.addWidget(self.update_frequency_combo, 0, 1)
+
+        # 包含预发布版本
+        prerelease_label = BodyLabel(_('预发布版本：'), content_frame)
+        self.include_prerelease_check = CheckBox(_('包含预发布版本'), content_frame)
+
+        # 设置默认值
+        if self.config and hasattr(self.config, 'settings'):
+            self.include_prerelease_check.setChecked(self.config.settings.include_prerelease)
+
+        content_layout.addWidget(prerelease_label, 1, 0, Qt.AlignmentFlag.AlignRight)
+        content_layout.addWidget(self.include_prerelease_check, 1, 1)
+
+        # 手动检查更新
+        check_label = BodyLabel(_('手动检查：'), content_frame)
+
+        # 按钮和加载动画容器
+        check_container = QFrame(content_frame)
+        check_layout = QHBoxLayout(check_container)
+        check_layout.setContentsMargins(0, 0, 0, 0)
+        check_layout.setSpacing(8)
+
+        self.check_update_button = PushButton(_('检查更新'), check_container)
+        self.check_update_button.setIcon(FluentIcon.UPDATE)
+        self.check_update_button.clicked.connect(self.check_for_updates)
+
+        self.update_loading_spinner = IndeterminateProgressRing(check_container)
+        self.update_loading_spinner.setFixedSize(20, 20)
+        self.update_loading_spinner.setStrokeWidth(2)
+        self.update_loading_spinner.hide()
+
+        check_layout.addWidget(self.check_update_button)
+        check_layout.addWidget(self.update_loading_spinner)
+        check_layout.addStretch()
+
+        content_layout.addWidget(check_label, 2, 0, Qt.AlignmentFlag.AlignRight)
+        content_layout.addWidget(check_container, 2, 1)
+
+        # 当前版本信息
+        version_label = BodyLabel(_('当前版本：'), content_frame)
+        current_version_label = BodyLabel(
+            f'v{self.parent_window.updater.current_version if hasattr(self.parent_window, "updater") and self.parent_window.updater else _("未知")}',
+            content_frame)
+        # current_version_label.setStyleSheet("color: #666666;")
+
+        content_layout.addWidget(version_label, 3, 0, Qt.AlignmentFlag.AlignRight)
+        content_layout.addWidget(current_version_label, 3, 1)
+
+        # 设置列拉伸
+        content_layout.setColumnStretch(2, 1)
+
+        card_layout.addWidget(content_frame)
+        return card
+
+    def apply_language_setting(self):
+        """应用语言设置"""
+        current_data = self.language_combo.currentData()
+        current_text = self.language_combo.currentText()
+
+        logger.info(f"Language setting applied: {current_text} ({current_data})")
+
+        if update_config(settings__interface_language=current_data):
+            # 显示成功提示
+            InfoBar.success(
+                title=_('设置已保存'),
+                content=_('界面语言已设置为 {}，重启后生效。').format(current_text),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self
+            )
+
+    def check_for_updates(self, silent=False):
+        """检查更新
+
+        Args:
+            silent: 是否静默检查，为True时不显示动画和提示
+        """
+        if not hasattr(self.parent_window, 'updater') or self.updater is None:
+            if not silent:
+                InfoBar.error(
+                    title=_('错误'),
+                    content=_('更新器未初始化'),
+                    orient=Qt.Orientation.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.TOP,
+                    duration=3000,
+                    parent=self
+                )
+            return
+
+        # 仅在非静默模式下显示加载动画和禁用按钮
+        if not silent:
+            self.check_update_button.setEnabled(False)
+            self.update_loading_spinner.show()
+
+        # 设置是否包含预发布版本
+        self.updater.include_prerelease = self.include_prerelease_check.isChecked()
+
+        # 创建检查更新的线程
+        check_thread = QThread()
+
+        def run_check():
+            try:
+                latest_release = self.updater.check_update()
+                check_thread.latest_release = latest_release
+            except Exception as e:
+                check_thread.error = str(e)
+                check_thread.latest_release = None
+
+        check_thread.run = run_check
+        # noinspection PyUnresolvedReferences
+        check_thread.finished.connect(lambda: self.on_update_check_finished(check_thread, silent))
+        check_thread.start()
+
+        # 保存线程引用，防止被垃圾回收
+        self.update_check_thread = check_thread
+
+    def on_update_check_finished(self, thread, silent=False):
+        """更新检查完成的回调
+
+        Args:
+            thread: 检查更新的线程
+            silent: 是否静默检查，为True时不显示提示
+        """
+        # 仅在非静默模式下隐藏加载动画和启用按钮
+        if not silent:
+            self.update_loading_spinner.hide()
+            self.check_update_button.setEnabled(True)
+
+        if hasattr(thread, 'error'):
+            # 检查过程出错，静默模式下只记录日志
+            if not silent:
+                InfoBar.error(
+                    title=_('检查更新失败'),
+                    content=_('错误: {}').format(thread.error),
+                    orient=Qt.Orientation.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.TOP,
+                    duration=5000,
+                    parent=self
+                )
+            else:
+                logger.error(f"Silent update check failed: {thread.error}")
+        elif thread.latest_release:
+            try:
+                # 发现新版本，显示更新对话框
+                dialog = UpdateDialog(
+                    thread.latest_release,
+                    self.updater.current_version,
+                    self.window()
+                )
+
+                if dialog.exec():
+                    self.start_download(thread.latest_release)
+                else:
+                    logger.info("User chose to skip update")
+
+            except Exception as e:
+                logger.error(f"Error showing update dialog: {e}")
+                if not silent:
+                    # 如果详细对话框失败，使用简单的消息框
+                    latest_version = thread.latest_release.get("tag_name", _("未知版本"))
+                    w = MessageBox(
+                        _('发现新版本'),
+                        _('最新版本: {}\n当前版本: v{}\n\n是否在浏览器中查看？').format(latest_version,
+                                                                                       self.updater.current_version),
+                        self.window()
+                    )
+
+                    if w.exec():
+                        release_url = thread.latest_release.get("html_url")
+                        if release_url:
+                            webbrowser.open(release_url)
+        else:
+            # 已是最新版本，静默模式下不显示提示
+            if not silent:
+                InfoBar.success(
+                    title=_('您是最新的'),
+                    content=_('当前版本 v{} 已是最新版本').format(self.updater.current_version),
+                    orient=Qt.Orientation.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.TOP,
+                    duration=3000,
+                    parent=self
+                )
+            else:
+                logger.info(f"Current version v{self.updater.current_version} is up to date")
+
+        luct = datetime.now().isoformat(timespec='seconds')
+        self.window().config.settings.last_update_check_time = luct
+        update_config(settings__last_update_check_time=luct)
+
+        # 清理线程引用
+        self.update_check_thread = None
+
+    def on_download_confirmed(self, dialog, latest_release):
+        """用户确认下载"""
+        dialog.accept()  # 关闭对话框
+        self.start_download(latest_release)
+
+    def start_download(self, latest_release):
+        """开始下载更新"""
+        # 显示下载进度对话框
+        progress_dialog = DownloadProgressDialog(latest_release, self.window())
+
+        # 创建工作线程和工作器
+        download_thread = QThread()
+        worker = DownloadWorker(self.updater, latest_release)
+        worker.moveToThread(download_thread)
+
+        # 设置worker到对话框
+        progress_dialog.set_worker(worker)
+
+        # 连接信号
+        # noinspection PyUnresolvedReferences
+        download_thread.started.connect(worker.download)
+        worker.progress_updated.connect(progress_dialog.update_progress)
+        worker.thread_count_updated.connect(progress_dialog.update_thread_count)  # 添加这行
+        worker.download_finished.connect(lambda path: self.on_download_finished(path, progress_dialog, download_thread))
+        worker.download_error.connect(lambda error: self.on_download_error(error, progress_dialog, download_thread))
+
+        # 保存引用防止被垃圾回收
+        self.download_thread = download_thread
+        self.download_worker = worker
+
+        # 启动下载
+        download_thread.start()
+
+        # 显示进度对话框
+        progress_dialog.exec()
+
+    def on_download_finished(self, file_path, progress_dialog, thread):
+        """下载完成的回调"""
+        thread.quit()
+        thread.wait()
+
+        progress_dialog.close()
+
+        if file_path:
+            # 下载成功
+            MessageBox(
+                _('下载完成'),
+                _('更新文件已下载到:\n{}\n\n请手动安装更新。').format(file_path),
+                self.window()
+            )
+        else:
+            # 下载被取消
+            InfoBar.info(
+                title=_('下载已取消'),
+                content=_('更新下载已取消'),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self
+            )
+
+        # 清理引用
+        self.download_thread = None
+        self.download_worker = None
+
+    def on_download_error(self, error_msg, progress_dialog, thread):
+        """下载出错的回调"""
+        thread.quit()
+        thread.wait()
+
+        progress_dialog.set_error(error_msg)
+
+        # 清理引用
+        self.download_thread = None
+        self.download_worker = None
+
+
+class MainWindow(FluentWindow):
+    def __init__(self, info: ProgramInfo, updater_object, config, start_callback):
+        super().__init__()
+
+        self.info = info
+        self.updater = updater_object
+        self.config = config
+        self.start_callback = start_callback  # 新增：保存启动回调
+
+        self.setWindowIcon(QIcon(get_path("icon.ico")))
+
+        # 根据配置初始化服务类型
+        initial_player_service_type = ServiceType.LLM
+        initial_send_service_type = ServiceType.LLM
+
+        if config:
+            # 玩家消息服务类型
+            if hasattr(config, 'player_translation') and config.player_translation:
+                initial_player_service_type = config.player_translation.service_type
+
+            # 发送消息服务类型
+            if hasattr(config, 'send_translation') and config.send_translation:
+                initial_send_service_type = config.send_translation.service_type
+            elif not config.send_translation_independent:
+                # 如果没有独立设置，使用玩家消息服务的类型
+                initial_send_service_type = initial_player_service_type
+
+        # 创建各个界面，传入config
+        self.message_capture_interface = MessageCaptureInterface(self, initial_player_service_type, config)
+        self.translation_service_interface = TranslationServiceInterface(self, config)
+        self.message_presentation_interface = MessagePresentationInterface(self, config)
+        self.message_send_interface = MessageSendInterface(self, initial_send_service_type, config)
+        self.glossary_interface = GlossaryInterface(self, config)
+        self.start_interface = StartInterface(self)  # 已改为卡片式布局且提供启动/保存
+        self.about_interface = AboutInterface(self)
+        self.setting_interface = SettingInterface(self, config)
+
+        # 连接服务类型改变信号
+        self.translation_service_interface.service_type_changed.connect(
+            self.message_capture_interface.update_service_type
+        )
+        # 当复选框未启用时，玩家消息服务也控制发送消息界面
+        self.translation_service_interface.service_type_changed.connect(
+            self.on_player_service_type_changed
+        )
+        self.translation_service_interface.send_service_type_changed.connect(
+            self.message_send_interface.update_service_type
+        )
+
+        # 创建独立的加载状态和线程
+        self.player_language_loading = False
+        self.send_language_loading = False
+        self.player_language_loader_thread = None
+        self.send_language_loader_thread = None
+
+        # 监听所有服务的传统翻译服务变化
+        self.connect_traditional_service_signals()
+
+        self.init_navigation()
+        self.init_window()
+
+        # 初始化后加载传统翻译服务的语言（如果需要）
+        self.load_initial_languages()
+
+    def mousePressEvent(self, event):
+        """鼠标点击时关闭TeachingTip"""
+        # 检查点击位置是否在TeachingTip内部
+        if TeachingTipManager._current_tip:
+            tip_widget = TeachingTipManager._current_tip
+            if hasattr(tip_widget, 'geometry'):
+                # 如果点击不在TeachingTip内部，则关闭它
+                if not tip_widget.geometry().contains(event.pos()):
+                    TeachingTipManager.close_current()
+
+        super().mousePressEvent(event)
+
+    def load_initial_languages(self):
+        """加载初始的传统翻译服务语言列表"""
+        if not self.config:
+            return
+
+        # 加载玩家消息服务的语言
+        if hasattr(self.config, 'player_translation') and self.config.player_translation:
+            if self.config.player_translation.service_type == ServiceType.TRADITIONAL:
+                if self.config.player_translation.traditional:
+                    provider = self.config.player_translation.traditional.provider
+                    if provider:
+                        # 触发语言加载
+                        self.on_traditional_service_changed(provider, "player")
+                        # 设置默认语言值
+                        QTimer.singleShot(500, lambda: self.set_initial_traditional_languages("player"))
+
+        # 加载发送消息服务的语言（如果独立设置）
+        if self.config.send_translation_independent and hasattr(self.config,
+                                                                'send_translation') and self.config.send_translation:
+            if self.config.send_translation.service_type == ServiceType.TRADITIONAL:
+                if self.config.send_translation.traditional:
+                    provider = self.config.send_translation.traditional.provider
+                    if provider:
+                        # 触发语言加载
+                        self.on_traditional_service_changed(provider, "send")
+                        # 设置默认语言值
+                        QTimer.singleShot(500, lambda: self.set_initial_traditional_languages("send"))
+
+    def set_initial_traditional_languages(self, service_id):
+        """设置传统翻译服务的初始语言值"""
+        if not self.config:
+            return
+
+        if service_id == "player":
+            # 设置消息捕获界面的语言
+            if hasattr(self.config, 'message_capture'):
+                src_lang = self.config.message_capture.source_language
+                tgt_lang = self.config.message_capture.target_language
+                self.message_capture_interface.set_traditional_languages(src_lang, tgt_lang)
+
+                # 如果未独立设置，同时设置发送消息界面
+                if not self.config.send_translation_independent:
+                    if hasattr(self.config, 'message_send'):
+                        src_lang = self.config.message_send.source_language
+                        tgt_lang = self.config.message_send.target_language
+                        self.message_send_interface.set_traditional_languages(src_lang, tgt_lang)
+
+        elif service_id == "send":
+            # 设置发送消息界面的语言
+            if hasattr(self.config, 'message_send'):
+                src_lang = self.config.message_send.source_language
+                tgt_lang = self.config.message_send.target_language
+                self.message_send_interface.set_traditional_languages(src_lang, tgt_lang)
+
+    def on_player_service_type_changed(self, service_type):
+        """当玩家消息服务类型改变时，检查是否需要同步更新发送消息界面"""
+        if not self.translation_service_interface.independent_service_check.isChecked():
+            # 如果未启用独立设置，则同步更新发送消息界面
+            self.message_send_interface.update_service_type(service_type)
+
+    def connect_traditional_service_signals(self):
+        """连接所有传统翻译服务变化信号"""
+        # 监听玩家消息服务
+        if hasattr(self.translation_service_interface, 'player_service_widget'):
+            player_widget = self.translation_service_interface.player_service_widget
+            if hasattr(player_widget, 'stacked_widget'):
+                for i in range(player_widget.stacked_widget.count()):
+                    widget = player_widget.stacked_widget.widget(i)
+                    if hasattr(widget, 'traditional_service_combo'):
+                        widget.traditional_service_combo.currentTextChanged.connect(
+                            lambda text: self.on_traditional_service_changed(text, "player")
+                        )
+
+        # 连接独立设置改变信号，以便在创建发送服务时连接信号
+        self.translation_service_interface.independent_service_check.toggled.connect(
+            self.on_independent_service_toggled
+        )
+
+    def on_independent_service_toggled(self, checked):
+        """当独立设置改变时"""
+        if checked and self.translation_service_interface.send_service_widget:
+            # 连接发送消息服务的信号
+            send_widget = self.translation_service_interface.send_service_widget
+            if hasattr(send_widget, 'stacked_widget'):
+                for i in range(send_widget.stacked_widget.count()):
+                    widget = send_widget.stacked_widget.widget(i)
+                    if hasattr(widget, 'traditional_service_combo'):
+                        # 先断开可能存在的连接，避免重复
+                        try:
+                            widget.traditional_service_combo.currentTextChanged.disconnect()
+                        except:
+                            pass
+                        # 连接新信号
+                        widget.traditional_service_combo.currentTextChanged.connect(
+                            lambda text: self.on_traditional_service_changed(text, "send")
+                        )
+
+            # 如果配置中有发送服务的设置，加载其语言
+            if self.config and hasattr(self.config, 'send_translation') and self.config.send_translation:
+                if self.config.send_translation.service_type == ServiceType.TRADITIONAL:
+                    if self.config.send_translation.traditional:
+                        provider = self.config.send_translation.traditional.provider
+                        if provider:
+                            self.on_traditional_service_changed(provider, "send")
+                            QTimer.singleShot(500, lambda: self.set_initial_traditional_languages("send"))
+        else:
+            # 如果取消勾选，同步当前玩家服务的设置到发送消息界面
+            player_service_type = self.translation_service_interface.get_current_service_type("player")
+            self.message_send_interface.update_service_type(player_service_type)
+
+            # 如果是传统翻译服务，还需要同步语言列表
+            if player_service_type == ServiceType.TRADITIONAL:
+                player_service = self.translation_service_interface.get_current_service("player")
+                if player_service:
+                    # 触发语言加载以同步到发送消息界面
+                    self.on_traditional_service_changed(player_service, "player")
+
+    def init_window(self):
+        self.resize(900, 700)
+        self.setWindowTitle(f"Modless Chat Trans {self.info.version}")
+        logger.info("Main Window initialized successfully")
+
+    def init_navigation(self):
+        # 添加主要功能界面
+        self.addSubInterface(self.message_capture_interface, FluentIcon.MESSAGE, _('消息捕获'))
+        self.addSubInterface(self.translation_service_interface, FluentIcon.LANGUAGE, _('翻译服务'))
+        self.addSubInterface(self.message_presentation_interface, FluentIcon.VIEW, _('翻译结果显示'))
+        self.addSubInterface(self.message_send_interface, FluentIcon.SEND, _('发送消息'))
+        self.addSubInterface(self.glossary_interface, FluentIcon.DICTIONARY, _('术语表'))
+        self.addSubInterface(self.start_interface, FluentIcon.POWER_BUTTON, _('启动'))
+
+        # 添加底部设置界面
+        self.addSubInterface(self.about_interface, FluentIcon.INFO, _('关于'), NavigationItemPosition.BOTTOM)
+        self.addSubInterface(self.setting_interface, FluentIcon.SETTING, _('设置'), NavigationItemPosition.BOTTOM)
+
+    def on_traditional_service_changed(self, service_name, service_id):
+        """统一处理传统翻译服务变更"""
+        if not service_name:
+            return
+
+        # 检查对应的加载状态
+        if service_id == "player" and self.player_language_loading:
+            return
+        elif service_id == "send" and self.send_language_loading:
+            return
+
+        # 标记正在加载
+        if service_id == "player":
+            self.player_language_loading = True
+        else:
+            self.send_language_loading = True
+
+        # 显示加载动画
+        self.translation_service_interface.show_loading_spinner(True, service_id)
+
+        # 清空对应界面的语言列表
+        if service_id == "player":
+            self.message_capture_interface.src_lang_combo.clear()
+            self.message_capture_interface.tgt_lang_combo.clear()
+            # 如果未启用独立设置，也清空发送消息界面
+            if not self.translation_service_interface.independent_service_check.isChecked():
+                self.message_send_interface.src_lang_combo.clear()
+                self.message_send_interface.tgt_lang_combo.clear()
+        else:
+            self.message_send_interface.src_lang_combo.clear()
+            self.message_send_interface.tgt_lang_combo.clear()
+
+        # 创建并启动对应的线程
+        language_loader_thread = LanguageLoaderThread(service_name)
+        language_loader_thread.languages_loaded.connect(
+            lambda langs: self.on_languages_loaded(langs, service_id)
+        )
+        language_loader_thread.error_occurred.connect(
+            lambda error: self.on_language_error(error, service_id)
+        )
+
+        if service_id == "player":
+            self.player_language_loader_thread = language_loader_thread
+        else:
+            self.send_language_loader_thread = language_loader_thread
+
+        language_loader_thread.start()
+
+    def on_languages_loaded(self, langs, service_id):
+        """语言列表加载完成，更新对应界面"""
+        if service_id == "player":
+            # 更新 MessageCaptureInterface
+            self.message_capture_interface.src_lang_combo.addItems(langs)
+            self.message_capture_interface.tgt_lang_combo.addItems(l for l in langs if l != 'auto')
+
+            # 如果未启用独立设置，也更新 MessageSendInterface
+            if not self.translation_service_interface.independent_service_check.isChecked():
+                self.message_send_interface.src_lang_combo.addItems(langs)
+                self.message_send_interface.tgt_lang_combo.addItems(l for l in langs if l != 'auto')
+
+            # 设置默认语言值
+            if self.config and hasattr(self.config, 'message_capture'):
+                self.message_capture_interface.set_traditional_languages(
+                    self.config.message_capture.source_language,
+                    self.config.message_capture.target_language
+                )
+
+                # 如果未独立设置，同时设置发送消息界面
+                if not self.translation_service_interface.independent_service_check.isChecked():
+                    if hasattr(self.config, 'message_send'):
+                        self.message_send_interface.set_traditional_languages(
+                            self.config.message_send.source_language,
+                            self.config.message_send.target_language
+                        )
+        else:
+            # 更新 MessageSendInterface（仅在独立设置时）
+            self.message_send_interface.src_lang_combo.addItems(langs)
+            self.message_send_interface.tgt_lang_combo.addItems(l for l in langs if l != 'auto')
+
+            # 设置默认语言值
+            if self.config and hasattr(self.config, 'message_send'):
+                self.message_send_interface.set_traditional_languages(
+                    self.config.message_send.source_language,
+                    self.config.message_send.target_language
+                )
+
+        # 隐藏加载动画
+        self.translation_service_interface.show_loading_spinner(False, service_id)
+
+        # 重置对应的加载标志
+        if service_id == "player":
+            self.player_language_loading = False
+        else:
+            self.send_language_loading = False
+
+    def on_language_error(self, error_msg, service_id):
+        """语言列表加载失败"""
+        logger.error(f"Failed to get supported languages ({service_id}): {error_msg}")
+        self.translation_service_interface.show_loading_spinner(False, service_id)
+
+        if service_id == "player":
+            self.player_language_loading = False
+        else:
+            self.send_language_loading = False
+
+        # 添加错误提示信息
+        InfoBar.error(
+            title=_('语言加载错误'),
+            content=_("获取支持语言失败 ({service_id}): {error_msg}").format(service_id=service_id,
+                                                                             error_msg=error_msg),
+            orient=Qt.Orientation.Vertical,
+            isClosable=True,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=-1,
+            parent=self
+        )

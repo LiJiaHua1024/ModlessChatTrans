@@ -25,22 +25,13 @@ supported_languages = [("简体中文", "zh_CN"), ("English", "en_US"), ("日本
                        ("Deutsch", "de_DE"), ("Español", "es_ES"), ("한국어", "ko_KR"), ("Русский", "ru_RU"),
                        ("Português do Brasil", "pt_BR"), ("繁體中文", "zh_TW")]
 
-lang_window_size_map = {
-    "zh_CN": "750x620",
-    "en_US": "780x620",
-    "ja_JP": "750x620",
-    "fr_FR": "780x620",
-    "de_DE": "750x620",
-    "es_ES": "840x620",
-    "ko_KR": "750x620",
-    "ru_RU": "860x620",
-    "pt_BR": "820x620",
-    "zh_TW": "750x620"
-}
-
 
 def set_language(language):
     global current_language, _
+
+    if language == "zh_CN":
+        return
+
     logger.info(f"Setting application language to: {language}")
     try:
         logger.debug(f"Loading translation files from: {get_path('locales')}")

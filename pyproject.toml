@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ModlessChatTrans"
-version = "2.2.0"
+version = "3.0.0b1"
 description = "A tool that provides real-time chat translation for Minecraft players without requiring any mods."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -13,23 +13,24 @@ authors = [
   { name="LiJiaHua1024", email="minecraft_benli@163.com" },
 ]
 dependencies = [
-    "pyttsx3~=2.9",
     "requests>=2.25.0",
     "Flask>=3.0.0,<3.2.0",
-    "customtkinter>=5.0.0,<6.0.0",
-    "hpyt==1.4.0",
     "pyperclip>=1.8.0,<2.0.0",
     "translators~=6.0.0",
     "watchdog>=6.0.0,<7.0.0",
-    "chardet>=5.0.0,<6.0.0",
-    "tkinter-tooltip~=3.1.2",
     "loguru~=0.7.3",
-    "langdetect~=1.0.9",
     "packaging~=25.0",
     "setuptools>=61.0",
     "urllib3>=1.26.0,<2.0.0",
-    "tksvg>=0.7.4",
     "litellm>=1.74.3",
+    "markdown>=3.8.2",
+    "pydantic>=2.11.7",
+    "pydantic-settings>=2.10.1",
+    "tomli-w>=1.2.0",
+    "netifaces>=0.11.0",
+    "diskcache>=5.6.3",
+    "pyside6-fluent-widgets>=1.8.6",
+    "lazy-loader>=0.4",
 ]
 
 # 如需滚动和高度限制的下拉菜单，请按以下步骤操作：

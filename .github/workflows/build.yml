@@ -41,27 +41,6 @@ jobs:
         uv add nuitka
       shell: pwsh
 
-    - name: Download CTkScrollableDropdown
-      run: |
-        $zipUrl = 'https://github.com/Akascape/CTkScrollableDropdown/archive/refs/heads/main.zip'
-        $tmpDir = "$env:RUNNER_TEMP\ctk_dropdown"
-        $zipFile = "$tmpDir\dropdown.zip"
-
-        New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
-        Invoke-WebRequest -Uri $zipUrl -OutFile $zipFile
-        Expand-Archive -Path $zipFile -DestinationPath $tmpDir -Force
-
-        # 将源文件夹复制到 src 目录
-        Copy-Item -Path "$tmpDir\CTkScrollableDropdown-main\CTkScrollableDropdown" `
-                  -Destination "${{ github.workspace }}\src" -Recurse -Force
-
-        # 复制第三方库许可证，确保遵循 MIT 许可要求
-        $licenseDir = "${{ github.workspace }}\third_party_licenses"
-        New-Item -ItemType Directory -Path $licenseDir -Force | Out-Null
-        Copy-Item -Path "$tmpDir\CTkScrollableDropdown-main\LICENSE" `
-                  -Destination "$licenseDir\CTkScrollableDropdown_LICENSE" -Force
-      shell: pwsh
-
     - name: Determine version
       id: determine_version
       run: |
@@ -101,13 +80,6 @@ jobs:
         echo "product_version=$productVersion" >> $env:GITHUB_OUTPUT
       shell: pwsh
 
-    - name: Set tksvg path
-      id: tksvg_path
-      run: |
-        $tksvgPath = uv run python -c "import os, tksvg; print(os.path.dirname(tksvg.__file__))"
-        echo "TKSVG_PATH=$tksvgPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-      shell: pwsh
-
     - name: Build with Nuitka
       shell: pwsh
       run: |
@@ -122,23 +94,19 @@ jobs:
           '--msvc=latest'
           '--lto=yes'
           '--noinclude-pytest-mode=nofollow'
-          '--windows-icon-from-ico=icon.ico'
-          '--enable-plugin=tk-inter'
-          '--include-module=dbm.dumb'
+          '--windows-icon-from-ico=src/icon.ico'
+          '--enable-plugin=pyside6'
           '--include-package=urllib3'
-          '--include-package=CTkScrollableDropdown'
           '--include-package=litellm'
           '--include-package=translators'
-          '--include-package-data=langdetect'
           '--include-package-data=certifi'
-          '--include-package-data=tksvg'
           '--include-package-data=litellm'
           '--include-data-dir=src/locales=locales'
           '--include-data-dir=src/templates=templates'
           '--include-data-dir=src/static=static'
-          '--include-data-dir=third_party_licenses=third_party_licenses'
-          '--include-data-file=${{ env.TKSVG_PATH }}/libtksvg.dll=tksvg/libtksvg.dll'
-          '--include-data-file=src/choose_language.svg=choose_language.svg'
+          '--include-data-file=src/icon.ico=icon.ico'
+          '--include-data-file=src/modless-chat-trans.default.json=modless-chat-trans.default.json'
+          '--include-data-file=src/modless-chat-trans.default.toml=modless-chat-trans.default.toml'
           '--output-filename=ModlessChatTrans'
           '--file-description=ModlessChatTrans'
           '--product-name=ModlessChatTrans'
@@ -167,4 +135,3 @@ jobs:
         name: ModlessChatTrans
         path: |
           ./ModlessChatTrans_v${{ steps.determine_version.outputs.version }}.exe
-          ./third_party_licenses

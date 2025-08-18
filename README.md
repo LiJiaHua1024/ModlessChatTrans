@@ -1,198 +1,228 @@
 # ModlessChatTrans
 
-## Real-Time Minecraft Chat Translator Without Mods
+## 基于 AI 的 Minecraft 实时聊天翻译器
 
 ---
 
-English | [简体中文](README_CN.md)
+[English](README_EN.md) | 简体中文
 
-Tired of not understanding foreign language messages from other players in Minecraft? **No Mods Required!**
-ModlessChatTrans can help! This lightweight tool allows you to communicate with players from around the world without
-leaving the game.
+## 特点
 
-**ModlessChatTrans** is a tool that provides real-time chat translation for Minecraft players **without requiring any
-mods**.
+- **AI 高质量翻译**：利用先进的大语言模型 (LLM) 进行翻译，在口语化聊天场景下显著超越传统翻译引擎
+    - **专为 Minecraft 优化的提示词**：经过大量优化的提示词工程优化，确保 LLM 深刻理解 Minecraft 的聊天风格、术语和文化背景，实现精准翻译
+    - **自定义术语表**：完美解决游戏黑话或特定服务器术语的翻译难题。用户可自定义术语及其翻译，工具会自动将这些术语加入 LLM
+      请求，确保关键信息准确传达
+    - ⏳**上下文翻译** (Coming Soon)：即将推出！将允许模型参考前文聊天消息的语境进行翻译，极大提升复杂对话、省略语和指代关系的翻译准确性与连贯性
+- **简单易用**：通过直接读取 Minecraft 日志文件自动获取聊天消息，彻底摆脱传统 OCR
+  方案的不稳定与操作繁琐。提供轻量级网页界面，翻译结果一目了然，消息发送便捷高效，整体体验流畅自然，集成度仅次于原生游戏模组
+- **现代化界面**：采用 Fluent Design 风格，界面美观。经过精心组织，功能模块层次分明，导航与操作逻辑符合直觉，带来直观易用且赏心悦目的用户体验。
+- **无需模组**：作为当前社区中少有能实现无模组运行的 Minecraft
+  翻译解决方案，本工具规避了模组兼容性问题，并免除繁琐的版本适配工作。无论您使用的是原版客户端、限制模组的环境，或是追求最简部署，都能获得优秀的翻译体验
+- **Minecraft 格式化代码渲染**：网页界面完整支持 Minecraft 文字格式，呈现与游戏客户端一致的视觉效果
+- **多种翻译服务支持**：支持 23 个大语言模型 (LLM) 提供商 和 9 个传统翻译服务提供商。对于传统翻译服务，既可直接使用集成的免费在线翻译，也可使用用户自己的
+  API Key
+- **智能翻译缓存**：所有翻译结果均被可靠存储。工具会优先匹配历史缓存，大幅提升重复消息的响应速度，同时减少对翻译服务的调用次数，有效节省您的API配额
+- **多主题网页界面**：提供6种主题，包括默认、Material、Fluent、拟物、赛博朋克、复古终端风格
+- **多语言界面**：支持十种常用语言，主要采用 GPT-5 进行翻译，确保界面文本精准自然，让全球玩家都能轻松上手
 
-### Features
+## 使用方法
 
-- **No Mods Required**: No need to install any mods. ModlessChatTrans reads other players' chat messages from Minecraft
-  log files and your own messages from the clipboard
-- **Real-time Translation**: Translates chat messages at lightning speed, so you can communicate effortlessly even
-  during intense PvP
-- **High-quality Translations**: Supports multiple large language models for translation, including OpenAI, Anthropic
-  Claude, Google Gemini, DeepSeek, etc., ensuring accuracy and fluency, even for gaming abbreviations and slang
-- **Multiple Translation Services**: Supports various translation services: LLM translation, DeepL Translate, Bing
-  Translate, Google Translate, Yandex Translate, Alibaba Translate, Caiyun Translate, Youdao Translate, Sogou Translate,
-  Iflyrec Translate
-- **Multiple Presentation Methods**: Supports three ways to display other players' translated messages: CustomTkinter
-  GUI interface, Text-to-Speech output, Web interface
-- **Glossary**: Define custom translation rules for specific terms or patterns, supporting variable parsing and regex
-  constraints
-    - [English User Guide](./docs/glossary_guide_en.md)
-- **Multi-language Interface**: Supports 9 interface languages, including Simplified Chinese, English, Japanese, French,
-  German, Spanish, Korean, Russian, Brazilian Portuguese, Traditional Chinese
-- **Smart Cache**: Built-in translation cache mechanism to reduce redundant translations and improve response speed
-- **Minecraft Formatting Code Rendering**: Full support for Minecraft chat formatting in web interface, including
-  colors, styles, etc
-- **Multi-theme Web Interface**: Provides 6 beautiful themes, including Default, Material, Fluent, Skeuomorphic,
-  Cyberpunk, Retro Terminal, etc
-- **Easy to Use**: Download and run the .exe file, configurations are automatically saved and loaded
+我们提供两种启动程序的方式：一种是为普通 Windows 用户准备的简单直接运行方式，另一种是为 Linux
+用户或希望自定义的高级用户准备的从源代码运行方式。以下将详细说明如何下载、启动、配置和使用程序。
 
-### Functionality
+### 下载并启动程序
 
-- **Quick Translation of Other Players' Messages**: Captures and translates chat messages in real-time
-- **Translate and Send Your Own Messages**: Automatically translates your messages to the target language before sending
-    - **Capture Messages via Clipboard**: The program automatically captures your messages and translates them to the
-      target language before sending
-    - **Send Messages via Web Interface**: Effectively avoids the problem of input methods not displaying when the game
-      is in fullscreen
+#### 方式一：直接运行（适用于 Windows 用户）
 
-### How to Use
+这是最简单的方式，推荐所有 Windows 用户使用。
 
-We provide two ways to use the tool: a ready-to-use `.exe` file for regular Windows users, and running from source code
-for Linux and advanced users.
+1. 前往项目的 [**Releases 页面**](https://github.com/LiJiaHua1024/ModlessChatTrans/releases/latest)，下载最新的 `.exe`
+   文件
+2. 直接运行下载的 `.exe` 文件，程序将启动
+3. 程序启动后，按照界面上的提示进行配置（详细配置见下文“程序界面配置”部分）
 
----
+#### 方式二：从源代码运行 (适用于 Linux / 高级用户)
 
-#### Method 1: Direct Run (for Windows Users)
+此方法适用于所有 Linux 用户，以及希望体验最新功能或自行修改代码的 Windows 高级用户。
 
-This is the simplest method, recommended for all Windows users.
+**第一步：安装先决条件**
 
-1. Go to the project's [**Releases page**](https://github.com/LiJiaHua1024/ModlessChatTrans/releases/latest) and
-   download the latest `.exe` file
-2. Run the downloaded `.exe` file directly, the program will start
-3. Choose the interface language in the bottom left corner of the program
-4. Fill in the required information:
+请确保您的系统已安装`uv`。
 
-- **Minecraft Log Folder**: Location of Minecraft game logs (usually the logs folder)
-- **Translation Result Presentation Method**: How to display translation results
-    - **GUI Interface**: Creates a simple GUI interface to display translation results (Max Messages: maximum number
-      of messages shown in the message window)
-    - **Voice**: Uses text-to-speech to announce translation results
-    - **Web Interface**: Launches a beautiful web page that can receive/send messages. Most electronic devices with
-      browsers can now serve as translation display terminals (HTTP Port: port number for the HTTP server)
-- **Source Language (Auto-detect if blank)**: Source language of other players' messages (leave blank for
-  auto-detection)
-- **Target Language**: Target language for translations
-- **Translation Service Selection**: Choose the translation service to use
-    - **LLM Translation**: Supports OpenAI, Anthropic Claude, Google Gemini, DeepSeek, etc
-    - **Traditional Translation Services**: Supports DeepL, Bing, Google, Yandex, Alibaba, Caiyun, Youdao, Sogou,
-      Iflyrec, etc
-- **LLM Options**:
-    - **API URL**: LLM API address (OpenAI-compatible API format)
-    - **API Key**: LLM API key
-    - **Model**: LLM model name (For model names,
-      see: [OpenAI](https://platform.openai.com/docs/models) | [Gemini](https://ai.google/get-started/our-models) | [SiliconFlow](https://cloud.siliconflow.cn/models) | [Deepseek](https://api-docs.deepseek.com/zh-cn/quick_start/pricing) | [Anthropic](https://docs.anthropic.com/en/docs/about-claude/models/all-models))
-- **Traditional Translation Service Options**:
-    - **I have an API key**: Whether to use your own API key
-        - **API Key**: API key
-- **Translate Own Messages**: Whether to translate your own messages (only for messages captured from clipboard)
-    - **Source Language for Your Messages**: Source language of your own messages
-    - **Target Language for Your Messages**: Target language for your own messages
-- **Always on top**: Whether to keep the GUI window always on top
-- **More Settings**: Hover over options for more information
-    - **Enable Translation Quality Optimization**: Improve translation quality by enabling explicit chain of thought,
-      but will increase latency and consume more tokens
-    - **Enable High Version Fix**: If chat messages cannot be captured, try enabling this
-    - **Translate System Messages**: When disabled, will not translate chat messages without names
-    - **Replace Garbled Characters**: Replace all garbled characters with Minecraft formatting codes
-    - **Log Encoding**: Manually specify log encoding. If you encounter garbled text or cannot capture messages, try
-      changing this to `utf-8`/`gbk`. Leave blank for auto-detection
-    - **Glossary**: Configure custom translation rules, supporting variable parsing and regex constraints
-        - [English User Guide](./docs/glossary_guide_en.md)
-
-5. Click "Start" and launch Minecraft to begin playing
-6. **Receiving Messages**: When other players send messages, the program will display translations according to your
-   chosen display method
-   **Sending Messages**:
-    1. Capture content:  
-       a. After typing in the Minecraft chat box, press `Ctrl + A` to select all, then `Ctrl + C` to copy (or `Ctrl + X`
-       to cut)  
-       b. [**Recommended**] If you selected "Web Interface" as the display method, you can also enter content in the web
-       interface and
-       click the "Send" button to send messages
-    2. The program will translate your message and copy it to the clipboard, then press `Ctrl + V` to paste the
-       translated content back to the chat box, and press `Enter` to send
-
----
-
-#### Method 2: Run from Source Code (for Linux / Advanced Users)
-
-This method is suitable for all Linux users, as well as Windows advanced users who want to experience the latest
-features or modify the code themselves.
-
-**Step 1: Install Prerequisites**
-
-Please ensure your system has `uv` installed.
-
-- **uv Installation**: `uv` is an extremely fast Python package manager. Please run the following command in your
-  terminal:
+- **uv 安装**: `uv` 是一个极速的 Python 包管理器。请在终端运行以下命令安装：
     - **Linux / macOS**: `curl -LsSf https://astral.sh/uv/install.sh | sh`
     - **Windows**: `powershell -c "irm https://astral.sh/uv/install.ps1 | iex"`
 
-**Step 2: Get Source Code**
+**第二步：获取源代码**
 
-We provide two ways to get the source code:
+我们提供两种获取源码的方式：
 
-- **Stable version, recommended for regular users**:
-    1. Go to the project's [**Releases page**](https://github.com/LiJiaHua1024/ModlessChatTrans/releases/latest)
-    2. Download the source code archive named `Source code (zip)` or `Source code (tar.gz)`
-    3. Extract the file to your preferred location
+- **稳定版，推荐给普通用户**:
+    1. 前往项目的 [**Releases 页面**](https://github.com/LiJiaHua1024/ModlessChatTrans/releases/latest)
+    2. 下载名为 `Source code (zip)` 或 `Source code (tar.gz)` 的源码压缩包
+    3. 将文件解压到您喜欢的位置
 
-- **Development version, for developers**:  
-  If you want to get the latest, possibly unstable development code, please use `git` to clone this project.
-  This method requires you to have [Git](https://git-scm.com/downloads) installed.
+- **开发版，适用于开发者**:  
+  如果您希望获取最新的、可能尚不稳定的开发中代码，请使用 `git` 克隆本项目。
+  此方式需要您预先安装 [Git](https://git-scm.com/downloads)。
   ```bash
   git clone https://github.com/LiJiaHua1024/ModlessChatTrans.git
   ```
 
-**Step 3: Create Environment and Install Dependencies**
+**第三步：创建环境并安装依赖**
 
-1. Open terminal and enter the project folder you extracted or cloned
+1. 打开终端，进入您解压或克隆的项目文件夹
    ```bash
    cd ModlessChatTrans
    ```
-2. Use `uv` to create virtual environment and install all dependencies
+2. 使用 `uv` 创建虚拟环境并安装所有依赖
    ```bash
-   # 1. Create virtual environment
+   # 1.创建虚拟环境
    uv venv
    
-   # 2. Activate environment
-   # Windows users please execute:
+   # 2.激活环境
+   # Windows用户请执行：
    .\.venv\Scripts\activate
-   # Linux users please execute:
+   # Linux用户请执行：
    source .venv/bin/activate
    
-   # 3. Install project dependencies
+   # 3.安装项目依赖
    uv sync
    ```
 
-**Step 4: Run the Program**
+**第四步：运行程序**
 
-After environment configuration is complete, run the following command in the terminal to start the program:
+环境配置完成后，直接在终端中运行以下命令即可启动程序：
 
 ```bash
 modless-chat-trans
 ```
 
-**Step 5: Configure and Use**
+**第五步：配置并使用**
 
-After the program starts, please refer to steps 3 to 6 in **Method 1** for configuration and usage.
+程序启动后，在GUI界面进行配置，包括填写 Minecraft 日志路径、选择翻译语言等细节，按照程序界面上的提示一步步操作即可。
+如果您在配置中遇到问题，可以参考本 README 中的“程序界面配置”部分，那里有详细的菜单说明。
 
-### License
+### 程序界面配置
 
-This project follows the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html). For more
-information, please refer to the [LICENSE](LICENSE) file.
+程序的界面左侧菜单分为上部 6 个主要菜单和下部 2 个辅助菜单，共计 8
+个菜单。下部菜单包括“关于”和“应用设置”，其中“应用设置”包含界面语言和更新设置，将在后续说明。首先介绍上部 6 个菜单。
 
-### Acknowledgements
+> **新手导航**：如果您觉得以下配置项繁多，希望快速上手，
+> 我们为您准备了一份 [**快速上手指南**](./docs/easy_guide_zh.md)，
+> 帮助您在三分钟内完成核心配置并开始使用。
 
-This project utilizes [CTkScrollableDropdown](https://github.com/Akascape/CTkScrollableDropdown)
-by [Akascape](https://github.com/Akascape) for some of its UI features, which is licensed under the MIT License.
+*难以理解的配置项，程序中都有说明按钮，点击即可查看详细说明。*
 
-### Contribution
+#### 消息捕获
 
-This project is developed by [LiJiaHua1024](https://github.com/LiJiaHua1024)
+此菜单用于配置如何从日志文件中读取 Minecraft 聊天消息。
 
-### Contact
+- **Minecraft 日志位置**：填写 Minecraft 日志文件夹的路径。若不确定路径，可通过网络搜索获取
+- **源语言**：指定接收消息的语言。若不确定，可留空以启用自动识别
+- **目标语言**：指定将接收消息翻译成的目标语言
+- **日志编码**：选择程序读取 Minecraft 日志的编码格式。默认“auto”通常有效，若出现问题，可尝试切换为“GBK”等其他编码
+- **监控模式**：提供“高效模式”和“兼容模式”两种选项。“高效模式”可降低资源占用，一定程度上提升游戏流畅度；
+  “兼容模式”适用于较高版本的 Minecraft，以适应其日志优化机制
+- **过滤服务器消息**：启用后，将过滤不包含玩家名称的服务器消息/系统消息（如服务器公告）
+- **替换乱码字符**：启用后，程序将假设乱码字符为 Minecraft 格式化代码分节符，并进行替换，以还原可读形式
 
-For any questions or suggestions, please contact: minecraft_benli@163.com
+#### 翻译服务
+
+此菜单用于配置翻译服务。
+
+首先，选择翻译服务类型：AI 翻译（推荐）或传统翻译服务。
+
+- **AI 翻译**：
+    - **选择服务**：选择 AI 模型的提供商
+    - **API Key**：填写 API 密钥
+    - **API 地址**：若需自定义 API 端点（如用于中转或镜像站），请填写端点地址（不包含“/chat/completion”路径）
+    - **模型代号**：指定使用的 AI 模型
+    - **深度翻译模式**：启用此模式将使用 CoT 提升翻译质量，但会增加 Token 消耗和延迟
+- **传统翻译**：
+    - **选择服务**：选择翻译服务提供商
+    - **API Key**：若有密钥可以填写，选择“不使用”将使用网页在线服务
+
+页面底部有“独立设置消息发送翻译服务”选项，将在“消息发送设置”菜单后说明。
+
+#### 翻译结果显示
+
+此菜单用于配置翻译结果的显示方式。
+
+- **网页端口**：设置网页界面在本机上的端口号。对于大多数用户，无需修改默认值
+
+#### 消息发送
+
+此菜单用于配置发送消息的翻译。
+
+- **监控剪切板**：启用此复选框后，程序将监控剪切板变化，并将变动内容作为待发送消息进行翻译
+- **源语言**：指定用户输入消息的语言（即发送方语言）
+- **目标语言**：指定将用户消息翻译成的目标语言
+
+注意：与“消息捕获”菜单中的源语言和目标语言不同，此处设置针对用户发送的消息，而前者针对接收的消息。请根据实际需求区分配置。
+
+关于“翻译服务”中的“独立设置消息发送翻译服务”：若启用，可为消息发送独立配置翻译服务，与接收消息的翻译服务分离。
+启用后，可通过切换“翻译服务”界面上方的“玩家消息翻译服务”和“消息发送翻译服务”标签分别配置。
+
+#### 术语表
+
+此菜单对 AI 翻译服务的支持更佳，用于自定义术语表。
+
+- 输入原术语和目标术语，点击添加即可。点击已添加的术语可以编辑。
+  对于大多数用户，此功能已足够。详细教程见[术语表教程](./docs/glossary_guide_zh.md)
+
+#### 启动
+
+此菜单用于保存配置并启动程序，同时在启动后显示网页界面访问链接。
+
+- **启动**：
+    - **直接启动**：基于当前配置启动程序，不保存至配置文件
+    - **保存配置并启动**：先保存配置，然后启动程序
+- **保存配置**：将当前配置保存至配置文件
+
+#### 关于
+
+此菜单显示程序信息，包括版本、作者、邮箱、相关链接和许可证。
+
+#### 设置
+
+此菜单用于程序整体设置。
+
+- **语言设置**：选择程序界面的显示语言（非消息翻译语言）。更改后需重启程序生效
+- **更新设置**：
+    - **自动检查**：设置自动检查更新的频率
+    - **预发布版本**：选择是否包含预发布版本
+    - **手动检查**：立即检查更新
+    - **当前版本**：显示当前程序版本号
+
+### 启动后的使用方法
+
+通过“启动”菜单的任意方式启动程序后，“启动”页面将显示“Web 访问链接”卡片。同时，该链接将在启动 1 秒后自动打开网页界面。
+
+- **查看翻译结果**：打开提供的网页链接（推荐使用手机/平板访问或使用电脑副屏显示）。
+  若不懂网络配置，可从链接列表自上而下逐一尝试，直至成功访问。网页上将显示翻译后的聊天消息
+- **发送消息**：
+    - **网页输入方式（推荐）**：在网页的消息输入框中输入内容，点击发送按钮。
+      翻译完成后，网页将显示 Info 级提示，表示结果已复制到剪切板。
+      随后，在 Minecraft 聊天界面（默认按 T 键打开）中，按 Ctrl+V 粘贴翻译结果。此方式避免了“卡输入法”的问题
+    - **剪切板监控方式**：前提需在“发送消息”中启用“监控剪切板”。
+      输入消息后，按 Ctrl+A 全选并 Ctrl+C（或 Ctrl+X）复制/剪切到剪切板，程序将捕获并翻译。
+      同样的，网页显示 Info 级提示后，使用相同操作在 Minecraft 中粘贴
+
+### 注意事项
+
+若使用低版本 Minecraft（如 1.8.9，常用于 PVP），建议先启动 Minecraft 并等待游戏窗口出现后，再点击程序中的启动按钮。
+否则，可能导致 Minecraft 日志不生成，无法翻译接收的消息。
+
+## 许可证
+
+本项目遵循 [GNU 通用公共许可证 第3版](https://www.gnu.org/licenses/gpl-3.0.zh-cn.html)。
+更多信息请参阅 [LICENSE](LICENSE)文件。
+
+## 贡献
+
+本项目由[LiJiaHua1024](https://github.com/LiJiaHua1024)开发。
+
+## 联系方式
+
+如有任何问题或建议，请联系：minecraft_benli@163.com。

@@ -1,250 +1,784 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
-#, fuzzy
+# fr_FR.po
+# Translations for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# GPT-5, 2025.
 msgid ""
 msgstr ""
-"Project-Id-Version: \n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-18 13:41+0800\n"
-"PO-Revision-Date: 2025-01-18 12:26+0800\n"
-"Last-Translator: \n"
-"Language-Team: \n"
-"Language: fr_FR\n"
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-08-14 17:16+0800\n"
+"PO-Revision-Date: 2025-08-08 10:00+0000\n"
+"Last-Translator: GPT-5 <noreply@example.com>\n"
+"Language-Team: French (France)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 3.5\n"
+"Language: fr_FR\n"
+"Generated-By: Babel 2.17.0\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: GPT-5\n"
 
-msgid "Chat messages translated, translation results in clipboard"
-msgstr "Messages de chat traduits, résultats de la traduction copiés dans le presse-papiers"
+#: templates/index.html:8
+msgid "消息翻译结果"
+msgstr "Résultat de la traduction des messages"
 
-msgid "Translated Message"
-msgstr "Message traduit"
+#: templates/index.html:13
+msgid "消息"
+msgstr "Message"
 
-msgid "Messages"
-msgstr "Messages"
+#: templates/index.html:63
+msgid "输入消息..."
+msgstr "Saisir un message..."
 
-msgid "Start"
-msgstr "Démarrer"
+#: main.py:100
+msgid "要发送的消息翻译完成，翻译结果已复制到剪切板"
+msgstr ""
+"La traduction du message à envoyer est terminée ; le résultat a été copié "
+"dans le presse-papiers."
 
-msgid "About"
-msgstr "À propos"
+#: modless_chat_trans/interface.py:126 modless_chat_trans/interface.py:2374
+msgid "下载失败"
+msgstr "Échec du téléchargement"
 
-msgid "Version"
-msgstr "Version"
+#: modless_chat_trans/interface.py:166
+msgid "消息捕获设置"
+msgstr "Paramètres de capture des messages"
 
-msgid "Author"
-msgstr "Auteur"
+#: modless_chat_trans/interface.py:177
+msgid "Minecraft 日志位置："
+msgstr "Emplacement du journal Minecraft :"
 
-msgid "Email"
-msgstr "Email"
+#: modless_chat_trans/interface.py:179
+msgid "请选择Minecraft日志文件夹路径"
+msgstr "Veuillez sélectionner le dossier des journaux Minecraft"
 
-msgid "License"
-msgstr "Licence"
+#: modless_chat_trans/interface.py:190 modless_chat_trans/interface.py:976
+msgid "源语言："
+msgstr "Langue source :"
 
-msgid "Graphical"
-msgstr "Graphique"
-
-msgid "Speech"
-msgstr "Parole"
-
-msgid "Httpserver"
-msgstr "Page Web"
-
-msgid "HTTP Port:"
-msgstr "Port Web :"
-
-msgid "Self Source Language:"
-msgstr "Langue source personnelle :"
-
-msgid "Self Target Language:"
-msgstr "Langue cible personnelle :"
-
-msgid "Minecraft Log Folder:"
-msgstr "Dossier des journaux Minecraft :"
-
-msgid "Output Method:"
-msgstr "Méthode de sortie :"
-
-msgid "Source Language(Auto if blank):"
-msgstr "Langue source (automatique si vide) :"
-
-msgid "Target Language:"
+#: modless_chat_trans/interface.py:191 modless_chat_trans/interface.py:977
+msgid "目标语言："
 msgstr "Langue cible :"
 
-msgid "API URL(Auto if blank):"
-msgstr "URL de l'API (automatique si vide) :"
+#: modless_chat_trans/interface.py:199
+msgid "日志编码："
+msgstr "Encodage du journal :"
 
-msgid "API Key:"
+#: modless_chat_trans/interface.py:200
+msgid "建议选择自动检测（auto），如果无效可以尝试手动指定GBK等编码"
+msgstr ""
+"Il est recommandé de choisir la détection automatique (auto). Si cela ne "
+"fonctionne pas, essayez de spécifier manuellement GBK ou d’autres encodages."
+
+#: modless_chat_trans/interface.py:210
+msgid "监控模式："
+msgstr "Mode de surveillance :"
+
+#: modless_chat_trans/interface.py:211
+msgid "建议优先尝试高效模式，若无法正常获取消息，再切换至兼容模式"
+msgstr ""
+"Essayez d’abord le mode efficace. Si les messages ne sont pas correctement "
+"capturés, passez au mode compatible."
+
+#: modless_chat_trans/interface.py:212
+msgid "高效模式"
+msgstr "Mode efficace"
+
+#: modless_chat_trans/interface.py:213
+msgid "低版本 Minecraft 推荐使用"
+msgstr "Recommandé pour les anciennes versions de Minecraft"
+
+#: modless_chat_trans/interface.py:214
+msgid "兼容模式"
+msgstr "Mode compatible"
+
+#: modless_chat_trans/interface.py:215
+msgid "高版本 Minecraft 使用"
+msgstr "Pour les versions récentes de Minecraft"
+
+#: modless_chat_trans/interface.py:236
+msgid "过滤服务器消息"
+msgstr "Filtrer les messages du serveur"
+
+#: modless_chat_trans/interface.py:237
+msgid "不翻译不带玩家名称的服务器消息（系统消息）"
+msgstr ""
+"Ne pas traduire les messages du serveur sans nom de joueur (messages système)"
+
+#: modless_chat_trans/interface.py:242
+msgid "替换乱码字符"
+msgstr "Remplacer les caractères illisibles"
+
+#: modless_chat_trans/interface.py:244
+msgid ""
+"将乱码字符（\\ufffd\\ufffd）替换为用于Minecraft格式化代码的分节符§（\\u00A7）"
+msgstr ""
+"Remplacer les caractères illisibles (\\ufffd\\ufffd) par le signe de section "
+"§ (\\u00A7) utilisé pour les codes de formatage de Minecraft"
+
+#: modless_chat_trans/interface.py:263 modless_chat_trans/interface.py:991
+msgid "请输入源语言（格式不限，AI可智能识别；留空则自动检测）"
+msgstr ""
+"Saisissez la langue source (n’importe quel format ; l’IA peut la "
+"reconnaître ; laissez vide pour détection automatique)"
+
+#: modless_chat_trans/interface.py:270 modless_chat_trans/interface.py:998
+msgid "请输入目标语言（格式不限，AI可智能识别）"
+msgstr ""
+"Saisissez la langue cible (n’importe quel format ; l’IA peut la reconnaître)"
+
+#: modless_chat_trans/interface.py:284 modless_chat_trans/interface.py:1012
+msgid "请选择源语言"
+msgstr "Veuillez sélectionner la langue source"
+
+#: modless_chat_trans/interface.py:288 modless_chat_trans/interface.py:1016
+msgid "请选择目标语言"
+msgstr "Veuillez sélectionner la langue cible"
+
+#: modless_chat_trans/interface.py:353
+msgid "翻译服务设置"
+msgstr "Paramètres du service de traduction"
+
+#: modless_chat_trans/interface.py:394
+msgid "玩家消息翻译服务"
+msgstr "Service de traduction des messages des joueurs"
+
+#: modless_chat_trans/interface.py:414
+msgid "独立设置消息发送翻译服务"
+msgstr "Définir un service de traduction distinct pour l’envoi des messages"
+
+#: modless_chat_trans/interface.py:443
+msgid "消息发送翻译服务"
+msgstr "Service de traduction pour l’envoi des messages"
+
+#: modless_chat_trans/interface.py:475
+msgid "                AI翻译                "
+msgstr "                Traduction IA                "
+
+#: modless_chat_trans/interface.py:480
+msgid "                传统翻译                "
+msgstr "                Traduction traditionnelle                "
+
+#: modless_chat_trans/interface.py:564 modless_chat_trans/interface.py:688
+msgid "选择服务："
+msgstr "Choisir un service :"
+
+#: modless_chat_trans/interface.py:567 modless_chat_trans/interface.py:698
+msgid "请选择翻译服务"
+msgstr "Veuillez sélectionner un service de traduction"
+
+#: modless_chat_trans/interface.py:588 modless_chat_trans/interface.py:729
+msgid "API Key："
 msgstr "Clé API :"
 
-msgid "Model:"
-msgstr "Modèle :"
+#: modless_chat_trans/interface.py:590
+msgid "请输入您的API Key"
+msgstr "Veuillez saisir votre clé API"
 
-msgid "Translate Player's Own Message"
-msgstr "Traduire le message du joueur"
+#: modless_chat_trans/interface.py:604
+msgid "API地址："
+msgstr "Adresse de l’API :"
 
-msgid "Always on top"
-msgstr "Toujours au premier plan"
+#: modless_chat_trans/interface.py:606 modless_chat_trans/interface.py:607
+msgid "默认端点"
+msgstr "Point de terminaison par défaut"
 
-msgid "Translation failed: Too many requests. Please try again later."
-msgstr "Échec de la traduction : Trop de requêtes. Veuillez réessayer plus tard."
+#: modless_chat_trans/interface.py:625
+msgid "模型代号："
+msgstr "ID du modèle :"
 
-msgid "Translation failed: Server error. Please try again later."
-msgstr "Échec de la traduction : Erreur du serveur. Veuillez réessayer plus tard."
+#: modless_chat_trans/interface.py:627
+msgid "请输入模型代号，如：gpt-3.5-turbo"
+msgstr "Saisissez l’ID du modèle, p. ex. : gpt-3.5-turbo"
 
-msgid "Translation failed: HTTP error occurred."
-msgstr "Échec de la traduction : Une erreur HTTP s'est produite."
+#: modless_chat_trans/interface.py:642
+msgid "深度翻译模式："
+msgstr "Mode de traduction approfondie :"
 
-msgid "Translation failed: Network issue or HTTP error occurred."
-msgstr "Échec de la traduction : Problème réseau ou erreur HTTP survenue."
+#: modless_chat_trans/interface.py:644
+msgid ""
+"启用显式思维链（Chain of Thought）翻译策略\n"
+"优点：提供更高质量的翻译\n"
+"缺点：一定程度增加token消耗，响应延迟提高"
+msgstr ""
+"Activer la stratégie de traduction avec chaîne de réflexion (Chain of "
+"Thought)\n"
+"Avantages : fournit des traductions de meilleure qualité\n"
+"Inconvénients : augmente dans une certaine mesure la consommation de jetons "
+"et la latence de réponse"
 
-msgid "Translation failed: Invalid response from server. Please check your network connection."
-msgstr "Échec de la traduction : Réponse invalide du serveur. Veuillez vérifier votre connexion réseau."
+#: modless_chat_trans/interface.py:649 modless_chat_trans/interface.py:2377
+msgid "关闭"
+msgstr "Fermer"
 
-msgid "Translation failed, error:"
-msgstr "Échec de la traduction, erreur :"
+#: modless_chat_trans/interface.py:650
+msgid "开启"
+msgstr "Activer"
 
-msgid "Max Messages:"
-msgstr "Messages Maximum :"
+#: modless_chat_trans/interface.py:731 modless_chat_trans/interface.py:732
+msgid "不使用"
+msgstr "Ne pas utiliser"
 
-msgid "Update available"
-msgstr "Mise à jour disponible"
+#: modless_chat_trans/interface.py:912 modless_chat_trans/interface.py:2981
+msgid "翻译结果显示"
+msgstr "Affichage du résultat de la traduction"
 
-msgid "Update downloaded"
-msgstr "Mise à jour téléchargée"
+#: modless_chat_trans/interface.py:922
+msgid "网页端口："
+msgstr "Port web :"
 
-msgid "Update download failed"
-msgstr "Échec du téléchargement de la mise à jour"
+#: modless_chat_trans/interface.py:956
+msgid "消息发送设置"
+msgstr "Paramètres d’envoi des messages"
 
-msgid "Failed to download the update. Please check your internet connection and try again."
-msgstr "Échec du téléchargement de la mise à jour. Veuillez vérifier votre connexion Internet et réessayer."
+#: modless_chat_trans/interface.py:967
+msgid "监控剪切板"
+msgstr "Surveiller le presse-papiers"
 
-msgid "No update available"
-msgstr "Aucune mise à jour disponible"
+#: modless_chat_trans/interface.py:968
+msgid "从剪切板获取要发送的消息"
+msgstr "Récupérer à partir du presse-papiers les messages à envoyer"
 
-msgid "No update available."
-msgstr "Aucune mise à jour disponible."
+#: modless_chat_trans/interface.py:1078
+msgid "术语表管理"
+msgstr "Gestion du glossaire"
 
-msgid "More Settings"
-msgstr "Plus de paramètres"
-
-msgid "Automatic Update Frequency"
-msgstr "Fréquence de mise à jour automatique"
-
-msgid "On Startup"
-msgstr "Au démarrage"
-
-msgid "Daily"
-msgstr "Quotidienne"
-
-msgid "Weekly"
-msgstr "Hebdomadaire"
-
-msgid "Monthly"
-msgstr "Mensuelle"
-
-msgid "Never"
-msgstr "Jamais"
-
-msgid "Check for Updates"
-msgstr "Vérifier les mises à jour"
-
-msgid "Include Pre-release"
-msgstr "Inclure les versions préliminaires"
-
-msgid "Save Settings"
-msgstr "Enregistrer les paramètres"
-
-msgid "Enable Translation Quality Optimization"
-msgstr "Activer l'Optimisation de la Qualité de Traduction"
-
-msgid "Enabling this will improve translation quality, but will increase latency and consume more tokens"
-msgstr "L'activation améliorera la qualité de la traduction, mais augmentera la latence et consommera plus de tokens"
-
-msgid "Enable High Version Fix"
-msgstr "Activer la correction pour versions récentes"
-
-msgid "Enabling this will temporarily fix the issue of logs not being captured in high versions of Minecraft\nIf it doesn't work, restart this program"
-msgstr "L'activation de cette option corrigera temporairement le problème de non-capture des journaux dans les versions récentes de Minecraft\nSi cela ne fonctionne pas, redémarrez ce programme"
-
-msgid "Loading supported languages"
-msgstr "Chargement des langues prises en charge"
-
-msgid "I have an API Key"
-msgstr "J'ai une clé API"
-
-msgid "Translate System Messages"
-msgstr "Traduire les messages système"
-
-msgid "Enable this will translate system messages (messages without names)"
-msgstr "Activer ceci traduira les messages système (messages sans noms)"
-
-msgid "Enter message..."
-msgstr "Saisissez un message..."
-
-msgid "Glossary"
-msgstr "Glossaire"
-
-msgid "Source Term:"
+#: modless_chat_trans/interface.py:1089
+msgid "源术语："
 msgstr "Terme source :"
 
-msgid "Target Term:"
+#: modless_chat_trans/interface.py:1091
+msgid "请输入源术语"
+msgstr "Veuillez saisir le terme source"
+
+#: modless_chat_trans/interface.py:1098
+msgid "目标术语："
 msgstr "Terme cible :"
 
-msgid "Add/Update Term"
-msgstr "Ajouter/Mettre à jour terme"
+#: modless_chat_trans/interface.py:1100
+msgid "请输入目标术语"
+msgstr "Veuillez saisir le terme cible"
 
-msgid "Glossary Rules"
-msgstr "Règles du glossaire"
+#: modless_chat_trans/interface.py:1107
+msgid "添加/更新术语"
+msgstr "Ajouter/mettre à jour le terme"
 
-msgid "Delete Selected"
-msgstr "Supprimer sélection"
+#: modless_chat_trans/interface.py:1112
+msgid "清空输入"
+msgstr "Effacer la saisie"
 
-msgid "Save Glossary and Close"
-msgstr "Enregistrer le glossaire et fermer"
+#: modless_chat_trans/interface.py:1125
+msgid "源术语"
+msgstr "Terme source"
 
-msgid "<No glossary rules defined>"
-msgstr "<Aucune règle de glossaire définie>"
+#: modless_chat_trans/interface.py:1125
+msgid "目标术语"
+msgstr "Terme cible"
 
-msgid "Input Error"
+#: modless_chat_trans/interface.py:1139
+msgid "删除选中术语"
+msgstr "Supprimer les termes sélectionnés"
+
+#: modless_chat_trans/interface.py:1143
+msgid "清空术语"
+msgstr "Vider les termes"
+
+#: modless_chat_trans/interface.py:1269
+msgid "输入错误"
 msgstr "Erreur de saisie"
 
-msgid "Source term cannot be empty."
-msgstr "Le terme source ne peut pas être vide."
+#: modless_chat_trans/interface.py:1270
+msgid "源术语不能为空"
+msgstr "Le terme source ne peut pas être vide"
 
-msgid "Do you want to download it now?"
-msgstr "Voulez-vous le télécharger maintenant ?"
+#: modless_chat_trans/interface.py:1289
+msgid "确认覆盖"
+msgstr "Confirmer l’écrasement"
 
-msgid "A new version of ModlessChatTrans is available:"
-msgstr "Une nouvelle version de ModlessChatTrans est disponible :"
+#: modless_chat_trans/interface.py:1290
+msgid "源术语 \"{}\" 已存在，是否覆盖？"
+msgstr "Le terme source « {} » existe déjà. L’écraser ?"
 
-msgid "Confirm Overwrite"
-msgstr "Confirmer l'écrasement"
+#: modless_chat_trans/interface.py:1303
+msgid "更新"
+msgstr "Mettre à jour"
 
-msgid "The new source term '{0}' already exists. Overwrite it?"
-msgstr "Le nouveau terme source '{0}' existe déjà. L'écraser ?"
+#: modless_chat_trans/interface.py:1303
+msgid "添加"
+msgstr "Ajouter"
 
-msgid "Log Encoding"
-msgstr "Encodage du journal"
+#: modless_chat_trans/interface.py:1308
+msgid "术语{}成功"
+msgstr "Terme {} réussi"
 
-msgid ""
-"Manually specify the log encoding\n"
-"If there are garbled characters, try changing this value\n"
-"Leave it blank for automatic detection"
+#: modless_chat_trans/interface.py:1338
+msgid "删除成功"
+msgstr "Suppression réussie"
+
+#: modless_chat_trans/interface.py:1339
+msgid "术语 \"{}\" 已删除"
+msgstr "Le terme « {} » a été supprimé"
+
+#: modless_chat_trans/interface.py:1362
+msgid "提示"
+msgstr "Avis"
+
+#: modless_chat_trans/interface.py:1363
+msgid "术语表为空，无需清空"
+msgstr "Le glossaire est vide ; pas besoin de le vider"
+
+#: modless_chat_trans/interface.py:1373
+msgid "确认清空"
+msgstr "Confirmer l’effacement"
+
+#: modless_chat_trans/interface.py:1374
+msgid "确定要清空所有术语吗？此操作不可恢复。"
 msgstr ""
-"Spécifier manuellement l'encodage du journal\n"
-"En cas de caractères illisibles, essayez de modifier cette valeur\n"
-"Laissez vide pour la détection automatique"
+"Voulez-vous vraiment effacer tous les termes ? Cette action est irréversible."
 
-msgid "Replace Garbled Characters"
-msgstr "Remplacer les Caractères Corrompus"
+#: modless_chat_trans/interface.py:1385
+msgid "清空成功"
+msgstr "Effacement réussi"
 
-msgid "Replace all garbled characters with Minecraft formatting codes"
-msgstr "Remplacer tous les caractères corrompus par des codes de formatage Minecraft"
+#: modless_chat_trans/interface.py:1386
+msgid "已清空 {} 个术语"
+msgstr "{} termes effacés"
 
-msgid "Cumulative tokens consumed"
-msgstr "Nombre total de jetons consommés"
+#: modless_chat_trans/interface.py:1431 modless_chat_trans/interface.py:1447
+#: modless_chat_trans/interface.py:2984
+msgid "启动"
+msgstr "Démarrer"
+
+#: modless_chat_trans/interface.py:1451
+msgid "直接启动"
+msgstr "Démarrer directement"
+
+#: modless_chat_trans/interface.py:1452
+msgid "保存配置并启动"
+msgstr "Enregistrer la configuration et démarrer"
+
+#: modless_chat_trans/interface.py:1456
+msgid "保存配置"
+msgstr "Enregistrer la configuration"
+
+#: modless_chat_trans/interface.py:1482
+msgid "工作中"
+msgstr "En cours d’exécution"
+
+#: modless_chat_trans/interface.py:1489
+msgid "已停止"
+msgstr "Arrêté"
+
+#: modless_chat_trans/interface.py:1558
+msgid "Web访问链接"
+msgstr "Liens d’accès Web"
+
+#: modless_chat_trans/interface.py:1565
+msgid "请通过以下任一链接打开网页界面，查看翻译并即时发送消息"
+msgstr "Veuillez ouvrir l’interface web via l’un des liens ci-dessous pour consulter les traductions et envoyer des messages instantanément"
+
+#: modless_chat_trans/interface.py:1619
+msgid "已启动"
+msgstr "Démarré"
+
+#: modless_chat_trans/interface.py:1619
+msgid "已根据当前界面配置启动"
+msgstr "Démarré selon la configuration de l’interface actuelle"
+
+#: modless_chat_trans/interface.py:1627
+msgid "启动失败"
+msgstr "Échec du démarrage"
+
+#: modless_chat_trans/interface.py:1636
+msgid "保存配置失败"
+msgstr "Échec de l’enregistrement de la configuration"
+
+#: modless_chat_trans/interface.py:1639
+msgid "已保存"
+msgstr "Enregistré"
+
+#: modless_chat_trans/interface.py:1639
+msgid "配置已保存，但未设置启动回调"
+msgstr "Configuration enregistrée, mais aucun rappel de démarrage n’est défini"
+
+#: modless_chat_trans/interface.py:1651
+msgid "已保存并启动"
+msgstr "Enregistré et démarré"
+
+#: modless_chat_trans/interface.py:1651
+msgid "配置已保存并启动"
+msgstr "Configuration enregistrée et démarrée"
+
+#: modless_chat_trans/interface.py:1659
+msgid "操作失败"
+msgstr "Échec de l’opération"
+
+#: modless_chat_trans/interface.py:1668
+msgid "保存成功"
+msgstr "Enregistrement réussi"
+
+#: modless_chat_trans/interface.py:1668
+msgid "配置已保存至文件"
+msgstr "Configuration enregistrée dans le fichier"
+
+#: modless_chat_trans/interface.py:1672 modless_chat_trans/interface.py:1677
+msgid "保存失败"
+msgstr "Échec de l’enregistrement"
+
+#: modless_chat_trans/interface.py:1672
+msgid "写入配置文件失败"
+msgstr "Échec de l’écriture du fichier de configuration"
+
+#: modless_chat_trans/interface.py:1880
+msgid "应用信息"
+msgstr "Informations sur l’application"
+
+#: modless_chat_trans/interface.py:1887
+msgid "版本"
+msgstr "Version"
+
+#: modless_chat_trans/interface.py:1888
+msgid "作者"
+msgstr "Auteur"
+
+#: modless_chat_trans/interface.py:1889
+msgid "邮箱"
+msgstr "E-mail"
+
+#: modless_chat_trans/interface.py:1931
+msgid "相关链接"
+msgstr "Liens associés"
+
+#: modless_chat_trans/interface.py:1970
+msgid "许可证"
+msgstr "Licence"
+
+#: modless_chat_trans/interface.py:2005 modless_chat_trans/interface.py:2685
+msgid "发现新版本"
+msgstr "Nouvelle version trouvée"
+
+#: modless_chat_trans/interface.py:2031
+msgid "创建更新对话框时出错: {}"
+msgstr "Erreur lors de la création de la boîte de dialogue de mise à jour : {}"
+
+#: modless_chat_trans/interface.py:2034
+msgid "下载更新"
+msgstr "Télécharger la mise à jour"
+
+#: modless_chat_trans/interface.py:2035
+msgid "暂不更新"
+msgstr "Plus tard"
+
+#: modless_chat_trans/interface.py:2049
+msgid "版本信息"
+msgstr "Informations sur la version"
+
+#: modless_chat_trans/interface.py:2058 modless_chat_trans/interface.py:2559
+msgid "当前版本："
+msgstr "Version actuelle :"
+
+#: modless_chat_trans/interface.py:2063
+msgid "最新版本："
+msgstr "Dernière version :"
+
+#: modless_chat_trans/interface.py:2064 modless_chat_trans/interface.py:2070
+#: modless_chat_trans/interface.py:2071 modless_chat_trans/interface.py:2083
+#: modless_chat_trans/interface.py:2225 modless_chat_trans/interface.py:2561
+msgid "未知"
+msgstr "Inconnu"
+
+#: modless_chat_trans/interface.py:2069
+msgid "发布时间："
+msgstr "Date de publication :"
+
+#: modless_chat_trans/interface.py:2081
+msgid "发布者："
+msgstr "Éditeur :"
+
+#: modless_chat_trans/interface.py:2098
+msgid "版本类型："
+msgstr "Type de version :"
+
+#: modless_chat_trans/interface.py:2099
+msgid "预发布版本"
+msgstr "Préversion"
+
+#: modless_chat_trans/interface.py:2117
+msgid "更新说明"
+msgstr "Notes de version"
+
+#: modless_chat_trans/interface.py:2127
+msgid "暂无更新说明"
+msgstr "Aucune note de version disponible"
+
+#: modless_chat_trans/interface.py:2195
+msgid "在 GitHub 上查看完整说明"
+msgstr "Voir les notes complètes sur GitHub"
+
+#: modless_chat_trans/interface.py:2213
+msgid "正在下载更新"
+msgstr "Téléchargement de la mise à jour en cours"
+
+#: modless_chat_trans/interface.py:2220
+msgid "取消"
+msgstr "Annuler"
+
+#: modless_chat_trans/interface.py:2225
+msgid "正在下载版本 {}..."
+msgstr "Téléchargement de la version {}..."
+
+#: modless_chat_trans/interface.py:2250
+msgid "下载进度："
+msgstr "Progression :"
+
+#: modless_chat_trans/interface.py:2256
+msgid "下载速度："
+msgstr "Vitesse :"
+
+#: modless_chat_trans/interface.py:2262
+msgid "剩余时间："
+msgstr "Temps restant :"
+
+#: modless_chat_trans/interface.py:2263 modless_chat_trans/interface.py:2360
+msgid "计算中..."
+msgstr "Calcul en cours..."
+
+#: modless_chat_trans/interface.py:2268
+msgid "下载方式："
+msgstr "Méthode de téléchargement :"
+
+#: modless_chat_trans/interface.py:2269
+msgid "检测中..."
+msgstr "Détection en cours..."
+
+#: modless_chat_trans/interface.py:2289
+msgid "{} 线程下载"
+msgstr "Téléchargement avec {} threads"
+
+#: modless_chat_trans/interface.py:2291
+msgid "单线程下载"
+msgstr "Téléchargement mono-thread"
+
+#: modless_chat_trans/interface.py:2340
+msgid "{} 秒"
+msgstr "{} secondes"
+
+#: modless_chat_trans/interface.py:2345
+msgid "{} 分 {} 秒"
+msgstr "{} min {} s"
+
+#: modless_chat_trans/interface.py:2347
+msgid "{} 分钟"
+msgstr "{} minutes"
+
+#: modless_chat_trans/interface.py:2352
+msgid "{} 小时 {} 分"
+msgstr "{} h {} min"
+
+#: modless_chat_trans/interface.py:2354
+msgid "{} 小时"
+msgstr "{} heures"
+
+#: modless_chat_trans/interface.py:2358
+msgid "完成"
+msgstr "Terminé"
+
+#: modless_chat_trans/interface.py:2367
+msgid "正在取消..."
+msgstr "Annulation en cours..."
+
+#: modless_chat_trans/interface.py:2375 modless_chat_trans/interface.py:2602
+msgid "错误"
+msgstr "Erreur"
+
+#: modless_chat_trans/interface.py:2401 modless_chat_trans/interface.py:2988
+msgid "设置"
+msgstr "Paramètres"
+
+#: modless_chat_trans/interface.py:2431
+msgid "语言设置"
+msgstr "Paramètres de langue"
+
+#: modless_chat_trans/interface.py:2443
+msgid "界面语言："
+msgstr "Langue de l’interface :"
+
+#: modless_chat_trans/interface.py:2464
+msgid "保存"
+msgstr "Enregistrer"
+
+#: modless_chat_trans/interface.py:2469
+msgid "* 语言更改将在重启后生效"
+msgstr "* Les changements de langue prendront effet après redémarrage"
+
+#: modless_chat_trans/interface.py:2487
+msgid "更新设置"
+msgstr "Paramètres de mise à jour"
+
+#: modless_chat_trans/interface.py:2499
+msgid "自动检查："
+msgstr "Vérification automatique :"
+
+#: modless_chat_trans/interface.py:2501
+msgid "启动时"
+msgstr "Au démarrage"
+
+#: modless_chat_trans/interface.py:2502
+msgid "每天"
+msgstr "Quotidiennement"
+
+#: modless_chat_trans/interface.py:2503
+msgid "每周"
+msgstr "Hebdomadairement"
+
+#: modless_chat_trans/interface.py:2504
+msgid "每月"
+msgstr "Mensuellement"
+
+#: modless_chat_trans/interface.py:2505
+msgid "从不"
+msgstr "Jamais"
+
+#: modless_chat_trans/interface.py:2523
+msgid "预发布版本："
+msgstr "Préversions :"
+
+#: modless_chat_trans/interface.py:2524
+msgid "包含预发布版本"
+msgstr "Inclure les préversions"
+
+#: modless_chat_trans/interface.py:2534
+msgid "手动检查："
+msgstr "Vérification manuelle :"
+
+#: modless_chat_trans/interface.py:2542
+msgid "检查更新"
+msgstr "Rechercher des mises à jour"
+
+#: modless_chat_trans/interface.py:2584
+msgid "设置已保存"
+msgstr "Paramètres enregistrés"
+
+#: modless_chat_trans/interface.py:2585
+msgid "界面语言已设置为 {}，重启后生效。"
+msgstr ""
+"Langue de l’interface définie sur {}. Elle prendra effet après redémarrage."
+
+#: modless_chat_trans/interface.py:2603
+msgid "更新器未初始化"
+msgstr "Programme de mise à jour non initialisé"
+
+#: modless_chat_trans/interface.py:2655
+msgid "检查更新失败"
+msgstr "Échec de la vérification des mises à jour"
+
+#: modless_chat_trans/interface.py:2656
+msgid "错误: {}"
+msgstr "Erreur : {}"
+
+#: modless_chat_trans/interface.py:2683
+msgid "未知版本"
+msgstr "Version inconnue"
+
+#: modless_chat_trans/interface.py:2686
+msgid ""
+"最新版本: {}\n"
+"当前版本: v{}\n"
+"\n"
+"是否在浏览器中查看？"
+msgstr ""
+"Dernière version : {}\n"
+"Version actuelle : v{}\n"
+"\n"
+"Ouvrir dans le navigateur ?"
+
+#: modless_chat_trans/interface.py:2699
+msgid "您是最新的"
+msgstr "Déjà à jour"
+
+#: modless_chat_trans/interface.py:2700
+msgid "当前版本 v{} 已是最新版本"
+msgstr "La version actuelle v{} est déjà la plus récente"
+
+#: modless_chat_trans/interface.py:2759
+msgid "下载完成"
+msgstr "Téléchargement terminé"
+
+#: modless_chat_trans/interface.py:2760
+msgid ""
+"更新文件已下载到:\n"
+"{}\n"
+"\n"
+"请手动安装更新。"
+msgstr ""
+"Le fichier de mise à jour a été téléchargé vers :\n"
+"{}\n"
+"\n"
+"Veuillez installer la mise à jour manuellement."
+
+#: modless_chat_trans/interface.py:2766
+msgid "下载已取消"
+msgstr "Téléchargement annulé"
+
+#: modless_chat_trans/interface.py:2767
+msgid "更新下载已取消"
+msgstr "Le téléchargement de la mise à jour a été annulé"
+
+#: modless_chat_trans/interface.py:2979
+msgid "消息捕获"
+msgstr "Capture de messages"
+
+#: modless_chat_trans/interface.py:2980
+msgid "翻译服务"
+msgstr "Service de traduction"
+
+#: modless_chat_trans/interface.py:2982
+msgid "发送消息"
+msgstr "Envoyer un message"
+
+#: modless_chat_trans/interface.py:2983
+msgid "术语表"
+msgstr "Glossaire"
+
+#: modless_chat_trans/interface.py:2987
+msgid "关于"
+msgstr "À propos"
+
+#: modless_chat_trans/interface.py:3097
+msgid "语言加载错误"
+msgstr "Erreur de chargement de la langue"
+
+#: modless_chat_trans/interface.py:3098
+msgid "获取支持语言失败 ({service_id}): {error_msg}"
+msgstr ""
+"Échec de l’obtention des langues prises en charge ({service_id}) : "
+"{error_msg}"
+
+#: modless_chat_trans/message_processor.py:249
+msgid "翻译失败：请求次数过多，请稍后重试。"
+msgstr ""
+"Échec de la traduction : trop de requêtes. Veuillez réessayer plus tard."
+
+#: modless_chat_trans/message_processor.py:252
+msgid "翻译失败：服务器错误，请稍后重试。"
+msgstr ""
+"Échec de la traduction : erreur du serveur. Veuillez réessayer plus tard."
+
+#: modless_chat_trans/message_processor.py:255
+msgid "翻译失败：发生HTTP错误。"
+msgstr "Échec de la traduction : une erreur HTTP s’est produite."
+
+#: modless_chat_trans/message_processor.py:258
+msgid "翻译失败：网络问题或发生HTTP错误。"
+msgstr "Échec de la traduction : problème réseau ou erreur HTTP."
+
+#: modless_chat_trans/message_processor.py:261
+msgid "翻译失败：服务器响应无效，请检查网络连接。"
+msgstr ""
+"Échec de la traduction : réponse du serveur invalide. Veuillez vérifier "
+"votre connexion réseau."
+
+#: modless_chat_trans/message_processor.py:264
+msgid "翻译失败，错误："
+msgstr "Échec de la traduction, erreur : "

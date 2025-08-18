@@ -17,35 +17,25 @@ from json import JSONDecodeError
 from requests.exceptions import HTTPError
 from modless_chat_trans.i18n import _
 from modless_chat_trans.file_utils import cache
-from modless_chat_trans.translator import services, LLM_PROVIDERS
+from modless_chat_trans.translator import services
 from modless_chat_trans.logger import logger
-from langdetect import detect_langs, LangDetectException
 
-UNKNOWN_LANGUAGE = "unknown"
-
-trans_sys_message = True
-skip_src_lang = []
-min_detect_len = 100
+filter_server_messages = True
 glossary = {}
 _compiled_glossary_patterns = {}
 glossary_compiled = False
 replace_garbled_character = False
 
 
-def init_processor(_trans_sys_message, _skip_src_lang, _min_detect_len, _glossary, _replace_garbled_character):
+def init_processor(message_capture_config, _glossary):
     """
-    :param _trans_sys_message: 是否翻译系统（name为空）消息，仅对log类型有效
-    :param _skip_src_lang: 跳过不翻译的源语言集合
-    :param _min_detect_len: 触发源语言检测的最小消息长度
+    :param message_capture_config: config.MessageCaptureConfig
     :param _glossary: 自定义术语表
-    :param _replace_garbled_character: 是否将乱码字符\ufffd\ufffd替换为\u00A7
     """
-    global trans_sys_message, skip_src_lang, min_detect_len, glossary, replace_garbled_character
-    trans_sys_message = _trans_sys_message
-    skip_src_lang = _skip_src_lang
-    min_detect_len = _min_detect_len
+    global filter_server_messages, replace_garbled_character, glossary
+    filter_server_messages = message_capture_config.filter_server_messages
+    replace_garbled_character = message_capture_config.replace_garbled_chars
     glossary = _glossary
-    replace_garbled_character = _replace_garbled_character
 
 
 def _compile_glossary_patterns():
@@ -206,20 +196,17 @@ def process_decorator(function):
     为process_message添加翻译步骤
     """
 
-    def wrapper(data, data_type, translator, translation_service,
-                model=None, source_language=None, target_language=None):
+    def wrapper(data, data_type, translator, source_language, target_language):
         """
         处理日志文件中的一行（包括翻译）
 
         :param data: 需要处理的数据
         :param data_type: 数据类型
         :param translator: Translator类的实例
-        :param translation_service: 翻译服务
-        :param model: 模型名称
         :param source_language: 源语言
         :param target_language: 目标语言
         :return:
-            - None：应被丢弃的数据（可能是不包含[CHAT]的日志行，也可能是系统消息且trans_sys_message为False）
+            - None：应被丢弃的数据（可能是不包含[CHAT]的日志行，也可能是系统消息且filter_server_messages为True）
             - 长度为3的元组：
                 - data_type == "log":
                     - [0]: 名称（如果有）, if [0] == "[ERROR]": 翻译失败，此时[1]为错误信息
@@ -234,84 +221,51 @@ def process_decorator(function):
         name, original_chat_message = function(data, data_type)
         translated_chat_message: str = ""
         info: dict = {}
-        if data_type == "log" and not trans_sys_message and not name:
+        if data_type == "log" and filter_server_messages and not name:
             return ""
         if original_chat_message:
-            if len(original_chat_message) >= min_detect_len:
-                try:
-                    langs = detect_langs(original_chat_message)
-                    best_lang = langs[0]
-                    if best_lang.prob >= 0.9:
-                        detected_lang = best_lang.lang
-                        logger.debug(f"Detected languages: {detected_lang}, confidence: {best_lang.prob}")
-                    else:
-                        detected_lang = UNKNOWN_LANGUAGE
-                        logger.debug(f"Detected languages: {detected_lang}, but confidence {best_lang.prob} is too low")
-                except LangDetectException as e:
-                    logger.info(f"Language detection failed: {e} Proceeding with translation")
-                    detected_lang = UNKNOWN_LANGUAGE
-            else:
-                detected_lang = UNKNOWN_LANGUAGE
-
             if matched_translated_message := match_and_translate(original_chat_message):
                 logger.debug(f"Using custom glossary: {original_chat_message} -> {matched_translated_message}")
                 translated_chat_message = matched_translated_message
                 info["glossary_match"] = True
-            elif detected_lang != UNKNOWN_LANGUAGE and detected_lang in skip_src_lang:
-                logger.debug(f"Skipping translation for \"{original_chat_message}\" due to skip_src_lang")
-                translated_chat_message = original_chat_message
-                info["skip_src_lang"] = True
             elif original_chat_message in cache:
                 logger.debug(f"Translation cache hit: {original_chat_message}")
                 translated_chat_message = cache[original_chat_message]
                 info["cache_hit"] = True
             else:
                 try:
-                    # 向后兼容旧配置中的 "LLM" 值
-                    if translation_service == "LLM":
-                        translation_service = LLM_PROVIDERS[0]
-
-                    if translation_service in LLM_PROVIDERS:
-                        if result := translator.llm_translate(
+                    if result := translator.translate(
                             original_chat_message,
-                            model=model,
-                            source_language=source_language,
-                            target_language=target_language,
-                            provider=translation_service
-                        ):
-                            translated_chat_message = result["result"]
-                            info["usage"] = result["usage"]
-                    elif translation_service in services:
-                        translated_chat_message = translator.traditional_translate(
-                            original_chat_message,
-                            translation_service,
                             source_language=source_language,
                             target_language=target_language
-                        )
+                    ):
+                        translated_chat_message = result["result"]
+                        info["usage"] = result["usage"]
                 except HTTPError as http_err:
                     response = getattr(http_err, "response", None)
                     if response:
                         if response.status_code == 429:
                             # 请求过多
-                            return "[ERROR]", _("Translation failed: Too many requests. Please try again later."), info
+                            return "[ERROR]", _("翻译失败：请求次数过多，请稍后重试。"), info
                         elif 500 <= response.status_code < 600:
                             # 服务器错误
-                            return "[ERROR]", _("Translation failed: Server error. Please try again later."), info
+                            return "[ERROR]", _("翻译失败：服务器错误，请稍后重试。"), info
                         else:
                             # 其他 HTTP 错误
-                            return "[ERROR]", _("Translation failed: HTTP error occurred."), info
+                            return "[ERROR]", _("翻译失败：发生HTTP错误。"), info
                     else:
                         # 无法获取响应对象，可能是网络问题
-                        return "[ERROR]", _("Translation failed: Network issue or HTTP error occurred."), info
+                        return "[ERROR]", _("翻译失败：网络问题或发生HTTP错误。"), info
                 except JSONDecodeError:
                     # JSON 解码错误，可能是网络问题或服务器返回了非 JSON 数据
-                    return "[ERROR]", _("Translation failed: Invalid response from server. Please check your network connection."), info
+                    return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
                 except Exception as e:
                     # 捕获其他未知错误
-                    return "[ERROR]", f"{_('Translation failed, error:')} {e}", info
+                    return "[ERROR]", f"{_('翻译失败，错误：')} {e}", info
 
                 if translated_chat_message:
-                    logger.debug(f"Translation successful, caching result: {original_chat_message} -> {translated_chat_message}")
+                    logger.debug(
+                        f"Translation successful, caching result: {original_chat_message} -> {translated_chat_message}")
                     cache[original_chat_message] = translated_chat_message
 
             if data_type == "log":
