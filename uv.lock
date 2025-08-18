@@ -1167,7 +1167,7 @@ wheels = [
 
 [[package]]
 name = "modlesschattrans"
-version = "3.0.0b1"
+version = "3.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "diskcache" },
