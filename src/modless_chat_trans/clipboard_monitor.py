@@ -17,17 +17,23 @@ import pyperclip
 import time
 from modless_chat_trans.logger import logger
 
-previous_clipboard_content = pyperclip.paste()
+# 初始化剪贴板内容
+previous_clipboard_content = None
 
 
 def monitor_clipboard(callback):
     """
-    监控日志文件的变化
+    监控剪贴板的变化
 
     :param callback: 检测到新内容的回调函数
     """
     logger.info("Starting clipboard monitoring")
     global previous_clipboard_content
+
+    # 初始化剪贴板内容，避免启动时的误检测
+    if previous_clipboard_content is None:
+        previous_clipboard_content = pyperclip.paste()
+        logger.debug("Initial clipboard content")
 
     while True:
         try:
