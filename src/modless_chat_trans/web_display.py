@@ -16,20 +16,30 @@
 import time
 import json
 import threading
+from collections import deque
+from itertools import count
 from flask import Flask, render_template, Response, request, jsonify
 from datetime import datetime
 from modless_chat_trans.i18n import _
 from modless_chat_trans.file_utils import get_path
 from modless_chat_trans.logger import logger
 
-http_messages = []
+http_messages = deque()
+messages_by_id = {}
+message_condition = threading.Condition()
+message_id_counter = count(1)
+MAX_HTTP_MESSAGES = 2000
+clear_revision = 0
 sse_clients = []
 
 
 def start_httpserver_thread(**kwargs):
     """启动HTTP服务器线程"""
     try:
-        server_thread = threading.Thread(target=start_httpserver, args=(kwargs["http_port"], kwargs["callback"]))
+        server_thread = threading.Thread(
+            target=start_httpserver,
+            args=(kwargs["http_port"], kwargs["callback"])
+        )
         server_thread.daemon = True
         server_thread.start()
         logger.info(f"HTTP server thread started on port {kwargs['http_port']}")
@@ -39,7 +49,7 @@ def start_httpserver_thread(**kwargs):
 
 
 def start_httpserver(port, callback):
-    global http_messages, sse_clients
+    global http_messages, messages_by_id, message_id_counter, clear_revision, sse_clients
     logger.info(f"Starting HTTP server on port {port}")
 
     try:
@@ -56,7 +66,11 @@ def start_httpserver(port, callback):
         logger.debug(f"Template folder set to: {template_dir}")
         logger.debug(f"Static folder set to: {static_dir}")
 
-        http_messages = []
+        with message_condition:
+            http_messages.clear()
+            messages_by_id.clear()
+            message_id_counter = count(1)
+            clear_revision = 0
         sse_clients = []
 
         @flask_app.route('/')
@@ -72,9 +86,11 @@ def start_httpserver(port, callback):
         def handle_user_input():
             try:
                 data = request.json
+                preview = data['message']
                 logger.debug(
-                    f"Received message from web client: {data['message'][:30]}..." if len(data['message']) > 30 else
-                    data['message'])
+                    f"Received message from web client: "
+                    f"{preview[:30]}..." if len(preview) > 30 else preview
+                )
                 translated = callback(data['message'], data_type="clipboard")
                 logger.debug("Message translated successfully")
                 return jsonify({'translated': translated})
@@ -84,10 +100,15 @@ def start_httpserver(port, callback):
 
         @flask_app.route('/clear-messages', methods=['POST'])
         def clear_messages():
+            global http_messages, messages_by_id, message_id_counter, clear_revision
             try:
-                global http_messages
-                logger.debug("Clearing all messages")
-                http_messages = []
+                with message_condition:
+                    http_messages.clear()
+                    messages_by_id.clear()
+                    message_id_counter = count(1)
+                    clear_revision += 1
+                    message_condition.notify_all()
+                logger.debug("Cleared all messages from server queue")
                 return jsonify({'success': True})
             except Exception as e:
                 logger.error(f"Error clearing messages: {str(e)}")
@@ -97,60 +118,112 @@ def start_httpserver(port, callback):
         def stream():
             logger.debug("Client connected to SSE stream")
 
-            def event_stream():
-                global sse_clients, http_messages
-                message_index = 0
-                last_message_count = 0
+            # 在生成器外部提前获取请求数据,避免请求上下文失效
+            last_event_id_header = request.headers.get('Last-Event-ID')
+            last_event_id_param = request.args.get('last_event_id')
+
+            def event_stream(last_event_id_header, last_event_id_param):
+                retry_timeout_ms = 3000
+                yield f"retry: {retry_timeout_ms}\n\n"
+
+                heartbeat_interval = 15
+                last_heartbeat_sent = time.time()
+
+                last_event_id = None
+
+                for candidate in (last_event_id_header, last_event_id_param):
+                    if candidate:
+                        try:
+                            last_event_id = int(candidate)
+                            break
+                        except ValueError:
+                            continue
+
+                with message_condition:
+                    current_clear_revision = clear_revision
+                    if http_messages:
+                        lowest_available_id = http_messages[0]['id']
+                    else:
+                        lowest_available_id = None
+
+                if last_event_id is None:
+                    if lowest_available_id is not None:
+                        next_event_id = lowest_available_id
+                    else:
+                        next_event_id = 1
+                else:
+                    if lowest_available_id is not None and last_event_id + 1 < lowest_available_id:
+                        next_event_id = lowest_available_id
+                    else:
+                        next_event_id = last_event_id + 1
 
                 try:
-                    logger.debug("Starting event stream for client")
                     while True:
-                        time.sleep(1)
-                        current_message_count = len(http_messages)
+                        send_clear_signal = False
+                        pending_messages = []
 
-                        if current_message_count > last_message_count:
-                            logger.debug(f"Sending {current_message_count - last_message_count} new messages to client")
-                            while message_index < current_message_count:
-                                message_tuple = http_messages[message_index]
-                                name = message_tuple[0]
-                                message = message_tuple[1]
-                                timestamp = message_tuple[2]
-                                duration = message_tuple[3]
-                                info = message_tuple[4]
+                        with message_condition:
+                            # 先检查是否需要清空并收集当前可用的待发消息；只有在确实没有任何内容需要发送时才等待
+                            if clear_revision != current_clear_revision:
+                                current_clear_revision = clear_revision
+                                send_clear_signal = True
+                                next_event_id = http_messages[0]['id'] if http_messages else 1
 
+                            while True:
+                                if http_messages and next_event_id < http_messages[0]['id']:
+                                    next_event_id = http_messages[0]['id']
+
+                                message = messages_by_id.get(next_event_id)
+                                if not message:
+                                    break
+
+                                pending_messages.append(message)
+                                next_event_id = message['id'] + 1
+
+                            # 若没有清空信号且没有可发送消息，则等待并在醒来后立刻重新检查
+                            if not send_clear_signal and not pending_messages:
+                                message_condition.wait(timeout=heartbeat_interval)
+                                continue
+
+                        if send_clear_signal:
+                            yield 'data: {"clear": true}\n\n'
+                            last_heartbeat_sent = time.time()
+
+                        if pending_messages:
+                            for message in pending_messages:
+                                info_payload = message.get('info') or {}
                                 message_data = {
-                                    "name": name,
-                                    "message": message,
-                                    "time": timestamp,  # 添加时间信息到JSON数据中
-                                    "duration": duration,  # 耗时
-                                    "glossary_match": info.get("glossary_match", False),
-                                    "skip_src_lang": info.get("skip_src_lang", False),
-                                    "cache_hit": info.get("cache_hit", False),
-                                    "usage": info.get("usage")
+                                    "id": message['id'],
+                                    "name": message['name'],
+                                    "message": message['message'],
+                                    "time": message['time'],
+                                    "duration": message['duration'],
+                                    "glossary_match": info_payload.get("glossary_match", False),
+                                    "skip_src_lang": info_payload.get("skip_src_lang", False),
+                                    "cache_hit": info_payload.get("cache_hit", False),
+                                    "usage": info_payload.get("usage")
                                 }
-
                                 json_message = json.dumps(message_data, ensure_ascii=False)
-
+                                yield f"id: {message['id']}\n"
                                 yield f"data: {json_message}\n\n"
+                            last_heartbeat_sent = time.time()
 
-                                message_index += 1
-
-                            last_message_count = current_message_count
-
-                        elif current_message_count < last_message_count:
-                            # 消息被清空，向客户端发送清除指令并重置计数器
-                            clear_payload = json.dumps({"clear": True})
-                            yield f"data: {clear_payload}\n\n"
-
-                            # 归零本地索引，等待新的消息
-                            message_index = 0
-                            last_message_count = current_message_count
-                            continue
+                        if time.time() - last_heartbeat_sent >= heartbeat_interval:
+                            heartbeat_payload = json.dumps({"ts": time.time()})
+                            yield "event: heartbeat\n"
+                            yield f"data: {heartbeat_payload}\n\n"
+                            last_heartbeat_sent = time.time()
 
                 except GeneratorExit:
                     logger.debug("Client disconnected from event stream")
+                except Exception as e:
+                    logger.error(f"SSE stream error: {str(e)}")
 
-            return Response(event_stream(), mimetype="text/event-stream")
+            response = Response(event_stream(last_event_id_header, last_event_id_param), mimetype="text/event-stream")
+            response.headers["Cache-Control"] = "no-cache"
+            response.headers["X-Accel-Buffering"] = "no"
+            response.headers["Connection"] = "keep-alive"
+            return response
 
         logger.info(f"HTTP server starting on 0.0.0.0:{port}")
         flask_app.run(debug=False, host='0.0.0.0', port=port)
@@ -167,7 +240,7 @@ def display_message(name, message, info, duration=None):
     :param info: 相关信息（如是否命中缓存、消耗token等）
     :param duration: 消息处理耗时（秒）
     """
-    global http_messages
+    global http_messages, messages_by_id, message_id_counter
 
     if duration is not None:
         if duration < 0.001:
@@ -179,7 +252,27 @@ def display_message(name, message, info, duration=None):
 
     try:
         current_time = datetime.now().strftime("%H:%M")
+        info_payload = dict(info) if isinstance(info, dict) else {}
+        message_id = next(message_id_counter)
+        message_record = {
+            "id": message_id,
+            "name": name,
+            "message": message,
+            "time": current_time,
+            "duration": duration,
+            "info": info_payload
+        }
+
+        with message_condition:
+            http_messages.append(message_record)
+            messages_by_id[message_id] = message_record
+
+            if len(http_messages) > MAX_HTTP_MESSAGES:
+                removed = http_messages.popleft()
+                messages_by_id.pop(removed['id'], None)
+
+            message_condition.notify_all()
+
         logger.debug(f"Adding message from {name if name else 'System'} to HTTP server queue")
-        http_messages.append((name, message, current_time, duration, info))
     except Exception as e:
         logger.error(f"Error adding message to HTTP server: {str(e)}")

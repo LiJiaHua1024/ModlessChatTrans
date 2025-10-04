@@ -6,6 +6,16 @@ var isAtBottom = true;
 var lastScrollTime = Date.now();
 var pendingMessages = 0;
 
+var lastEventId = null;
+var reconnectDelay = 2000;
+var reconnectTimer = null;
+var lastHeartbeat = Date.now();
+var heartbeatMonitorInterval = null;
+var processedMessageIds = new Set();
+var processedIdQueue = [];
+var maxProcessedIds = 4000;
+var translationTimeoutId = null;
+
 // 消息过滤状态
 var messageFilters = {
     user: true,
@@ -138,13 +148,11 @@ function parseMinecraftText(text) {
                 // 重置所有格式
                 currentClasses = [];
             } else if (colorCodes[code]) {
-                // 颜色代码：移除之前的颜色类，添加新颜色类
                 currentClasses = currentClasses.filter(function(cls) {
                     return !cls.startsWith('mc-color-');
                 });
                 currentClasses.push(colorCodes[code]);
             } else if (formatCodes[code]) {
-                // 格式代码：添加格式类（如果不存在）
                 if (currentClasses.indexOf(formatCodes[code]) === -1) {
                     currentClasses.push(formatCodes[code]);
                 }
@@ -155,6 +163,22 @@ function parseMinecraftText(text) {
     return result;
 }
 
+function trackProcessedMessage(id) {
+    if (id === null || id === undefined) return;
+    if (processedMessageIds.has(id)) return;
+    processedMessageIds.add(id);
+    processedIdQueue.push(id);
+    if (processedIdQueue.length > maxProcessedIds) {
+        var removed = processedIdQueue.shift();
+        processedMessageIds.delete(removed);
+    }
+}
+
+function resetProcessedMessages() {
+    processedMessageIds.clear();
+    processedIdQueue = [];
+}
+
 // 创建消息元素的通用函数
 function createMessageElement(name, messageText, messageTime, duration, cacheHit, glossaryMatch, skipSrcLang, usage) {
     var newMessageItem = document.createElement("li");
@@ -163,15 +187,13 @@ function createMessageElement(name, messageText, messageTime, duration, cacheHit
 
     var messageType = '';
 
-    // 确定消息类型并设置相应的类
     if (!name) {
-        // 系统消息
         messageType = 'system';
         bubbleDiv.classList.add(messageType);
 
         var textDiv = document.createElement('div');
         textDiv.className = 'message-text';
-        textDiv.innerHTML = parseMinecraftText(messageText); // 使用innerHTML以支持格式化
+        textDiv.innerHTML = parseMinecraftText(messageText);
 
         var timeDiv = document.createElement('div');
         timeDiv.className = 'message-time';
@@ -179,21 +201,19 @@ function createMessageElement(name, messageText, messageTime, duration, cacheHit
 
         bubbleDiv.append(textDiv, timeDiv);
     } else {
-        // 确定消息类型
         if (name === "[ERROR]") messageType = 'error';
         else if (name === "[INFO]") messageType = 'info';
         else messageType = 'user';
 
         bubbleDiv.classList.add(messageType);
 
-        // 创建消息内容元素
         var nameSpan = document.createElement('span');
         nameSpan.className = 'message-name';
-        nameSpan.innerHTML = parseMinecraftText(name); // 用户名也支持格式化
+        nameSpan.innerHTML = parseMinecraftText(name);
 
         var textDiv = document.createElement('div');
         textDiv.className = 'message-text';
-        textDiv.innerHTML = parseMinecraftText(messageText); // 使用innerHTML以支持格式化
+        textDiv.innerHTML = parseMinecraftText(messageText);
 
         var timeDiv = document.createElement('div');
         timeDiv.className = 'message-time';
@@ -202,21 +222,18 @@ function createMessageElement(name, messageText, messageTime, duration, cacheHit
         bubbleDiv.append(nameSpan, textDiv, timeDiv);
     }
 
-    // 创建底部标签容器
     var hasBottomTags = (duration !== null && duration !== undefined && duration !== "" && duration !== 0) ||
                        (cacheHit === true) || (glossaryMatch === true) || (skipSrcLang === true) ||
                        (usage && (usage.total_tokens !== null && usage.total_tokens !== undefined && usage.total_tokens !== 0));
-                       
+
     if (hasBottomTags) {
         var bottomTagsContainer = document.createElement('div');
         bottomTagsContainer.className = 'bottom-tags-container';
 
-        // 添加usage标签（如果有usage信息）
         if (usage && (usage.total_tokens !== null && usage.total_tokens !== undefined && usage.total_tokens !== 0)) {
             var usageTag = document.createElement('div');
             usageTag.className = 'usage-tag';
 
-            // 创建usage图标 (更换为代币图标)
             var usageIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             usageIcon.setAttribute('viewBox', '0 0 24 24');
             usageIcon.setAttribute('fill', 'none');
@@ -226,13 +243,11 @@ function createMessageElement(name, messageText, messageTime, duration, cacheHit
             usageIcon.setAttribute('stroke-linejoin', 'round');
             usageIcon.innerHTML = '<path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M14.8 9a2 2 0 0 0 -1.8 -1h-2a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-2a2 2 0 0 1 -1.8 -1" /><path d="M12 6v2" /><path d="M12 16v2" />';
 
-            // 创建total显示 - 安全地处理 undefined/null
             var usageTotal = document.createElement('span');
             usageTotal.className = 'usage-total';
             var totalTokens = usage.total_tokens || 0;
             usageTotal.textContent = totalTokens;
 
-            // 创建详细信息 (添加单位) - 安全地处理 undefined/null
             var usageDetail = document.createElement('span');
             usageDetail.className = 'usage-detail';
             var promptTokens = usage.prompt_tokens || 0;
@@ -245,18 +260,15 @@ function createMessageElement(name, messageText, messageTime, duration, cacheHit
             bottomTagsContainer.appendChild(usageTag);
         }
 
-        // 添加耗时标签（如果有duration信息）
         if (duration !== null && duration !== undefined && duration !== "" && duration !== 0) {
             var durationTag = document.createElement('div');
             durationTag.className = 'duration-tag';
 
-            // 创建闪电图标
             var lightningIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             lightningIcon.setAttribute('viewBox', '0 0 24 24');
             lightningIcon.setAttribute('fill', 'currentColor');
             lightningIcon.innerHTML = '<path d="M13 0L6 12h5l-1 12 7-12h-5l1-12z"/>';
 
-            // 创建耗时文本
             var durationText = document.createTextNode(duration.toString());
 
             durationTag.appendChild(lightningIcon);
@@ -264,7 +276,6 @@ function createMessageElement(name, messageText, messageTime, duration, cacheHit
             bottomTagsContainer.appendChild(durationTag);
         }
 
-        // 添加术语表匹配标签
         if (glossaryMatch === true) {
             var glossaryMatchTag = document.createElement('div');
             glossaryMatchTag.className = 'glossary-match-tag';
@@ -283,7 +294,6 @@ function createMessageElement(name, messageText, messageTime, duration, cacheHit
             bottomTagsContainer.appendChild(glossaryMatchTag);
         }
 
-        // 添加跳过源语言标签
         if (skipSrcLang === true) {
             var skipSrcLangTag = document.createElement('div');
             skipSrcLangTag.className = 'skip-src-lang-tag';
@@ -302,7 +312,6 @@ function createMessageElement(name, messageText, messageTime, duration, cacheHit
             bottomTagsContainer.appendChild(skipSrcLangTag);
         }
 
-        // 添加缓存命中标签（如果cache_hit为true）
         if (cacheHit === true) {
             var cacheHitTag = document.createElement('div');
             cacheHitTag.className = 'cache-hit-tag';
@@ -324,7 +333,6 @@ function createMessageElement(name, messageText, messageTime, duration, cacheHit
         bubbleDiv.appendChild(bottomTagsContainer);
     }
 
-    // 检查过滤状态
     if (messageType && messageFilters.hasOwnProperty(messageType) && !messageFilters[messageType]) {
         bubbleDiv.classList.add('hidden');
     }
@@ -336,57 +344,147 @@ function createMessageElement(name, messageText, messageTime, duration, cacheHit
     };
 }
 
-// 处理消息滚动逻辑
 function handleMessageScroll(wasAtBottom) {
-    // 更新滚动按钮状态
     updateScrollButtonState();
 
-    // 只有当之前用户在底部，且没有短时间内滚动操作，且没有待处理消息时，才自动滚动
     var userRecentlyScrolled = (Date.now() - lastScrollTime) < 300;
 
     if (wasAtBottom && !userRecentlyScrolled && pendingMessages === 0) {
-        // 使用requestAnimationFrame确保DOM完全更新后再滚动
         requestAnimationFrame(function() {
-            // 如果添加消息前在底部，就强制滚到底部
             scrollToBottom();
         });
     } else if (!wasAtBottom) {
-        // 如果添加消息时用户不在底部，确保按钮是可见的（如果需要滚动）
         updateScrollButtonState();
     }
 }
 
-function initializeEventSource() {
-    // 如果已存在连接，先关闭
+function cleanupEventSource() {
     if (window.eventSource) {
         window.eventSource.close();
+        window.eventSource = null;
+    }
+}
+
+function scheduleReconnect(immediate) {
+    cleanupEventSource();
+
+    if (reconnectTimer) return;
+
+    var delay = immediate ? 0 : reconnectDelay;
+    reconnectTimer = setTimeout(function() {
+        reconnectTimer = null;
+        initializeEventSource();
+    }, delay);
+
+    if (immediate) {
+        reconnectDelay = 2000;
+    } else {
+        reconnectDelay = Math.min(reconnectDelay * 1.5, 15000);
+    }
+}
+
+function startHeartbeatMonitor() {
+    if (heartbeatMonitorInterval) return;
+    heartbeatMonitorInterval = setInterval(function() {
+        var now = Date.now();
+        if (!window.eventSource) return;
+        if (now - lastHeartbeat > 20000) {
+            scheduleReconnect(true);
+        }
+    }, 5000);
+}
+
+function ensureEventSourceActive(forceReconnect) {
+    if (forceReconnect) {
+        scheduleReconnect(true);
+        return;
+    }
+    if (!window.eventSource) {
+        initializeEventSource();
+    } else if (window.eventSource.readyState === EventSource.CLOSED) {
+        scheduleReconnect(true);
+    }
+}
+
+function handleServerClear() {
+    obfuscatedElements.forEach(function(element) {
+        removeObfuscatedElement(element);
+    });
+    obfuscatedElements.clear();
+    resetProcessedMessages();
+    lastEventId = null;
+    messageList.innerHTML = '';
+    updateScrollButtonState();
+    updateClearButtonVisibility();
+}
+
+function initializeEventSource() {
+    cleanupEventSource();
+
+    var streamUrl = "/stream";
+    if (lastEventId !== null && lastEventId !== undefined) {
+        streamUrl += (streamUrl.indexOf('?') === -1 ? '?' : '&') + 'last_event_id=' + encodeURIComponent(lastEventId);
     }
 
-    // 创建新连接
-    window.eventSource = new EventSource("/stream");
+    try {
+        window.eventSource = new EventSource(streamUrl);
+    } catch (error) {
+        scheduleReconnect();
+        return;
+    }
 
-    // 设置事件处理程序
+    window.eventSource.onopen = function() {
+        lastHeartbeat = Date.now();
+        reconnectDelay = 2000;
+        if (reconnectTimer) {
+            clearTimeout(reconnectTimer);
+            reconnectTimer = null;
+        }
+    };
+
     window.eventSource.onmessage = function(event) {
-        // 收到消息时先检查用户是否在底部，在添加消息之前进行检查
+        lastHeartbeat = Date.now();
         var wasAtBottom = checkIfAtBottom();
         pendingMessages++;
 
-        var jsonData = JSON.parse(event.data);
-
-        // 处理服务器发送的清空指令
-        if (jsonData.clear) {
-            // 移除所有正在运行的乱码效果
-            obfuscatedElements.forEach(function(element) {
-                removeObfuscatedElement(element);
-            });
-            obfuscatedElements.clear();
-
-            // 清空消息列表
-            document.getElementById('message-list').innerHTML = '';
-            updateScrollButtonState();
-            updateClearButtonVisibility();
+        var jsonData;
+        try {
+            jsonData = JSON.parse(event.data);
+        } catch (parseError) {
             pendingMessages--;
-            return; // 不再继续处理
+            return;
+        }
+
+        if (jsonData.clear) {
+            handleServerClear();
+            pendingMessages--;
+            return;
+        }
+
+        if (event.lastEventId) {
+            var idFromEvent = parseInt(event.lastEventId, 10);
+            if (!isNaN(idFromEvent)) {
+                lastEventId = idFromEvent;
+            }
+        }
+
+        var messageId = null;
+        if (typeof jsonData.id === "number") {
+            messageId = jsonData.id;
+        } else if (jsonData.id) {
+            var parsed = parseInt(jsonData.id, 10);
+            if (!isNaN(parsed)) {
+                messageId = parsed;
+            }
+        }
+
+        if (messageId !== null) {
+            if (processedMessageIds.has(messageId)) {
+                pendingMessages--;
+                return;
+            }
+            trackProcessedMessage(messageId);
+            lastEventId = messageId;
         }
 
         var name = jsonData.name;
@@ -398,12 +496,10 @@ function initializeEventSource() {
         var skipSrcLang = jsonData.skip_src_lang;
         var usage = jsonData.usage;
 
-        // 检查是否为翻译完成的INFO消息
         if (name === "[INFO]" && isTranslating) {
             setTimeout(resetTranslationUI, 500);
         }
 
-        // 使用通用函数创建消息元素
         var messageData = createMessageElement(name, messageText, messageTime, duration, cacheHit, glossaryMatch, skipSrcLang, usage);
         messageList.appendChild(messageData.element);
 
@@ -412,12 +508,22 @@ function initializeEventSource() {
         updateClearButtonVisibility();
     };
 
-    window.eventSource.onerror = function(event) {
-        window.eventSource.close();
+    window.eventSource.onerror = function() {
+        if (!window.eventSource) {
+            return;
+        }
+        if (window.eventSource.readyState === EventSource.CLOSED) {
+            scheduleReconnect();
+        }
     };
+
+    window.eventSource.addEventListener('heartbeat', function() {
+        lastHeartbeat = Date.now();
+    });
+
+    startHeartbeatMonitor();
 }
 
-//更新清除按钮状态的函数
 function updateClearButtonVisibility() {
     var messageList = document.getElementById('message-list');
     var clearButton = document.getElementById('clear-messages-btn');
@@ -429,18 +535,15 @@ function updateClearButtonVisibility() {
     }
 }
 
-// 检查是否在底部的函数
 function checkIfAtBottom() {
     var tolerance = 20;
     return (window.innerHeight + window.pageYOffset) >= (document.body.scrollHeight - tolerance);
 }
 
-// 检查是否需要滚动的函数
 function needsScrolling() {
     return document.body.scrollHeight > window.innerHeight;
 }
 
-// 更新滚动按钮状态的函数
 function updateScrollButtonState() {
     isAtBottom = checkIfAtBottom();
 
@@ -451,7 +554,6 @@ function updateScrollButtonState() {
     }
 }
 
-// 滚动到底部的函数
 function scrollToBottom() {
     window.scrollTo({
         top: document.body.scrollHeight,
@@ -469,6 +571,22 @@ window.addEventListener('resize', function() {
     updateScrollButtonState();
 });
 
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+        ensureEventSourceActive(false);
+    }
+});
+
+window.addEventListener('focus', function() {
+    ensureEventSourceActive(false);
+});
+
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted) {
+        ensureEventSourceActive(true);
+    }
+});
+
 scrollBottomBtn.addEventListener('click', function() {
     scrollToBottom();
 });
@@ -478,6 +596,8 @@ document.getElementById('clear-messages-btn').addEventListener('click', function
         removeObfuscatedElement(element);
     });
     obfuscatedElements.clear();
+    resetProcessedMessages();
+    lastEventId = null;
 
     fetch('/clear-messages', {
         method: 'POST',
@@ -554,6 +674,15 @@ function sendMessage() {
     sendButton.disabled = true;
     translationIndicator.classList.add("active");
 
+    if (translationTimeoutId) {
+        clearTimeout(translationTimeoutId);
+    }
+    translationTimeoutId = setTimeout(function() {
+        if (isTranslating) {
+            resetTranslationUI();
+        }
+    }, 15000);
+
     fetch('/send-message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -571,6 +700,10 @@ function sendMessage() {
 }
 
 function resetTranslationUI() {
+    if (translationTimeoutId) {
+        clearTimeout(translationTimeoutId);
+        translationTimeoutId = null;
+    }
     isTranslating = false;
     messageInput.disabled = false;
     sendButton.disabled = false;
@@ -641,7 +774,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
     const themeSelect = document.getElementById('theme-select');
     if (!themeSelect) return;
 
-    // 如果模板未标记 selected，则根据 URL 初始化
     const current = new URL(window.location.href).searchParams.get('theme');
     if (current) {
         themeSelect.value = current;
