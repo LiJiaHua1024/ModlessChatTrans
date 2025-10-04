@@ -300,15 +300,26 @@ def process_message(data, data_type):
     if replace_garbled_character:
         chat_message = chat_message.replace("\ufffd\ufffd", "\u00A7")
 
+    # Minecraft 玩家名称验证规则: 3-16个字符,只能包含字母、数字、下划线
+    def is_valid_minecraft_name(name: str) -> bool:
+        return bool(re.match(r'^[a-zA-Z0-9_]{3,16}$', name))
+
     if chat_message.startswith("<"):
-        name, text = chat_message[1:].split(">", 1)
+        # 尝试提取 <name> 格式
+        if ">" in chat_message[1:]:
+            name, text = chat_message[1:].split(">", 1)
+        else:
+            return "", chat_message.strip()
     else:  # Hypixel Chat
         if ":" not in chat_message:
             return "", chat_message.strip()
 
+        # 尝试提取 name: 格式
         name, text = chat_message.split(":", 1)
 
-    name = name.strip()
-    text = text.strip()
+    # 验证提取出的名称是否符合 Minecraft 玩家名规则
+    if not is_valid_minecraft_name(name.strip()):
+        # 不符合规则,整条消息作为系统消息返回
+        return "", chat_message.strip()
 
-    return name, text
+    return name.strip(), text.strip()
