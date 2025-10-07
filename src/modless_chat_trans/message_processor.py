@@ -279,7 +279,7 @@ def process_decorator(function):
 
 
 @process_decorator
-def process_message(data, data_type):
+def process_message(data, data_type, replace_garbled_character=False):
     """
     处理日志文件中的一行
 
@@ -304,22 +304,54 @@ def process_message(data, data_type):
     def is_valid_minecraft_name(name: str) -> bool:
         return bool(re.match(r'^[a-zA-Z0-9_]{3,16}$', name))
 
+    # Hypixel 专用：净化名称用于验证
+    def sanitize_hypixel_name(name: str) -> str:
+        """
+        净化 Hypixel 玩家名称，移除格式化代码、标签和组织前缀
+        这个净化后的字符串仅用于验证，不会作为最终返回值
+        """
+        # 第1层：删除格式化代码 (§.)
+        sanitized = re.sub(r'§.', '', name)
+
+        # 第2层：删除所有标签 [...]
+        sanitized = re.sub(r'\[.*?\]', '', sanitized)
+
+        # 第3层：删除组织前缀 (如 "Guild > ", "Party > " 等)
+        # 匹配 "任意单词 > " 的模式
+        sanitized = re.sub(r'\w+\s*>\s*', '', sanitized)
+
+        # 第4层：私信前缀 (From/To)
+        sanitized = re.sub(r'(?:From|To)\s+', '', sanitized)
+
+        # 去除首尾空格
+        return sanitized.strip()
+
+    # 处理原版 Minecraft 聊天格式 <name>
     if chat_message.startswith("<"):
         # 尝试提取 <name> 格式
         if ">" in chat_message[1:]:
             name, text = chat_message[1:].split(">", 1)
-        else:
-            return "", chat_message.strip()
-    else:  # Hypixel Chat
+
+            # 对于尖括号格式，通常是原版聊天，直接验证即可
+            if is_valid_minecraft_name(name.strip()):
+                return name.strip(), text.strip()
+
+        return "", chat_message.strip()
+
+    else:
         if ":" not in chat_message:
             return "", chat_message.strip()
 
         # 尝试提取 name: 格式
         name, text = chat_message.split(":", 1)
 
-    # 验证提取出的名称是否符合 Minecraft 玩家名规则
-    if not is_valid_minecraft_name(name.strip()):
+        # 净化名称用于验证
+        sanitized_name = sanitize_hypixel_name(name)
+
+        # 验证净化后的名称是否符合 Minecraft 玩家名规则
+        if is_valid_minecraft_name(sanitized_name):
+            # 返回原始未净化的名称和消息内容
+            return name.strip(), text.strip()
+
         # 不符合规则,整条消息作为系统消息返回
         return "", chat_message.strip()
-
-    return name.strip(), text.strip()
