@@ -415,7 +415,6 @@ function handleServerClear() {
     lastEventId = null;
     messageList.innerHTML = '';
     updateScrollButtonState();
-    updateClearButtonVisibility();
 }
 
 function initializeEventSource() {
@@ -524,17 +523,6 @@ function initializeEventSource() {
     startHeartbeatMonitor();
 }
 
-function updateClearButtonVisibility() {
-    var messageList = document.getElementById('message-list');
-    var clearButton = document.getElementById('clear-messages-btn');
-
-    if (messageList.childElementCount > 0) {
-        clearButton.style.display = 'flex';
-    } else {
-        clearButton.style.display = 'none';
-    }
-}
-
 function checkIfAtBottom() {
     var tolerance = 20;
     return (window.innerHeight + window.pageYOffset) >= (document.body.scrollHeight - tolerance);
@@ -591,7 +579,7 @@ scrollBottomBtn.addEventListener('click', function() {
     scrollToBottom();
 });
 
-document.getElementById('clear-messages-btn').addEventListener('click', function() {
+document.getElementById('fab-clear').addEventListener('click', function() {
     obfuscatedElements.forEach(function(element) {
         removeObfuscatedElement(element);
     });
@@ -609,7 +597,6 @@ document.getElementById('clear-messages-btn').addEventListener('click', function
             document.getElementById('message-list').innerHTML = '';
             initializeEventSource();
             updateScrollButtonState();
-            updateClearButtonVisibility();
         }
     })
     .catch(() => {});
@@ -736,53 +723,116 @@ document.addEventListener('DOMContentLoaded', (event) => {
         }
     });
     applyFilters();
-    updateScrollButtonState();
-    updateClearButtonVisibility();
 });
 
-// Dark mode toggle functionality
-(function() {
-    var toggleButton = document.getElementById("dark-mode-toggle");
-    var storedTheme = localStorage.getItem("theme");
+// FAB Speed Dial 菜单功能
+document.addEventListener('DOMContentLoaded', (event) => {
+    // 初始化过滤器
+    document.querySelectorAll('.filter-option').forEach(function(filter) {
+        var type = filter.getAttribute('data-type');
+        if (messageFilters[type]) {
+            filter.classList.add('active');
+            filter.classList.add(type);
+        } else {
+            filter.classList.remove('active');
+            filter.classList.remove(type);
+        }
+    });
+    applyFilters();
+
+    // FAB 菜单相关元素
+    const fabMain = document.getElementById('fab-main');
+    const fabContainer = document.querySelector('.fab-container');
+    const fabDarkMode = document.getElementById('fab-dark-mode');
+    const fabTheme = document.getElementById('fab-theme');
+    const fabSubmenu = document.getElementById('fab-submenu');
+
+    // 深色模式切换功能
+    const storedTheme = localStorage.getItem('theme');
     if (storedTheme) {
-        document.documentElement.setAttribute("data-theme", storedTheme);
+        document.documentElement.setAttribute('data-theme', storedTheme);
     }
-    function updateIcon() {
-        var currentTheme = document.documentElement.getAttribute("data-theme");
-        if (currentTheme === "dark") {
-            toggleButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
+    updateDarkModeIcon();
+
+    function updateDarkModeIcon() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        if (currentTheme === 'dark') {
+            // 深色模式下显示实心太阳图标
+            fabDarkMode.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg>';
         } else {
-            toggleButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 0112.21 3 7 7 0 0012 21a9 9 0 009-8.21z"></path></svg>';
+            // 浅色模式下显示空心太阳图标（更简洁）
+            fabDarkMode.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg>';
         }
     }
-    updateIcon();
-    toggleButton.addEventListener("click", function() {
-        var currentTheme = document.documentElement.getAttribute("data-theme");
-        if (currentTheme === "dark") {
-            document.documentElement.setAttribute("data-theme", "light");
-            localStorage.setItem("theme", "light");
+
+    fabDarkMode.addEventListener('click', function() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        if (currentTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'light');
+            localStorage.setItem('theme', 'light');
         } else {
-            document.documentElement.setAttribute("data-theme", "dark");
-            localStorage.setItem("theme", "dark");
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('theme', 'dark');
         }
-        updateIcon();
+        updateDarkModeIcon();
+        // 关闭菜单
+        fabContainer.classList.remove('open');
+        // 同时关闭二级菜单
+        if (fabSubmenu) fabSubmenu.classList.remove('open');
     });
-})();
 
-// Theme selector functionality
-(function() {
-    const themeSelect = document.getElementById('theme-select');
-    if (!themeSelect) return;
+    // 主题二级菜单展开/收起
+    fabTheme.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (!fabSubmenu) return;
+        // 切换二级菜单展开状态；若已展开则仅关闭二级，一级保持
+        if (fabSubmenu.classList.contains('open')) {
+            fabSubmenu.classList.remove('open');
+        } else {
+            // 打开二级菜单
+            fabSubmenu.classList.add('open');
+        }
+    });
 
-    const current = new URL(window.location.href).searchParams.get('theme');
-    if (current) {
-        themeSelect.value = current;
+    // 绑定二级菜单主题项点击事件
+    if (fabSubmenu) {
+        fabSubmenu.querySelectorAll('.fab-subitem').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const theme = this.getAttribute('data-theme');
+                if (!theme) return;
+                // 应用主题：通过更新 URL 参数并刷新
+                const url = new URL(window.location.href);
+                url.searchParams.set('theme', theme);
+
+                // 关闭所有菜单（UI 上立即反馈）
+                fabSubmenu.classList.remove('open');
+                fabContainer.classList.remove('open');
+
+                window.location.href = url.toString();
+            });
+        });
     }
 
-    themeSelect.addEventListener('change', function() {
-        const selected = this.value;
-        const url = new URL(window.location.href);
-        url.searchParams.set('theme', selected);
-        window.location.href = url.toString();
+    // FAB 主按钮点击事件
+    fabMain.addEventListener('click', function() {
+        const willOpen = !fabContainer.classList.contains('open');
+        fabContainer.classList.toggle('open');
+        if (!willOpen) {
+            // 如果此次点击是关闭一级菜单，则也关闭二级菜单
+            if (fabSubmenu) fabSubmenu.classList.remove('open');
+        }
     });
-})();
+
+    // 点击页面其他地方关闭菜单
+    document.addEventListener('click', function(e) {
+        if (!fabContainer.contains(e.target)) {
+            if (fabContainer.classList.contains('open')) {
+                fabContainer.classList.remove('open');
+            }
+            if (fabSubmenu && fabSubmenu.classList.contains('open')) {
+                fabSubmenu.classList.remove('open');
+            }
+        }
+    });
+});

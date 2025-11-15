@@ -551,3 +551,356 @@ h1::after {
         inset -5px -5px 10px var(--skeuo-light-shadow-dark),
         inset 5px 5px 10px var(--skeuo-dark-shadow-dark) !important;
 }
+
+/* ===== PART 4: FAB Menu System - Skeuomorphic Style ===== */
+
+/* FAB Container */
+.fab-container {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 101;
+}
+
+@media (min-width: 768px) {
+    .fab-container {
+        top: 20px;
+        right: 20px;
+    }
+}
+
+/* Main FAB Button - Physical Button */
+.fab-main {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    background: var(--skeuo-button-gradient) !important;
+    border: none !important;
+    border-radius: 50% !important;
+    color: var(--skeuo-text-primary) !important;
+    cursor: pointer !important;
+    box-shadow:
+        -5px -5px 10px var(--skeuo-light-shadow),
+        5px 5px 10px var(--skeuo-dark-shadow) !important;
+    transition: all 0.15s ease-out !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 103;
+}
+
+@media (min-width: 768px) {
+    .fab-main {
+        width: 45px;
+        height: 45px;
+    }
+}
+
+:root[data-theme="dark"] .fab-main {
+    background: var(--skeuo-button-gradient-dark) !important;
+    color: var(--skeuo-text-primary-dark) !important;
+    box-shadow:
+        -5px -5px 10px var(--skeuo-light-shadow-dark),
+        5px 5px 10px var(--skeuo-dark-shadow-dark) !important;
+}
+
+.fab-main:hover {
+    background: var(--skeuo-button-hover-gradient) !important;
+    box-shadow:
+        -6px -6px 12px var(--skeuo-light-shadow),
+        6px 6px 12px var(--skeuo-dark-shadow) !important;
+    transform: translateY(-1px) !important;
+}
+
+:root[data-theme="dark"] .fab-main:hover {
+    background: var(--skeuo-button-hover-gradient-dark) !important;
+    box-shadow:
+        -6px -6px 12px var(--skeuo-light-shadow-dark),
+        6px 6px 12px var(--skeuo-dark-shadow-dark) !important;
+}
+
+.fab-main:active {
+    background: var(--skeuo-background) !important;
+    transform: translateY(1px) !important;
+    box-shadow:
+        inset -5px -5px 10px var(--skeuo-light-shadow),
+        inset 5px 5px 10px var(--skeuo-dark-shadow) !important;
+}
+
+:root[data-theme="dark"] .fab-main:active {
+    background: var(--skeuo-background-dark) !important;
+    box-shadow:
+        inset -5px -5px 10px var(--skeuo-light-shadow-dark),
+        inset 5px 5px 10px var(--skeuo-dark-shadow-dark) !important;
+}
+
+/* FAB Icons */
+.fab-icon {
+    position: absolute;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    stroke: currentColor;
+}
+
+.fab-icon-plus {
+    opacity: 1;
+    transform: rotate(0deg);
+}
+
+.fab-icon-close {
+    opacity: 0;
+    transform: rotate(45deg);
+}
+
+.fab-container.open .fab-icon-plus {
+    opacity: 0;
+    transform: rotate(45deg);
+}
+
+.fab-container.open .fab-icon-close {
+    opacity: 1;
+    transform: rotate(0deg);
+}
+
+/* FAB Menu Items - Physical Buttons */
+.fab-menu-item {
+    position: absolute;
+    width: 45px;
+    height: 45px;
+    background: var(--skeuo-button-gradient) !important;
+    border: none !important;
+    border-radius: 50% !important;
+    color: var(--skeuo-text-primary) !important;
+    cursor: pointer !important;
+    box-shadow:
+        -5px -5px 10px var(--skeuo-light-shadow),
+        5px 5px 10px var(--skeuo-dark-shadow) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 102;
+    opacity: 0;
+    transform: scale(0) translate(0, 0);
+    pointer-events: none;
+}
+
+@media (min-width: 768px) {
+    .fab-menu-item {
+        width: 45px;
+        height: 45px;
+    }
+}
+
+:root[data-theme="dark"] .fab-menu-item {
+    background: var(--skeuo-button-gradient-dark) !important;
+    color: var(--skeuo-text-primary-dark) !important;
+    box-shadow:
+        -5px -5px 10px var(--skeuo-light-shadow-dark),
+        5px 5px 10px var(--skeuo-dark-shadow-dark) !important;
+}
+
+.fab-menu-item:hover {
+    background: var(--skeuo-button-hover-gradient) !important;
+    box-shadow:
+        -6px -6px 12px var(--skeuo-light-shadow),
+        6px 6px 12px var(--skeuo-dark-shadow) !important;
+}
+
+:root[data-theme="dark"] .fab-menu-item:hover {
+    background: var(--skeuo-button-hover-gradient-dark) !important;
+    box-shadow:
+        -6px -6px 12px var(--skeuo-light-shadow-dark),
+        6px 6px 12px var(--skeuo-dark-shadow-dark) !important;
+}
+
+.fab-menu-item:active {
+    background: var(--skeuo-background) !important;
+    box-shadow:
+        inset -5px -5px 10px var(--skeuo-light-shadow),
+        inset 5px 5px 10px var(--skeuo-dark-shadow) !important;
+}
+
+:root[data-theme="dark"] .fab-menu-item:active {
+    background: var(--skeuo-background-dark) !important;
+    box-shadow:
+        inset -5px -5px 10px var(--skeuo-light-shadow-dark),
+        inset 5px 5px 10px var(--skeuo-dark-shadow-dark) !important;
+}
+
+.fab-container.open .fab-menu-item {
+    opacity: 1;
+    transform: scale(1) translate(0, 60px);
+}
+
+.fab-container.open .fab-menu-item:nth-child(1) {
+    transform: scale(1) translate(0, 60px);
+    transition-delay: 0.05s;
+    animation: enableHover 0.35s forwards;
+}
+
+.fab-container.open .fab-menu-item:nth-child(2) {
+    transform: scale(1) translate(0, 120px);
+    transition-delay: 0.1s;
+    animation: enableHover 0.4s forwards;
+}
+
+.fab-container.open .fab-menu-item:nth-child(3) {
+    transform: scale(1) translate(0, 180px);
+    transition-delay: 0.15s;
+    animation: enableHover 0.45s forwards;
+}
+
+.fab-container.open .fab-menu-item:nth-child(1):hover {
+    transform: translate(0, 60px) scale(1.1);
+}
+
+.fab-container.open .fab-menu-item:nth-child(2):hover {
+    transform: translate(0, 120px) scale(1.1);
+}
+
+.fab-container.open .fab-menu-item:nth-child(3):hover {
+    transform: translate(0, 180px) scale(1.1);
+}
+
+@keyframes enableHover {
+    0% { pointer-events: none; }
+    99% { pointer-events: none; }
+    100% { pointer-events: auto; }
+}
+
+.fab-menu-item svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+}
+
+/* FAB Submenu - Physical Panel */
+.fab-submenu {
+    position: absolute;
+    top: 0;
+    right: calc(100% + 10px);
+    z-index: 104;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(0, 180px) scale(0.95);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    background: var(--skeuo-background) !important;
+    border-radius: 8px !important;
+    box-shadow:
+        -5px -5px 10px var(--skeuo-light-shadow),
+        5px 5px 10px var(--skeuo-dark-shadow) !important;
+    padding: 8px 0;
+    min-width: 150px;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+:root[data-theme="dark"] .fab-submenu {
+    background: var(--skeuo-background-dark) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    box-shadow:
+        -5px -5px 10px var(--skeuo-light-shadow-dark),
+        5px 5px 10px var(--skeuo-dark-shadow-dark) !important;
+}
+
+.fab-submenu.open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(0, 180px) scale(1);
+}
+
+/* FAB Submenu Items - Physical Buttons */
+.fab-subitem {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--skeuo-text-primary) !important;
+    text-align: left;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateX(20px) scale(0.95);
+    pointer-events: none;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500 !important;
+    text-shadow: 1px 1px 1px var(--skeuo-light-shadow) !important;
+}
+
+:root[data-theme="dark"] .fab-subitem {
+    color: var(--skeuo-text-primary-dark) !important;
+    text-shadow: 1px 1px 1px var(--skeuo-dark-shadow-dark) !important;
+}
+
+.fab-subitem:hover {
+    background: var(--skeuo-button-hover-gradient) !important;
+    box-shadow:
+        inset -3px -3px 6px var(--skeuo-light-shadow),
+        inset 3px 3px 6px var(--skeuo-dark-shadow) !important;
+}
+
+:root[data-theme="dark"] .fab-subitem:hover {
+    background: var(--skeuo-button-hover-gradient-dark) !important;
+    box-shadow:
+        inset -3px -3px 6px var(--skeuo-light-shadow-dark),
+        inset 3px 3px 6px var(--skeuo-dark-shadow-dark) !important;
+}
+
+.fab-subitem:active {
+    background: var(--skeuo-background) !important;
+    box-shadow:
+        inset -3px -3px 6px var(--skeuo-light-shadow),
+        inset 3px 3px 6px var(--skeuo-dark-shadow) !important;
+}
+
+:root[data-theme="dark"] .fab-subitem:active {
+    background: var(--skeuo-background-dark) !important;
+    box-shadow:
+        inset -3px -3px 6px var(--skeuo-light-shadow-dark),
+        inset 3px 3px 6px var(--skeuo-dark-shadow-dark) !important;
+}
+
+.fab-submenu.open .fab-subitem:nth-child(1) {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0) scale(1);
+    transition-delay: 0.05s;
+}
+
+.fab-submenu.open .fab-subitem:nth-child(2) {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0) scale(1);
+    transition-delay: 0.1s;
+}
+
+.fab-submenu.open .fab-subitem:nth-child(3) {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0) scale(1);
+    transition-delay: 0.15s;
+}
+
+.fab-submenu.open .fab-subitem:nth-child(4) {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0) scale(1);
+    transition-delay: 0.2s;
+}
+
+.fab-submenu.open .fab-subitem:nth-child(5) {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0) scale(1);
+    transition-delay: 0.25s;
+}
+
+.fab-submenu.open .fab-subitem:nth-child(6) {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0) scale(1);
+    transition-delay: 0.3s;
+}
