@@ -572,6 +572,12 @@ h1:after {
     animation: enableHover 0.45s forwards;
 }
 
+.fab-container.open .fab-menu-item:nth-child(4) {
+    transform: scale(1) translate(0, 240px);
+    transition-delay: 0.2s;
+    animation: enableHover 0.5s forwards;
+}
+
 .fab-container.open .fab-menu-item:nth-child(1):hover {
     transform: translate(0, 60px) scale(1.1);
 }
@@ -582,6 +588,10 @@ h1:after {
 
 .fab-container.open .fab-menu-item:nth-child(3):hover {
     transform: translate(0, 180px) scale(1.1);
+}
+
+.fab-container.open .fab-menu-item:nth-child(4):hover {
+    transform: translate(0, 240px) scale(1.1);
 }
 
 @keyframes enableHover {

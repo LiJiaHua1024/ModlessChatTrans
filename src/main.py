@@ -57,7 +57,7 @@ logger.info(f"ModlessChatTrans {program_info.version} started, "
 
 
 def start_translation(config):
-    def callback(data, data_type):
+    def callback(data, data_type, rage_mode=False):
         start_time = time.time()
         # 重试5次
         for i in range(5):
@@ -83,13 +83,14 @@ def start_translation(config):
                     return None
                 else:
                     break  # 不是聊天消息，跳过
-            elif data_type == "clipboard":
+            elif data_type in ("clipboard", "webui"):
                 if processed_message := process_message(
                         data,
                         data_type,
                         send_translator,
                         source_language=config.message_send.source_language,
-                        target_language=config.message_send.target_language
+                        target_language=config.message_send.target_language,
+                        rage_mode=rage_mode
                 ):
                     if not processed_message[0]:
                         modify_clipboard(processed_message[1])

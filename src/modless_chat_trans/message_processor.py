@@ -196,7 +196,7 @@ def process_decorator(function):
     为process_message添加翻译步骤
     """
 
-    def wrapper(data, data_type, translator, source_language, target_language):
+    def wrapper(data, data_type, translator, source_language, target_language, rage_mode=False):
         """
         处理日志文件中的一行（包括翻译）
 
@@ -205,6 +205,7 @@ def process_decorator(function):
         :param translator: Translator类的实例
         :param source_language: 源语言
         :param target_language: 目标语言
+        :param rage_mode: 是否启用红温模式
         :return:
             - None：应被丢弃的数据（可能是不包含[CHAT]的日志行，也可能是系统消息且filter_server_messages为True）
             - 长度为3的元组：
@@ -212,7 +213,7 @@ def process_decorator(function):
                     - [0]: 名称（如果有）, if [0] == "[ERROR]": 翻译失败，此时[1]为错误信息
                     - [1]: 翻译后的消息
                     - [2]: 相关信息（如是否命中缓存、消耗token等）
-                - data_type == "clipboard":
+                - data_type in ("clipboard", "webui"):
                     - [0]: 是否翻译失败，if [0]: 翻译失败，此时[1]为错误信息
                     - [1]: 翻译后的消息
                     - [2]: 相关信息（如是否命中缓存、消耗token等）
@@ -228,13 +229,14 @@ def process_decorator(function):
                 logger.debug(f"Using custom glossary: {original_chat_message} -> {matched_translated_message}")
                 translated_chat_message = matched_translated_message
                 info["glossary_match"] = True
-            elif original_chat_message in cache:
+            elif original_chat_message in cache and not rage_mode:
                 logger.debug(f"Translation cache hit: {original_chat_message}")
                 translated_chat_message = cache[original_chat_message]
                 info["cache_hit"] = True
             else:
                 try:
-                    if result := translator.translate(
+                    translate = translator.translate_with_profanity if rage_mode else translator.translate
+                    if result := translate(
                             original_chat_message,
                             source_language=source_language,
                             target_language=target_language
@@ -264,13 +266,21 @@ def process_decorator(function):
                     return "[ERROR]", f"{_('翻译失败，错误：')} {e}", info
 
                 if translated_chat_message:
-                    logger.debug(
-                        f"Translation successful, caching result: {original_chat_message} -> {translated_chat_message}")
-                    cache[original_chat_message] = translated_chat_message
+                    if rage_mode:
+                        logger.debug(
+                            f"Rage translation generated (skipping cache): "
+                            f"'{original_chat_message}' -> '{translated_chat_message}'"
+                        )
+                    else:
+                        logger.debug(
+                            f"Translation successful, caching result:"
+                            f" {original_chat_message} -> {translated_chat_message}"
+                        )
+                        cache[original_chat_message] = translated_chat_message
 
             if data_type == "log":
                 return name or "", translated_chat_message, info
-            elif data_type == "clipboard":
+            elif data_type in ("clipboard", "webui"):
                 return False, translated_chat_message, info
 
         return None
@@ -292,7 +302,7 @@ def process_message(data, data_type, replace_garbled_character=False):
     if data_type == "log":
         if "[CHAT]" in data:
             chat_message = data.split("[CHAT]")[1].strip()
-    elif data_type == "clipboard":
+    elif data_type in ("clipboard", "webui"):
         return "", data.strip()
     else:
         return "", ""

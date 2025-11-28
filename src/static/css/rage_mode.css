@@ -1,0 +1,657 @@
+/* Rage Mode Theme v2 - 红温主题 */
+/* 内心翻涌的愤怒，脸颊发烫的温度 */
+@import url('base.css');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&display=swap');
+
+/* ===== PART 0: 隐藏主题选择器 ===== */
+/* 红温模式下不允许切换主题 */
+#fab-theme {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* ===== PART 1: CSS Variables Override ===== */
+
+/* Light Mode - 温怒的浅色调 */
+:root {
+    /* Core Colors - 略微提升的暖色强度 */
+    --primary-color: #C97B73; /* 珊瑚红，比之前更鲜明 */
+    --secondary-container: #FCE8E5; /* 浅桃粉容器 */
+    --on-secondary-container: #5A3835; /* 容器上的文字 */
+    --tertiary-container: #F5D8D3; /* 第三容器 - 暖杏色 */
+    --on-tertiary-container: #4A302C; /* 容器上的文字 */
+    --background: #FFFAF9; /* 温暖米白背景 */
+    --text-primary: #453230; /* 暖深灰文字 */
+    --text-muted: #7A5D5A; /* 次要文字 */
+    --input-background: #F9EFED; /* 输入框背景 */
+    --outline-color: #B89E9A; /* 边框色 */
+
+    /* Filter Colors */
+    --filter-inactive-bg: transparent;
+    --filter-inactive-text: #453230;
+
+    /* Message Bubbles - 更明显的暖色渐变 */
+    --user-bubble: linear-gradient(135deg, #FBE4E0, #F4D2CC);
+    --system-bubble: linear-gradient(135deg, #F7EEEC, #EFE4E1);
+    --error-bubble: linear-gradient(135deg, #F7CEC8, #F0BDB6);
+    --info-bubble: linear-gradient(135deg, #F5DAD5, #FCDDD8);
+
+    /* Accent Colors */
+    --user-accent: #C97B73;
+    --system-accent: #957270;
+    --error-accent: #C2635C;
+    --info-accent: #B87A72;
+
+    /* Shadows - 带有更强暖色调的阴影 */
+    --shadow-soft: 0px 2px 6px rgba(180, 80, 70, 0.1), 0px 1px 2px rgba(90, 55, 50, 0.08);
+    --input-shadow: 0px 2px 8px rgba(180, 80, 70, 0.12), 0px 1px 3px rgba(90, 55, 50, 0.1);
+    --input-focus-shadow: 0px 4px 14px rgba(201, 123, 115, 0.22), 0px 2px 4px rgba(90, 55, 50, 0.1);
+    --input-focus-shadow-desktop: 0px 6px 18px rgba(201, 123, 115, 0.25), 0px 2px 4px rgba(90, 55, 50, 0.12);
+    --input-border: 1px solid transparent;
+
+    /* Rage-specific */
+    --rage-glow: rgba(201, 123, 115, 0.2);
+    --rage-pulse-color: rgba(201, 123, 115, 0.12);
+    --rage-tremble-intensity: 0.5px;
+
+    /* 火焰背景色 */
+    --flame-color-1: rgba(255, 200, 180, 0.15);
+    --flame-color-2: rgba(255, 160, 140, 0.1);
+    --flame-color-3: rgba(255, 220, 200, 0.08);
+}
+
+/* Dark Mode - 深沉的炭火 */
+:root[data-theme="dark"] {
+    /* Core Colors */
+    --primary-color: #E8A9A2; /* 亮珊瑚色 */
+    --secondary-container: #6A4B48; /* 深暖棕容器 */
+    --on-secondary-container: #F8E6E3; /* 容器上的文字 */
+    --tertiary-container: #755550; /* 第三容器 */
+    --on-tertiary-container: #FAECE9; /* 容器上的文字 */
+    --background: #2D2625; /* 温暖深灰背景 */
+    --text-primary: #F5EAE8; /* 暖白文字 */
+    --text-muted: #CBBAB7; /* 次要文字 */
+    --input-background: #504240; /* 输入框背景 */
+    --outline-color: #A08E8B; /* 边框色 */
+
+    /* Filter Colors */
+    --filter-inactive-bg: transparent;
+    --filter-inactive-text: #F5EAE8;
+
+    /* Message Bubbles */
+    --user-bubble: linear-gradient(135deg, #6F5350, #634A47);
+    --system-bubble: linear-gradient(135deg, #504240, #423836);
+    --error-bubble: linear-gradient(135deg, #805550, #6F504D);
+    --info-bubble: linear-gradient(135deg, #634A47, #6F5350);
+
+    /* Accent Colors */
+    --user-accent: #E8A9A2;
+    --system-accent: #D6C0BC;
+    --error-accent: #ECBAB4;
+    --info-accent: #E0C0BA;
+
+    /* Shadows */
+    --shadow-soft: 0px 2px 6px rgba(0, 0, 0, 0.3), 0px 1px 2px rgba(0, 0, 0, 0.22);
+    --input-shadow: 0px 2px 8px rgba(0, 0, 0, 0.32), 0px 1px 3px rgba(0, 0, 0, 0.24);
+    --input-focus-shadow: 0px 4px 14px rgba(232, 169, 162, 0.15), 0px 2px 4px rgba(0, 0, 0, 0.25);
+    --input-focus-shadow-desktop: 0px 6px 18px rgba(232, 169, 162, 0.18), 0px 2px 4px rgba(0, 0, 0, 0.22);
+    --input-border: 1px solid transparent;
+
+    /* Rage-specific */
+    --rage-glow: rgba(232, 169, 162, 0.15);
+    --rage-pulse-color: rgba(232, 169, 162, 0.1);
+    --rage-tremble-intensity: 0.5px;
+
+    /* 火焰背景色 */
+    --flame-color-1: rgba(200, 100, 80, 0.08);
+    --flame-color-2: rgba(180, 80, 60, 0.06);
+    --flame-color-3: rgba(220, 120, 100, 0.04);
+}
+
+/* ===== PART 2: Background with Flame SVG ===== */
+
+body {
+    font-family: 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
+    position: relative;
+}
+
+/* 火焰背景层 */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.6;
+    background-image:
+        /* 抽象火焰形状 1 - 左下 */
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 300'%3E%3Cdefs%3E%3ClinearGradient id='flame1' x1='0%25' y1='100%25' x2='0%25' y2='0%25'%3E%3Cstop offset='0%25' style='stop-color:%23FFB8A8;stop-opacity:0.3'/%3E%3Cstop offset='100%25' style='stop-color:%23FFD8CC;stop-opacity:0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M100 300 Q60 250 80 180 Q50 150 70 100 Q60 60 100 0 Q140 60 130 100 Q150 150 120 180 Q140 250 100 300Z' fill='url(%23flame1)'/%3E%3C/svg%3E"),
+        /* 抽象火焰形状 2 - 右下 */
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 250'%3E%3Cdefs%3E%3ClinearGradient id='flame2' x1='0%25' y1='100%25' x2='0%25' y2='0%25'%3E%3Cstop offset='0%25' style='stop-color:%23FFCAB8;stop-opacity:0.25'/%3E%3Cstop offset='100%25' style='stop-color:%23FFE5DC;stop-opacity:0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M75 250 Q45 200 55 140 Q30 110 50 70 Q40 35 75 0 Q110 35 100 70 Q120 110 95 140 Q105 200 75 250Z' fill='url(%23flame2)'/%3E%3C/svg%3E"),
+        /* 抽象火焰形状 3 - 中间 */
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 280'%3E%3Cdefs%3E%3ClinearGradient id='flame3' x1='0%25' y1='100%25' x2='0%25' y2='0%25'%3E%3Cstop offset='0%25' style='stop-color:%23FFC4B0;stop-opacity:0.2'/%3E%3Cstop offset='100%25' style='stop-color:%23FFDDD0;stop-opacity:0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M90 280 Q55 230 70 160 Q40 125 60 80 Q45 40 90 0 Q135 40 120 80 Q140 125 110 160 Q125 230 90 280Z' fill='url(%23flame3)'/%3E%3C/svg%3E");
+    background-position:
+        -50px calc(100% + 20px),
+        calc(100% + 30px) calc(100% + 10px),
+        50% calc(100% + 30px);
+    background-size:
+        280px 400px,
+        220px 350px,
+        250px 380px;
+    background-repeat: no-repeat;
+    animation: flameFlicker 4s ease-in-out infinite alternate;
+}
+
+/* 深色模式下调整火焰透明度 */
+:root[data-theme="dark"] body::before {
+    opacity: 0.4;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 300'%3E%3Cdefs%3E%3ClinearGradient id='flame1d' x1='0%25' y1='100%25' x2='0%25' y2='0%25'%3E%3Cstop offset='0%25' style='stop-color:%23C87060;stop-opacity:0.4'/%3E%3Cstop offset='100%25' style='stop-color:%23A05040;stop-opacity:0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M100 300 Q60 250 80 180 Q50 150 70 100 Q60 60 100 0 Q140 60 130 100 Q150 150 120 180 Q140 250 100 300Z' fill='url(%23flame1d)'/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 250'%3E%3Cdefs%3E%3ClinearGradient id='flame2d' x1='0%25' y1='100%25' x2='0%25' y2='0%25'%3E%3Cstop offset='0%25' style='stop-color:%23D08070;stop-opacity:0.35'/%3E%3Cstop offset='100%25' style='stop-color:%23A06050;stop-opacity:0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M75 250 Q45 200 55 140 Q30 110 50 70 Q40 35 75 0 Q110 35 100 70 Q120 110 95 140 Q105 200 75 250Z' fill='url(%23flame2d)'/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 280'%3E%3Cdefs%3E%3ClinearGradient id='flame3d' x1='0%25' y1='100%25' x2='0%25' y2='0%25'%3E%3Cstop offset='0%25' style='stop-color:%23C87868;stop-opacity:0.3'/%3E%3Cstop offset='100%25' style='stop-color:%23905848;stop-opacity:0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M90 280 Q55 230 70 160 Q40 125 60 80 Q45 40 90 0 Q135 40 120 80 Q140 125 110 160 Q125 230 90 280Z' fill='url(%23flame3d)'/%3E%3C/svg%3E");
+}
+
+/* 火焰闪烁动画 */
+@keyframes flameFlicker {
+    0% {
+        transform: translateY(0) scaleY(1);
+        opacity: 0.5;
+    }
+    25% {
+        transform: translateY(-5px) scaleY(1.02);
+        opacity: 0.6;
+    }
+    50% {
+        transform: translateY(-2px) scaleY(0.98);
+        opacity: 0.55;
+    }
+    75% {
+        transform: translateY(-8px) scaleY(1.03);
+        opacity: 0.65;
+    }
+    100% {
+        transform: translateY(-3px) scaleY(1);
+        opacity: 0.5;
+    }
+}
+
+/* ===== PART 3: Component Styles with Rage Animations ===== */
+
+/* 1. Title - 带有微妙颤抖的标题 */
+h1 {
+    font-size: 34px !important;
+    font-weight: 600 !important;
+    line-height: 42px !important;
+    letter-spacing: 0.25px !important;
+    text-align: center;
+    color: var(--text-primary);
+    margin-bottom: 28px !important;
+    text-shadow: 0 2px 4px var(--rage-pulse-color);
+    animation: subtleTremble 0.15s ease-in-out infinite;
+}
+
+h1::after {
+    display: none !important;
+}
+
+/* 微妙颤抖动画 */
+@keyframes subtleTremble {
+    0%, 100% {
+        transform: translate(0, 0);
+    }
+    25% {
+        transform: translate(var(--rage-tremble-intensity), 0);
+    }
+    50% {
+        transform: translate(0, var(--rage-tremble-intensity));
+    }
+    75% {
+        transform: translate(calc(var(--rage-tremble-intensity) * -1), 0);
+    }
+}
+
+/* 2. Filter Options - 带有不安感的筛选芯片 */
+.filter-option {
+    position: relative;
+    border: 1px solid var(--outline-color) !important;
+    background-color: transparent !important;
+    color: var(--text-primary) !important;
+    padding: 0 16px !important;
+    height: 32px !important;
+    border-radius: 16px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    line-height: 20px !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    box-shadow: none !important;
+}
+
+.filter-option:hover {
+    background-color: var(--rage-pulse-color) !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 2px 10px var(--rage-glow) !important;
+    animation: filterTremble 0.1s ease-in-out infinite;
+}
+
+@keyframes filterTremble {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(0.3px); }
+}
+
+.filter-option.active {
+    background-color: var(--secondary-container) !important;
+    color: var(--on-secondary-container) !important;
+    border-color: transparent !important;
+    padding-left: 34px !important;
+    box-shadow: 0 2px 8px var(--rage-glow) !important;
+}
+
+.filter-option.active::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    background-color: var(--on-secondary-container);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") no-repeat center;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") no-repeat center;
+    -webkit-mask-size: 16px 16px;
+    mask-size: 16px 16px;
+}
+
+.filter-option.active.user,
+.filter-option.active.system,
+.filter-option.active.error,
+.filter-option.active.info {
+    background-color: var(--secondary-container) !important;
+    color: var(--on-secondary-container) !important;
+}
+
+/* 3. Floating Action Buttons - 愤怒的脉动按钮 */
+.scroll-to-bottom,
+.clear-messages {
+    background-color: var(--tertiary-container) !important;
+    color: var(--on-tertiary-container) !important;
+    box-shadow: 0 4px 14px var(--rage-glow), 0 2px 4px rgba(0, 0, 0, 0.12) !important;
+    width: 52px !important;
+    height: 52px !important;
+    border-radius: 16px !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    animation: fabPulse 2s ease-in-out infinite;
+}
+
+@keyframes fabPulse {
+    0%, 100% {
+        box-shadow: 0 4px 14px var(--rage-glow), 0 2px 4px rgba(0, 0, 0, 0.12);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 6px 20px var(--rage-glow), 0 3px 6px rgba(0, 0, 0, 0.15);
+        transform: scale(1.02);
+    }
+}
+
+.scroll-to-bottom:hover,
+.clear-messages:hover {
+    box-shadow: 0 8px 24px var(--rage-glow), 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+    transform: translateY(-3px) scale(1.05) !important;
+    animation: none;
+}
+
+/* 4. Message Bubbles - 带有热度的对话气泡 */
+.message-bubble {
+    border-radius: 18px !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 2px 6px rgba(180, 80, 70, 0.08) !important;
+    animation: messageBreathe 3s ease-in-out infinite;
+}
+
+@keyframes messageBreathe {
+    0%, 100% {
+        box-shadow: 0 2px 6px rgba(180, 80, 70, 0.08);
+    }
+    50% {
+        box-shadow: 0 3px 10px rgba(180, 80, 70, 0.12);
+    }
+}
+
+:root[data-theme="dark"] .message-bubble {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+}
+
+.message-bubble.user {
+    border-bottom-right-radius: 6px !important;
+}
+
+.message-bubble.system {
+    border-bottom-left-radius: 6px !important;
+}
+
+/* 消息入场动画 - 带有冲击感 */
+@keyframes messageEnterRage {
+    0% {
+        opacity: 0;
+        transform: translateY(12px) scale(0.96);
+    }
+    40% {
+        transform: translateY(-4px) scale(1.02);
+    }
+    70% {
+        transform: translateY(2px) scale(0.99);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.message-bubble {
+    animation: messageEnterRage 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+               messageBreathe 3s ease-in-out 0.4s infinite;
+}
+
+/* 5. Input Container - 愤怒的脉动输入框 */
+.input-container {
+    border-radius: 24px !important;
+    background-color: var(--input-background) !important;
+    border: 1px solid transparent !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: var(--input-shadow) !important;
+    animation: inputSimmer 2.5s ease-in-out infinite;
+}
+
+@keyframes inputSimmer {
+    0%, 100% {
+        box-shadow: var(--input-shadow);
+    }
+    50% {
+        box-shadow: var(--input-shadow), 0 0 0 2px var(--rage-pulse-color);
+    }
+}
+
+.input-container:focus-within {
+    border-color: var(--primary-color) !important;
+    box-shadow: var(--input-focus-shadow), 0 0 0 4px var(--rage-pulse-color) !important;
+    animation: inputRage 0.8s ease-in-out infinite;
+}
+
+@keyframes inputRage {
+    0%, 100% {
+        box-shadow: var(--input-focus-shadow), 0 0 0 4px var(--rage-pulse-color);
+    }
+    50% {
+        box-shadow: var(--input-focus-shadow), 0 0 0 6px var(--rage-pulse-color);
+    }
+}
+
+/* 6. Send Button - 愤怒的发送按钮 */
+/* ===== Send Button - 火焰图标 ===== */
+
+#send-button {
+    background-color: var(--primary-color) !important;
+    border-radius: 18px !important;
+    width: 40px !important;
+    height: 40px !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    animation: sendPulse 1.5s ease-in-out infinite;
+    position: relative;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* 隐藏原有图标 */
+#send-button svg,
+#send-button img,
+#send-button::before {
+    display: none !important;
+}
+
+/* 火焰图标 */
+#send-button::after {
+    content: '';
+    display: block;
+    width: 22px;
+    height: 22px;
+    background-color: #FFFFFF;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 23C7.58 23 4 19.42 4 15c0-2.85 1.63-5.54 4.12-7.55C10.04 5.77 11 3.5 11 2c0 0 1.5 1.5 2.5 3.5c.65 1.3 1 2.5 1 3.5c0 .5-.05 1-.15 1.45c.55-.35 1.15-.55 1.65-.7c.5-.15 1-.25 1.5-.25c0 2-1 4-2.5 5.5c1.5 0 3-.5 4-1.5c0 5.5-3.5 9.5-7 9.5zm0-4c1.1 0 2-.9 2-2c0-.65-.25-1.25-.7-1.7c-.25.15-.55.35-.8.55c-.45.35-.9.75-1.25 1.2c-.2.25-.25.5-.25.7c0 .55.45 1.25 1 1.25z'/%3E%3C/svg%3E") no-repeat center;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 23C7.58 23 4 19.42 4 15c0-2.85 1.63-5.54 4.12-7.55C10.04 5.77 11 3.5 11 2c0 0 1.5 1.5 2.5 3.5c.65 1.3 1 2.5 1 3.5c0 .5-.05 1-.15 1.45c.55-.35 1.15-.55 1.65-.7c.5-.15 1-.25 1.5-.25c0 2-1 4-2.5 5.5c1.5 0 3-.5 4-1.5c0 5.5-3.5 9.5-7 9.5zm0-4c1.1 0 2-.9 2-2c0-.65-.25-1.25-.7-1.7c-.25.15-.55.35-.8.55c-.45.35-.9.75-1.25 1.2c-.2.25-.25.5-.25.7c0 .55.45 1.25 1 1.25z'/%3E%3C/svg%3E") no-repeat center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    transition: transform 0.2s ease;
+}
+
+:root[data-theme="dark"] #send-button::after {
+    background-color: #2D2625;
+}
+
+/* 悬停时火焰跳动 */
+#send-button:hover:not(:disabled)::after {
+    animation: flameJump 0.3s ease-in-out infinite alternate;
+}
+
+@keyframes flameJump {
+    0% {
+        transform: translateY(0) scale(1);
+    }
+    100% {
+        transform: translateY(-2px) scale(1.1);
+    }
+}
+
+@keyframes sendPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 2px 8px var(--rage-glow);
+    }
+    50% {
+        transform: scale(1.03);
+        box-shadow: 0 4px 12px var(--rage-glow);
+    }
+}
+
+#send-button:hover:not(:disabled) {
+    box-shadow: 0 6px 18px var(--rage-glow) !important;
+    transform: scale(1.1) !important;
+    animation: none;
+}
+
+#send-button:disabled {
+    background-color: rgba(201, 123, 115, 0.35) !important;
+    animation: none;
+}
+
+#send-button:disabled::after {
+    opacity: 0.5;
+}
+
+:root[data-theme="dark"] #send-button:disabled {
+    background-color: rgba(232, 169, 162, 0.3) !important;
+}
+
+/* 7. Dark Mode Toggle */
+#dark-mode-toggle {
+    background-color: var(--primary-color) !important;
+    box-shadow: 0 4px 12px var(--rage-glow), 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+    width: 46px !important;
+    height: 46px !important;
+    border-radius: 14px !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    animation: togglePulse 2s ease-in-out infinite;
+}
+
+@keyframes togglePulse {
+    0%, 100% {
+        box-shadow: 0 4px 12px var(--rage-glow), 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+    50% {
+        box-shadow: 0 5px 16px var(--rage-glow), 0 3px 6px rgba(0, 0, 0, 0.18);
+    }
+}
+
+#dark-mode-toggle:hover {
+    box-shadow: 0 6px 20px var(--rage-glow), 0 3px 6px rgba(0, 0, 0, 0.2) !important;
+    transform: translateY(-2px) scale(1.05) !important;
+    animation: none;
+}
+
+/* 8. Bottom Tags */
+.duration-tag,
+.cache-hit-tag,
+.glossary-match-tag,
+.skip-src-lang-tag,
+.usage-tag {
+    border-radius: 10px !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    padding: 4px 10px !important;
+    height: 22px !important;
+    background-color: var(--secondary-container) !important;
+    color: var(--on-secondary-container) !important;
+}
+
+/* 9. Input Field */
+#message-input {
+    font-family: 'Noto Sans', 'Helvetica Neue', Arial, sans-serif !important;
+    font-size: 15px !important;
+    font-weight: 400 !important;
+    line-height: 22px !important;
+}
+
+#message-input::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 0.7 !important;
+}
+
+/* 10. Message Text */
+.message-text {
+    font-size: 14px !important;
+    line-height: 21px !important;
+    letter-spacing: 0.2px !important;
+}
+
+.message-name {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.4px !important;
+    text-transform: none !important;
+    color: var(--user-accent) !important;
+}
+
+.message-bubble.system .message-name {
+    color: var(--system-accent) !important;
+}
+
+.message-time {
+    font-size: 11px !important;
+    letter-spacing: 0.3px !important;
+    opacity: 0.75 !important;
+}
+
+/* 11. Translation Indicator - 愤怒的加载点 */
+.dot {
+    background-color: var(--primary-color) !important;
+    animation: dotRage 0.6s ease-in-out infinite alternate !important;
+}
+
+.dot:nth-child(1) { animation-delay: 0s !important; }
+.dot:nth-child(2) { animation-delay: 0.15s !important; }
+.dot:nth-child(3) { animation-delay: 0.3s !important; }
+
+@keyframes dotRage {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 0.6;
+    }
+    100% {
+        transform: translateY(-6px) scale(1.2);
+        opacity: 1;
+    }
+}
+
+/* ===== PART 4: Scrollbar ===== */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--input-background);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--outline-color);
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
+}
+
+/* ===== PART 5: Selection & Links ===== */
+::selection {
+    background-color: rgba(201, 123, 115, 0.3);
+    color: var(--text-primary);
+}
+
+:root[data-theme="dark"] ::selection {
+    background-color: rgba(232, 169, 162, 0.35);
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+a:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+}
+
+/* Code blocks */
+code, pre {
+    background-color: color-mix(in srgb, var(--tertiary-container) 50%, var(--background)) !important;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+/* ===== PART 6: Heat Wave Effect on Container ===== */
+/* 可选：给整个消息容器添加热浪效果 */
+.messages-container {
+    position: relative;
+}
+
+.messages-container::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 100px;
+    background: linear-gradient(to top, var(--rage-pulse-color), transparent);
+    pointer-events: none;
+    opacity: 0.5;
+    animation: heatWave 3s ease-in-out infinite;
+}
+
+@keyframes heatWave {
+    0%, 100% {
+        opacity: 0.3;
+        height: 80px;
+    }
+    50% {
+        opacity: 0.5;
+        height: 100px;
+    }
+}

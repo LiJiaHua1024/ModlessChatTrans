@@ -651,6 +651,8 @@ var messageInput = document.getElementById("message-input");
 var sendButton = document.getElementById("send-button");
 var translationIndicator = document.querySelector(".translation-indicator");
 var isTranslating = false;
+var isRageMode = false;
+var previousThemeHref = '';
 
 function sendMessage() {
     var message = messageInput.value.trim();
@@ -673,7 +675,7 @@ function sendMessage() {
     fetch('/send-message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: message })
+        body: JSON.stringify({ message: message, rage_mode: isRageMode })
     })
     .then(response => response.json())
     .then(data => {
@@ -745,7 +747,29 @@ document.addEventListener('DOMContentLoaded', (event) => {
     const fabContainer = document.querySelector('.fab-container');
     const fabDarkMode = document.getElementById('fab-dark-mode');
     const fabTheme = document.getElementById('fab-theme');
+    const fabRageMode = document.getElementById('fab-rage-mode');
     const fabSubmenu = document.getElementById('fab-submenu');
+
+    // Rage Mode 切换功能
+    if (fabRageMode) {
+        fabRageMode.addEventListener('click', function() {
+            isRageMode = !isRageMode;
+            const themeLink = document.getElementById('theme-stylesheet');
+            
+            if (isRageMode) {
+                previousThemeHref = themeLink.getAttribute('href');
+                themeLink.setAttribute('href', '/static/css/rage_mode.css');
+            } else {
+                if (previousThemeHref) {
+                    themeLink.setAttribute('href', previousThemeHref);
+                }
+            }
+            
+            // 关闭菜单
+            fabContainer.classList.remove('open');
+            if (fabSubmenu) fabSubmenu.classList.remove('open');
+        });
+    }
 
     // 深色模式切换功能
     const storedTheme = localStorage.getItem('theme');

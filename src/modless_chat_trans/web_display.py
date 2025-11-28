@@ -87,11 +87,12 @@ def start_httpserver(port, callback):
             try:
                 data = request.json
                 preview = data['message']
+                rage_mode = data.get('rage_mode', False)
                 logger.debug(
-                    f"Received message from web client: "
+                    f"Received message from web client (Rage Mode: {rage_mode}): "
                     f"{preview[:30]}..." if len(preview) > 30 else preview
                 )
-                translated = callback(data['message'], data_type="clipboard")
+                translated = callback(data['message'], data_type="webui", rage_mode=rage_mode)
                 logger.debug("Message translated successfully")
                 return jsonify({'translated': translated})
             except Exception as e:
