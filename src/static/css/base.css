@@ -453,32 +453,262 @@ h1:after {
     transform: scale(1.1);
 }
 
-/* 清除按钮样式 */
-.clear-messages {
+/* FAB Speed Dial Styles */
+.fab-container {
     position: fixed;
-    bottom: 80px; /* 位于输入框上方 */
-    right: 20px;
-    width: 45px;
-    height: 45px;
+    top: 10px;
+    right: 10px;
+    z-index: 101;
+}
+
+@media (min-width: 768px) {
+    .fab-container {
+        top: 20px;
+        right: 20px;
+    }
+}
+
+.fab-main {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    background-color: var(--primary-color);
+    border: none;
     border-radius: 50%;
-    background: var(--primary-color);
     color: white;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    z-index: 100;
-    animation: fadeIn 0.3s ease;
-    transition: all 0.2s ease, background-color 0.3s ease, color 0.3s ease;
+    z-index: 103;
 }
 
-.clear-messages:hover {
+@media (min-width: 768px) {
+    .fab-main {
+        width: 45px;
+        height: 45px;
+    }
+}
+
+.fab-main:hover {
     transform: scale(1.1);
 }
 
-:root[data-theme="dark"] .clear-messages {
-    color: #1e1e1e; /* 深色背景上的按钮图标颜色 */
+.fab-icon {
+    position: absolute;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    stroke: currentColor;
+}
+
+.fab-icon-plus {
+    opacity: 1;
+    transform: rotate(0deg);
+}
+
+.fab-icon-close {
+    opacity: 0;
+    transform: rotate(45deg);
+}
+
+.fab-container.open .fab-icon-plus {
+    opacity: 0;
+    transform: rotate(45deg);
+}
+
+.fab-container.open .fab-icon-close {
+    opacity: 1;
+    transform: rotate(0deg);
+}
+
+.fab-menu-item {
+    position: absolute;
+    width: 45px;
+    height: 45px;
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 102;
+    opacity: 0;
+    transform: scale(0) translate(0, 0);
+    pointer-events: none;
+}
+
+@media (min-width: 768px) {
+    .fab-menu-item {
+        width: 45px;
+        height: 45px;
+    }
+}
+
+.fab-container.open .fab-menu-item {
+    opacity: 1;
+    transform: scale(1) translate(0, 60px);
+}
+
+.fab-container.open .fab-menu-item:nth-child(1) {
+    transform: scale(1) translate(0, 60px);
+    transition-delay: 0.05s;
+    animation: enableHover 0.35s forwards;
+}
+
+.fab-container.open .fab-menu-item:nth-child(2) {
+    transform: scale(1) translate(0, 120px);
+    transition-delay: 0.1s;
+    animation: enableHover 0.4s forwards;
+}
+
+.fab-container.open .fab-menu-item:nth-child(3) {
+    transform: scale(1) translate(0, 180px);
+    transition-delay: 0.15s;
+    animation: enableHover 0.45s forwards;
+}
+
+.fab-container.open .fab-menu-item:nth-child(4) {
+    transform: scale(1) translate(0, 240px);
+    transition-delay: 0.2s;
+    animation: enableHover 0.5s forwards;
+}
+
+.fab-container.open .fab-menu-item:nth-child(1):hover {
+    transform: translate(0, 60px) scale(1.1);
+}
+
+.fab-container.open .fab-menu-item:nth-child(2):hover {
+    transform: translate(0, 120px) scale(1.1);
+}
+
+.fab-container.open .fab-menu-item:nth-child(3):hover {
+    transform: translate(0, 180px) scale(1.1);
+}
+
+.fab-container.open .fab-menu-item:nth-child(4):hover {
+    transform: translate(0, 240px) scale(1.1);
+}
+
+@keyframes enableHover {
+    0% { pointer-events: none; }
+    99% { pointer-events: none; }
+    100% { pointer-events: auto; }
+}
+
+.fab-menu-item svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+}
+
+:root[data-theme="dark"] .fab-main,
+:root[data-theme="dark"] .fab-menu-item {
+    color: #1e1e1e; /* 深色背景上的图标颜色 */
+}
+
+/* 二级主题子菜单样式 */
+.fab-submenu {
+    position: absolute;
+    top: 0;
+    right: calc(100% + 10px); /* 放置在一级菜单左侧 */
+    z-index: 104;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(0, 180px) scale(0.95); /* 与第3个一级菜单按钮（主题）对齐 */
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    background-color: var(--card-background);
+    border-radius: 8px;
+    box-shadow: var(--shadow-soft);
+    padding: 8px 0;
+    min-width: 150px;
+}
+
+.fab-subitem {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 0;
+    background-color: transparent;
+    color: var(--text-primary);
+    text-align: left;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateX(20px) scale(0.95);
+    pointer-events: none;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 添加点击和悬停效果 */
+.fab-subitem:hover {
+    background-color: var(--hover-background);
+    color: var(--primary-color);
+}
+
+.fab-subitem:active {
+    background-color: var(--active-background);
+}
+
+/* 展开时显示子菜单容器 */
+.fab-submenu.open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(0, 180px) scale(1);
+}
+
+/* 展开时，依次显示每个子按钮（垂直列表） */
+.fab-submenu.open .fab-subitem:nth-child(1) {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0) scale(1);
+    transition-delay: 0.05s;
+}
+
+.fab-submenu.open .fab-subitem:nth-child(2) {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0) scale(1);
+    transition-delay: 0.1s;
+}
+
+.fab-submenu.open .fab-subitem:nth-child(3) {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0) scale(1);
+    transition-delay: 0.15s;
+}
+
+.fab-submenu.open .fab-subitem:nth-child(4) {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0) scale(1);
+    transition-delay: 0.2s;
+}
+
+.fab-submenu.open .fab-subitem:nth-child(5) {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0) scale(1);
+    transition-delay: 0.25s;
+}
+
+.fab-submenu.open .fab-subitem:nth-child(6) {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0) scale(1);
+    transition-delay: 0.3s;
+}
+
+:root[data-theme="dark"] .fab-subitem {
+    color: #1e1e1e;
 }
 
 /* 消息类型过滤器样式 */
@@ -711,38 +941,6 @@ h1:after {
     50% {
         transform: scale(1.2);
         opacity: 1;
-    }
-}
-
-/* Dark Mode Toggle Button Styles */
-#dark-mode-toggle {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    width: 40px;
-    height: 40px;
-    padding: 8px;
-    background-color: var(--primary-color);
-    border: none;
-    border-radius: 50%;
-    color: white;
-    cursor: pointer;
-    box-shadow: var(--shadow-soft);
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    z-index: 101;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-#dark-mode-toggle:hover {
-    transform: scale(1.1);
-}
-@media (min-width: 768px) {
-    #dark-mode-toggle {
-        top: 20px;
-        right: 20px;
-        width: 45px;
-        height: 45px;
     }
 }
 

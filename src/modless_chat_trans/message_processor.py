@@ -196,7 +196,7 @@ def process_decorator(function):
     为process_message添加翻译步骤
     """
 
-    def wrapper(data, data_type, translator, source_language, target_language):
+    def wrapper(data, data_type, translator, source_language, target_language, rage_mode=False):
         """
         处理日志文件中的一行（包括翻译）
 
@@ -205,6 +205,7 @@ def process_decorator(function):
         :param translator: Translator类的实例
         :param source_language: 源语言
         :param target_language: 目标语言
+        :param rage_mode: 是否启用红温模式
         :return:
             - None：应被丢弃的数据（可能是不包含[CHAT]的日志行，也可能是系统消息且filter_server_messages为True）
             - 长度为3的元组：
@@ -212,7 +213,7 @@ def process_decorator(function):
                     - [0]: 名称（如果有）, if [0] == "[ERROR]": 翻译失败，此时[1]为错误信息
                     - [1]: 翻译后的消息
                     - [2]: 相关信息（如是否命中缓存、消耗token等）
-                - data_type == "clipboard":
+                - data_type in ("clipboard", "webui"):
                     - [0]: 是否翻译失败，if [0]: 翻译失败，此时[1]为错误信息
                     - [1]: 翻译后的消息
                     - [2]: 相关信息（如是否命中缓存、消耗token等）
@@ -228,13 +229,14 @@ def process_decorator(function):
                 logger.debug(f"Using custom glossary: {original_chat_message} -> {matched_translated_message}")
                 translated_chat_message = matched_translated_message
                 info["glossary_match"] = True
-            elif original_chat_message in cache:
+            elif original_chat_message in cache and not rage_mode:
                 logger.debug(f"Translation cache hit: {original_chat_message}")
                 translated_chat_message = cache[original_chat_message]
                 info["cache_hit"] = True
             else:
                 try:
-                    if result := translator.translate(
+                    translate = translator.translate_with_profanity if rage_mode else translator.translate
+                    if result := translate(
                             original_chat_message,
                             source_language=source_language,
                             target_language=target_language
@@ -264,13 +266,21 @@ def process_decorator(function):
                     return "[ERROR]", f"{_('翻译失败，错误：')} {e}", info
 
                 if translated_chat_message:
-                    logger.debug(
-                        f"Translation successful, caching result: {original_chat_message} -> {translated_chat_message}")
-                    cache[original_chat_message] = translated_chat_message
+                    if rage_mode:
+                        logger.debug(
+                            f"Rage translation generated (skipping cache): "
+                            f"'{original_chat_message}' -> '{translated_chat_message}'"
+                        )
+                    else:
+                        logger.debug(
+                            f"Translation successful, caching result:"
+                            f" {original_chat_message} -> {translated_chat_message}"
+                        )
+                        cache[original_chat_message] = translated_chat_message
 
             if data_type == "log":
                 return name or "", translated_chat_message, info
-            elif data_type == "clipboard":
+            elif data_type in ("clipboard", "webui"):
                 return False, translated_chat_message, info
 
         return None
@@ -279,7 +289,7 @@ def process_decorator(function):
 
 
 @process_decorator
-def process_message(data, data_type):
+def process_message(data, data_type, replace_garbled_character=False):
     """
     处理日志文件中的一行
 
@@ -292,7 +302,7 @@ def process_message(data, data_type):
     if data_type == "log":
         if "[CHAT]" in data:
             chat_message = data.split("[CHAT]")[1].strip()
-    elif data_type == "clipboard":
+    elif data_type in ("clipboard", "webui"):
         return "", data.strip()
     else:
         return "", ""
@@ -300,15 +310,58 @@ def process_message(data, data_type):
     if replace_garbled_character:
         chat_message = chat_message.replace("\ufffd\ufffd", "\u00A7")
 
+    # Minecraft 玩家名称验证规则: 3-16个字符,只能包含字母、数字、下划线
+    def is_valid_minecraft_name(name: str) -> bool:
+        return bool(re.match(r'^[a-zA-Z0-9_]{3,16}$', name))
+
+    # Hypixel 专用：净化名称用于验证
+    def sanitize_hypixel_name(name: str) -> str:
+        """
+        净化 Hypixel 玩家名称，移除格式化代码、标签和组织前缀
+        这个净化后的字符串仅用于验证，不会作为最终返回值
+        """
+        # 第1层：删除格式化代码 (§.)
+        sanitized = re.sub(r'§.', '', name)
+
+        # 第2层：删除所有标签 [...]
+        sanitized = re.sub(r'\[.*?\]', '', sanitized)
+
+        # 第3层：删除组织前缀 (如 "Guild > ", "Party > " 等)
+        # 匹配 "任意单词 > " 的模式
+        sanitized = re.sub(r'\w+\s*>\s*', '', sanitized)
+
+        # 第4层：私信前缀 (From/To)
+        sanitized = re.sub(r'(?:From|To)\s+', '', sanitized)
+
+        # 去除首尾空格
+        return sanitized.strip()
+
+    # 处理原版 Minecraft 聊天格式 <name>
     if chat_message.startswith("<"):
-        name, text = chat_message[1:].split(">", 1)
-    else:  # Hypixel Chat
+        # 尝试提取 <name> 格式
+        if ">" in chat_message[1:]:
+            name, text = chat_message[1:].split(">", 1)
+
+            # 对于尖括号格式，通常是原版聊天，直接验证即可
+            if is_valid_minecraft_name(name.strip()):
+                return name.strip(), text.strip()
+
+        return "", chat_message.strip()
+
+    else:
         if ":" not in chat_message:
             return "", chat_message.strip()
 
+        # 尝试提取 name: 格式
         name, text = chat_message.split(":", 1)
 
-    name = name.strip()
-    text = text.strip()
+        # 净化名称用于验证
+        sanitized_name = sanitize_hypixel_name(name)
 
-    return name, text
+        # 验证净化后的名称是否符合 Minecraft 玩家名规则
+        if is_valid_minecraft_name(sanitized_name):
+            # 返回原始未净化的名称和消息内容
+            return name.strip(), text.strip()
+
+        # 不符合规则,整条消息作为系统消息返回
+        return "", chat_message.strip()
