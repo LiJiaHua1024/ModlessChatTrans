@@ -17,7 +17,7 @@ from json import JSONDecodeError
 from requests.exceptions import HTTPError
 from modless_chat_trans.i18n import _
 from modless_chat_trans.file_utils import cache
-from modless_chat_trans.translator import services
+from modless_chat_trans.translator import services, MessageType
 from modless_chat_trans.logger import logger
 
 filter_server_messages = True
@@ -299,11 +299,11 @@ def process_decorator(function):
                     - [2]: 相关信息（如是否命中缓存、消耗token等）
         """
 
-        name, original_chat_message = function(data, data_type)
+        name, original_chat_message, message_type = function(data, data_type)
         translated_chat_message: str = ""
         info: dict = {}
 
-        # 黑名单检查
+        # 黑名单检查（仅对玩家消息）
         if name and original_chat_message:
             # 净化玩家名称用于黑名单检查
             sanitized_name = sanitize_hypixel_name(name)
@@ -322,7 +322,7 @@ def process_decorator(function):
                     return False, original_chat_message, {"blacklist": "message"}
 
         if data_type == "log" and filter_server_messages and not name:
-            return ""
+            return "", "", MessageType.SYSTEM
         if original_chat_message:
             if matched_translated_message := match_and_translate(original_chat_message):
                 logger.debug(f"Using custom glossary: {original_chat_message} -> {matched_translated_message}")
@@ -338,7 +338,8 @@ def process_decorator(function):
                     if result := translate(
                             original_chat_message,
                             source_language=source_language,
-                            target_language=target_language
+                            target_language=target_language,
+                            message_type=message_type
                     ):
                         translated_chat_message = result["result"]
                         info["usage"] = result["usage"]
@@ -393,8 +394,8 @@ def process_message(data, data_type, replace_garbled_character=False):
     处理日志文件中的一行
 
     :param data: 需要处理的数据
-    :param data_type: 数据类型
-    :return: 元组 (玩家名称, 聊天内容)
+    :param data_type: 数据类型 ("log", "clipboard", "webui")
+    :return: 元组 (玩家名称, 聊天内容, 消息类型)
     """
 
     chat_message: str = ""
@@ -402,9 +403,9 @@ def process_message(data, data_type, replace_garbled_character=False):
         if "[CHAT]" in data:
             chat_message = data.split("[CHAT]")[1].strip()
     elif data_type in ("clipboard", "webui"):
-        return "", data.strip()
+        return "", data.strip(), MessageType.SEND
     else:
-        return "", ""
+        return "", "", MessageType.SYSTEM
 
     if replace_garbled_character:
         chat_message = chat_message.replace("\ufffd\ufffd", "\u00A7")
@@ -421,13 +422,13 @@ def process_message(data, data_type, replace_garbled_character=False):
 
             # 对于尖括号格式，通常是原版聊天，直接验证即可
             if is_valid_minecraft_name(name.strip()):
-                return name.strip(), text.strip()
+                return name.strip(), text.strip(), MessageType.PLAYER
 
-        return "", chat_message.strip()
+        return "", chat_message.strip(), MessageType.SYSTEM
 
     else:
         if ":" not in chat_message:
-            return "", chat_message.strip()
+            return "", chat_message.strip(), MessageType.SYSTEM
 
         # 尝试提取 name: 格式
         name, text = chat_message.split(":", 1)
@@ -438,7 +439,7 @@ def process_message(data, data_type, replace_garbled_character=False):
         # 验证净化后的名称是否符合 Minecraft 玩家名规则
         if is_valid_minecraft_name(sanitized_name):
             # 返回原始未净化的名称和消息内容
-            return name.strip(), text.strip()
+            return name.strip(), text.strip(), MessageType.PLAYER
 
         # 不符合规则,整条消息作为系统消息返回
-        return "", chat_message.strip()
+        return "", chat_message.strip(), MessageType.SYSTEM
