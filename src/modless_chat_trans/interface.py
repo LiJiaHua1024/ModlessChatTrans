@@ -27,7 +27,7 @@ from PySide6.QtGui import QIcon, QFont, QColor, QDesktopServices
 from PySide6.QtWidgets import (
     QApplication, QButtonGroup, QCompleter, QFileDialog, QFrame,
     QGridLayout, QHBoxLayout, QStackedWidget, QTableWidgetItem,
-    QTextBrowser, QVBoxLayout
+    QTextBrowser, QTextEdit, QVBoxLayout
 )
 from qfluentwidgets import (
     Action, BodyLabel, CaptionLabel, CheckBox, ComboBox,
@@ -1575,6 +1575,615 @@ class GlossaryInterface(QFrame):
                 QTimer.singleShot(100, self._set_equal_column_widths)
 
 
+class BlacklistInterface(QFrame):
+    """黑名单配置界面组件"""
+
+    def __init__(self, parent, config=None):
+        super().__init__(parent=parent)
+        self.setObjectName("blacklist")
+        self.parent_ref = parent
+        self.config = config
+
+        # 状态变量
+        self.selected_row = -1
+        self.user_blacklist = []
+        self.message_blacklist = []
+
+        self.init_ui()
+        self.load_blacklist_data()
+
+    def init_ui(self):
+        # 主布局
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(30, 30, 30, 30)
+        self.main_layout.setSpacing(20)
+
+        # 标题
+        title = SubtitleLabel(_('黑名单设置'), self)
+        setFont(title, 24)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.main_layout.addWidget(title)
+
+        # 创建TabBar（用于切换用户黑名单和消息内容黑名单）
+        self.tab_bar = TabBar(self)
+        self.tab_bar.setAddButtonVisible(False)
+        self.tab_bar.setCloseButtonDisplayMode(TabCloseButtonDisplayMode.NEVER)
+        self.tab_bar.setMinimumWidth(600)
+
+        # 美化TabBar
+        self.tab_bar.setTabShadowEnabled(True)
+        self.tab_bar.setTabSelectedBackgroundColor(
+            QColor(230, 230, 230),
+            QColor(60, 60, 60)
+        )
+
+        # 创建堆叠窗口用于切换不同的标签页内容
+        self.tab_stacked_widget = QStackedWidget(self)
+
+        # 创建用户黑名单界面
+        self.user_blacklist_widget = self.create_user_blacklist_widget()
+        self.tab_stacked_widget.addWidget(self.user_blacklist_widget)
+
+        # 创建消息内容黑名单界面
+        self.message_blacklist_widget = self.create_message_blacklist_widget()
+        self.tab_stacked_widget.addWidget(self.message_blacklist_widget)
+
+        # 添加标签
+        self.tab_bar.addTab(
+            routeKey="userBlacklist",
+            text=_("用户黑名单"),
+            onClick=lambda: self.switch_tab(0)
+        )
+        self.tab_bar.addTab(
+            routeKey="messageBlacklist",
+            text=_("消息内容黑名单"),
+            onClick=lambda: self.switch_tab(1)
+        )
+
+        # 创建TabBar容器，用于居左显示
+        self.tab_container = QFrame(self)
+        tab_container_layout = QHBoxLayout(self.tab_container)
+        tab_container_layout.setContentsMargins(0, 0, 0, 10)
+        tab_container_layout.addWidget(self.tab_bar)
+        tab_container_layout.addStretch()
+
+        # 添加到主布局
+        self.main_layout.addWidget(self.tab_container)
+        self.main_layout.addWidget(self.tab_stacked_widget)
+        self.main_layout.addStretch()
+
+    def switch_tab(self, index):
+        """切换标签页"""
+        self.tab_stacked_widget.setCurrentIndex(index)
+
+    def create_user_blacklist_widget(self):
+        """创建用户黑名单界面"""
+        widget = QFrame(self)
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(0, 20, 0, 0)
+        layout.setSpacing(20)
+
+        # 说明文字
+        desc_label = BodyLabel(
+            _('用户黑名单中的玩家发送的消息将不会被翻译。\n'
+              '支持批量添加，每行一个玩家名称。\n'
+              '黑名单使用净化后的玩家名称进行完全匹配（区分大小写）。'),
+            widget
+        )
+        desc_label.setWordWrap(True)
+        layout.addWidget(desc_label)
+
+        # 输入区域
+        input_frame = QFrame(widget)
+        input_layout = QVBoxLayout(input_frame)
+        input_layout.setSpacing(10)
+
+        # 多行输入框
+        self.user_input = QTextEdit(widget)
+        self.user_input.setPlaceholderText(_("请输入玩家名称，每行一个\n例如：\nNotch\nHerobrine\nSteve"))
+        self.user_input.setMaximumHeight(150)
+
+        input_layout.addWidget(self.user_input)
+
+        # 按钮区域
+        button_frame = QFrame(input_frame)
+        button_layout = QHBoxLayout(button_frame)
+        button_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.add_user_button = PushButton(_('添加用户'), button_frame)
+        self.add_user_button.clicked.connect(self.add_users)
+        button_layout.addWidget(self.add_user_button)
+
+        self.clear_user_input_button = PushButton(_('清空输入'), button_frame)
+        self.clear_user_input_button.clicked.connect(self.user_input.clear)
+        button_layout.addWidget(self.clear_user_input_button)
+
+        button_layout.addStretch()
+        input_layout.addWidget(button_frame)
+
+        layout.addWidget(input_frame)
+
+        # 用户黑名单表格
+        self.user_table = TableWidget(widget)
+        self.user_table.setBorderVisible(True)
+        self.user_table.setBorderRadius(8)
+        self.user_table.setWordWrap(False)
+        self.user_table.setColumnCount(1)
+        self.user_table.setHorizontalHeaderLabels([_('玩家名称')])
+        self.user_table.verticalHeader().hide()
+        self.user_table.setSelectRightClickedRow(True)
+        self.user_table.itemSelectionChanged.connect(self.on_user_selection_changed)
+
+        layout.addWidget(self.user_table)
+
+        # 底部操作按钮
+        bottom_frame = QFrame(widget)
+        bottom_layout = QHBoxLayout(bottom_frame)
+        bottom_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.delete_user_button = PushButton(_('删除选中用户'), bottom_frame)
+        self.delete_user_button.clicked.connect(self.delete_selected_user)
+        self.delete_user_button.setEnabled(False)
+
+        self.clear_all_users_button = PushButton(_('清空所有用户'), bottom_frame)
+        self.clear_all_users_button.clicked.connect(self.clear_all_users)
+
+        bottom_layout.addWidget(self.delete_user_button)
+        bottom_layout.addStretch()
+        bottom_layout.addWidget(self.clear_all_users_button)
+
+        layout.addWidget(bottom_frame)
+
+        # 添加弹性空间
+        layout.addStretch()
+
+        return widget
+
+    def create_message_blacklist_widget(self):
+        """创建消息内容黑名单界面"""
+        widget = QFrame(self)
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(0, 20, 0, 0)
+        layout.setSpacing(20)
+
+        # 说明文字
+        desc_label = BodyLabel(
+            _('消息内容黑名单用于过滤特定内容的消息。\n'
+              '如果选择"使用正则表达式"，则按正则表达式匹配；\n'
+              '否则按关键词匹配（消息包含任意关键词即命中）。'),
+            widget
+        )
+        desc_label.setWordWrap(True)
+        layout.addWidget(desc_label)
+
+        # 输入区域
+        input_frame = QFrame(widget)
+        input_layout = QGridLayout(input_frame)
+        input_layout.setSpacing(10)
+
+        # 规则输入
+        pattern_label = BodyLabel(_('规则：'), input_frame)
+        self.pattern_edit = LineEdit(input_frame)
+        self.pattern_edit.setPlaceholderText(_("请输入正则表达式或关键词"))
+        self.pattern_edit.setClearButtonEnabled(True)
+
+        input_layout.addWidget(pattern_label, 0, 0)
+        input_layout.addWidget(self.pattern_edit, 0, 1)
+
+        # 正则表达式开关
+        self.regex_check = CheckBox(_('使用正则表达式'), input_frame)
+        input_layout.addWidget(self.regex_check, 0, 2)
+
+        # 按钮
+        self.add_pattern_button = PushButton(_('添加规则'), input_frame)
+        self.add_pattern_button.clicked.connect(self.add_pattern)
+        input_layout.addWidget(self.add_pattern_button, 1, 2)
+
+        self.clear_pattern_button = PushButton(_('清空输入'), input_frame)
+        self.clear_pattern_button.clicked.connect(self.clear_pattern_inputs)
+        input_layout.addWidget(self.clear_pattern_button, 1, 1)
+
+        input_layout.setColumnStretch(1, 1)
+        layout.addWidget(input_frame)
+
+        # 消息黑名单表格
+        self.message_table = TableWidget(widget)
+        self.message_table.setBorderVisible(True)
+        self.message_table.setBorderRadius(8)
+        self.message_table.setWordWrap(False)
+        self.message_table.setColumnCount(2)
+        self.message_table.setHorizontalHeaderLabels([_('规则'), _('类型')])
+        self.message_table.verticalHeader().hide()
+        self.message_table.setSelectRightClickedRow(True)
+        self.message_table.itemSelectionChanged.connect(self.on_message_selection_changed)
+
+        layout.addWidget(self.message_table)
+
+        # 底部操作按钮
+        bottom_frame = QFrame(widget)
+        bottom_layout = QHBoxLayout(bottom_frame)
+        bottom_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.delete_pattern_button = PushButton(_('删除选中规则'), bottom_frame)
+        self.delete_pattern_button.clicked.connect(self.delete_selected_pattern)
+        self.delete_pattern_button.setEnabled(False)
+
+        self.clear_all_patterns_button = PushButton(_('清空所有规则'), bottom_frame)
+        self.clear_all_patterns_button.clicked.connect(self.clear_all_patterns)
+
+        bottom_layout.addWidget(self.delete_pattern_button)
+        bottom_layout.addStretch()
+        bottom_layout.addWidget(self.clear_all_patterns_button)
+
+        layout.addWidget(bottom_frame)
+
+        # 添加弹性空间
+        layout.addStretch()
+
+        return widget
+
+    def load_blacklist_data(self):
+        """从配置加载黑名单数据"""
+        try:
+            blacklist = None
+            if self.config and hasattr(self.config, 'blacklist'):
+                blacklist = self.config.blacklist
+            elif hasattr(self.parent_ref, 'config') and hasattr(self.parent_ref.config, 'blacklist'):
+                blacklist = self.parent_ref.config.blacklist
+
+            if blacklist:
+                self.user_blacklist = blacklist.user_blacklist.copy() if blacklist.user_blacklist else []
+                self.message_blacklist = blacklist.message_blacklist.copy() if blacklist.message_blacklist else []
+                logger.info(f"Loaded blacklist: {len(self.user_blacklist)} users, {len(self.message_blacklist)} message rules")
+            else:
+                logger.info("No blacklist found in config. Initializing as empty.")
+                self.user_blacklist = []
+                self.message_blacklist = []
+        except Exception as e:
+            logger.error(f"Error loading blacklist data: {e}")
+            self.user_blacklist = []
+            self.message_blacklist = []
+
+        self.update_user_table_display()
+        self.update_message_table_display()
+
+    def update_user_table_display(self):
+        """更新用户黑名单表格显示"""
+        self.user_table.setRowCount(len(self.user_blacklist))
+
+        for row, username in enumerate(self.user_blacklist):
+            item = QTableWidgetItem(username)
+            self.user_table.setItem(row, 0, item)
+
+        self._adjust_user_table_widths()
+
+    def _adjust_user_table_widths(self):
+        """智能调整用户表格列宽度"""
+        self.user_table.resizeColumnToContents(0)
+        table_width = self.user_table.viewport().width()
+        col0_width = self.user_table.columnWidth(0)
+
+        if col0_width < table_width * 0.8:
+            self.user_table.setColumnWidth(0, table_width - 4)
+        elif col0_width > table_width * 0.7:
+            self.user_table.setColumnWidth(0, int(table_width * 0.7))
+
+    def update_message_table_display(self):
+        """更新消息黑名单表格显示"""
+        self.message_table.setRowCount(len(self.message_blacklist))
+
+        for row, rule in enumerate(self.message_blacklist):
+            pattern_item = QTableWidgetItem(rule.pattern)
+            type_text = _('正则表达式') if rule.is_regex else _('关键词')
+            type_item = QTableWidgetItem(type_text)
+            self.message_table.setItem(row, 0, pattern_item)
+            self.message_table.setItem(row, 1, type_item)
+
+        self._adjust_message_table_widths()
+
+    def _adjust_message_table_widths(self):
+        """智能调整消息表格列宽度"""
+        self.message_table.resizeColumnsToContents()
+        table_width = self.message_table.viewport().width()
+        col0_width = self.message_table.columnWidth(0)
+        col1_width = self.message_table.columnWidth(1)
+
+        total_content_width = col0_width + col1_width
+        if total_content_width < table_width * 0.8:
+            half_width = (table_width - 20) // 2
+            self.message_table.setColumnWidth(0, half_width)
+            self.message_table.setColumnWidth(1, half_width)
+        else:
+            max_col_width = table_width * 0.7
+            if col0_width > max_col_width:
+                self.message_table.setColumnWidth(0, int(max_col_width))
+            if col1_width > max_col_width:
+                self.message_table.setColumnWidth(1, int(max_col_width))
+
+    def on_user_selection_changed(self):
+        """用户表格选择变化"""
+        self.selected_row = -1
+        selected_items = self.user_table.selectedItems()
+        if selected_items:
+            self.selected_row = selected_items[0].row()
+            self.delete_user_button.setEnabled(True)
+        else:
+            self.delete_user_button.setEnabled(False)
+
+    def on_message_selection_changed(self):
+        """消息表格选择变化"""
+        self.selected_row = -1
+        selected_items = self.message_table.selectedItems()
+        if selected_items:
+            self.selected_row = selected_items[0].row()
+            self.delete_pattern_button.setEnabled(True)
+        else:
+            self.delete_pattern_button.setEnabled(False)
+
+    def add_users(self):
+        """添加用户到黑名单"""
+        text = self.user_input.toPlainText().strip()
+        if not text:
+            InfoBar.info(
+                title=_('提示'),
+                content=_('请输入玩家名称'),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self
+            )
+            return
+
+        # 分割输入（按行）
+        names = [name.strip() for name in text.split('\n') if name.strip()]
+        added_count = 0
+        duplicate_count = 0
+
+        for name in names:
+            if name and name not in self.user_blacklist:
+                self.user_blacklist.append(name)
+                added_count += 1
+            elif name:
+                duplicate_count += 1
+
+        self.user_input.clear()
+        self.update_user_table_display()
+
+        # 显示结果
+        if added_count > 0:
+            InfoBar.success(
+                title=_('添加成功'),
+                content=_('已添加 {} 个用户到黑名单').format(added_count),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self
+            )
+        if duplicate_count > 0:
+            InfoBar.info(
+                title=_('提示'),
+                content=_('{} 个用户已在黑名单中').format(duplicate_count),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self
+            )
+
+    def delete_selected_user(self):
+        """删除选中的用户"""
+        if self.selected_row < 0 or self.selected_row >= len(self.user_blacklist):
+            return
+
+        username = self.user_blacklist[self.selected_row]
+        del self.user_blacklist[self.selected_row]
+        self.update_user_table_display()
+
+        InfoBar.success(
+            title=_('删除成功'),
+            content=_('已将 "{}" 从黑名单移除').format(username),
+            orient=Qt.Orientation.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=2000,
+            parent=self
+        )
+
+    def clear_all_users(self):
+        """清空所有用户"""
+        if not self.user_blacklist:
+            InfoBar.info(
+                title=_('提示'),
+                content=_('用户黑名单为空，无需清空'),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self
+            )
+            return
+
+        w = MessageBox(
+            _("确认清空"),
+            _("确定要清空所有用户黑名单吗？此操作不可恢复。"),
+            self.window()
+        )
+
+        if w.exec():
+            count = len(self.user_blacklist)
+            self.user_blacklist.clear()
+            logger.info(f"User blacklist cleared, deleted {count} users")
+
+            InfoBar.success(
+                title=_('清空成功'),
+                content=_('已清空 {} 个用户').format(count),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self
+            )
+
+            self.update_user_table_display()
+
+    def add_pattern(self):
+        """添加消息黑名单规则"""
+        pattern = self.pattern_edit.text().strip()
+        if not pattern:
+            InfoBar.info(
+                title=_('提示'),
+                content=_('请输入规则'),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self
+            )
+            return
+
+        is_regex = self.regex_check.isChecked()
+
+        # 验证正则表达式
+        if is_regex:
+            try:
+                re.compile(pattern)
+            except re.error as e:
+                InfoBar.error(
+                    title=_('正则表达式错误'),
+                    content=_('无效的正则表达式：{}').format(str(e)),
+                    orient=Qt.Orientation.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.TOP,
+                    duration=3000,
+                    parent=self
+                )
+                return
+
+        # 检查是否已存在相同规则
+        from modless_chat_trans.config import MessageBlacklistRule
+
+        # 对于非正则规则（关键词），不区分大小写检查重复
+        if not is_regex:
+            exists = any(
+                not r.is_regex and r.pattern.lower() == pattern.lower()
+                for r in self.message_blacklist
+            )
+        else:
+            # 对于正则规则，完全匹配检查
+            exists = any(
+                r.is_regex and r.pattern == pattern
+                for r in self.message_blacklist
+            )
+
+        if exists:
+            InfoBar.info(
+                title=_('提示'),
+                content=_('该规则已存在'),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self
+            )
+            return
+
+        self.message_blacklist.append(MessageBlacklistRule(pattern=pattern, is_regex=is_regex))
+        self.clear_pattern_inputs()
+        self.update_message_table_display()
+
+        InfoBar.success(
+            title=_('添加成功'),
+            content=_('已添加规则：{}').format(pattern),
+            orient=Qt.Orientation.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=2000,
+            parent=self
+        )
+
+    def clear_pattern_inputs(self):
+        """清空规则输入"""
+        self.pattern_edit.clear()
+        self.regex_check.setChecked(False)
+
+    def delete_selected_pattern(self):
+        """删除选中的规则"""
+        if self.selected_row < 0 or self.selected_row >= len(self.message_blacklist):
+            return
+
+        rule = self.message_blacklist[self.selected_row]
+        del self.message_blacklist[self.selected_row]
+        self.update_message_table_display()
+
+        type_text = _('正则表达式') if rule.is_regex else _('关键词')
+        InfoBar.success(
+            title=_('删除成功'),
+            content=_('已删除规则：{}（{}）').format(rule.pattern, type_text),
+            orient=Qt.Orientation.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=2000,
+            parent=self
+        )
+
+    def clear_all_patterns(self):
+        """清空所有规则"""
+        if not self.message_blacklist:
+            InfoBar.info(
+                title=_('提示'),
+                content=_('消息黑名单为空，无需清空'),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self
+            )
+            return
+
+        w = MessageBox(
+            _("确认清空"),
+            _("确定要清空所有消息黑名单规则吗？此操作不可恢复。"),
+            self.window()
+        )
+
+        if w.exec():
+            count = len(self.message_blacklist)
+            self.message_blacklist.clear()
+            logger.info(f"Message blacklist cleared, deleted {count} rules")
+
+            InfoBar.success(
+                title=_('清空成功'),
+                content=_('已清空 {} 个规则').format(count),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self
+            )
+
+            self.update_message_table_display()
+
+    def get_blacklist_data(self):
+        """获取当前黑名单数据，供保存时使用"""
+        from modless_chat_trans.config import BlacklistConfig
+        return BlacklistConfig(
+            user_blacklist=self.user_blacklist.copy(),
+            message_blacklist=self.message_blacklist.copy()
+        )
+
+    def resizeEvent(self, event):
+        """窗口大小改变时重新调整列宽"""
+        super().resizeEvent(event)
+        if hasattr(self, 'user_table'):
+            self.user_table.viewport().update()
+            QTimer.singleShot(100, self._adjust_user_table_widths)
+        if hasattr(self, 'message_table'):
+            self.message_table.viewport().update()
+            QTimer.singleShot(100, self._adjust_message_table_widths)
+
+
 class StartInterface(QFrame):
     """启动界面组件（卡片式布局）"""
 
@@ -1857,6 +2466,7 @@ class StartInterface(QFrame):
         msg_present = main.message_presentation_interface
         msg_send = main.message_send_interface
         glossary = main.glossary_interface
+        blacklist = main.blacklist_interface
         setting = main.setting_interface
 
         # 1) 消息捕获
@@ -1955,7 +2565,10 @@ class StartInterface(QFrame):
         # 5) 术语表
         cfg.glossary = glossary.get_glossary_data()
 
-        # 6) 设置
+        # 6) 黑名单
+        cfg.blacklist = blacklist.get_blacklist_data()
+
+        # 7) 设置
         cfg.settings.interface_language = setting.language_combo.currentData()
         cfg.settings.auto_check_update_frequency = setting.update_frequency_combo.currentData()
         cfg.settings.include_prerelease = setting.include_prerelease_check.isChecked()
@@ -2989,6 +3602,7 @@ class MainWindow(FluentWindow):
         self.message_presentation_interface = MessagePresentationInterface(self, config)
         self.message_send_interface = MessageSendInterface(self, initial_send_service_type, config)
         self.glossary_interface = GlossaryInterface(self, config)
+        self.blacklist_interface = BlacklistInterface(self, config)
         self.start_interface = StartInterface(self)  # 已改为卡片式布局且提供启动/保存
         self.about_interface = AboutInterface(self)
         self.setting_interface = SettingInterface(self, config)
@@ -3161,6 +3775,7 @@ class MainWindow(FluentWindow):
         self.addSubInterface(self.message_presentation_interface, FluentIcon.VIEW, _('翻译结果显示'))
         self.addSubInterface(self.message_send_interface, FluentIcon.SEND, _('发送消息'))
         self.addSubInterface(self.glossary_interface, FluentIcon.DICTIONARY, _('术语表'))
+        self.addSubInterface(self.blacklist_interface, FluentIcon.FILTER, _('黑名单'))
         self.addSubInterface(self.start_interface, FluentIcon.POWER_BUTTON, _('启动'))
 
         # 添加底部设置界面

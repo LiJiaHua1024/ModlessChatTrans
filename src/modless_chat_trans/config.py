@@ -102,6 +102,18 @@ class SettingConfig(BaseConfigModel):
     last_update_check_time: str
 
 
+class MessageBlacklistRule(BaseConfigModel):
+    """消息内容黑名单规则"""
+    pattern: str  # 正则表达式或关键词
+    is_regex: bool = False  # 是否使用正则表达式
+
+
+class BlacklistConfig(BaseConfigModel):
+    """黑名单配置"""
+    user_blacklist: List[str] = []  # 用户黑名单（玩家名称全匹配）
+    message_blacklist: List[MessageBlacklistRule] = []  # 消息内容黑名单
+
+
 class ConfigV3FromInit(BaseSettings):
     model_config = SettingsConfigDict(
         alias_generator=snake_to_kebab,
@@ -116,6 +128,7 @@ class ConfigV3FromInit(BaseSettings):
     message_send: MessageSendConfig
     settings: SettingConfig
     glossary: Dict[str, str]
+    blacklist: BlacklistConfig = BlacklistConfig()
 
 
 class ConfigV3(ConfigV3FromInit):
@@ -243,7 +256,8 @@ def convert_v2_to_v3(config_v2: ConfigV2) -> ConfigV3:
             include_prerelease=config_v2.include_prerelease,
             last_update_check_time=config_v2.last_check_time
         ),
-        glossary=config_v2.glossary
+        glossary=config_v2.glossary,
+        blacklist=BlacklistConfig()
     )
 
 

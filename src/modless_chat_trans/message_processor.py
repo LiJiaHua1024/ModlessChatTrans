@@ -25,6 +25,10 @@ glossary = {}
 _compiled_glossary_patterns = {}
 glossary_compiled = False
 replace_garbled_character = False
+user_blacklist = []
+user_blacklist_set = set()  # 预构建的用户黑名单集合（用于O(1)查找）
+message_blacklist = []
+_compiled_message_patterns = []  # 预编译的消息黑名单正则
 
 
 def init_processor(message_capture_config, _glossary):
@@ -36,6 +40,82 @@ def init_processor(message_capture_config, _glossary):
     filter_server_messages = message_capture_config.filter_server_messages
     replace_garbled_character = message_capture_config.replace_garbled_chars
     glossary = _glossary
+
+
+def init_blacklist(blacklist_config):
+    """
+    初始化黑名单配置
+    :param blacklist_config: config.BlacklistConfig
+    """
+    global user_blacklist, user_blacklist_set, message_blacklist, _compiled_message_patterns
+
+    user_blacklist = blacklist_config.user_blacklist or []
+    message_blacklist = blacklist_config.message_blacklist or []
+
+    # 预构建用户黑名单集合（不区分大小写）
+    user_blacklist_set = set(name.lower() for name in user_blacklist)
+
+    # 预编译消息黑名单正则表达式
+    _compiled_message_patterns = []
+    for rule in message_blacklist:
+        if rule.is_regex:
+            try:
+                _compiled_message_patterns.append((re.compile(rule.pattern), rule.pattern))
+            except re.error as e:
+                logger.error(f"Invalid regex pattern in blacklist: {rule.pattern}, error: {e}")
+
+    logger.info(f"Blacklist initialized: {len(user_blacklist)} users, {len(message_blacklist)} message rules")
+
+
+def is_user_in_blacklist(sanitized_name: str) -> bool:
+    """
+    检查用户是否在黑名单中（不区分大小写的完全匹配）
+    :param sanitized_name: 净化后的玩家名称
+    :return: True if user is in blacklist
+    """
+    return sanitized_name.lower() in user_blacklist_set
+
+
+def is_message_blocked(message: str) -> bool:
+    """
+    检查消息是否命中黑名单规则
+    :param message: 消息内容
+    :return: True if message should be blocked
+    """
+    # 检查预编译的正则表达式
+    for compiled_pattern, original_pattern in _compiled_message_patterns:
+        if compiled_pattern.search(message):
+            logger.debug(f"Message blocked by regex rule: {original_pattern}")
+            return True
+
+    # 检查关键词（非正则表达式规则）
+    for rule in message_blacklist:
+        if not rule.is_regex and rule.pattern in message:
+            logger.debug(f"Message blocked by keyword: {rule.pattern}")
+            return True
+    return False
+
+
+def sanitize_hypixel_name(name: str) -> str:
+    """
+    净化 Hypixel 玩家名称，移除格式化代码、标签和组织前缀
+    这个净化后的字符串用于黑名单检查和验证
+    """
+    # 第1层：删除格式化代码 (§.)
+    sanitized = re.sub(r'§.', '', name)
+
+    # 第2层：删除所有标签 [...]
+    sanitized = re.sub(r'\[.*?\]', '', sanitized)
+
+    # 第3层：删除组织前缀 (如 "Guild > ", "Party > " 等)
+    # 匹配 "任意单词 > " 的模式
+    sanitized = re.sub(r'\w+\s*>\s*', '', sanitized)
+
+    # 第4层：私信前缀 (From/To)
+    sanitized = re.sub(r'(?:From|To)\s+', '', sanitized)
+
+    # 去除首尾空格
+    return sanitized.strip()
 
 
 def _compile_glossary_patterns():
@@ -222,6 +302,25 @@ def process_decorator(function):
         name, original_chat_message = function(data, data_type)
         translated_chat_message: str = ""
         info: dict = {}
+
+        # 黑名单检查
+        if name and original_chat_message:
+            # 净化玩家名称用于黑名单检查
+            sanitized_name = sanitize_hypixel_name(name)
+            if is_user_in_blacklist(sanitized_name):
+                logger.debug(f"User '{sanitized_name}' in blacklist, skipping translation")
+                if data_type == "log":
+                    return name, original_chat_message, {"blacklist": "user"}
+                elif data_type in ("clipboard", "webui"):
+                    return False, original_chat_message, {"blacklist": "user"}
+
+            if is_message_blocked(original_chat_message):
+                logger.debug(f"Message blocked by content blacklist: {original_chat_message[:50]}...")
+                if data_type == "log":
+                    return name, original_chat_message, {"blacklist": "message"}
+                elif data_type in ("clipboard", "webui"):
+                    return False, original_chat_message, {"blacklist": "message"}
+
         if data_type == "log" and filter_server_messages and not name:
             return ""
         if original_chat_message:
@@ -313,28 +412,6 @@ def process_message(data, data_type, replace_garbled_character=False):
     # Minecraft 玩家名称验证规则: 3-16个字符,只能包含字母、数字、下划线
     def is_valid_minecraft_name(name: str) -> bool:
         return bool(re.match(r'^[a-zA-Z0-9_]{3,16}$', name))
-
-    # Hypixel 专用：净化名称用于验证
-    def sanitize_hypixel_name(name: str) -> str:
-        """
-        净化 Hypixel 玩家名称，移除格式化代码、标签和组织前缀
-        这个净化后的字符串仅用于验证，不会作为最终返回值
-        """
-        # 第1层：删除格式化代码 (§.)
-        sanitized = re.sub(r'§.', '', name)
-
-        # 第2层：删除所有标签 [...]
-        sanitized = re.sub(r'\[.*?\]', '', sanitized)
-
-        # 第3层：删除组织前缀 (如 "Guild > ", "Party > " 等)
-        # 匹配 "任意单词 > " 的模式
-        sanitized = re.sub(r'\w+\s*>\s*', '', sanitized)
-
-        # 第4层：私信前缀 (From/To)
-        sanitized = re.sub(r'(?:From|To)\s+', '', sanitized)
-
-        # 去除首尾空格
-        return sanitized.strip()
 
     # 处理原版 Minecraft 聊天格式 <name>
     if chat_message.startswith("<"):

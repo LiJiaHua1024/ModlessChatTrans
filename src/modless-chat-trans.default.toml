@@ -36,3 +36,7 @@ include-prerelease = false
 last-update-check-time = "1970-01-01T00:00:00"
 
 [glossary]
+
+[blacklist]
+user-blacklist = []
+message-blacklist = []
