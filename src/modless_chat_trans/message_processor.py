@@ -303,17 +303,17 @@ def process_decorator(function):
         translated_chat_message: str = ""
         info: dict = {}
 
-        # 黑名单检查（仅对玩家消息）
-        if name and original_chat_message:
-            # 净化玩家名称用于黑名单检查
-            sanitized_name = sanitize_hypixel_name(name)
-            if is_user_in_blacklist(sanitized_name):
-                logger.debug(f"User '{sanitized_name}' in blacklist, skipping translation")
+        # 黑名单检查（PLAYER 和 SYSTEM 消息生效，SEND 不生效）
+        if message_type != MessageType.SEND and original_chat_message:
+            # 用户黑名单检查（仅对玩家消息，因为需要用户名）
+            if name and is_user_in_blacklist(sanitize_hypixel_name(name)):
+                logger.debug(f"User '{sanitize_hypixel_name(name)}' in blacklist, skipping translation")
                 if data_type == "log":
                     return name, original_chat_message, {"blacklist": "user"}
                 elif data_type in ("clipboard", "webui"):
                     return False, original_chat_message, {"blacklist": "user"}
 
+            # 消息内容黑名单检查（对所有非 SEND 消息生效）
             if is_message_blocked(original_chat_message):
                 logger.debug(f"Message blocked by content blacklist: {original_chat_message[:50]}...")
                 if data_type == "log":
