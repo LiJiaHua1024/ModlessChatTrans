@@ -400,8 +400,7 @@ def process_message(data, data_type, replace_garbled_character=False):
 
     chat_message: str = ""
     if data_type == "log":
-        if "[CHAT]" in data:
-            chat_message = data.split("[CHAT]")[1].strip()
+        chat_message = data.split("[CHAT]")[1].strip()
     elif data_type in ("clipboard", "webui"):
         return "", data.strip(), MessageType.SEND
     else:
