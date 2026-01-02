@@ -1,4 +1,4 @@
-config-version = "3.0.0"
+config-version = "3.2.0"
 send-translation-independent = false
 
 [message-capture]
@@ -19,6 +19,7 @@ api-key = ""
 api-base = ""
 model = "gpt-5-mini"
 deep-translate = false
+timeout = 15.0
 
 [message-presentation]
 web-port = 56552

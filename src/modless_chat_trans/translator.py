@@ -332,6 +332,8 @@ class Translator:
             if api_base := self.translation_service_config.llm.api_base:
                 llm_params["api_base"] = api_base
 
+            llm_params["timeout"] = self.translation_service_config.llm.timeout
+
             response = litellm.completion(**llm_params)
 
             # litellm 的返回对象与 OpenAI SDK 高度兼容
@@ -625,6 +627,7 @@ class Translator:
                 raise Exception(f"Traditional translation failed: {translated_message}")
 
     def _translate_deepl(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
+        timeout = self.translation_service_config.traditional.timeout
         if api_key.endswith(":fx"):
             url = "https://api-free.deepl.com/v2/translate"
         else:
@@ -640,13 +643,14 @@ class Translator:
         if source_language:
             data["source_lang"] = source_language.split("-")[0].upper()
 
-        response = requests.post(url, headers=headers, data=data)
+        response = requests.post(url, headers=headers, data=data, timeout=timeout)
         if response.status_code == 200:
             return response.json()["translations"][0]["text"]
         else:
             raise Exception(f"DeepL API translation failed: {response.status_code} {response.text}")
 
     def _translate_google(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
+        timeout = self.translation_service_config.traditional.timeout
         url = "https://translation.googleapis.com/language/translate/v2"
         params = {
             "key": api_key,
@@ -656,13 +660,14 @@ class Translator:
         if source_language:
             params["source"] = source_language.split("-")[0]
 
-        response = requests.post(url, params=params)
+        response = requests.post(url, params=params, timeout=timeout)
         if response.status_code == 200:
             return response.json()["data"]["translations"][0]["translatedText"]
         else:
             raise Exception(f"Google API translation failed: {response.status_code} {response.text}")
 
     def _translate_yandex(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
+        timeout = self.translation_service_config.traditional.timeout
         url = "https://translate.api.cloud.yandex.net/translate/v2/translate"
         headers = {
             "Authorization": f"Api-Key {api_key}",
@@ -675,13 +680,14 @@ class Translator:
         if source_language:
             data["sourceLanguageCode"] = source_language.split("-")[0]
 
-        response = requests.post(url, headers=headers, json=data)
+        response = requests.post(url, headers=headers, json=data, timeout=timeout)
         if response.status_code == 200:
             return response.json()["translations"][0]["text"]
         else:
             raise Exception(f"Yandex API translation failed: {response.status_code} {response.text}")
 
     def _translate_alibaba(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
+        timeout = self.translation_service_config.traditional.timeout
         access_key_id, access_key_secret = api_key.split(":")
 
         url = "https://mt.cn-hangzhou.aliyuncs.com/"
@@ -718,7 +724,7 @@ class Translator:
         parameters['Signature'] = signature
 
         # 发送请求
-        response = requests.get(url, params=parameters)
+        response = requests.get(url, params=parameters, timeout=timeout)
 
         if response.status_code == 200:
             return response.json().get("Data", {}).get("Translated")
@@ -726,6 +732,7 @@ class Translator:
             raise Exception(f"Alibaba API translation failed: {response.status_code} {response.text}")
 
     def _translate_caiyun(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
+        timeout = self.translation_service_config.traditional.timeout
         url = "http://api.interpreter.caiyunai.com/v1/translator"
         headers = {
             "Content-Type": "application/json",
@@ -736,13 +743,14 @@ class Translator:
             "trans_type": f"{source_language.split('-')[0] if source_language else 'auto'}{target_language.split('-')[0]}"
         }
 
-        response = requests.post(url, headers=headers, json=payload)
+        response = requests.post(url, headers=headers, json=payload, timeout=timeout)
         if response.status_code == 200:
             return response.json()["target"][0]
         else:
             raise Exception(f"Caiyun API translation failed: {response.status_code} {response.text}")
 
     def _translate_youdao(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
+        timeout = self.translation_service_config.traditional.timeout
         url = "https://openapi.youdao.com/api"
         app_key = api_key.split(":")[0]
         app_secret = api_key.split(":")[1]
@@ -773,13 +781,14 @@ class Translator:
             'curtime': curtime,
         }
 
-        response = requests.post(url, data=data)
+        response = requests.post(url, data=data, timeout=timeout)
         if response.status_code == 200:
             return response.json()["translation"][0]
         else:
             raise Exception(f"Youdao API translation failed: {response.status_code} {response.text}")
 
     def _translate_bing(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
+        timeout = self.translation_service_config.traditional.timeout
         endpoint = "https://api.cognitive.microsofttranslator.com/translate"
         headers = {
             'Ocp-Apim-Subscription-Key': api_key,
@@ -794,7 +803,7 @@ class Translator:
             params['from'] = source_language.split("-")[0]
 
         body = [{'text': text}]
-        response = requests.post(endpoint, headers=headers, params=params, json=body)
+        response = requests.post(endpoint, headers=headers, params=params, json=body, timeout=timeout)
         if response.status_code == 200:
             return response.json()[0]["translations"][0]["text"]
         else:
