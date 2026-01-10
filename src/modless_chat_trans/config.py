@@ -280,11 +280,21 @@ def convert_v2_to_v3(config_v2: ConfigV2) -> ConfigV3FromInit:
 
 
 def deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
-    """深合并两个字典，override中的值会覆盖base中的值"""
+    """深合并两个字典，override中的值会覆盖base中的值，支持Pydantic模型的深合并"""
     result = base.copy()
     for key, value in override.items():
-        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
-            result[key] = deep_merge(result[key], value)
+        if key in result:
+            base_val = result[key]
+            # 处理两者都是dict的情况
+            if isinstance(base_val, dict) and isinstance(value, dict):
+                result[key] = deep_merge(base_val, value)
+            # 处理Pydantic模型的情况：将value合并到BaseModel的字典形式
+            elif isinstance(base_val, BaseModel) and isinstance(value, dict):
+                base_dict = base_val.model_dump()
+                merged_dict = deep_merge(base_dict, value)
+                result[key] = type(base_val).model_validate(merged_dict)
+            else:
+                result[key] = value
         else:
             result[key] = value
     return result
