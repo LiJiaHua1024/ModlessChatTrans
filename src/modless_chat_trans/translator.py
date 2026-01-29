@@ -138,6 +138,7 @@ class Translator:
 
         self.translation_service_config = translation_service_config
         self.glossary = glossary
+        self.timeout = 15.0
         self._variable_pattern = re.compile(r"\{\{([a-zA-Z0-9_-]+)(?::[^}]+)?\}\}")
         self._literal_glossary = {
             k: v for k, v in self.glossary.items()
@@ -332,7 +333,7 @@ class Translator:
             if api_base := self.translation_service_config.llm.api_base:
                 llm_params["api_base"] = api_base
 
-            llm_params["timeout"] = self.translation_service_config.llm.timeout
+            llm_params["timeout"] = self.timeout
 
             response = litellm.completion(**llm_params)
 
@@ -627,7 +628,7 @@ class Translator:
                 raise Exception(f"Traditional translation failed: {translated_message}")
 
     def _translate_deepl(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
-        timeout = self.translation_service_config.traditional.timeout
+        timeout = self.timeout
         if api_key.endswith(":fx"):
             url = "https://api-free.deepl.com/v2/translate"
         else:
@@ -650,7 +651,7 @@ class Translator:
             raise Exception(f"DeepL API translation failed: {response.status_code} {response.text}")
 
     def _translate_google(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
-        timeout = self.translation_service_config.traditional.timeout
+        timeout = self.timeout
         url = "https://translation.googleapis.com/language/translate/v2"
         params = {
             "key": api_key,
@@ -667,7 +668,7 @@ class Translator:
             raise Exception(f"Google API translation failed: {response.status_code} {response.text}")
 
     def _translate_yandex(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
-        timeout = self.translation_service_config.traditional.timeout
+        timeout = self.timeout
         url = "https://translate.api.cloud.yandex.net/translate/v2/translate"
         headers = {
             "Authorization": f"Api-Key {api_key}",
@@ -687,7 +688,7 @@ class Translator:
             raise Exception(f"Yandex API translation failed: {response.status_code} {response.text}")
 
     def _translate_alibaba(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
-        timeout = self.translation_service_config.traditional.timeout
+        timeout = self.timeout
         access_key_id, access_key_secret = api_key.split(":")
 
         url = "https://mt.cn-hangzhou.aliyuncs.com/"
@@ -732,7 +733,7 @@ class Translator:
             raise Exception(f"Alibaba API translation failed: {response.status_code} {response.text}")
 
     def _translate_caiyun(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
-        timeout = self.translation_service_config.traditional.timeout
+        timeout = self.timeout
         url = "http://api.interpreter.caiyunai.com/v1/translator"
         headers = {
             "Content-Type": "application/json",
@@ -750,7 +751,7 @@ class Translator:
             raise Exception(f"Caiyun API translation failed: {response.status_code} {response.text}")
 
     def _translate_youdao(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
-        timeout = self.translation_service_config.traditional.timeout
+        timeout = self.timeout
         url = "https://openapi.youdao.com/api"
         app_key = api_key.split(":")[0]
         app_secret = api_key.split(":")[1]
@@ -788,7 +789,7 @@ class Translator:
             raise Exception(f"Youdao API translation failed: {response.status_code} {response.text}")
 
     def _translate_bing(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
-        timeout = self.translation_service_config.traditional.timeout
+        timeout = self.timeout
         endpoint = "https://api.cognitive.microsofttranslator.com/translate"
         headers = {
             'Ocp-Apim-Subscription-Key': api_key,

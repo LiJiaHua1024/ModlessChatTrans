@@ -61,13 +61,11 @@ class LLMServiceConfig(BaseConfigModel):
     api_base: Optional[str] = None
     model: str
     deep_translate: bool
-    timeout: float
 
 
 class TraditionalServiceConfig(BaseConfigModel):
     provider: str
     api_key: Optional[str] = None
-    timeout: float
 
 
 class TranslationServiceConfig(BaseConfigModel):
