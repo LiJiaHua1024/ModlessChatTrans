@@ -326,6 +326,7 @@ class Translator:
                     {"role": "user", "content": message}
                 ],
                 "temperature": 0,
+                "max_tokens": 256 if expect_json else 64,
                 "api_key": self.translation_service_config.llm.api_key,
             }
 
