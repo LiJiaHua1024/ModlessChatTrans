@@ -50,6 +50,9 @@ MESSAGE_TYPE_MODES: Dict[MessageType, Set[TranslationMode]] = {
     MessageType.SEND: {TranslationMode.NORMAL, TranslationMode.DEEP, TranslationMode.RAGE},
 }
 
+_OPENROUTER_NATIVE_SUFFIXES = frozenset({"nitro", "floor"})
+_OPENROUTER_SORT_KEYWORDS = frozenset({"price", "throughput", "latency"})
+
 # 新增支持的 LLM 服务商
 LLM_PROVIDERS_PREFIXES = {
     "OpenAI": "openai/",
@@ -311,6 +314,31 @@ class Translator:
             # 针对部分 provider 做模型名前缀映射，保持与旧版调用兼容
             provider = provider or "OpenAI"
 
+            # ── OpenRouter 扩展 Model ID 语法解析 ──────────────────────────
+            # 官方原生后缀: :nitro, :floor -> 保持原样，由 OpenRouter 自行处理
+            # 扩展排序后缀: :price, :throughput, :latency -> 通过 extra_body 传递 provider.sort
+            # 自定义 Provider: :amazon-bedrock 或 :amazon-bedrock,google-vertex -> 通过 extra_body 传递 provider.order
+
+            extra_body = None
+
+            if provider == "OpenRouter" and ":" in model:
+                base_model, suffix = model.split(":", 1)
+                suffix_stripped = suffix.strip()
+                suffix_lower = suffix_stripped.lower()
+
+                if suffix_lower in _OPENROUTER_NATIVE_SUFFIXES:
+                    # 官方原生后缀，保持 model 不变，无需额外处理
+                    pass
+                elif suffix_lower in _OPENROUTER_SORT_KEYWORDS:
+                    # 扩展排序语法 -> provider.sort
+                    model = base_model
+                    extra_body = {"provider": {"sort": suffix_lower}}
+                else:
+                    # 自定义 Provider 指定（支持逗号分隔多个）-> provider.order
+                    model = base_model
+                    provider_order = [s for p in suffix_stripped.split(",") if (s := p.strip())]
+                    extra_body = {"provider": {"order": provider_order}}
+
             # 为模型名添加提供商前缀（如果尚未添加）
             prefix = LLM_PROVIDERS_PREFIXES[provider]
             mapped_model = (
@@ -335,6 +363,10 @@ class Translator:
                 llm_params["api_base"] = api_base
 
             llm_params["timeout"] = self.timeout
+
+            # 注入 OpenRouter 扩展路由参数
+            if extra_body:
+                llm_params["extra_body"] = extra_body
 
             response = litellm.completion(**llm_params)
 
