@@ -751,3 +751,80 @@ h1::after {
     box-shadow: 0 0 10px var(--neon-magenta), 0 0 15px var(--neon-magenta), inset 0 0 5px rgba(255, 0, 224, 0.6);
     border-color: var(--neon-magenta) !important;
 }
+
+/* ===== PART 5: Folding Group - Cyberpunk Data Stream ===== */
+
+/* Folding group container */
+.folding-group-container {
+    border: 1px solid var(--neon-cyan) !important;
+    background: var(--background-panel) !important;
+    box-shadow:
+        0 0 5px var(--neon-cyan),
+        0 0 10px var(--neon-cyan),
+        inset 0 0 4px rgba(0, 246, 255, 0.3) !important;
+}
+
+/* Folding badge - neon cyan toggle */
+.folding-badge {
+    background: var(--background-dark) !important;
+    color: var(--neon-cyan) !important;
+    border: 1px solid var(--neon-cyan) !important;
+    box-shadow: 0 0 8px var(--neon-cyan) !important;
+    text-shadow: 0 0 3px var(--neon-cyan) !important;
+    border-radius: 0 !important;
+    cursor: pointer;
+}
+
+.folding-badge:hover {
+    background: rgba(0, 246, 255, 0.15) !important;
+    box-shadow: 0 0 12px var(--neon-cyan), 0 0 20px var(--neon-cyan) !important;
+}
+
+/* Folding history container */
+.folding-history {
+    border-bottom: 1px solid rgba(0, 246, 255, 0.3);
+}
+
+/* Folding history items */
+.folding-history-item {
+    border-bottom: 1px solid rgba(0, 246, 255, 0.15) !important;
+    padding: 8px 0 !important;
+}
+
+.folding-history-item:last-child {
+    border-bottom: none !important;
+}
+
+/* History header */
+.folding-history-header .message-name {
+    color: var(--neon-cyan) !important;
+    text-shadow: 0 0 3px var(--neon-cyan) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+}
+
+/* History time */
+.folding-history-time {
+    color: var(--text-muted) !important;
+    font-family: 'Share Tech Mono', monospace !important;
+    font-size: 10px !important;
+    text-shadow: 1px 1px 1px var(--text-shadow-dark) !important;
+}
+
+/* History content */
+.folding-history-content {
+    color: var(--text-primary) !important;
+    font-family: 'Share Tech Mono', monospace !important;
+    font-size: 13px !important;
+    text-shadow:
+        0 0 1px rgba(255, 255, 255, 0.8),
+        1px 1px 2px var(--text-shadow-dark) !important;
+}
+
+/* Accent bar - neon glow */
+.folding-group-container::before {
+    background: var(--neon-cyan) !important;
+    box-shadow: 0 0 8px var(--neon-cyan) !important;
+    opacity: 1 !important;
+    width: 2px !important;
+}

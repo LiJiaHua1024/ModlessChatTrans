@@ -668,3 +668,110 @@ body,
     outline: 1px dashed var(--terminal-cyan) !important;
     outline-offset: 2px !important;
 }
+
+/* ===== PART 13: Folding Group - Terminal Log Stream ===== */
+
+/* Folding group container - no special styling, just text */
+.folding-group-container {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* Folding badge - terminal style [N] */
+.folding-badge {
+    background: transparent !important;
+    color: var(--terminal-yellow) !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin-left: 10px !important;
+    position: static !important;
+    display: inline !important;
+    font-family: 'VT323', monospace !important;
+    font-size: 14px !important;
+    animation: none !important;
+    text-shadow: 0 0 3px rgba(255, 255, 68, 0.7) !important;
+    cursor: pointer;
+}
+
+.folding-badge::before {
+    content: '[';
+}
+
+.folding-badge::after {
+    content: ']';
+}
+
+.folding-badge:hover {
+    color: var(--terminal-cyan) !important;
+    text-shadow: 0 0 3px rgba(68, 255, 255, 0.7) !important;
+}
+
+/* Folding history container */
+.folding-history {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.folding-history:not(.collapsed) {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* Folding history items - terminal lines */
+.folding-history-item {
+    border: none !important;
+    background: transparent !important;
+    padding: 1px 0 !important;
+    margin: 0 !important;
+}
+
+/* History header */
+.folding-history-header {
+    display: inline !important;
+}
+
+.folding-history-header .message-name {
+    display: inline !important;
+    color: var(--terminal-green) !important;
+    font-family: 'VT323', monospace !important;
+    font-size: 16px !important;
+    text-shadow: var(--terminal-glow) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-weight: 400 !important;
+}
+
+.folding-history-header .message-name::after {
+    content: ': ';
+}
+
+/* History time - hidden in terminal */
+.folding-history-time {
+    display: none !important;
+}
+
+/* History content */
+.folding-history-content {
+    display: inline !important;
+    color: var(--terminal-green) !important;
+    font-family: 'VT323', monospace !important;
+    font-size: 16px !important;
+    line-height: 1.4 !important;
+    text-shadow: var(--terminal-glow) !important;
+}
+
+/* Accent bar - hidden in terminal */
+.folding-group-container::before {
+    display: none !important;
+}
+
+/* Latest message in folding group */
+.folding-latest {
+    /* Terminal style - no special container */
+}

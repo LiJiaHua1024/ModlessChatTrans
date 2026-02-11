@@ -342,3 +342,95 @@ h1::after {
 :root[data-theme="dark"] .theme-selector select {
     background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cpath fill="%23CAC4D0" d="M7 10l5 5 5-5z"/%3E%3C/svg%3E') !important;
 }
+
+/* ===== PART 4: Folding Group - MD3 Message Stack ===== */
+
+/* Folding group container */
+.folding-group-container {
+    border-radius: 16px !important;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
+}
+
+/* Folding badge - MD3 badge */
+.folding-badge {
+    background-color: var(--primary-color) !important;
+    color: #FFFFFF !important;
+    border-radius: 10px !important;
+    font-size: 11px !important;
+    padding: 2px 8px !important;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2) !important;
+    font-weight: 500 !important;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.folding-badge:hover {
+    transform: scale(1.1);
+    box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.25) !important;
+}
+
+:root[data-theme="dark"] .folding-badge {
+    color: #1C1B1F !important;
+}
+
+/* Folding history container */
+.folding-history:not(.collapsed) {
+    border-bottom: 1px solid rgba(103, 80, 164, 0.1);
+    margin-bottom: 12px !important;
+}
+
+:root[data-theme="dark"] .folding-history:not(.collapsed) {
+    border-bottom-color: rgba(208, 188, 255, 0.1);
+}
+
+/* Folding history items */
+.folding-history-item {
+    border-bottom: 1px solid rgba(103, 80, 164, 0.08) !important;
+    padding: 10px 0 !important;
+}
+
+:root[data-theme="dark"] .folding-history-item {
+    border-bottom-color: rgba(208, 188, 255, 0.08) !important;
+}
+
+.folding-history-item:last-child {
+    border-bottom: none !important;
+}
+
+/* History header */
+.folding-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.folding-history-header .message-name {
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+    color: var(--user-accent) !important;
+}
+
+/* History time */
+.folding-history-time {
+    font-size: 11px !important;
+    letter-spacing: 0.5px !important;
+    color: var(--text-muted) !important;
+}
+
+/* History content */
+.folding-history-content {
+    font-size: 14px !important;
+    line-height: 20px !important;
+    letter-spacing: 0.25px !important;
+    color: var(--text-primary) !important;
+}
+
+/* Accent bar - MD3 primary color */
+.folding-group-container::before {
+    background: var(--primary-color) !important;
+    opacity: 0.4 !important;
+    border-radius: 3px 0 0 3px !important;
+}

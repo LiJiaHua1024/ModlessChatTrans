@@ -465,3 +465,89 @@ h1::after {
 :root[data-theme="dark"] .theme-selector select {
     background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="8" height="5" viewBox="0 0 8 5"%3E%3Cpath fill="%23FFFFFF" d="M0 0l4 5 4-5z"/%3E%3C/svg%3E');
 }
+
+/* ===== PART 4: Folding Group - Fluent Card Stack ===== */
+
+/* Folding group container */
+.folding-group-container {
+    border: 1px solid var(--border-subtle) !important;
+    background: var(--card-background) !important;
+    box-shadow: none !important;
+    transition: border-color 0.15s ease !important;
+}
+
+.folding-group-container:hover {
+    border-color: var(--border-default) !important;
+}
+
+/* Folding badge - Fluent pill */
+.folding-badge {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+    border-radius: 10px !important;
+    font-size: 11px !important;
+    padding: 2px 8px !important;
+    box-shadow: none !important;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.folding-badge:hover {
+    transform: scale(1.05);
+    filter: brightness(1.05);
+}
+
+:root[data-theme="dark"] .folding-badge {
+    color: var(--background) !important;
+}
+
+/* Folding history container */
+.folding-history {
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Folding history items */
+.folding-history-item {
+    border-bottom: 1px solid var(--border-subtle) !important;
+    padding: 10px 0 !important;
+}
+
+.folding-history-item:last-child {
+    border-bottom: none !important;
+}
+
+/* History header */
+.folding-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.folding-history-header .message-name {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: var(--text-primary) !important;
+    opacity: 0.8;
+}
+
+/* History time */
+.folding-history-time {
+    font-size: 11px !important;
+    font-weight: 400 !important;
+    color: var(--text-muted) !important;
+    opacity: 0.8;
+}
+
+/* History content */
+.folding-history-content {
+    font-size: 14px !important;
+    line-height: 20px !important;
+    color: var(--text-primary) !important;
+}
+
+/* Accent bar - subtle primary color */
+.folding-group-container::before {
+    background: var(--primary-color) !important;
+    opacity: 0.3 !important;
+}
