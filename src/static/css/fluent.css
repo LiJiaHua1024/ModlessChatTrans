@@ -316,6 +316,18 @@ h1::after {
     background-color: var(--hover-background) !important;
 }
 
+/* Fluent Design Repeat Badge */
+.repeat-badge {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+    border-radius: 4px !important;
+    font-size: 11px !important;
+    padding: 2px 6px !important;
+    top: -8px !important;
+    right: -8px !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
 /* Duration tag - subtle yellow */
 .duration-tag {
     background-color: rgba(255, 202, 40, 0.1) !important;

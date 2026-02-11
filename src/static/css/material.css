@@ -257,6 +257,19 @@ h1::after {
     height: 20px !important;
 }
 
+/* Material Design 3 Repeat Badge */
+.repeat-badge {
+    background-color: var(--error-accent) !important;
+    color: white !important;
+    border-radius: 10px !important;
+    font-size: 11px !important;
+    padding: 2px 6px !important;
+    top: -8px !important;
+    right: -8px !important;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2) !important;
+    font-weight: 500 !important;
+}
+
 /* 9. Input Field - MD3 Typography */
 #message-input {
     font-family: Roboto, 'Helvetica Neue', Arial, sans-serif !important;

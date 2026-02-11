@@ -518,6 +518,22 @@ h1::after {
     color: var(--on-secondary-container) !important;
 }
 
+/* Rage Mode Repeat Badge */
+.repeat-badge {
+    background: var(--error-accent) !important;
+    color: white !important;
+    box-shadow: 0 0 8px var(--error-accent) !important;
+    animation: rageBadgePulse 0.5s ease-in-out infinite alternate !important;
+    top: -5px !important;
+    right: -5px !important;
+    border-radius: 10px !important;
+}
+
+@keyframes rageBadgePulse {
+    0% { transform: scale(1); box-shadow: 0 0 5px var(--error-accent); }
+    100% { transform: scale(1.1); box-shadow: 0 0 12px var(--error-accent); }
+}
+
 /* 9. Input Field */
 #message-input {
     font-family: 'Noto Sans', 'Helvetica Neue', Arial, sans-serif !important;

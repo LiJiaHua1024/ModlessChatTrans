@@ -24,6 +24,17 @@ var messageFilters = {
     info: true
 };
 
+// 消息合并状态
+var lastMergeableMessageText = null;
+var lastMergeableMessageElement = null;
+var lastMergeableMessageCount = 1;
+var lastMergeableMessageType = null;
+
+var lastUserMessageText = null;
+var lastUserMessageElement = null;
+var lastUserMessageCount = 1;
+var lastUserMessageSenders = [];
+
 // 乱码效果管理器
 var obfuscatedElements = new Set();
 var obfuscatedInterval;
@@ -177,6 +188,92 @@ function trackProcessedMessage(id) {
 function resetProcessedMessages() {
     processedMessageIds.clear();
     processedIdQueue = [];
+}
+
+// 更新重复消息徽章
+function updateRepeatBadge(messageElement, count) {
+    var bubble = messageElement.querySelector('.message-bubble');
+    var badge = bubble.querySelector('.repeat-badge');
+    if (!badge) {
+        badge = document.createElement('div');
+        badge.className = 'repeat-badge';
+        bubble.appendChild(badge);
+    }
+    badge.textContent = 'x' + count;
+    
+    // 触发动画
+    badge.style.animation = 'none';
+    badge.offsetHeight; // 触发回流
+    badge.style.animation = null;
+}
+
+// 更新玩家消息合并显示
+function updateUserMessageMerge(messageElement, count, senders) {
+    // 1. 更新徽章
+    updateRepeatBadge(messageElement, count);
+    
+    // 2. 更新发送者列表
+    var nameSpan = messageElement.querySelector('.message-name');
+    if (!nameSpan) return;
+    
+    var container = nameSpan.querySelector('.sender-list-container');
+    if (!container) {
+        // 第一次合并，转换结构
+        var firstName = nameSpan.innerHTML;
+        nameSpan.innerHTML = '';
+        
+        container = document.createElement('div');
+        container.className = 'sender-list-container';
+        
+        var listSpan = document.createElement('span');
+        listSpan.className = 'sender-list';
+        listSpan.innerHTML = firstName;
+        
+        container.appendChild(listSpan);
+        nameSpan.appendChild(container);
+    }
+    
+    var listSpan = container.querySelector('.sender-list');
+    var fullText = senders.join(', ');
+    listSpan.innerHTML = parseMinecraftText(fullText);
+    
+    // 3. 检查是否需要显示展开按钮
+    // 如果文字被截断（溢出）或者发送者超过3个，显示按钮
+    var isOverflowing = listSpan.scrollWidth > listSpan.clientWidth;
+    var hasManySenders = senders.length > 3;
+    
+    var toggleBtn = container.querySelector('.sender-toggle-btn');
+    if ((isOverflowing || hasManySenders) && !toggleBtn) {
+        toggleBtn = document.createElement('div');
+        toggleBtn.className = 'sender-toggle-btn';
+        toggleBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+        
+        toggleBtn.onclick = function(e) {
+            e.stopPropagation();
+            var isExpanded = listSpan.classList.toggle('expanded');
+            toggleBtn.classList.toggle('expanded');
+            // 如果是在底部，展开可能需要滚动
+            var wasAtBottom = checkIfAtBottom();
+            if (wasAtBottom) {
+                setTimeout(scrollToBottom, 50);
+            }
+        };
+        
+        container.appendChild(toggleBtn);
+    }
+}
+
+// 重置合并状态
+function resetMergingState() {
+    lastMergeableMessageText = null;
+    lastMergeableMessageElement = null;
+    lastMergeableMessageCount = 1;
+    lastMergeableMessageType = null;
+    
+    lastUserMessageText = null;
+    lastUserMessageElement = null;
+    lastUserMessageCount = 1;
+    lastUserMessageSenders = [];
 }
 
 // 创建消息元素的通用函数
@@ -412,6 +509,7 @@ function handleServerClear() {
     });
     obfuscatedElements.clear();
     resetProcessedMessages();
+    resetMergingState();
     lastEventId = null;
     messageList.innerHTML = '';
     updateScrollButtonState();
@@ -499,8 +597,54 @@ function initializeEventSource() {
             setTimeout(resetTranslationUI, 500);
         }
 
+        // 检查是否为可合并的消息类型（System, Error, Info）
+        var currentType = !name ? 'system' : (name === "[ERROR]" ? 'error' : (name === "[INFO]" ? 'info' : 'user'));
+        
+        // 玩家消息合并逻辑
+        if (currentType === 'user') {
+            if (lastUserMessageText === messageText && lastUserMessageElement) {
+                lastUserMessageCount++;
+                if (!lastUserMessageSenders.includes(name)) {
+                    lastUserMessageSenders.push(name);
+                }
+                updateUserMessageMerge(lastUserMessageElement, lastUserMessageCount, lastUserMessageSenders);
+                pendingMessages--;
+                handleMessageScroll(wasAtBottom);
+                return;
+            }
+            // 新的玩家消息，重置系统消息合并状态
+            lastMergeableMessageText = null;
+            lastMergeableMessageElement = null;
+        } else {
+            // 系统类消息合并逻辑
+            if (currentType === lastMergeableMessageType && 
+                lastMergeableMessageText === messageText && lastMergeableMessageElement) {
+                lastMergeableMessageCount++;
+                updateRepeatBadge(lastMergeableMessageElement, lastMergeableMessageCount);
+                pendingMessages--;
+                handleMessageScroll(wasAtBottom);
+                return;
+            }
+            // 新的系统消息，重置玩家消息合并状态
+            lastUserMessageText = null;
+            lastUserMessageElement = null;
+        }
+
         var messageData = createMessageElement(name, messageText, messageTime, duration, cacheHit, glossaryMatch, skipSrcLang, usage);
         messageList.appendChild(messageData.element);
+
+        // 更新合并追踪状态
+        if (currentType === 'user') {
+            lastUserMessageText = messageText;
+            lastUserMessageElement = messageData.element;
+            lastUserMessageCount = 1;
+            lastUserMessageSenders = [name];
+        } else {
+            lastMergeableMessageType = currentType;
+            lastMergeableMessageText = messageText;
+            lastMergeableMessageElement = messageData.element;
+            lastMergeableMessageCount = 1;
+        }
 
         pendingMessages--;
         handleMessageScroll(wasAtBottom);
@@ -585,6 +729,7 @@ document.getElementById('fab-clear').addEventListener('click', function() {
     });
     obfuscatedElements.clear();
     resetProcessedMessages();
+    resetMergingState();
     lastEventId = null;
 
     fetch('/clear-messages', {

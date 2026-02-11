@@ -422,6 +422,32 @@ h1::after {
         2px 2px 4px var(--skeuo-dark-shadow) !important;
 }
 
+/* Skeuomorphic Repeat Badge */
+.repeat-badge {
+    background: var(--skeuo-button-gradient) !important;
+    color: #3498DB !important;
+    border-radius: 8px !important;
+    font-size: 11px !important;
+    padding: 2px 8px !important;
+    top: -10px !important;
+    right: -10px !important;
+    font-weight: 700 !important;
+    text-shadow: 1px 1px 1px var(--skeuo-light-shadow) !important;
+    box-shadow:
+        -3px -3px 6px var(--skeuo-light-shadow),
+        3px 3px 6px var(--skeuo-dark-shadow) !important;
+    z-index: 5 !important;
+}
+
+:root[data-theme="dark"] .repeat-badge {
+    background: var(--skeuo-button-gradient-dark) !important;
+    color: #5DADE2 !important;
+    text-shadow: 1px 1px 1px var(--skeuo-dark-shadow-dark) !important;
+    box-shadow:
+        -3px -3px 6px var(--skeuo-light-shadow-dark),
+        3px 3px 6px var(--skeuo-dark-shadow-dark) !important;
+}
+
 :root[data-theme="dark"] .duration-tag,
 :root[data-theme="dark"] .cache-hit-tag,
 :root[data-theme="dark"] .glossary-match-tag,

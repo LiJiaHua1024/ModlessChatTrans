@@ -197,6 +197,29 @@ h1::after {
     background: transparent !important;
 }
 
+/* Retro Terminal Repeat Badge */
+.repeat-badge {
+    background: transparent !important;
+    color: var(--terminal-yellow) !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin-left: 10px !important;
+    position: static !important;
+    display: inline !important;
+    font-family: 'VT323', monospace !important;
+    animation: none !important;
+    text-shadow: 0 0 3px rgba(255, 255, 68, 0.7) !important;
+}
+
+.repeat-badge::before {
+    content: '[';
+}
+
+.repeat-badge::after {
+    content: ']';
+}
+
 /* 5. Terminal Output Text with All Info at Front */
 .message-text {
     color: var(--terminal-green) !important;

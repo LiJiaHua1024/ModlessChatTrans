@@ -87,6 +87,21 @@ body::before {
 
 /* ===== PART 3: Component Cybernetic Implants ===== */
 
+/* Cyberpunk Repeat Badge */
+.repeat-badge {
+    background: var(--background-dark) !important;
+    color: var(--neon-yellow) !important;
+    border: 1px solid var(--neon-yellow) !important;
+    border-radius: 0 !important;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%) !important;
+    box-shadow: 0 0 8px var(--neon-yellow) !important;
+    text-shadow: 0 0 3px var(--neon-yellow) !important;
+    font-family: 'Share Tech Mono', monospace !important;
+    top: -5px !important;
+    right: -5px !important;
+    z-index: 20 !important;
+}
+
 /* 1. Neon Title - Terminal Header */
 h1 {
     color: #FFFFFF !important;
