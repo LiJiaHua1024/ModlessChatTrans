@@ -764,20 +764,20 @@ h1::after {
         inset 0 0 4px rgba(0, 246, 255, 0.3) !important;
 }
 
-/* Folding badge - neon cyan toggle */
+/* Folding badge - neon yellow toggle */
 .folding-badge {
     background: var(--background-dark) !important;
-    color: var(--neon-cyan) !important;
-    border: 1px solid var(--neon-cyan) !important;
-    box-shadow: 0 0 8px var(--neon-cyan) !important;
-    text-shadow: 0 0 3px var(--neon-cyan) !important;
+    color: var(--neon-yellow) !important;
+    border: 1px solid var(--neon-yellow) !important;
+    box-shadow: 0 0 8px var(--neon-yellow) !important;
+    text-shadow: 0 0 3px var(--neon-yellow) !important;
     border-radius: 0 !important;
     cursor: pointer;
 }
 
 .folding-badge:hover {
-    background: rgba(0, 246, 255, 0.15) !important;
-    box-shadow: 0 0 12px var(--neon-cyan), 0 0 20px var(--neon-cyan) !important;
+    background: rgba(255, 255, 0, 0.15) !important;
+    box-shadow: 0 0 12px var(--neon-yellow), 0 0 20px var(--neon-yellow) !important;
 }
 
 /* Folding history container */
