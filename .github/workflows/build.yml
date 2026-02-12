@@ -38,7 +38,7 @@ jobs:
     - name: Install dependencies with uv
       run: |
         uv sync
-        uv add nuitka
+        uv add nuitka zstandard
       shell: pwsh
 
     - name: Determine version
@@ -90,8 +90,7 @@ jobs:
 
         $commonArgs = @(
           '--onefile'
-          '--standalone'
-          '--msvc=latest'
+          '--mingw64'
           '--lto=yes'
           '--noinclude-pytest-mode=nofollow'
           '--windows-icon-from-ico=src/icon.ico'
@@ -110,7 +109,7 @@ jobs:
           '--output-filename=ModlessChatTrans'
           '--file-description=ModlessChatTrans'
           '--product-name=ModlessChatTrans'
-          '--copyright=Copyright © 2024-2025 LiJiaHua1024'
+          '--copyright=Copyright © 2024-2026 LiJiaHua1024'
           '--assume-yes-for-downloads'
           "--file-version=$fileVersion"
           "--product-version=$productVersion"
