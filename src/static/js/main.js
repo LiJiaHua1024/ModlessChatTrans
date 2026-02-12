@@ -469,6 +469,11 @@ function updateFoldingBadge(groupElements, count) {
         groupElements.bubble.appendChild(badge);
     }
     badge.textContent = '+' + count;
+
+    // 触发动画（与相同消息徽章保持一致）
+    badge.style.animation = 'none';
+    badge.offsetHeight; // 触发回流
+    badge.style.animation = null;
 }
 
 // 创建消息元素的通用函数
