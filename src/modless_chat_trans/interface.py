@@ -224,6 +224,24 @@ class LanguageLoaderThread(QThread):
             self.error_occurred.emit(str(e))
 
 
+class StartWorkerThread(QThread):
+    """用于异步启动翻译服务的线程"""
+    start_finished = Signal(object)  # 传递配置对象
+    start_error = Signal(str)  # 传递错误信息
+
+    def __init__(self, config, start_callback):
+        super().__init__()
+        self.config = config
+        self.start_callback = start_callback
+
+    def run(self):
+        try:
+            self.start_callback(self.config)
+            self.start_finished.emit(self.config)
+        except Exception as e:
+            self.start_error.emit(str(e))
+
+
 class MessageCaptureInterface(QFrame):
     """消息捕获界面组件"""
 
@@ -232,6 +250,7 @@ class MessageCaptureInterface(QFrame):
         self.setObjectName("messageCapture")
         self.current_service_type = service_type
         self.config = config
+        self.start_worker = None
         self.init_ui(service_type)
 
     def hideEvent(self, event):
@@ -2376,24 +2395,50 @@ class StartInterface(QFrame):
         if not self._user_clicked_link:
             webbrowser.open(f"http://127.0.0.1:{port}")
 
+    def _on_start_finished(self, cfg, is_save_and_start=False):
+        """启动完成后的回调"""
+        self._set_status(True)
+
+        # 创建访问链接卡片
+        web_port = cfg.message_presentation.web_port
+        self._user_clicked_link = False  # 重置用户点击状态
+        self._create_access_card(web_port)
+
+        if is_save_and_start:
+            InfoBar.success(title=_('已保存并启动'), content=_('配置已保存并启动'),
+                            orient=Qt.Orientation.Horizontal, isClosable=True,
+                            position=InfoBarPosition.TOP, duration=2000, parent=self)
+        else:
+            InfoBar.success(title=_('已启动'), content=_('已根据当前界面配置启动'),
+                            orient=Qt.Orientation.Horizontal, isClosable=True,
+                            position=InfoBarPosition.TOP, duration=2000, parent=self)
+
+        QTimer.singleShot(1000, lambda: self._auto_open_webpage(web_port))
+
+    def _on_start_error(self, error, is_save_and_start=False):
+        """启动失败后的回调"""
+        logger.error(f"Start failed: {error}")
+        self._set_status(False)
+        if is_save_and_start:
+            InfoBar.error(title=_('操作失败'), content=error, orient=Qt.Orientation.Horizontal,
+                          isClosable=True, position=InfoBarPosition.TOP, duration=5000, parent=self)
+        else:
+            InfoBar.error(title=_('启动失败'), content=error, orient=Qt.Orientation.Horizontal,
+                          isClosable=True, position=InfoBarPosition.TOP, duration=5000, parent=self)
+
     def on_direct_start(self):
         """直接启动：不落盘，仅依据当前界面状态启动"""
         try:
             cfg = self._gather_config_from_ui(update_memory=True, persist=False)
             cb = getattr(self.window(), 'start_callback', None)
-            cb(cfg)
-            self._set_status(True)
+            if cb is None:
+                return
 
-            # 创建访问链接卡片
-            web_port = cfg.message_presentation.web_port
-            self._user_clicked_link = False  # 重置用户点击状态
-            self._create_access_card(web_port)
-
-            InfoBar.success(title=_('已启动'), content=_('已根据当前界面配置启动'),
-                            orient=Qt.Orientation.Horizontal, isClosable=True,
-                            position=InfoBarPosition.TOP, duration=2000, parent=self)
-
-            QTimer.singleShot(1000, lambda: self._auto_open_webpage(web_port))
+            # 使用后台线程执行启动，避免UI冻结
+            self.start_worker = StartWorkerThread(cfg, cb)
+            self.start_worker.start_finished.connect(lambda c: self._on_start_finished(c, False))
+            self.start_worker.start_error.connect(lambda e: self._on_start_error(e, False))
+            self.start_worker.start()
         except Exception as e:
             logger.error(f"Direct start failed: {e}")
             self._set_status(False)
@@ -2413,19 +2458,12 @@ class StartInterface(QFrame):
                                 orient=Qt.Orientation.Horizontal, isClosable=True,
                                 position=InfoBarPosition.TOP, duration=3000, parent=self)
                 return
-            cb(cfg)
-            self._set_status(True)
 
-            # 创建访问链接卡片
-            web_port = cfg.message_presentation.web_port
-            self._user_clicked_link = False  # 重置用户点击状态
-            self._create_access_card(web_port)
-
-            InfoBar.success(title=_('已保存并启动'), content=_('配置已保存并启动'),
-                            orient=Qt.Orientation.Horizontal, isClosable=True,
-                            position=InfoBarPosition.TOP, duration=2000, parent=self)
-
-            QTimer.singleShot(1000, lambda: self._auto_open_webpage(web_port))
+            # 使用后台线程执行启动，避免UI冻结
+            self.start_worker = StartWorkerThread(cfg, cb)
+            self.start_worker.start_finished.connect(lambda c: self._on_start_finished(c, True))
+            self.start_worker.start_error.connect(lambda e: self._on_start_error(e, True))
+            self.start_worker.start()
         except Exception as e:
             logger.error(f"Save and start failed: {e}")
             self._set_status(False)
