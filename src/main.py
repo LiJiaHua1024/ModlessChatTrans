@@ -79,8 +79,6 @@ def start_translation(config):
                             break
                         else:
                             logger.error(processed_message[1])
-                            return None
-                    return None
                 else:
                     break  # 不是聊天消息，跳过
             elif data_type in ("clipboard", "webui"):
@@ -104,9 +102,6 @@ def start_translation(config):
                         return processed_message[1]
                     else:
                         display_message(*processed_message)
-                        return None
-                return None
-            return None
         return None
 
     player_translator = Translator(config.player_translation, config.glossary)
