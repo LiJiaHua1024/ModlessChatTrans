@@ -17,6 +17,7 @@ import os
 import time
 import threading
 import locale
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Tuple
 
 from watchdog.observers import Observer
@@ -166,6 +167,8 @@ class EfficientLogMonitor(FileSystemEventHandler):
         self.fp = None
         self.line_count = 0
 
+        self.executor = ThreadPoolExecutor(max_workers=64, thread_name_prefix="log_worker")
+
         self._resolve_initial_file()
         self._open_file(start_at_end=True)
 
@@ -260,10 +263,10 @@ class EfficientLogMonitor(FileSystemEventHandler):
             return
         try:
             for line in self.fp:
+                if "[CHAT]" not in line:
+                    continue
                 self.line_count += 1
-                threading.Thread(
-                    target=self.callback, args=(line,), kwargs={"data_type": "log"}, daemon=True
-                ).start()
+                self.executor.submit(self.callback, line, data_type="log")
         except UnicodeDecodeError:
             self._switch_encoding_after_error()
         except Exception as e:
@@ -290,6 +293,18 @@ class EfficientLogMonitor(FileSystemEventHandler):
                     self._open_file(start_at_end=False)
         except Exception as e:
             logger.debug(f"[Efficient] on_created exception: {e}")
+
+    def close(self):
+        """关闭资源：文件句柄和线程池"""
+        if self.fp:
+            try:
+                self.fp.close()
+            except Exception:
+                pass
+            self.fp = None
+        if self.executor:
+            self.executor.shutdown(wait=True)
+            self.executor = None
 
 
 # ------------------------------
@@ -323,6 +338,8 @@ class CompatiblePollingMonitor:
         self.current_inode = None
         self.last_size = 0
         self._stop = False
+
+        self.executor = ThreadPoolExecutor(max_workers=64, thread_name_prefix="log_worker")
 
         self._resolve_initial_file()
         self._open_file(start_at_end=True)
@@ -439,9 +456,9 @@ class CompatiblePollingMonitor:
                         line = self.fp.readline()
                         if not line:
                             break
-                        threading.Thread(
-                            target=self.callback, args=(line,), kwargs={"data_type": "log"}, daemon=True
-                        ).start()
+                        if "[CHAT]" not in line:
+                            continue
+                        self.executor.submit(self.callback, line, data_type="log")
                 except UnicodeDecodeError:
                     self._switch_encoding_after_error()
                 except Exception as e:
@@ -460,12 +477,16 @@ class CompatiblePollingMonitor:
             self.close()
 
     def close(self):
+        """关闭资源：文件句柄和线程池"""
         if self.fp:
             try:
                 self.fp.close()
             except Exception:
                 pass
             self.fp = None
+        if self.executor:
+            self.executor.shutdown(wait=True)
+            self.executor = None
 
     def stop(self):
         self._stop = True
@@ -523,7 +544,6 @@ def start_log_monitor(config: MessageCaptureConfig, callback):
     observer.join()
     logger.info("Log monitoring stopped.")
     try:
-        if handler.fp:
-            handler.fp.close()
+        handler.close()
     except Exception:
         pass

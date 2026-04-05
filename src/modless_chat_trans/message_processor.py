@@ -17,14 +17,28 @@ from json import JSONDecodeError
 from requests.exceptions import HTTPError
 from modless_chat_trans.i18n import _
 from modless_chat_trans.file_utils import cache
-from modless_chat_trans.translator import services
+from modless_chat_trans.translator import services, MessageType
 from modless_chat_trans.logger import logger
+
+# 预编译的正则表达式常量
+_RE_FORMAT_CODE = re.compile(r'§.')
+_RE_BRACKETS = re.compile(r'\[.*?\]')
+_RE_ORG_PREFIX = re.compile(r'\w+\s*>\s*')
+_RE_MSG_PREFIX = re.compile(r'(?:From|To)\s+')
+_RE_MINECRAFT_NAME = re.compile(r'^[a-zA-Z0-9_]{3,16}$')
+_RE_VARIABLE_PATTERN = re.compile(r"\{\{([a-zA-Z0-9_-]+)(?::([^}]+))?\}\}")
+_RE_VALUE_VARIABLE = re.compile(r"\{\{([a-zA-Z0-9_-]+)\}\}")
 
 filter_server_messages = True
 glossary = {}
 _compiled_glossary_patterns = {}
 glossary_compiled = False
 replace_garbled_character = False
+user_blacklist = []
+user_blacklist_set = set()  # 预构建的用户黑名单集合（用于O(1)查找）
+message_blacklist = []
+_compiled_message_patterns = []  # 预编译的消息黑名单正则
+_keyword_pattern = None  # 预编译的关键词黑名单正则（合并为单个模式）
 
 
 def init_processor(message_capture_config, _glossary):
@@ -38,18 +52,107 @@ def init_processor(message_capture_config, _glossary):
     glossary = _glossary
 
 
+def init_blacklist(blacklist_config):
+    """
+    初始化黑名单配置
+    :param blacklist_config: config.BlacklistConfig
+    """
+    global user_blacklist, user_blacklist_set, message_blacklist, _compiled_message_patterns, _keyword_pattern
+
+    user_blacklist = blacklist_config.user_blacklist or []
+    message_blacklist = blacklist_config.message_blacklist or []
+
+    # 预构建用户黑名单集合（不区分大小写）
+    user_blacklist_set = set(name.lower() for name in user_blacklist)
+
+    # 预编译消息黑名单正则表达式，同时收集关键词黑名单
+    _compiled_message_patterns = []
+    keyword_list = []
+    for rule in message_blacklist:
+        if rule.is_regex:
+            try:
+                _compiled_message_patterns.append((re.compile(rule.pattern), rule.pattern))
+            except re.error as e:
+                logger.error(f"Invalid regex pattern in blacklist: {rule.pattern}, error: {e}")
+        else:
+            keyword_list.append(rule.pattern)
+
+    # 将关键词合并为单个正则表达式，使用 O(n) 多模式匹配
+    if keyword_list:
+        _keyword_pattern = re.compile('|'.join(re.escape(k) for k in keyword_list))
+    else:
+        _keyword_pattern = None
+
+    logger.info(f"Blacklist initialized: {len(user_blacklist)} users, {len(message_blacklist)} message rules")
+
+
+def is_user_in_blacklist(sanitized_name: str) -> bool:
+    """
+    检查用户是否在黑名单中（不区分大小写的完全匹配）
+    :param sanitized_name: 净化后的玩家名称
+    :return: True if user is in blacklist
+    """
+    return sanitized_name.lower() in user_blacklist_set
+
+
+def is_message_blocked(message: str) -> bool:
+    """
+    检查消息是否命中黑名单规则
+    :param message: 消息内容
+    :return: True if message should be blocked
+    """
+    # 检查预编译的正则表达式规则
+    for compiled_pattern, original_pattern in _compiled_message_patterns:
+        if compiled_pattern.search(message):
+            logger.debug(f"Message blocked by regex rule: {original_pattern}")
+            return True
+
+    # 检查预编译的关键词正则（所有关键词合并为单个模式）
+    if _keyword_pattern is not None:
+        match = _keyword_pattern.search(message)
+        if match:
+            logger.debug(f"Message blocked by keyword: {match.group()}")
+            return True
+    return False
+
+
+def sanitize_hypixel_name(name: str) -> str:
+    """
+    净化 Hypixel 玩家名称，移除格式化代码、标签和组织前缀
+    这个净化后的字符串用于黑名单检查和验证
+    """
+    # 第1层：删除格式化代码 (§.)
+    sanitized = _RE_FORMAT_CODE.sub('', name)
+
+    # 第2层：删除所有标签 [...]
+    sanitized = _RE_BRACKETS.sub('', sanitized)
+
+    # 第3层：删除组织前缀 (如 "Guild > ", "Party > " 等)
+    # 匹配 "任意单词 > " 的模式
+    sanitized = _RE_ORG_PREFIX.sub('', sanitized)
+
+    # 第4层：私信前缀 (From/To)
+    sanitized = _RE_MSG_PREFIX.sub('', sanitized)
+
+    # 去除首尾空格
+    return sanitized.strip()
+
+
+def _is_valid_minecraft_name(name: str) -> bool:
+    """Minecraft 玩家名称验证规则: 3-16个字符,只能包含字母、数字、下划线"""
+    return _RE_MINECRAFT_NAME.match(name) is not None
+
+
 def _compile_glossary_patterns():
     """预编译术语表中的模式，处理变量名规则和重复变量"""
     global _compiled_glossary_patterns, glossary_compiled
 
     logger.info("Compiling glossary patterns...")
     temp_patterns = {}
-    # 变量名匹配规则: 允许字母、数字、下划线、连字符，至少一个字符
-    variable_pattern = re.compile(r"\{\{([a-zA-Z0-9_-]+)(?::([^}]+))?\}\}")
 
     for key, value in glossary.items():
         # --- 检查 value 中的变量是否都在 key 中 ---
-        value_vars = set(m.group(1) for m in variable_pattern.finditer(value))
+        value_vars = set(m.group(1) for m in _RE_VARIABLE_PATTERN.finditer(value))
         key_vars_found = set()  # 用于记录key中实际出现的变量名
 
         # --- 构建正则表达式和处理重复变量 ---
@@ -62,7 +165,7 @@ def _compile_glossary_patterns():
         # 初始化 full_regex_str
         full_regex_str = None
         try:
-            for match in variable_pattern.finditer(key):
+            for match in _RE_VARIABLE_PATTERN.finditer(key):
                 var_name = match.group(1)
                 custom_regex = match.group(2)
 
@@ -152,10 +255,8 @@ def match_and_translate(original_chat_message: str) -> str | None:
 
             # 在 value 中替换变量占位符
             translated_message = original_value
-            # 使用原始的 value 字符串中的所有变量进行替换尝试
-            # （因为 value 中可能包含重复的 {{name}}，而 variable_map 只有一个 'name'）
-            value_variable_pattern = re.compile(r"\{\{([a-zA-Z0-9_-]+)\}\}")  # 再次匹配value中的变量
-            placeholders_found_in_value = value_variable_pattern.findall(translated_message)
+            # 使用预编译的正则表达式匹配 value 中的变量
+            placeholders_found_in_value = _RE_VALUE_VARIABLE.findall(translated_message)
 
             for var_name in placeholders_found_in_value:
                 if var_name in variable_map:
@@ -219,17 +320,38 @@ def process_decorator(function):
                     - [2]: 相关信息（如是否命中缓存、消耗token等）
         """
 
-        name, original_chat_message = function(data, data_type)
+        name, original_chat_message, message_type = function(data, data_type)
         translated_chat_message: str = ""
         info: dict = {}
+
+        # 黑名单检查（PLAYER 和 SYSTEM 消息生效，SEND 不生效）
+        if message_type != MessageType.SEND and original_chat_message:
+            # 用户黑名单检查（仅对玩家消息，因为需要用户名）
+            if name:
+                sanitized_name = sanitize_hypixel_name(name)
+                if is_user_in_blacklist(sanitized_name):
+                    logger.debug(f"User '{sanitized_name}' in blacklist, skipping translation")
+                    if data_type == "log":
+                        return name, original_chat_message, {"blacklist": "user"}
+                    elif data_type in ("clipboard", "webui"):
+                        return False, original_chat_message, {"blacklist": "user"}
+
+            # 消息内容黑名单检查（对所有非 SEND 消息生效）
+            if is_message_blocked(original_chat_message):
+                logger.debug(f"Message blocked by content blacklist: {original_chat_message[:50]}...")
+                if data_type == "log":
+                    return name, original_chat_message, {"blacklist": "message"}
+                elif data_type in ("clipboard", "webui"):
+                    return False, original_chat_message, {"blacklist": "message"}
+
         if data_type == "log" and filter_server_messages and not name:
-            return ""
+            return "", "", MessageType.SYSTEM
         if original_chat_message:
             if matched_translated_message := match_and_translate(original_chat_message):
                 logger.debug(f"Using custom glossary: {original_chat_message} -> {matched_translated_message}")
                 translated_chat_message = matched_translated_message
                 info["glossary_match"] = True
-            elif original_chat_message in cache and not rage_mode:
+            elif not rage_mode and original_chat_message in cache:
                 logger.debug(f"Translation cache hit: {original_chat_message}")
                 translated_chat_message = cache[original_chat_message]
                 info["cache_hit"] = True
@@ -239,13 +361,14 @@ def process_decorator(function):
                     if result := translate(
                             original_chat_message,
                             source_language=source_language,
-                            target_language=target_language
+                            target_language=target_language,
+                            message_type=message_type
                     ):
                         translated_chat_message = result["result"]
                         info["usage"] = result["usage"]
                 except HTTPError as http_err:
                     response = getattr(http_err, "response", None)
-                    if response:
+                    if response is not None:
                         if response.status_code == 429:
                             # 请求过多
                             return "[ERROR]", _("翻译失败：请求次数过多，请稍后重试。"), info
@@ -294,74 +417,49 @@ def process_message(data, data_type, replace_garbled_character=False):
     处理日志文件中的一行
 
     :param data: 需要处理的数据
-    :param data_type: 数据类型
-    :return: 元组 (玩家名称, 聊天内容)
+    :param data_type: 数据类型 ("log", "clipboard", "webui")
+    :return: 元组 (玩家名称, 聊天内容, 消息类型)
     """
 
     chat_message: str = ""
     if data_type == "log":
-        if "[CHAT]" in data:
-            chat_message = data.split("[CHAT]")[1].strip()
+        chat_message = data.split("[CHAT]")[1].strip()
     elif data_type in ("clipboard", "webui"):
-        return "", data.strip()
+        return "", data.strip(), MessageType.SEND
     else:
-        return "", ""
+        return "", "", MessageType.SYSTEM
 
     if replace_garbled_character:
         chat_message = chat_message.replace("\ufffd\ufffd", "\u00A7")
 
-    # Minecraft 玩家名称验证规则: 3-16个字符,只能包含字母、数字、下划线
-    def is_valid_minecraft_name(name: str) -> bool:
-        return bool(re.match(r'^[a-zA-Z0-9_]{3,16}$', name))
-
-    # Hypixel 专用：净化名称用于验证
-    def sanitize_hypixel_name(name: str) -> str:
-        """
-        净化 Hypixel 玩家名称，移除格式化代码、标签和组织前缀
-        这个净化后的字符串仅用于验证，不会作为最终返回值
-        """
-        # 第1层：删除格式化代码 (§.)
-        sanitized = re.sub(r'§.', '', name)
-
-        # 第2层：删除所有标签 [...]
-        sanitized = re.sub(r'\[.*?\]', '', sanitized)
-
-        # 第3层：删除组织前缀 (如 "Guild > ", "Party > " 等)
-        # 匹配 "任意单词 > " 的模式
-        sanitized = re.sub(r'\w+\s*>\s*', '', sanitized)
-
-        # 第4层：私信前缀 (From/To)
-        sanitized = re.sub(r'(?:From|To)\s+', '', sanitized)
-
-        # 去除首尾空格
-        return sanitized.strip()
-
     # 处理原版 Minecraft 聊天格式 <name>
     if chat_message.startswith("<"):
         # 尝试提取 <name> 格式
-        if ">" in chat_message[1:]:
-            name, text = chat_message[1:].split(">", 1)
-
+        gt_pos = chat_message.find(">", 1)
+        if gt_pos != -1:
+            name = chat_message[1:gt_pos].strip()
             # 对于尖括号格式，通常是原版聊天，直接验证即可
-            if is_valid_minecraft_name(name.strip()):
-                return name.strip(), text.strip()
+            if _is_valid_minecraft_name(name):
+                return name, chat_message[gt_pos + 1:].strip(), MessageType.PLAYER
 
-        return "", chat_message.strip()
+        return "", chat_message.strip(), MessageType.SYSTEM
 
     else:
-        if ":" not in chat_message:
-            return "", chat_message.strip()
+        colon_pos = chat_message.find(":")
+        if colon_pos == -1:
+            return "", chat_message.strip(), MessageType.SYSTEM
 
         # 尝试提取 name: 格式
-        name, text = chat_message.split(":", 1)
+        name = chat_message[:colon_pos].strip()
+        text = chat_message[colon_pos + 1:]
 
         # 净化名称用于验证
         sanitized_name = sanitize_hypixel_name(name)
 
         # 验证净化后的名称是否符合 Minecraft 玩家名规则
-        if is_valid_minecraft_name(sanitized_name):
+        if _is_valid_minecraft_name(sanitized_name):
             # 返回原始未净化的名称和消息内容
-            return name.strip(), text.strip()
+            return name, text.strip(), MessageType.PLAYER
 
         # 不符合规则,整条消息作为系统消息返回
-        return "", chat_message.strip()
+        return "", chat_message.strip(), MessageType.SYSTEM

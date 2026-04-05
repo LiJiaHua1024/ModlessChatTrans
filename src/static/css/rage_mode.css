@@ -518,6 +518,22 @@ h1::after {
     color: var(--on-secondary-container) !important;
 }
 
+/* Rage Mode Repeat Badge */
+.repeat-badge {
+    background: var(--error-accent) !important;
+    color: white !important;
+    box-shadow: 0 0 8px var(--error-accent) !important;
+    animation: rageBadgePulse 0.5s ease-in-out infinite alternate !important;
+    top: -5px !important;
+    right: -5px !important;
+    border-radius: 10px !important;
+}
+
+@keyframes rageBadgePulse {
+    0% { transform: scale(1); box-shadow: 0 0 5px var(--error-accent); }
+    100% { transform: scale(1.1); box-shadow: 0 0 12px var(--error-accent); }
+}
+
 /* 9. Input Field */
 #message-input {
     font-family: 'Noto Sans', 'Helvetica Neue', Arial, sans-serif !important;
@@ -654,4 +670,94 @@ code, pre {
         opacity: 0.5;
         height: 100px;
     }
+}
+
+/* ===== PART 7: Folding Group - Heated Message Stack ===== */
+
+/* Folding group container */
+.folding-group-container {
+    position: relative;
+    border-radius: 18px !important;
+    box-shadow: 0 2px 6px rgba(180, 80, 70, 0.08) !important;
+}
+
+:root[data-theme="dark"] .folding-group-container {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Folding badge - heated toggle */
+.folding-badge {
+    background-color: var(--error-accent) !important;
+    color: white !important;
+    border-radius: 10px !important;
+    box-shadow: 0 0 8px var(--rage-glow) !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.folding-badge:hover {
+    transform: scale(1.1) !important;
+    box-shadow: 0 0 12px var(--rage-glow), 0 4px 12px var(--rage-glow) !important;
+}
+
+:root[data-theme="dark"] .folding-badge {
+    color: var(--background) !important;
+}
+
+/* Folding history container */
+.folding-history {
+    border-bottom: 1px solid rgba(201, 123, 115, 0.15);
+}
+
+:root[data-theme="dark"] .folding-history {
+    border-bottom-color: rgba(232, 169, 162, 0.15);
+}
+
+/* Folding history items */
+.folding-history-item {
+    border-bottom: 1px solid rgba(201, 123, 115, 0.1) !important;
+    padding: 10px 0 !important;
+}
+
+:root[data-theme="dark"] .folding-history-item {
+    border-bottom-color: rgba(232, 169, 162, 0.1) !important;
+}
+
+.folding-history-item:last-child {
+    border-bottom: none !important;
+}
+
+/* History header */
+.folding-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.folding-history-header .message-name {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: var(--user-accent) !important;
+}
+
+/* History time */
+.folding-history-time {
+    font-size: 11px !important;
+    color: var(--text-muted) !important;
+    opacity: 0.75 !important;
+}
+
+/* History content */
+.folding-history-content {
+    font-size: 14px !important;
+    line-height: 21px !important;
+    letter-spacing: 0.2px !important;
+    color: var(--text-primary) !important;
+}
+
+/* Accent bar - warm gradient */
+.folding-group-container::before {
+    background: linear-gradient(to bottom, var(--primary-color), var(--error-accent)) !important;
+    opacity: 0.6 !important;
 }

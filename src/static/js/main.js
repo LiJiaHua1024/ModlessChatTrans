@@ -24,6 +24,25 @@ var messageFilters = {
     info: true
 };
 
+// 消息合并状态
+var lastMergeableMessageText = null;
+var lastMergeableMessageElement = null;
+var lastMergeableMessageCount = 1;
+var lastMergeableMessageType = null;
+
+var lastUserMessageText = null;
+var lastUserMessageElement = null;
+var lastUserMessageCount = 1;
+var lastUserMessageSenders = [];
+
+// Folding group state (for similar but not identical messages)
+var foldingGroup = {
+    messages: [],      // Array of message objects in the group
+    element: null,     // The DOM element for the group
+    type: null,        // Message type of the group
+    elements: null     // DOM element references (item, bubble, history, latest, toggle)
+};
+
 // 乱码效果管理器
 var obfuscatedElements = new Set();
 var obfuscatedInterval;
@@ -78,6 +97,64 @@ function removeObfuscatedElement(element) {
     if (obfuscatedElements.size === 0) {
         stopObfuscatedEffect();
     }
+}
+
+// Calculate similarity percentage using Levenshtein distance
+function calculateSimilarity(str1, str2) {
+    if (str1 === str2) return 100;
+
+    var len1 = str1.length;
+    var len2 = str2.length;
+    var maxLen = Math.max(len1, len2);
+
+    if (maxLen === 0) return 100;
+
+    // Use two-row optimization for memory efficiency
+    var prevRow = [];
+    var currRow = [];
+
+    for (var j = 0; j <= len2; j++) {
+        prevRow[j] = j;
+    }
+
+    for (var i = 1; i <= len1; i++) {
+        currRow[0] = i;
+        for (var j = 1; j <= len2; j++) {
+            var cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+            currRow[j] = Math.min(
+                prevRow[j] + 1,      // deletion
+                currRow[j - 1] + 1,  // insertion
+                prevRow[j - 1] + cost // substitution
+            );
+        }
+        var temp = prevRow;
+        prevRow = currRow;
+        currRow = temp;
+    }
+
+    var distance = prevRow[len2];
+    var similarity = ((maxLen - distance) / maxLen) * 100;
+    return similarity;
+}
+
+var SIMILARITY_THRESHOLD = 80; // 80% similarity threshold
+
+function shouldFoldMessages(currentType, prevType, currentText, prevText) {
+    // Must be same type
+    if (currentType !== prevType) return false;
+
+    // Strategy A: Info and Error types - always fold if same type
+    if (currentType === 'info' || currentType === 'error') {
+        return true;
+    }
+
+    // Strategy B: System and Player types - use Levenshtein similarity
+    if (currentType === 'system' || currentType === 'user') {
+        var similarity = calculateSimilarity(currentText, prevText);
+        return similarity > SIMILARITY_THRESHOLD;
+    }
+
+    return false;
 }
 
 // Minecraft格式化代码解析函数
@@ -177,6 +254,226 @@ function trackProcessedMessage(id) {
 function resetProcessedMessages() {
     processedMessageIds.clear();
     processedIdQueue = [];
+}
+
+// 更新重复消息徽章
+function updateRepeatBadge(messageElement, count) {
+    var bubble = messageElement.querySelector('.message-bubble');
+    var badge = bubble.querySelector('.repeat-badge');
+    if (!badge) {
+        badge = document.createElement('div');
+        badge.className = 'repeat-badge';
+        bubble.appendChild(badge);
+    }
+    badge.textContent = 'x' + count;
+    
+    // 触发动画
+    badge.style.animation = 'none';
+    badge.offsetHeight; // 触发回流
+    badge.style.animation = null;
+}
+
+// 更新玩家消息合并显示
+function updateUserMessageMerge(messageElement, count, senders) {
+    // 1. 更新徽章
+    updateRepeatBadge(messageElement, count);
+    
+    // 2. 更新发送者列表
+    var nameSpan = messageElement.querySelector('.message-name');
+    if (!nameSpan) return;
+    
+    var container = nameSpan.querySelector('.sender-list-container');
+    if (!container) {
+        // 第一次合并，转换结构
+        var firstName = nameSpan.innerHTML;
+        nameSpan.innerHTML = '';
+        
+        container = document.createElement('div');
+        container.className = 'sender-list-container';
+        
+        var listSpan = document.createElement('span');
+        listSpan.className = 'sender-list';
+        listSpan.innerHTML = firstName;
+        
+        container.appendChild(listSpan);
+        nameSpan.appendChild(container);
+    }
+    
+    var listSpan = container.querySelector('.sender-list');
+    var fullText = senders.join(', ');
+    listSpan.innerHTML = parseMinecraftText(fullText);
+    
+    // 3. 检查是否需要显示展开按钮
+    // 如果文字被截断（溢出）或者发送者超过3个，显示按钮
+    var isOverflowing = listSpan.scrollWidth > listSpan.clientWidth;
+    var hasManySenders = senders.length > 3;
+    
+    var toggleBtn = container.querySelector('.sender-toggle-btn');
+    if ((isOverflowing || hasManySenders) && !toggleBtn) {
+        toggleBtn = document.createElement('div');
+        toggleBtn.className = 'sender-toggle-btn';
+        toggleBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+        
+        toggleBtn.onclick = function(e) {
+            e.stopPropagation();
+            var isExpanded = listSpan.classList.toggle('expanded');
+            toggleBtn.classList.toggle('expanded');
+            // 如果是在底部，展开可能需要滚动
+            var wasAtBottom = checkIfAtBottom();
+            if (wasAtBottom) {
+                setTimeout(scrollToBottom, 50);
+            }
+        };
+        
+        container.appendChild(toggleBtn);
+    }
+}
+
+// 重置合并状态
+function resetMergingState() {
+    lastMergeableMessageText = null;
+    lastMergeableMessageElement = null;
+    lastMergeableMessageCount = 1;
+    lastMergeableMessageType = null;
+
+    lastUserMessageText = null;
+    lastUserMessageElement = null;
+    lastUserMessageCount = 1;
+    lastUserMessageSenders = [];
+
+    // Reset folding group state
+    foldingGroup = {
+        messages: [],
+        element: null,
+        type: null,
+        elements: null
+    };
+}
+
+// Create a folding group wrapper element
+function createFoldingGroupElement(messageType) {
+    var groupItem = document.createElement('li');
+    groupItem.className = 'folding-group';
+
+    var groupBubble = document.createElement('div');
+    groupBubble.className = 'message-bubble ' + messageType + ' folding-group-container';
+
+    // History container (collapsed by default)
+    var historyContainer = document.createElement('div');
+    historyContainer.className = 'folding-history collapsed';
+
+    // Latest message container
+    var latestContainer = document.createElement('div');
+    latestContainer.className = 'folding-latest';
+
+    // NO toggle button - badge will be the toggle
+    groupBubble.appendChild(historyContainer);
+    groupBubble.appendChild(latestContainer);
+    groupItem.appendChild(groupBubble);
+
+    return {
+        item: groupItem,
+        bubble: groupBubble,
+        history: historyContainer,
+        latest: latestContainer
+    };
+}
+
+// Toggle folding group expand/collapse
+function toggleFoldingGroup(groupBubble) {
+    var history = groupBubble.querySelector('.folding-history');
+
+    var isCollapsed = history.classList.contains('collapsed');
+    history.classList.toggle('collapsed');
+    groupBubble.classList.toggle('expanded');
+
+    // Scroll to bottom if was at bottom before expand
+    if (isCollapsed) {
+        var wasAtBottom = checkIfAtBottom();
+        if (wasAtBottom) {
+            setTimeout(scrollToBottom, 50);
+        }
+    }
+}
+
+// Create a flat history message item
+function createHistoryMessageElement(messageData, messageType) {
+    var container = document.createElement('div');
+    container.className = 'folding-history-item';
+
+    // Header row: name + time
+    var headerRow = document.createElement('div');
+    headerRow.className = 'folding-history-header';
+
+    if (messageData.name) {
+        var nameSpan = document.createElement('span');
+        nameSpan.className = 'message-name';
+        nameSpan.innerHTML = parseMinecraftText(messageData.name);
+        headerRow.appendChild(nameSpan);
+    }
+
+    var timeSpan = document.createElement('span');
+    timeSpan.className = 'folding-history-time';
+    timeSpan.textContent = messageData.time;
+    headerRow.appendChild(timeSpan);
+
+    // Content row
+    var textDiv = document.createElement('div');
+    textDiv.className = 'folding-history-content';
+    textDiv.innerHTML = parseMinecraftText(messageData.message);
+
+    container.appendChild(headerRow);
+    container.appendChild(textDiv);
+
+    return container;
+}
+
+// Add a message to the folding group history (append = chronological order)
+function addToFoldingHistory(groupElements, messageData, messageType) {
+    var historyItem = createHistoryMessageElement(messageData, messageType);
+    groupElements.history.appendChild(historyItem); // appendChild = oldest at top
+}
+
+// Update the latest message display in folding group
+function updateFoldingLatest(groupElements, name, messageText, messageTime) {
+    groupElements.latest.innerHTML = '';
+
+    if (name) {
+        var nameSpan = document.createElement('span');
+        nameSpan.className = 'message-name';
+        nameSpan.innerHTML = parseMinecraftText(name);
+        groupElements.latest.appendChild(nameSpan);
+    }
+
+    var textDiv = document.createElement('div');
+    textDiv.className = 'message-text';
+    textDiv.innerHTML = parseMinecraftText(messageText);
+    groupElements.latest.appendChild(textDiv);
+
+    var timeDiv = document.createElement('div');
+    timeDiv.className = 'message-time';
+    timeDiv.textContent = messageTime;
+    groupElements.latest.appendChild(timeDiv);
+}
+
+// Update folding group count badge
+function updateFoldingBadge(groupElements, count) {
+    var badge = groupElements.bubble.querySelector('.folding-badge');
+    if (!badge) {
+        badge = document.createElement('div');
+        badge.className = 'folding-badge';
+        badge.onclick = function(e) {
+            e.stopPropagation();
+            toggleFoldingGroup(groupElements.bubble);
+        };
+        groupElements.bubble.appendChild(badge);
+    }
+    badge.textContent = '+' + count;
+
+    // 触发动画（与相同消息徽章保持一致）
+    badge.style.animation = 'none';
+    badge.offsetHeight; // 触发回流
+    badge.style.animation = null;
 }
 
 // 创建消息元素的通用函数
@@ -412,6 +709,7 @@ function handleServerClear() {
     });
     obfuscatedElements.clear();
     resetProcessedMessages();
+    resetMergingState();
     lastEventId = null;
     messageList.innerHTML = '';
     updateScrollButtonState();
@@ -499,8 +797,141 @@ function initializeEventSource() {
             setTimeout(resetTranslationUI, 500);
         }
 
+        // 检查是否为可合并的消息类型（System, Error, Info）
+        var currentType = !name ? 'system' : (name === "[ERROR]" ? 'error' : (name === "[INFO]" ? 'info' : 'user'));
+
+        // 玩家消息合并逻辑
+        if (currentType === 'user') {
+            if (lastUserMessageText === messageText && lastUserMessageElement) {
+                lastUserMessageCount++;
+                if (!lastUserMessageSenders.includes(name)) {
+                    lastUserMessageSenders.push(name);
+                }
+                updateUserMessageMerge(lastUserMessageElement, lastUserMessageCount, lastUserMessageSenders);
+                pendingMessages--;
+                handleMessageScroll(wasAtBottom);
+                return;
+            }
+            // 新的玩家消息，重置系统消息合并状态
+            lastMergeableMessageText = null;
+            lastMergeableMessageElement = null;
+        } else {
+            // 系统类消息合并逻辑
+            if (currentType === lastMergeableMessageType &&
+                lastMergeableMessageText === messageText && lastMergeableMessageElement) {
+                lastMergeableMessageCount++;
+                updateRepeatBadge(lastMergeableMessageElement, lastMergeableMessageCount);
+                pendingMessages--;
+                handleMessageScroll(wasAtBottom);
+                return;
+            }
+            // 新的系统消息，重置玩家消息合并状态
+            lastUserMessageText = null;
+            lastUserMessageElement = null;
+        }
+
+        // Check for folding group similarity (after exact match checks fail)
+        if (foldingGroup.element && foldingGroup.type === currentType) {
+            var prevMessage = foldingGroup.messages[foldingGroup.messages.length - 1];
+
+            if (shouldFoldMessages(currentType, foldingGroup.type, messageText, prevMessage.message)) {
+                // If this is the first fold (elements not created yet), convert single message to group
+                if (!foldingGroup.elements) {
+                    // Create folding group wrapper
+                    foldingGroup.elements = createFoldingGroupElement(currentType);
+
+                    // Copy filter state from original element
+                    var originalBubble = foldingGroup.element.querySelector('.message-bubble');
+                    if (originalBubble && originalBubble.classList.contains('hidden')) {
+                        foldingGroup.elements.bubble.classList.add('hidden');
+                    }
+
+                    // Add first message to history
+                    addToFoldingHistory(foldingGroup.elements, prevMessage, currentType);
+
+                    // Set up latest with second message (will be updated below)
+                    updateFoldingLatest(foldingGroup.elements, name, messageText, messageTime);
+
+                    // Replace the single message element with the folding group
+                    messageList.replaceChild(foldingGroup.elements.item, foldingGroup.element);
+
+                    // Update badge
+                    updateFoldingBadge(foldingGroup.elements, 1);
+
+                    // Update the element reference
+                    foldingGroup.element = foldingGroup.elements.item;
+                } else {
+                    // Add to existing folding group
+                    // Move current latest to history
+                    addToFoldingHistory(foldingGroup.elements, prevMessage, currentType);
+
+                    // Update latest display
+                    updateFoldingLatest(foldingGroup.elements, name, messageText, messageTime);
+                    updateFoldingBadge(foldingGroup.elements, foldingGroup.messages.length);
+                }
+
+                // Store the new message
+                foldingGroup.messages.push({
+                    name: name,
+                    message: messageText,
+                    time: messageTime,
+                    duration: duration,
+                    cacheHit: cacheHit,
+                    glossaryMatch: glossaryMatch,
+                    skipSrcLang: skipSrcLang,
+                    usage: usage,
+                    messageText: parseMinecraftText(messageText)
+                });
+
+                pendingMessages--;
+                handleMessageScroll(wasAtBottom);
+                return;
+            }
+        }
+
+        // If type changed from previous folding group, reset it
+        if (foldingGroup.type && foldingGroup.type !== currentType) {
+            foldingGroup = {
+                messages: [],
+                element: null,
+                type: null,
+                elements: null
+            };
+        }
+
         var messageData = createMessageElement(name, messageText, messageTime, duration, cacheHit, glossaryMatch, skipSrcLang, usage);
         messageList.appendChild(messageData.element);
+
+        // Start tracking for potential folding group
+        foldingGroup = {
+            messages: [{
+                name: name,
+                message: messageText,
+                time: messageTime,
+                duration: duration,
+                cacheHit: cacheHit,
+                glossaryMatch: glossaryMatch,
+                skipSrcLang: skipSrcLang,
+                usage: usage,
+                messageText: parseMinecraftText(messageText)
+            }],
+            element: messageData.element,
+            type: currentType,
+            elements: null  // Will be created when folding actually starts
+        };
+
+        // 更新合并追踪状态
+        if (currentType === 'user') {
+            lastUserMessageText = messageText;
+            lastUserMessageElement = messageData.element;
+            lastUserMessageCount = 1;
+            lastUserMessageSenders = [name];
+        } else {
+            lastMergeableMessageType = currentType;
+            lastMergeableMessageText = messageText;
+            lastMergeableMessageElement = messageData.element;
+            lastMergeableMessageCount = 1;
+        }
 
         pendingMessages--;
         handleMessageScroll(wasAtBottom);
@@ -585,6 +1016,7 @@ document.getElementById('fab-clear').addEventListener('click', function() {
     });
     obfuscatedElements.clear();
     resetProcessedMessages();
+    resetMergingState();
     lastEventId = null;
 
     fetch('/clear-messages', {

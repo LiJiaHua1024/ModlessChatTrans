@@ -8,17 +8,17 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2025-08-14 17:16+0800\n"
-"PO-Revision-Date: 2025-08-08 10:00+0000\n"
+"PO-Revision-Date: 2026-02-12 16:33+0800\n"
 "Last-Translator: GPT-5 <noreply@example.com>\n"
 "Language-Team: Russian\n"
+"Language: ru_RU\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: ru_RU\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 "Generated-By: Babel 2.17.0\n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%"
-"10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: GPT-5\n"
+"X-Generator: Poedit 3.8\n"
 
 #: templates/index.html:8
 msgid "消息翻译结果"
@@ -309,7 +309,9 @@ msgstr "Добавить"
 msgid "术语{}成功"
 msgstr "Действие «{}» с термином выполнено успешно"
 
-#: modless_chat_trans/interface.py:1338
+#: modless_chat_trans/interface.py:1338 modless_chat_trans/interface.py:1985
+#: modless_chat_trans/interface.py:2122
+#, fuzzy
 msgid "删除成功"
 msgstr "Удаление успешно"
 
@@ -325,7 +327,7 @@ msgstr "Подсказка"
 msgid "术语表为空，无需清空"
 msgstr "Глоссарий пуст, очищать нечего"
 
-#: modless_chat_trans/interface.py:1373
+#: modless_chat_trans/interface.py:1373 modless_chat_trans/interface.py:2009
 msgid "确认清空"
 msgstr "Подтвердить очистку"
 
@@ -333,7 +335,8 @@ msgstr "Подтвердить очистку"
 msgid "确定要清空所有术语吗？此操作不可恢复。"
 msgstr "Вы уверены, что хотите очистить все термины? Это действие необратимо."
 
-#: modless_chat_trans/interface.py:1385
+#: modless_chat_trans/interface.py:1385 modless_chat_trans/interface.py:2020
+#, fuzzy
 msgid "清空成功"
 msgstr "Очистка успешно выполнена"
 
@@ -372,7 +375,9 @@ msgstr "Ссылка для доступа к веб-интерфейсу"
 
 #: modless_chat_trans/interface.py:1565
 msgid "请通过以下任一链接打开网页界面，查看翻译并即时发送消息"
-msgstr "Пожалуйста, откройте веб-интерфейс по любой из следующих ссылок, чтобы просмотреть перевод и отправить сообщение мгновенно"
+msgstr ""
+"Пожалуйста, откройте веб-интерфейс по любой из следующих ссылок, чтобы "
+"просмотреть перевод и отправить сообщение мгновенно"
 
 #: modless_chat_trans/interface.py:1619
 msgid "已启动"
@@ -774,3 +779,191 @@ msgstr ""
 #: modless_chat_trans/message_processor.py:264
 msgid "翻译失败，错误："
 msgstr "Ошибка перевода: "
+
+#: modless_chat_trans/interface.py:1602
+msgid "黑名单设置"
+msgstr "Настройки чёрного списка"
+
+#: modless_chat_trans/interface.py:1634
+msgid "用户黑名单"
+msgstr "Чёрный список пользователей"
+
+#: modless_chat_trans/interface.py:1639
+msgid "消息内容黑名单"
+msgstr "Чёрный список содержимого сообщений"
+
+#: modless_chat_trans/interface.py:1668
+msgid ""
+"用户黑名单中的玩家发送的消息将不会被翻译。\n"
+"支持批量添加，每行一个玩家名称。\n"
+"黑名单使用净化后的玩家名称进行完全匹配（区分大小写）。"
+msgstr ""
+"Сообщения от игроков из чёрного списка пользователей не будут переводиться.\n"
+"Поддерживается массовое добавление: по одному имени игрока в строке.\n"
+"Чёрный список выполняет полное совпадение по очищенному имени игрока (с "
+"учётом регистра)."
+
+#: modless_chat_trans/interface.py:1683
+msgid ""
+"请输入玩家名称，每行一个\n"
+"例如：\n"
+"Notch\n"
+"Herobrine\n"
+"Steve"
+msgstr ""
+"Введите имена игроков, по одному в строке\n"
+"Например：\n"
+"Notch\n"
+"Herobrine\n"
+"Steve"
+
+#: modless_chat_trans/interface.py:1693
+msgid "添加用户"
+msgstr "Добавить пользователя"
+
+#: modless_chat_trans/interface.py:1712
+msgid "玩家名称"
+msgstr "Имя игрока"
+
+#: modless_chat_trans/interface.py:1724
+msgid "删除选中用户"
+msgstr "Удалить выбранного пользователя"
+
+#: modless_chat_trans/interface.py:1728
+msgid "清空所有用户"
+msgstr "Очистить всех пользователей"
+
+#: modless_chat_trans/interface.py:1751
+msgid ""
+"消息内容黑名单用于过滤特定内容的消息。\n"
+"如果选择\"使用正则表达式\"，则按正则表达式匹配；\n"
+"否则按关键词匹配（消息包含任意关键词即命中）。"
+msgstr ""
+"Чёрный список содержимого сообщений используется для фильтрации сообщений с "
+"определённым содержимым.\n"
+"Если выбрано \"Использовать регулярные выражения\", сопоставление "
+"выполняется по regex；\n"
+"иначе — по ключевым словам (сообщение подходит, если содержит любое из "
+"ключевых слов)."
+
+#: modless_chat_trans/interface.py:1765
+msgid "规则："
+msgstr "Правило："
+
+#: modless_chat_trans/interface.py:1767
+msgid "请输入正则表达式或关键词"
+msgstr "Введите регулярное выражение или ключевое слово"
+
+#: modless_chat_trans/interface.py:1774
+msgid "使用正则表达式"
+msgstr "Использовать регулярные выражения"
+
+#: modless_chat_trans/interface.py:1778
+msgid "添加规则"
+msgstr "Добавить правило"
+
+#: modless_chat_trans/interface.py:1795
+msgid "规则"
+msgstr "Правило"
+
+#: modless_chat_trans/interface.py:1795
+msgid "类型"
+msgstr "Тип"
+
+#: modless_chat_trans/interface.py:1807
+msgid "删除选中规则"
+msgstr "Удалить выбранное правило"
+
+#: modless_chat_trans/interface.py:1811
+msgid "清空所有规则"
+msgstr "Очистить все правила"
+
+#: modless_chat_trans/interface.py:1877 modless_chat_trans/interface.py:2120
+msgid "正则表达式"
+msgstr "Регулярное выражение"
+
+#: modless_chat_trans/interface.py:1877 modless_chat_trans/interface.py:2120
+msgid "关键词"
+msgstr "Ключевое слово"
+
+#: modless_chat_trans/interface.py:1929
+msgid "请输入玩家名称"
+msgstr "Введите имя игрока"
+
+#: modless_chat_trans/interface.py:1956 modless_chat_trans/interface.py:2097
+msgid "添加成功"
+msgstr "Добавлено"
+
+#: modless_chat_trans/interface.py:1957
+#, python-brace-format
+msgid "已添加 {} 个用户到黑名单"
+msgstr "Добавлено {} пользователей в чёрный список"
+
+#: modless_chat_trans/interface.py:1967
+#, python-brace-format
+msgid "{} 个用户已在黑名单中"
+msgstr "{} пользователей уже в чёрном списке"
+
+#: modless_chat_trans/interface.py:1986
+#, python-brace-format
+msgid "已将 \"{}\" 从黑名单移除"
+msgstr "Удалено из чёрного списка: \"{}\""
+
+#: modless_chat_trans/interface.py:1999
+msgid "用户黑名单为空，无需清空"
+msgstr "Чёрный список пользователей пуст, очищать не нужно"
+
+#: modless_chat_trans/interface.py:2010
+msgid "确定要清空所有用户黑名单吗？此操作不可恢复。"
+msgstr ""
+"Очистить весь чёрный список пользователей? Это действие нельзя отменить."
+
+#: modless_chat_trans/interface.py:2021
+#, python-brace-format
+msgid "已清空 {} 个用户"
+msgstr "Очищено пользователей: {}"
+
+#: modless_chat_trans/interface.py:2037
+msgid "请输入规则"
+msgstr "Введите правило"
+
+#: modless_chat_trans/interface.py:2054
+msgid "正则表达式错误"
+msgstr "Ошибка регулярного выражения"
+
+#: modless_chat_trans/interface.py:2055
+#, python-brace-format
+msgid "无效的正则表达式：{}"
+msgstr "Некорректное регулярное выражение：{}"
+
+#: modless_chat_trans/interface.py:2083
+msgid "该规则已存在"
+msgstr "Такое правило уже существует"
+
+#: modless_chat_trans/interface.py:2098
+#, python-brace-format
+msgid "已添加规则：{}"
+msgstr "Добавлено правило：{}"
+
+#: modless_chat_trans/interface.py:2123
+#, python-brace-format
+msgid "已删除规则：{}（{}）"
+msgstr "Удалено правило：{}（{}）"
+
+#: modless_chat_trans/interface.py:2136
+msgid "消息黑名单为空，无需清空"
+msgstr "Чёрный список сообщений пуст, очищать не нужно"
+
+#: modless_chat_trans/interface.py:2147
+msgid "确定要清空所有消息黑名单规则吗？此操作不可恢复。"
+msgstr ""
+"Очистить все правила чёрного списка сообщений? Это действие нельзя отменить."
+
+#: modless_chat_trans/interface.py:2158
+#, python-brace-format
+msgid "已清空 {} 个规则"
+msgstr "Очищено правил: {}"
+
+#: modless_chat_trans/interface.py:3778
+msgid "黑名单"
+msgstr "Чёрный список"

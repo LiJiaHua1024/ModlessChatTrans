@@ -8,16 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2025-08-14 17:16+0800\n"
-"PO-Revision-Date: 2025-08-08 10:00+0000\n"
+"PO-Revision-Date: 2026-02-12 16:33+0800\n"
 "Last-Translator: GPT-5 <noreply@example.com>\n"
 "Language-Team: Chinese (Taiwan)\n"
+"Language: zh_TW\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: zh_TW\n"
-"Generated-By: Babel 2.17.0\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: GPT-5\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.8\n"
 
 #: templates/index.html:8
 msgid "消息翻译结果"
@@ -105,7 +105,8 @@ msgstr "替換亂碼字元"
 
 #: modless_chat_trans/interface.py:244
 msgid ""
-"将乱码字符（\\ufffd\\ufffd）替换为用于Minecraft格式化代码的分节符§（\\u00A7）"
+"将乱码字符（\\ufffd\\ufffd）替换为用于Minecraft格式化代码的分节符§"
+"（\\u00A7）"
 msgstr ""
 "將亂碼字元（\\ufffd\\ufffd）替換為用於 Minecraft 格式化代碼的分節符號 §"
 "（\\u00A7）"
@@ -300,7 +301,8 @@ msgstr "新增"
 msgid "术语{}成功"
 msgstr "術語{}成功"
 
-#: modless_chat_trans/interface.py:1338
+#: modless_chat_trans/interface.py:1338 modless_chat_trans/interface.py:1985
+#: modless_chat_trans/interface.py:2122
 msgid "删除成功"
 msgstr "刪除成功"
 
@@ -316,7 +318,7 @@ msgstr "提示"
 msgid "术语表为空，无需清空"
 msgstr "術語表為空，無需清空"
 
-#: modless_chat_trans/interface.py:1373
+#: modless_chat_trans/interface.py:1373 modless_chat_trans/interface.py:2009
 msgid "确认清空"
 msgstr "確認清空"
 
@@ -324,7 +326,7 @@ msgstr "確認清空"
 msgid "确定要清空所有术语吗？此操作不可恢复。"
 msgstr "確定要清空所有術語嗎？此操作不可復原。"
 
-#: modless_chat_trans/interface.py:1385
+#: modless_chat_trans/interface.py:1385 modless_chat_trans/interface.py:2020
 msgid "清空成功"
 msgstr "清空成功"
 
@@ -762,3 +764,185 @@ msgstr "翻譯失敗：伺服器回應無效，請檢查網路連線。"
 #: modless_chat_trans/message_processor.py:264
 msgid "翻译失败，错误："
 msgstr "翻譯失敗，錯誤："
+
+#: modless_chat_trans/interface.py:1602
+msgid "黑名单设置"
+msgstr "黑名單設定"
+
+#: modless_chat_trans/interface.py:1634
+msgid "用户黑名单"
+msgstr "使用者黑名單"
+
+#: modless_chat_trans/interface.py:1639
+msgid "消息内容黑名单"
+msgstr "訊息內容黑名單"
+
+#: modless_chat_trans/interface.py:1668
+msgid ""
+"用户黑名单中的玩家发送的消息将不会被翻译。\n"
+"支持批量添加，每行一个玩家名称。\n"
+"黑名单使用净化后的玩家名称进行完全匹配（区分大小写）。"
+msgstr ""
+"使用者黑名單中的玩家發送的訊息將不會被翻譯。\n"
+"支援批次新增，每行一個玩家名稱。\n"
+"黑名單使用淨化後的玩家名稱進行完全比對（區分大小寫）。"
+
+#: modless_chat_trans/interface.py:1683
+msgid ""
+"请输入玩家名称，每行一个\n"
+"例如：\n"
+"Notch\n"
+"Herobrine\n"
+"Steve"
+msgstr ""
+"請輸入玩家名稱，每行一個\n"
+"例如：\n"
+"Notch\n"
+"Herobrine\n"
+"Steve"
+
+#: modless_chat_trans/interface.py:1693
+msgid "添加用户"
+msgstr "新增使用者"
+
+#: modless_chat_trans/interface.py:1712
+msgid "玩家名称"
+msgstr "玩家名稱"
+
+#: modless_chat_trans/interface.py:1724
+msgid "删除选中用户"
+msgstr "刪除選取的使用者"
+
+#: modless_chat_trans/interface.py:1728
+msgid "清空所有用户"
+msgstr "清空所有使用者"
+
+#: modless_chat_trans/interface.py:1751
+msgid ""
+"消息内容黑名单用于过滤特定内容的消息。\n"
+"如果选择\"使用正则表达式\"，则按正则表达式匹配；\n"
+"否则按关键词匹配（消息包含任意关键词即命中）。"
+msgstr ""
+"訊息內容黑名單用於過濾特定內容的訊息。\n"
+"如果選擇\"使用正則表達式\"，則按正則表達式比對；\n"
+"否則按關鍵字比對（訊息包含任意關鍵字即命中）。"
+
+#: modless_chat_trans/interface.py:1765
+msgid "规则："
+msgstr "規則："
+
+#: modless_chat_trans/interface.py:1767
+msgid "请输入正则表达式或关键词"
+msgstr "請輸入正則表達式或關鍵字"
+
+#: modless_chat_trans/interface.py:1774
+msgid "使用正则表达式"
+msgstr "使用正則表達式"
+
+#: modless_chat_trans/interface.py:1778
+msgid "添加规则"
+msgstr "新增規則"
+
+#: modless_chat_trans/interface.py:1795
+msgid "规则"
+msgstr "規則"
+
+#: modless_chat_trans/interface.py:1795
+msgid "类型"
+msgstr "類型"
+
+#: modless_chat_trans/interface.py:1807
+msgid "删除选中规则"
+msgstr "刪除選取的規則"
+
+#: modless_chat_trans/interface.py:1811
+msgid "清空所有规则"
+msgstr "清空所有規則"
+
+#: modless_chat_trans/interface.py:1877 modless_chat_trans/interface.py:2120
+msgid "正则表达式"
+msgstr "正則表達式"
+
+#: modless_chat_trans/interface.py:1877 modless_chat_trans/interface.py:2120
+msgid "关键词"
+msgstr "關鍵字"
+
+#: modless_chat_trans/interface.py:1929
+msgid "请输入玩家名称"
+msgstr "請輸入玩家名稱"
+
+#: modless_chat_trans/interface.py:1956 modless_chat_trans/interface.py:2097
+msgid "添加成功"
+msgstr "新增成功"
+
+#: modless_chat_trans/interface.py:1957
+#, python-brace-format
+msgid "已添加 {} 个用户到黑名单"
+msgstr "已新增 {} 個使用者到黑名單"
+
+#: modless_chat_trans/interface.py:1967
+#, python-brace-format
+msgid "{} 个用户已在黑名单中"
+msgstr "{} 個使用者已在黑名單中"
+
+#: modless_chat_trans/interface.py:1986
+#, python-brace-format
+msgid "已将 \"{}\" 从黑名单移除"
+msgstr "已將 \"{}\" 從黑名單移除"
+
+#: modless_chat_trans/interface.py:1999
+msgid "用户黑名单为空，无需清空"
+msgstr "使用者黑名單為空，無需清空"
+
+#: modless_chat_trans/interface.py:2010
+msgid "确定要清空所有用户黑名单吗？此操作不可恢复。"
+msgstr "確定要清空所有使用者黑名單嗎？此操作不可復原。"
+
+#: modless_chat_trans/interface.py:2021
+#, python-brace-format
+msgid "已清空 {} 个用户"
+msgstr "已清空 {} 個使用者"
+
+#: modless_chat_trans/interface.py:2037
+msgid "请输入规则"
+msgstr "請輸入規則"
+
+#: modless_chat_trans/interface.py:2054
+msgid "正则表达式错误"
+msgstr "正則表達式錯誤"
+
+#: modless_chat_trans/interface.py:2055
+#, python-brace-format
+msgid "无效的正则表达式：{}"
+msgstr "無效的正則表達式：{}"
+
+#: modless_chat_trans/interface.py:2083
+msgid "该规则已存在"
+msgstr "該規則已存在"
+
+#: modless_chat_trans/interface.py:2098
+#, python-brace-format
+msgid "已添加规则：{}"
+msgstr "已新增規則：{}"
+
+#: modless_chat_trans/interface.py:2123
+#, python-brace-format
+msgid "已删除规则：{}（{}）"
+msgstr "已刪除規則：{}（{}）"
+
+#: modless_chat_trans/interface.py:2136
+msgid "消息黑名单为空，无需清空"
+msgstr "訊息黑名單為空，無需清空"
+
+#: modless_chat_trans/interface.py:2147
+msgid "确定要清空所有消息黑名单规则吗？此操作不可恢复。"
+msgstr "確定要清空所有訊息黑名單規則嗎？此操作不可復原。"
+
+#: modless_chat_trans/interface.py:2158
+#, python-brace-format
+msgid "已清空 {} 个规则"
+msgstr "已清空 {} 個規則"
+
+#: modless_chat_trans/interface.py:3778
+msgid "黑名单"
+msgstr "黑名單"

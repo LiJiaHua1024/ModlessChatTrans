@@ -21,11 +21,37 @@ import uuid
 import hmac
 import base64
 import hashlib
-from typing import Dict, Callable
+from enum import Enum
+from typing import Dict, Callable, Set
 from urllib.parse import urlencode
 import lazy_loader as lazy
 from modless_chat_trans.logger import logger
 from modless_chat_trans.config import ServiceType
+
+
+class MessageType(Enum):
+    """消息类型枚举"""
+    PLAYER = "player"
+    SEND = "send"
+    SYSTEM = "system"
+
+
+class TranslationMode(Enum):
+    """翻译模式枚举"""
+    NORMAL = "normal"
+    DEEP = "deep"
+    RAGE = "rage"
+
+
+# 定义每种消息类型支持的翻译模式
+MESSAGE_TYPE_MODES: Dict[MessageType, Set[TranslationMode]] = {
+    MessageType.SYSTEM: {TranslationMode.NORMAL},
+    MessageType.PLAYER: {TranslationMode.NORMAL, TranslationMode.DEEP},
+    MessageType.SEND: {TranslationMode.NORMAL, TranslationMode.DEEP, TranslationMode.RAGE},
+}
+
+_OPENROUTER_NATIVE_SUFFIXES = frozenset({"nitro", "floor"})
+_OPENROUTER_SORT_KEYWORDS = frozenset({"price", "throughput", "latency"})
 
 # 新增支持的 LLM 服务商
 LLM_PROVIDERS_PREFIXES = {
@@ -115,6 +141,7 @@ class Translator:
 
         self.translation_service_config = translation_service_config
         self.glossary = glossary
+        self.timeout = 15.0
         self._variable_pattern = re.compile(r"\{\{([a-zA-Z0-9_-]+)(?::[^}]+)?\}\}")
         self._literal_glossary = {
             k: v for k, v in self.glossary.items()
@@ -124,36 +151,60 @@ class Translator:
         logger.info(f"Initialized Translator")
         logger.debug(f"Literal glossary terms loaded: {len(self._literal_glossary)}")
 
-    def translate(self, text, source_language, target_language):
+    def translate(self, text, source_language, target_language, message_type: MessageType = MessageType.PLAYER):
         """
         Public API: Standard translation (or Deep Translate if configured).
-        """
-        return self._dispatch_translation(text, source_language, target_language, mode="standard")
 
-    def translate_with_profanity(self, text, source_language, target_language):
+        :param text: 待翻译文本
+        :param source_language: 源语言
+        :param target_language: 目标语言
+        :param message_type: 消息类型，决定可用的翻译模式
+        """
+        return self._dispatch_translation(
+            text, source_language, target_language,
+            mode=TranslationMode.NORMAL,
+            message_type=message_type
+        )
+
+    def translate_with_profanity(self, text, source_language, target_language,
+                                 message_type: MessageType = MessageType.SEND):
         """
         Public API: Rage Mode translation.
-        """
-        return self._dispatch_translation(text, source_language, target_language, mode="rage")
 
-    def _dispatch_translation(self, text, source_language, target_language, mode):
+        :param text: 待翻译文本
+        :param source_language: 源语言
+        :param target_language: 目标语言
+        :param message_type: 消息类型，决定可用的翻译模式
+        """
+        return self._dispatch_translation(
+            text, source_language, target_language,
+            mode=TranslationMode.RAGE,
+            message_type=message_type
+        )
+
+    def _dispatch_translation(self, text, source_language, target_language, mode: TranslationMode,
+                              message_type: MessageType):
         """
         Internal Dispatcher: Coordinates prompt building and execution.
+
+        :param text: 待翻译文本
+        :param source_language: 源语言
+        :param target_language: 目标语言
+        :param mode: 请求的翻译模式
+        :param message_type: 消息类型，用于验证可用模式并选择正确的prompt
         """
         if self.translation_service_config.service_type == ServiceType.LLM:
-            # Determine effective mode based on config and requested mode
-            effective_mode = mode
-            if mode == "standard" and self.translation_service_config.llm.deep_translate:
-                effective_mode = "deep"
+            # 1. 验证模式是否对当前消息类型可用，如果不可用则降级
+            effective_mode = self._get_effective_mode(mode, message_type)
 
-            # 1. Prompt Factory
-            system_prompt = self._build_system_prompt(effective_mode)
+            # 2. Prompt Factory - 根据消息类型和模式构建prompt
+            system_prompt = self._build_system_prompt(effective_mode, message_type)
 
-            # 2. Execution Engine Configuration
+            # 3. Execution Engine Configuration
             # 'deep' mode expects JSON output; others expect plain text currently
-            expect_json = (effective_mode == "deep")
+            expect_json = (effective_mode == TranslationMode.DEEP)
 
-            include_terms = (effective_mode != "rage")
+            include_terms = (effective_mode != TranslationMode.RAGE)
 
             return self._execute_llm_translation(
                 text,
@@ -163,13 +214,18 @@ class Translator:
                 self.translation_service_config.llm.provider,
                 system_prompt,
                 expect_json,
-                include_terms
+                include_terms,
+                message_type
             )
 
         elif self.translation_service_config.service_type == ServiceType.TRADITIONAL:
-            if mode == "rage":
+            # 验证模式是否对当前消息类型可用
+            effective_mode = self._get_effective_mode(mode, message_type)
+
+            if effective_mode == TranslationMode.RAGE:
                 # Fallback logic for Rage Mode on Traditional services
-                logger.warning(f"Rage mode not supported for traditional service ({self.translation_service_config.traditional.provider}). Falling back to standard translation.")
+                logger.warning(
+                    f"Rage mode not supported for traditional service ({self.translation_service_config.traditional.provider}). Falling back to standard translation.")
                 # We just proceed with standard traditional translation
 
             if translation := self._execute_traditional_translation(
@@ -182,9 +238,49 @@ class Translator:
             else:
                 return None
 
-    def _execute_llm_translation(self, text, model, source_language, target_language, provider, system_prompt, expect_json, include_terms):
+    def _get_effective_mode(self, requested_mode: TranslationMode, message_type: MessageType) -> TranslationMode:
+        """
+        根据消息类型验证并调整翻译模式。
+
+        :param requested_mode: 请求的翻译模式
+        :param message_type: 消息类型
+        :return: 有效的翻译模式（如果请求的模式不可用则降级）
+        """
+        available_modes = MESSAGE_TYPE_MODES.get(message_type, {TranslationMode.NORMAL})
+
+        # 如果请求的模式可用，直接返回
+        if requested_mode in available_modes:
+            return requested_mode
+
+        # 如果请求的是NORMAL但不可用（理论上不应该发生），返回NORMAL
+        if requested_mode == TranslationMode.NORMAL:
+            return TranslationMode.NORMAL
+
+        # 对于其他情况，降级到NORMAL（如果可用）
+        if TranslationMode.NORMAL in available_modes:
+            logger.debug(
+                f"Mode {requested_mode.value} not available for message type {message_type.value}, "
+                f"falling back to normal mode"
+            )
+            return TranslationMode.NORMAL
+
+        # 兜底：返回该消息类型的第一个可用模式
+        return next(iter(available_modes))
+
+    def _execute_llm_translation(self, text, model, source_language, target_language, provider, system_prompt,
+                                 expect_json, include_terms, message_type: MessageType = MessageType.PLAYER):
         """
         Execution Engine: Handles API calls and response parsing.
+
+        :param text: 待翻译文本
+        :param model: 模型名称
+        :param source_language: 源语言
+        :param target_language: 目标语言
+        :param provider: 模型提供商
+        :param system_prompt: 系统提示词
+        :param expect_json: 是否期望JSON格式输出
+        :param include_terms: 是否包含术语表
+        :param message_type: 消息类型
         """
         if source_language.lower() == "auto":
             source_language = ""
@@ -218,6 +314,31 @@ class Translator:
             # 针对部分 provider 做模型名前缀映射，保持与旧版调用兼容
             provider = provider or "OpenAI"
 
+            # ── OpenRouter 扩展 Model ID 语法解析 ──────────────────────────
+            # 官方原生后缀: :nitro, :floor -> 保持原样，由 OpenRouter 自行处理
+            # 扩展排序后缀: :price, :throughput, :latency -> 通过 extra_body 传递 provider.sort
+            # 自定义 Provider: :amazon-bedrock 或 :amazon-bedrock,google-vertex -> 通过 extra_body 传递 provider.order
+
+            extra_body = None
+
+            if provider == "OpenRouter" and ":" in model:
+                base_model, suffix = model.split(":", 1)
+                suffix_stripped = suffix.strip()
+                suffix_lower = suffix_stripped.lower()
+
+                if suffix_lower in _OPENROUTER_NATIVE_SUFFIXES:
+                    # 官方原生后缀，保持 model 不变，无需额外处理
+                    pass
+                elif suffix_lower in _OPENROUTER_SORT_KEYWORDS:
+                    # 扩展排序语法 -> provider.sort
+                    model = base_model
+                    extra_body = {"provider": {"sort": suffix_lower}}
+                else:
+                    # 自定义 Provider 指定（支持逗号分隔多个）-> provider.order
+                    model = base_model
+                    provider_order = [s for p in suffix_stripped.split(",") if (s := p.strip())]
+                    extra_body = {"provider": {"order": provider_order}}
+
             # 为模型名添加提供商前缀（如果尚未添加）
             prefix = LLM_PROVIDERS_PREFIXES[provider]
             mapped_model = (
@@ -233,12 +354,19 @@ class Translator:
                     {"role": "user", "content": message}
                 ],
                 "temperature": 0,
+                "max_tokens": 256 if expect_json else 64,
                 "api_key": self.translation_service_config.llm.api_key,
             }
 
             # API URL 留空自动
             if api_base := self.translation_service_config.llm.api_base:
                 llm_params["api_base"] = api_base
+
+            llm_params["timeout"] = self.timeout
+
+            # 注入 OpenRouter 扩展路由参数
+            if extra_body:
+                llm_params["extra_body"] = extra_body
 
             response = litellm.completion(**llm_params)
 
@@ -284,111 +412,158 @@ class Translator:
             "usage": usage_info
         }
 
-    def _build_system_prompt(self, mode: str) -> str:
+    def _build_system_prompt(self, mode: TranslationMode, message_type: MessageType) -> str:
         """
-        Prompt Factory: Returns the system prompt for the specified mode.
+        Prompt Factory: Returns the system prompt for the specified mode and message type.
+
+        :param mode: 翻译模式
+        :param message_type: 消息类型
+        :return: 系统提示词
         """
-        if mode == "deep":
-            return (
-                "You are a Minecraft-specific intelligent translation engine, focused on providing "
-                "high-quality localization transformations in terms of cultural adaptation and "
-                "language naturalization.\n\n"
-                "## Translation Guidelines\n\n"
-                "1. Custom Term Priority: If a `Custom Terms` section is provided in the user's "
-                "prompt, its mappings are mandatory and take the highest priority. You MUST use "
-                "the specified translation for any term found in this section, overriding all "
-                "other guidelines or your own knowledge.\n"
-                "2. Cultural Adaptability: Identify culture-specific elements in the source text "
-                "(memes, allusions, puns, etc.) and find culturally equivalent expressions in "
-                "the target language.\n"
-                "3. Language Modernization: Use the latest slang in the target language.\n"
-                "4. Natural Language Processing:\n"
-                "    - Maintain spoken sentence structures.\n"
-                "    - Consider that player messages during gameplay will not be too long or have "
-                "complex grammatical structures.\n"
-                "    - Avoid formal language structures such as capitalization of initial letters/"
-                "proper nouns and ending punctuation marks.\n"
-                "    - Simulate human conversation characteristics (add appropriate filler words, "
-                "reasonable repetition).\n"
-                "5. Formatting Code Preservation (CRITICAL): Minecraft formatting codes (e.g., "
-                "`§l`, `§c`, `§1`, `§k`) must be preserved exactly as they appear in the source "
-                "text. These codes must NEVER be translated, modified, or removed.\n"
-                "6. Proper Nouns and Player Names: Do not translate player IDs, server names, or "
-                "non-standard game terms without a widely accepted translation.\n"
-                "7. Untranslatable Content: For meaningless keyboard mashing (e.g., \"asdasd\") "
-                "or garbled text, keep the original text as is.\n\n"
-                "## Output Specifications\n\n"
-                "Strictly follow the JSON structure below. Your entire response MUST be *only* "
-                "this JSON object. Do not use Markdown code block markers, and absolutely do not "
-                "add any introductory text, concluding remarks, explanations, apologies, or any "
-                "other content outside of the specified JSON structure.\n\n"
-                "{\n"
-                "\"terms\": [\n"
-                "{\"term\": \"Original term\", \"meaning\": \"Definition\"} // Include game terms, "
-                "slang, abbreviations, memes, puns, and other vocabulary requiring special handling.\n"
-                "],\n"
-                "\"result\": \"Final translation result\" // Natural translation after cultural "
-                "adaptation and colloquial processing.\n"
-                "}"
-            )
-        elif mode == "rage":
-            return (
-                "You are the embodiment of a toxic, tilted, and aggressive Minecraft PVPer. "
-                "You are NOT a polite translator. Your job is to translate chat messages into "
-                "the most emotionally charged, sarcastic, and 'salty' version possible.\n\n"
-                "## Core Personality & Guidelines\n\n"
-                "1. AGGRESSION INJECTION: If input is mild (e.g., 'lag'), INJECT rage and blame (server, teammates). "
-                "Make it sound like you are smashing the keyboard.\n"
-                "2. TRASH TALK & SLANG: Amplify hostility. Use internet slang and memes. "
-                "(e.g., 'ez' -> '有手就行', 'you suck' -> '菜就多练').\n"
-                "3. MANDATORY ABBREVIATIONS: Never type full formal phrases. Use acronyms to save time.\n"
-                "    - Use 'wtf', 'stfu', 'omg', 'idk', 'af' (as fuck) instead of full words.\n"
-                "    - Example: 'u are bad af' instead of 'you are bad as fuck'.\n"
-                "4. GAMER TYPING STYLE (CRITICAL):\n"
-                "    - STRICTLY LOWERCASE: No Shift key. No capitalization.\n"
-                "    - NO SPACES BEFORE PUNCTUATION: 'why???' (CORRECT) vs 'why ???' (WRONG). "
-                "Attach punctuation directly to the last letter.\n"
-                "    - SPAM PUNCTUATION: Use '???' or '!!!!' freely for anger, but NO formal periods.\n"
-                "    - NO MARKDOWN: No bold (**), no italics. Just raw text.\n"
-                "5. NO CENSORSHIP: Do NOT filter profanity. Use the most stinging vocabulary.\n\n"
-                "## Output Requirement\n\n"
-                "Your response MUST ONLY contain the final translated text. No explanations."
-            )
-        elif mode == "standard":
-            return (
-                "You are a Minecraft-specific intelligent translation engine, focused on providing "
-                "high-quality localization transformations in terms of cultural adaptation and "
-                "language naturalization.\n\n"
-                "## Translation Guidelines\n\n"
-                "1. Custom Term Priority: If a `Custom Terms` section is provided in the user's "
-                "prompt, its mappings are mandatory and take the highest priority. You MUST use "
-                "the specified translation for any term found in this section, overriding all "
-                "other guidelines or your own knowledge.\n"
-                "2. Cultural Adaptability: Identify culture-specific elements in the source text "
-                "(memes, allusions, puns, etc.) and find culturally equivalent expressions in "
-                "the target language.\n"
-                "3. Language Modernization: Use the latest slang in the target language.\n"
-                "4. Natural Language Processing:\n"
-                "    - Maintain spoken sentence structures.\n"
-                "    - Consider that player messages during gameplay will not be too long or have "
-                "complex grammatical structures.\n"
-                "    - Avoid formal language structures such as capitalization of initial letters/"
-                "proper nouns and ending punctuation marks.\n"
-                "    - Simulate human conversation characteristics (add appropriate filler words, "
-                "reasonable repetition).\n"
-                "5. Formatting Code Preservation (CRITICAL): Minecraft formatting codes (e.g., "
-                "`§l`, `§c`, `§1`, `§k`) must be preserved exactly as they appear in the source "
-                "text. These codes must NEVER be translated, modified, or removed.\n"
-                "6. Proper Nouns and Player Names: Do not translate player IDs, server names, or "
-                "non-standard game terms without a widely accepted translation.\n"
-                "7. Untranslatable Content: For meaningless keyboard mashing (e.g., \"asdasd\") "
-                "or garbled text, keep the original text as is.\n\n"
-                "## Output Requirement\n\n"
-                "Your response MUST ONLY contain the final translated text. Do not add any "
-                "prefixes, suffixes, explanations, or notes."
-            )
-        else:
-            raise ValueError(f"Invalid prompt mode: {mode}")
+        # System消息使用正式的Normal prompt（独立于player/send的normal）
+        if message_type == MessageType.SYSTEM:
+            return self._build_system_normal_prompt()
+
+        # Player/Send消息的Normal mode使用标准口语化prompt
+        if mode == TranslationMode.NORMAL:
+            return self._build_player_normal_prompt()
+
+        # Deep mode
+        if mode == TranslationMode.DEEP:
+            return self._build_deep_prompt()
+
+        # Rage mode
+        if mode == TranslationMode.RAGE:
+            return self._build_rage_prompt()
+
+        raise ValueError(f"Invalid mode: {mode}")
+
+    def _build_system_normal_prompt(self) -> str:
+        """
+        System消息专用的极简Normal prompt。
+        利用LLM默认的正式语气，仅针对格式安全和术语进行硬性约束。
+        """
+        return (
+            "You are a Minecraft server localization engine. "
+            "Translate server announcements, game notifications, and plugin messages.\n"
+            "Rules:\n"
+            "1. Priority: You MUST use mappings from `Custom Terms` if provided.\n"
+            "2. Safety: STRICTLY preserve all formatting codes (e.g., `§a`, `§l`) and "
+            "symbols. Do NOT translate command syntax (e.g., `/help`).\n"
+            "3. Output: Output ONLY the translation result."
+        )
+
+    def _build_player_normal_prompt(self) -> str:
+        """
+        Player/Send消息专用的Normal prompt（口语化风格）。
+        """
+        return (
+            "You are a Minecraft-specific intelligent translation engine, focused on providing "
+            "high-quality localization transformations in terms of cultural adaptation and "
+            "language naturalization.\n\n"
+            "## Translation Guidelines\n\n"
+            "1. Custom Term Priority: If a `Custom Terms` section is provided in the user's "
+            "prompt, its mappings are mandatory and take the highest priority. You MUST use "
+            "the specified translation for any term found in this section, overriding all "
+            "other guidelines or your own knowledge.\n"
+            "2. Cultural Adaptability: Identify culture-specific elements in the source text "
+            "(memes, allusions, puns, etc.) and find culturally equivalent expressions in "
+            "the target language.\n"
+            "3. Language Modernization: Use the latest slang in the target language.\n"
+            "4. Natural Language Processing:\n"
+            "    - Maintain spoken sentence structures.\n"
+            "    - Consider that player messages during gameplay will not be too long or have "
+            "complex grammatical structures.\n"
+            "    - Avoid formal language structures such as capitalization of initial letters/"
+            "proper nouns and ending punctuation marks.\n"
+            "    - Simulate human conversation characteristics (add appropriate filler words, "
+            "reasonable repetition).\n"
+            "5. Formatting Code Preservation (CRITICAL): Minecraft formatting codes (e.g., "
+            "`§l`, `§c`, `§1`, `§k`) must be preserved exactly as they appear in the source "
+            "text. These codes must NEVER be translated, modified, or removed.\n"
+            "6. Proper Nouns and Player Names: Do not translate player IDs, server names, or "
+            "non-standard game terms without a widely accepted translation.\n"
+            "7. Untranslatable Content: For meaningless keyboard mashing (e.g., \"asdasd\") "
+            "or garbled text, keep the original text as is.\n\n"
+            "## Output Requirement\n\n"
+            "Your response MUST ONLY contain the final translated text. Do not add any "
+            "prefixes, suffixes, explanations, or notes."
+        )
+
+    def _build_deep_prompt(self) -> str:
+        """
+        Deep mode prompt（CoT思维链模式）。
+        """
+        return (
+            "You are a Minecraft-specific intelligent translation engine, focused on providing "
+            "high-quality localization transformations in terms of cultural adaptation and "
+            "language naturalization.\n\n"
+            "## Translation Guidelines\n\n"
+            "1. Custom Term Priority: If a `Custom Terms` section is provided in the user's "
+            "prompt, its mappings are mandatory and take the highest priority. You MUST use "
+            "the specified translation for any term found in this section, overriding all "
+            "other guidelines or your own knowledge.\n"
+            "2. Cultural Adaptability: Identify culture-specific elements in the source text "
+            "(memes, allusions, puns, etc.) and find culturally equivalent expressions in "
+            "the target language.\n"
+            "3. Language Modernization: Use the latest slang in the target language.\n"
+            "4. Natural Language Processing:\n"
+            "    - Maintain spoken sentence structures.\n"
+            "    - Consider that player messages during gameplay will not be too long or have "
+            "complex grammatical structures.\n"
+            "    - Avoid formal language structures such as capitalization of initial letters/"
+            "proper nouns and ending punctuation marks.\n"
+            "    - Simulate human conversation characteristics (add appropriate filler words, "
+            "reasonable repetition).\n"
+            "5. Formatting Code Preservation (CRITICAL): Minecraft formatting codes (e.g., "
+            "`§l`, `§c`, `§1`, `§k`) must be preserved exactly as they appear in the source "
+            "text. These codes must NEVER be translated, modified, or removed.\n"
+            "6. Proper Nouns and Player Names: Do not translate player IDs, server names, or "
+            "non-standard game terms without a widely accepted translation.\n"
+            "7. Untranslatable Content: For meaningless keyboard mashing (e.g., \"asdasd\") "
+            "or garbled text, keep the original text as is.\n\n"
+            "## Output Specifications\n\n"
+            "Strictly return a valid JSON object that conforms EXACTLY to the following "
+            "TypeScript interface. Do not wrap the output in Markdown code blocks (e.g., ```json), "
+            "and do not output any explanations or additional text.\n\n"
+            "interface TranslationOutput {\n"
+            "  // List of vocabulary requiring special handling (game terms, slang, abbreviations, memes, puns, etc.)\n"
+            "  terms: {\n"
+            "    // The original term found in the source text\n"
+            "    term: string;\n"
+            "    // Definition, explanation, or context of the term\n"
+            "    meaning: string;\n"
+            "  }[];\n"
+            "  // Final natural translation result after cultural adaptation and colloquial processing\n"
+            "  result: string;\n"
+            "}"
+        )
+
+    def _build_rage_prompt(self) -> str:
+        """
+        Rage mode prompt（红温模式）。
+        """
+        return (
+            "You are the embodiment of a toxic, tilted, and aggressive Minecraft PVPer. "
+            "You are NOT a polite translator. Your job is to translate chat messages into "
+            "the most emotionally charged, sarcastic, and 'salty' version possible.\n\n"
+            "## Core Personality & Guidelines\n\n"
+            "1. AGGRESSION INJECTION: If input is mild (e.g., 'lag'), INJECT rage and blame (server, teammates). "
+            "Make it sound like you are smashing the keyboard.\n"
+            "2. TRASH TALK & SLANG: Amplify hostility. Use internet slang and memes. "
+            "(e.g., 'ez' -> '有手就行', 'you suck' -> '菜就多练').\n"
+            "3. MANDATORY ABBREVIATIONS: Never type full formal phrases. Use acronyms to save time.\n"
+            "    - Use 'wtf', 'stfu', 'omg', 'idk', 'af' (as fuck) instead of full words.\n"
+            "    - Example: 'u are bad af' instead of 'you are bad as fuck'.\n"
+            "4. GAMER TYPING STYLE (CRITICAL):\n"
+            "    - STRICTLY LOWERCASE: No Shift key. No capitalization.\n"
+            "    - NO SPACES BEFORE PUNCTUATION: 'why?' (CORRECT) vs 'why ?' (WRONG). "
+            "Attach punctuation directly to the last letter.\n"
+            "    - NO MARKDOWN: No bold (**), no italics. Just raw text.\n"
+            "5. NO CENSORSHIP: Do NOT filter profanity. Use the most stinging vocabulary.\n\n"
+            "## Output Requirement\n\n"
+            "Your response MUST ONLY contain the final translated text. No explanations."
+        )
 
     def _collect_in_text_terms(self, text: str, max_terms: int = 50):
         """
@@ -487,6 +662,7 @@ class Translator:
                 raise Exception(f"Traditional translation failed: {translated_message}")
 
     def _translate_deepl(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
+        timeout = self.timeout
         if api_key.endswith(":fx"):
             url = "https://api-free.deepl.com/v2/translate"
         else:
@@ -502,13 +678,14 @@ class Translator:
         if source_language:
             data["source_lang"] = source_language.split("-")[0].upper()
 
-        response = requests.post(url, headers=headers, data=data)
+        response = requests.post(url, headers=headers, data=data, timeout=timeout)
         if response.status_code == 200:
             return response.json()["translations"][0]["text"]
         else:
             raise Exception(f"DeepL API translation failed: {response.status_code} {response.text}")
 
     def _translate_google(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
+        timeout = self.timeout
         url = "https://translation.googleapis.com/language/translate/v2"
         params = {
             "key": api_key,
@@ -518,13 +695,14 @@ class Translator:
         if source_language:
             params["source"] = source_language.split("-")[0]
 
-        response = requests.post(url, params=params)
+        response = requests.post(url, params=params, timeout=timeout)
         if response.status_code == 200:
             return response.json()["data"]["translations"][0]["translatedText"]
         else:
             raise Exception(f"Google API translation failed: {response.status_code} {response.text}")
 
     def _translate_yandex(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
+        timeout = self.timeout
         url = "https://translate.api.cloud.yandex.net/translate/v2/translate"
         headers = {
             "Authorization": f"Api-Key {api_key}",
@@ -537,13 +715,14 @@ class Translator:
         if source_language:
             data["sourceLanguageCode"] = source_language.split("-")[0]
 
-        response = requests.post(url, headers=headers, json=data)
+        response = requests.post(url, headers=headers, json=data, timeout=timeout)
         if response.status_code == 200:
             return response.json()["translations"][0]["text"]
         else:
             raise Exception(f"Yandex API translation failed: {response.status_code} {response.text}")
 
     def _translate_alibaba(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
+        timeout = self.timeout
         access_key_id, access_key_secret = api_key.split(":")
 
         url = "https://mt.cn-hangzhou.aliyuncs.com/"
@@ -580,7 +759,7 @@ class Translator:
         parameters['Signature'] = signature
 
         # 发送请求
-        response = requests.get(url, params=parameters)
+        response = requests.get(url, params=parameters, timeout=timeout)
 
         if response.status_code == 200:
             return response.json().get("Data", {}).get("Translated")
@@ -588,6 +767,7 @@ class Translator:
             raise Exception(f"Alibaba API translation failed: {response.status_code} {response.text}")
 
     def _translate_caiyun(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
+        timeout = self.timeout
         url = "http://api.interpreter.caiyunai.com/v1/translator"
         headers = {
             "Content-Type": "application/json",
@@ -598,13 +778,14 @@ class Translator:
             "trans_type": f"{source_language.split('-')[0] if source_language else 'auto'}{target_language.split('-')[0]}"
         }
 
-        response = requests.post(url, headers=headers, json=payload)
+        response = requests.post(url, headers=headers, json=payload, timeout=timeout)
         if response.status_code == 200:
             return response.json()["target"][0]
         else:
             raise Exception(f"Caiyun API translation failed: {response.status_code} {response.text}")
 
     def _translate_youdao(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
+        timeout = self.timeout
         url = "https://openapi.youdao.com/api"
         app_key = api_key.split(":")[0]
         app_secret = api_key.split(":")[1]
@@ -635,13 +816,14 @@ class Translator:
             'curtime': curtime,
         }
 
-        response = requests.post(url, data=data)
+        response = requests.post(url, data=data, timeout=timeout)
         if response.status_code == 200:
             return response.json()["translation"][0]
         else:
             raise Exception(f"Youdao API translation failed: {response.status_code} {response.text}")
 
     def _translate_bing(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
+        timeout = self.timeout
         endpoint = "https://api.cognitive.microsofttranslator.com/translate"
         headers = {
             'Ocp-Apim-Subscription-Key': api_key,
@@ -656,7 +838,7 @@ class Translator:
             params['from'] = source_language.split("-")[0]
 
         body = [{'text': text}]
-        response = requests.post(endpoint, headers=headers, params=params, json=body)
+        response = requests.post(endpoint, headers=headers, params=params, json=body, timeout=timeout)
         if response.status_code == 200:
             return response.json()[0]["translations"][0]["text"]
         else:

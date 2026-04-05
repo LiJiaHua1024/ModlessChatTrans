@@ -422,6 +422,32 @@ h1::after {
         2px 2px 4px var(--skeuo-dark-shadow) !important;
 }
 
+/* Skeuomorphic Repeat Badge */
+.repeat-badge {
+    background: var(--skeuo-button-gradient) !important;
+    color: var(--skeuo-text-primary) !important;
+    border-radius: 10px !important;
+    font-size: 11px !important;
+    padding: 2px 10px !important;
+    top: -10px !important;
+    right: -10px !important;
+    font-weight: 700 !important;
+    text-shadow: 1px 1px 1px var(--skeuo-light-shadow) !important;
+    box-shadow:
+        -3px -3px 6px var(--skeuo-light-shadow),
+        3px 3px 6px var(--skeuo-dark-shadow) !important;
+    z-index: 5 !important;
+}
+
+:root[data-theme="dark"] .repeat-badge {
+    background: var(--skeuo-button-gradient-dark) !important;
+    color: #5DADE2 !important;
+    text-shadow: 1px 1px 1px var(--skeuo-dark-shadow-dark) !important;
+    box-shadow:
+        -3px -3px 6px var(--skeuo-light-shadow-dark),
+        3px 3px 6px var(--skeuo-dark-shadow-dark) !important;
+}
+
 :root[data-theme="dark"] .duration-tag,
 :root[data-theme="dark"] .cache-hit-tag,
 :root[data-theme="dark"] .glossary-match-tag,
@@ -903,4 +929,158 @@ h1::after {
     pointer-events: auto;
     transform: translateX(0) scale(1);
     transition-delay: 0.3s;
+}
+
+/* ===== PART 5: Folding Group - Physical Panel Stack ===== */
+
+/* Folding group container - raised panel */
+.folding-group-container {
+    border-radius: 12px !important;
+    background: var(--skeuo-background) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    /* Raised Effect - Light from 10 o'clock */
+    box-shadow:
+        -7px -7px 15px var(--skeuo-light-shadow),
+        7px 7px 15px var(--skeuo-dark-shadow) !important;
+}
+
+:root[data-theme="dark"] .folding-group-container {
+    background: var(--skeuo-background-dark) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    box-shadow:
+        -7px -7px 15px var(--skeuo-light-shadow-dark),
+        7px 7px 15px var(--skeuo-dark-shadow-dark) !important;
+}
+
+.folding-group-container:hover {
+    box-shadow:
+        -9px -9px 18px var(--skeuo-light-shadow),
+        9px 9px 18px var(--skeuo-dark-shadow) !important;
+}
+
+:root[data-theme="dark"] .folding-group-container:hover {
+    box-shadow:
+        -9px -9px 18px var(--skeuo-light-shadow-dark),
+        9px 9px 18px var(--skeuo-dark-shadow-dark) !important;
+}
+
+/* Folding badge - raised button */
+.folding-badge {
+    background: var(--skeuo-button-gradient) !important;
+    color: var(--skeuo-text-primary) !important;
+    border-radius: 10px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    padding: 2px 10px !important;
+    text-shadow: 1px 1px 1px var(--skeuo-light-shadow) !important;
+    box-shadow:
+        -3px -3px 6px var(--skeuo-light-shadow),
+        3px 3px 6px var(--skeuo-dark-shadow) !important;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+:root[data-theme="dark"] .folding-badge {
+    background: var(--skeuo-button-gradient-dark) !important;
+    color: var(--skeuo-text-primary-dark) !important;
+    text-shadow: 1px 1px 1px var(--skeuo-dark-shadow-dark) !important;
+    box-shadow:
+        -3px -3px 6px var(--skeuo-light-shadow-dark),
+        3px 3px 6px var(--skeuo-dark-shadow-dark) !important;
+}
+
+.folding-badge:hover {
+    transform: translateY(-1px) scale(1.05);
+    box-shadow:
+        -4px -4px 8px var(--skeuo-light-shadow),
+        4px 4px 8px var(--skeuo-dark-shadow) !important;
+}
+
+:root[data-theme="dark"] .folding-badge:hover {
+    box-shadow:
+        -4px -4px 8px var(--skeuo-light-shadow-dark),
+        4px 4px 8px var(--skeuo-dark-shadow-dark) !important;
+}
+
+/* Folding history container */
+.folding-history {
+    border-bottom: 1px solid rgba(163, 177, 198, 0.2);
+}
+
+:root[data-theme="dark"] .folding-history {
+    border-bottom-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Folding history items */
+.folding-history-item {
+    border-bottom: 1px solid rgba(163, 177, 198, 0.15) !important;
+    padding: 10px 0 !important;
+}
+
+:root[data-theme="dark"] .folding-history-item {
+    border-bottom-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+.folding-history-item:last-child {
+    border-bottom: none !important;
+}
+
+/* History header */
+.folding-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.folding-history-header .message-name {
+    color: var(--skeuo-text-muted) !important;
+    font-weight: 700 !important;
+    font-size: 12px !important;
+    text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.5) !important;
+    letter-spacing: 0.5px !important;
+}
+
+:root[data-theme="dark"] .folding-history-header .message-name {
+    color: var(--skeuo-text-muted-dark) !important;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.7) !important;
+}
+
+/* History time */
+.folding-history-time {
+    color: var(--skeuo-text-muted) !important;
+    font-size: 11px !important;
+}
+
+:root[data-theme="dark"] .folding-history-time {
+    color: var(--skeuo-text-muted-dark) !important;
+}
+
+/* History content */
+.folding-history-content {
+    color: var(--skeuo-text-primary) !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.3) !important;
+}
+
+:root[data-theme="dark"] .folding-history-content {
+    color: var(--skeuo-text-primary-dark) !important;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Accent bar - raised edge effect */
+.folding-group-container::before {
+    background: linear-gradient(to bottom,
+        rgba(255, 255, 255, 0.5),
+        rgba(163, 177, 198, 0.3)) !important;
+    box-shadow: 1px 0 2px rgba(163, 177, 198, 0.3) !important;
+    opacity: 1 !important;
+}
+
+:root[data-theme="dark"] .folding-group-container::before {
+    background: linear-gradient(to bottom,
+        rgba(255, 255, 255, 0.08),
+        rgba(0, 0, 0, 0.2)) !important;
+    box-shadow: 1px 0 2px rgba(0, 0, 0, 0.3) !important;
 }

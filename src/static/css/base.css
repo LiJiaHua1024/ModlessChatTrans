@@ -146,6 +146,134 @@
     position: relative;
 }
 
+/* 重复消息计数徽章 */
+.repeat-badge {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 5;
+    animation: badgePop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes badgePop {
+    0% { transform: scale(0); }
+    100% { transform: scale(1); }
+}
+
+:root[data-theme="dark"] .repeat-badge {
+    background-color: var(--primary-color);
+    color: #1e1e1e;
+}
+
+/* Folding Group Styles */
+.folding-group-container {
+    position: relative;
+}
+
+.folding-badge {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 5;
+    animation: badgePop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.folding-badge:hover {
+    transform: scale(1.1);
+    filter: brightness(1.1);
+}
+
+:root[data-theme="dark"] .folding-badge {
+    background-color: var(--primary-color);
+    color: #1e1e1e;
+}
+
+.folding-history {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+    margin-bottom: 0;
+    padding: 0 8px;
+}
+
+.folding-history:not(.collapsed) {
+    max-height: 1000px;
+    opacity: 1;
+    margin-bottom: 12px;
+    padding: 8px;
+}
+
+.folding-history-item {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.folding-history-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+:root[data-theme="dark"] .folding-history-item {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.folding-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.folding-history-header .message-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.folding-history-time {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.folding-history-content {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
+.folding-latest {
+    /* Same as regular message content */
+}
+
+/* Visual hint for folding groups */
+.folding-group-container::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--primary-color);
+    border-radius: 3px 0 0 3px;
+    opacity: 0.5;
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -277,6 +405,65 @@ h1:after {
 
 .message-bubble.info .message-name {
     color: var(--info-accent);
+}
+
+/* 玩家消息合并：发送者列表和折叠按钮 */
+.sender-list-container {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-width: 100%;
+}
+
+.sender-list {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.sender-list.expanded {
+    white-space: normal;
+    word-break: break-word;
+}
+
+.sender-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    margin-left: 4px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    background: rgba(0, 0, 0, 0.05);
+    flex-shrink: 0;
+}
+
+.sender-toggle-btn:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.sender-toggle-btn svg {
+    width: 12px;
+    height: 12px;
+    transition: transform 0.3s ease;
+}
+
+.sender-toggle-btn.expanded svg {
+    transform: rotate(180deg);
+}
+
+:root[data-theme="dark"] .sender-toggle-btn {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+:root[data-theme="dark"] .sender-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .message-text {

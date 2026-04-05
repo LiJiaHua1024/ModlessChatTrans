@@ -102,6 +102,18 @@ class SettingConfig(BaseConfigModel):
     last_update_check_time: str
 
 
+class MessageBlacklistRule(BaseConfigModel):
+    """消息内容黑名单规则"""
+    pattern: str  # 正则表达式或关键词
+    is_regex: bool = False  # 是否使用正则表达式
+
+
+class BlacklistConfig(BaseConfigModel):
+    """黑名单配置"""
+    user_blacklist: List[str] = []  # 用户黑名单（玩家名称全匹配）
+    message_blacklist: List[MessageBlacklistRule] = []  # 消息内容黑名单
+
+
 class ConfigV3FromInit(BaseSettings):
     model_config = SettingsConfigDict(
         alias_generator=snake_to_kebab,
@@ -116,6 +128,7 @@ class ConfigV3FromInit(BaseSettings):
     message_send: MessageSendConfig
     settings: SettingConfig
     glossary: Dict[str, str]
+    blacklist: BlacklistConfig = BlacklistConfig()
 
 
 class ConfigV3(ConfigV3FromInit):
@@ -186,73 +199,100 @@ class ConfigV2(BaseSettings):
         return (JsonConfigSettingsSource(settings_cls),)
 
 
-def convert_v2_to_v3(config_v2: ConfigV2) -> ConfigV3:
+def convert_v2_to_v3(config_v2: ConfigV2) -> ConfigV3FromInit:
     from modless_chat_trans.translator import LLM_PROVIDERS, TRADITIONAL_SERVICES
-    # 判断服务类型
+
+    with open(get_path("modless-chat-trans.default.toml"), 'rb') as f:
+        default_v3_dict = tomllib.load(f)
+
+    v2_converted: Dict[str, Any] = {
+        "config-version": "3.0.0",
+        "message-capture": {
+            "minecraft-log-path": config_v2.minecraft_log_folder,
+            "monitor-mode": "compatible" if config_v2.use_high_version_fix else "efficient",
+            "filter-server-messages": not config_v2.trans_sys_message,
+            "replace-garbled-chars": config_v2.replace_garbled_character,
+            "source-language": config_v2.op_src_lang,
+            "target-language": config_v2.op_tgt_lang,
+        },
+        "message-presentation": {
+            "web-port": config_v2.http_port,
+        },
+        "message-send": {
+            "monitor-clipboard": config_v2.self_trans_enabled,
+            "source-language": config_v2.self_src_lang,
+            "target-language": config_v2.self_tgt_lang,
+        },
+        "settings": {
+            "debug": config_v2.debug,
+            "interface-language": config_v2.interface_lang,
+            "auto-check-update-frequency": (
+                config_v2.update_check_frequency.lower()
+                if config_v2.update_check_frequency
+                else "daily"
+            ),
+            "include-prerelease": config_v2.include_prerelease,
+            "last-update-check-time": config_v2.last_check_time,
+        },
+        "glossary": config_v2.glossary if config_v2.glossary else {},
+        "send-translation-independent": False,
+    }
+
+    if config_v2.encoding:
+        v2_converted["message-capture"]["log-encoding"] = config_v2.encoding
+
+    # 根据服务类型构建 player-translation
     if config_v2.trans_service in LLM_PROVIDERS:
-        service_type = ServiceType.LLM
-        player_translation = TranslationServiceConfig(
-            service_type=service_type,
-            llm=LLMServiceConfig(
-                provider=config_v2.trans_service,
-                api_key=config_v2.api_key,
-                api_base=config_v2.api_url,
-                model=config_v2.model,
-                deep_translate=config_v2.enable_optimization
-            )
-        )
+        llm_config: Dict[str, Any] = {
+            "provider": config_v2.trans_service,
+            "api-key": config_v2.api_key,
+            "model": config_v2.model,
+            "deep-translate": config_v2.enable_optimization,
+        }
+        if config_v2.api_url:  # 只有当 api_url 非空时才添加
+            llm_config["api-base"] = config_v2.api_url
+
+        v2_converted["player-translation"] = {
+            "service-type": "llm",
+            "llm": llm_config,
+        }
     elif config_v2.trans_service in TRADITIONAL_SERVICES:
-        service_type = ServiceType.TRADITIONAL
-        player_translation = TranslationServiceConfig(
-            service_type=service_type,
-            traditional=TraditionalServiceConfig(
-                provider=config_v2.trans_service,
-                api_key=config_v2.traditional_api_key
-            )
-        )
+        traditional_config: Dict[str, Any] = {
+            "provider": config_v2.trans_service,
+        }
+        if config_v2.traditional_api_key:  # 只有当 api_key 非空时才添加
+            traditional_config["api-key"] = config_v2.traditional_api_key
+
+        v2_converted["player-translation"] = {
+            "service-type": "traditional",
+            "traditional": traditional_config,
+        }
     else:
         raise ValueError(f"Unknown translation service: {config_v2.trans_service}")
 
-    # noinspection PyTypeChecker
-    return ConfigV3FromInit(
-        config_version="3.0.0",
-        message_capture=MessageCaptureConfig(
-            minecraft_log_path=config_v2.minecraft_log_folder,
-            log_encoding=config_v2.encoding,
-            monitor_mode=MonitorMode.COMPATIBLE if config_v2.use_high_version_fix else MonitorMode.EFFICIENT,
-            filter_server_messages=not config_v2.trans_sys_message,
-            replace_garbled_chars=config_v2.replace_garbled_character,
-            source_language=config_v2.op_src_lang,
-            target_language=config_v2.op_tgt_lang
-        ),
-        player_translation=player_translation,
-        send_translation_independent=False,
-        send_translation=None,
-        message_presentation=MessagePresentationConfig(
-            web_port=config_v2.http_port
-        ),
-        message_send=MessageSendConfig(
-            monitor_clipboard=config_v2.self_trans_enabled,
-            source_language=config_v2.self_src_lang,
-            target_language=config_v2.self_tgt_lang
-        ),
-        settings=SettingConfig(
-            debug=config_v2.debug,
-            interface_language=config_v2.interface_lang,
-            auto_check_update_frequency=config_v2.update_check_frequency.lower(),
-            include_prerelease=config_v2.include_prerelease,
-            last_update_check_time=config_v2.last_check_time
-        ),
-        glossary=config_v2.glossary
-    )
+    # 使用 deep_merge 合并配置
+    # v3 配置作为 base，转换后的 v2 配置作为 override
+    merged_dict = deep_merge(default_v3_dict, v2_converted)
+
+    return ConfigV3FromInit.model_validate(merged_dict)
 
 
 def deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
-    """深合并两个字典，override中的值会覆盖base中的值"""
+    """深合并两个字典，override中的值会覆盖base中的值，支持Pydantic模型的深合并"""
     result = base.copy()
     for key, value in override.items():
-        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
-            result[key] = deep_merge(result[key], value)
+        if key in result:
+            base_val = result[key]
+            # 处理两者都是dict的情况
+            if isinstance(base_val, dict) and isinstance(value, dict):
+                result[key] = deep_merge(base_val, value)
+            # 处理Pydantic模型的情况：将value合并到BaseModel的字典形式
+            elif isinstance(base_val, BaseModel) and isinstance(value, dict):
+                base_dict = base_val.model_dump()
+                merged_dict = deep_merge(base_dict, value)
+                result[key] = type(base_val).model_validate(merged_dict)
+            else:
+                result[key] = value
         else:
             result[key] = value
     return result
