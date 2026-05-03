@@ -312,10 +312,9 @@ function updateUserMessageMerge(messageElement, count, senders) {
     if ((isOverflowing || hasManySenders) && !toggleBtn) {
         toggleBtn = document.createElement('div');
         toggleBtn.className = 'sender-toggle-btn';
-        toggleBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
-        
-        toggleBtn.onclick = function(e) {
-            e.stopPropagation();
+        toggleBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+
+        toggleBtn.onclick = function(e) {            e.stopPropagation();
             var isExpanded = listSpan.classList.toggle('expanded');
             toggleBtn.classList.toggle('expanded');
             // 如果是在底部，展开可能需要滚动
@@ -561,14 +560,18 @@ function createMessageElement(name, messageText, messageTime, duration, cacheHit
             var durationTag = document.createElement('div');
             durationTag.className = 'duration-tag';
 
-            var lightningIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            lightningIcon.setAttribute('viewBox', '0 0 24 24');
-            lightningIcon.setAttribute('fill', 'currentColor');
-            lightningIcon.innerHTML = '<path d="M13 0L6 12h5l-1 12 7-12h-5l1-12z"/>';
+            var durationIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            durationIcon.setAttribute('viewBox', '0 0 24 24');
+            durationIcon.setAttribute('fill', 'none');
+            durationIcon.setAttribute('stroke', 'currentColor');
+            durationIcon.setAttribute('stroke-width', '2.5');
+            durationIcon.setAttribute('stroke-linecap', 'round');
+            durationIcon.setAttribute('stroke-linejoin', 'round');
+            durationIcon.innerHTML = '<circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>';
 
             var durationText = document.createTextNode(duration.toString());
 
-            durationTag.appendChild(lightningIcon);
+            durationTag.appendChild(durationIcon);
             durationTag.appendChild(durationText);
             bottomTagsContainer.appendChild(durationTag);
         }
@@ -579,8 +582,12 @@ function createMessageElement(name, messageText, messageTime, duration, cacheHit
 
             var glossaryIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             glossaryIcon.setAttribute('viewBox', '0 0 24 24');
-            glossaryIcon.setAttribute('fill', 'currentColor');
-            glossaryIcon.innerHTML = '<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM5 17V7h14v10H5z"/><path d="M7 9h10v2H7z"/><path d="M7 13h6v2H7z"/>';
+            glossaryIcon.setAttribute('fill', 'none');
+            glossaryIcon.setAttribute('stroke', 'currentColor');
+            glossaryIcon.setAttribute('stroke-width', '2.5');
+            glossaryIcon.setAttribute('stroke-linecap', 'round');
+            glossaryIcon.setAttribute('stroke-linejoin', 'round');
+            glossaryIcon.innerHTML = '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>';
 
             var glossaryMatchText = document.createElement('span');
             glossaryMatchText.className = 'glossary-match-text';
@@ -597,8 +604,12 @@ function createMessageElement(name, messageText, messageTime, duration, cacheHit
 
             var skipIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             skipIcon.setAttribute('viewBox', '0 0 24 24');
-            skipIcon.setAttribute('fill', 'currentColor');
-            skipIcon.innerHTML = '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9C4.63 15.55 4 13.85 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1C19.37 8.45 20 10.15 20 12c0 4.42-3.58 8-8 8z"/>';
+            skipIcon.setAttribute('fill', 'none');
+            skipIcon.setAttribute('stroke', 'currentColor');
+            skipIcon.setAttribute('stroke-width', '2.5');
+            skipIcon.setAttribute('stroke-linecap', 'round');
+            skipIcon.setAttribute('stroke-linejoin', 'round');
+            skipIcon.innerHTML = '<circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>';
 
             var skipSrcLangText = document.createElement('span');
             skipSrcLangText.className = 'skip-src-lang-text';
@@ -615,8 +626,12 @@ function createMessageElement(name, messageText, messageTime, duration, cacheHit
 
             var cacheIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             cacheIcon.setAttribute('viewBox', '0 0 24 24');
-            cacheIcon.setAttribute('fill', 'currentColor');
-            cacheIcon.innerHTML = '<path d="M6 2c-1.1 0-2 .9-2 2v5H2v6h2v5c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-5h2V9h-2V4c0-1.1-.9-2-2-2H6z"/><circle cx="8" cy="6" r="1"/><circle cx="12" cy="6" r="1"/><circle cx="16" cy="6" r="1"/>';
+            cacheIcon.setAttribute('fill', 'none');
+            cacheIcon.setAttribute('stroke', 'currentColor');
+            cacheIcon.setAttribute('stroke-width', '2.5');
+            cacheIcon.setAttribute('stroke-linecap', 'round');
+            cacheIcon.setAttribute('stroke-linejoin', 'round');
+            cacheIcon.innerHTML = '<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>';
 
             var cacheHitText = document.createElement('span');
             cacheHitText.className = 'cache-hit-text';
@@ -1213,11 +1228,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
     function updateDarkModeIcon() {
         const currentTheme = document.documentElement.getAttribute('data-theme');
         if (currentTheme === 'dark') {
-            // 深色模式下显示实心太阳图标
-            fabDarkMode.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg>';
+            // 深色模式下显示更现代的太阳图标 (Lucide style)
+            fabDarkMode.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>';
         } else {
-            // 浅色模式下显示空心太阳图标（更简洁）
-            fabDarkMode.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg>';
+            // 浅色模式下显示精美月亮图标
+            fabDarkMode.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>';
         }
     }
 
