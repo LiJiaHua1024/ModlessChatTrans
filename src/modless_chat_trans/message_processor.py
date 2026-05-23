@@ -330,19 +330,13 @@ def process_decorator(function):
             if name:
                 sanitized_name = sanitize_hypixel_name(name)
                 if is_user_in_blacklist(sanitized_name):
-                    logger.debug(f"User '{sanitized_name}' in blacklist, skipping translation")
-                    if data_type == "log":
-                        return name, original_chat_message, {"blacklist": "user"}
-                    elif data_type in ("clipboard", "webui"):
-                        return False, original_chat_message, {"blacklist": "user"}
+                    logger.info(f"User '{sanitized_name}' in blacklist, discarding message")
+                    return None
 
             # 消息内容黑名单检查（对所有非 SEND 消息生效）
             if is_message_blocked(original_chat_message):
-                logger.debug(f"Message blocked by content blacklist: {original_chat_message[:50]}...")
-                if data_type == "log":
-                    return name, original_chat_message, {"blacklist": "message"}
-                elif data_type in ("clipboard", "webui"):
-                    return False, original_chat_message, {"blacklist": "message"}
+                logger.info(f"Message blocked by content blacklist: {original_chat_message[:50]}...")
+                return None
 
         if data_type == "log" and filter_server_messages and not name:
             return "", "", MessageType.SYSTEM
