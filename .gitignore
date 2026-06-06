@@ -6,6 +6,8 @@ babel.cfg
 
 .idea/
 .trae/
+.antigravitycli/
+.claude/
 
 build/
 dist/
