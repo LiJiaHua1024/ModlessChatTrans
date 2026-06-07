@@ -297,7 +297,8 @@ def process_decorator(function):
     为process_message添加翻译步骤
     """
 
-    def wrapper(data, data_type, translator, source_language, target_language, rage_mode=False):
+    def wrapper(data, data_type, translator, source_language, target_language,
+                rage_mode=False, context_messages=None):
         """
         处理日志文件中的一行（包括翻译）
 
@@ -307,6 +308,7 @@ def process_decorator(function):
         :param source_language: 源语言
         :param target_language: 目标语言
         :param rage_mode: 是否启用红温模式
+        :param context_messages: 历史上下文 messages 列表（可直接拼入 litellm）
         :return:
             - None：应被丢弃的数据（可能是不包含[CHAT]的日志行，也可能是系统消息且filter_server_messages为True）
             - 长度为3的元组：
@@ -323,6 +325,7 @@ def process_decorator(function):
         name, original_chat_message, message_type = function(data, data_type)
         translated_chat_message: str = ""
         info: dict = {}
+        context_messages = context_messages or []
 
         # 黑名单检查（PLAYER 和 SYSTEM 消息生效，SEND 不生效）
         if message_type != MessageType.SEND and original_chat_message:
@@ -351,15 +354,26 @@ def process_decorator(function):
                 info["cache_hit"] = True
             else:
                 try:
-                    translate = translator.translate_with_profanity if rage_mode else translator.translate
-                    if result := translate(
-                            original_chat_message,
-                            source_language=source_language,
-                            target_language=target_language,
-                            message_type=message_type
-                    ):
-                        translated_chat_message = result["result"]
-                        info["usage"] = result["usage"]
+                    if rage_mode:
+                        translate_fn = translator.translate_with_profanity
+                        if result := translate_fn(
+                                original_chat_message,
+                                source_language=source_language,
+                                target_language=target_language,
+                                message_type=message_type
+                        ):
+                            translated_chat_message = result["result"]
+                            info["usage"] = result["usage"]
+                    else:
+                        if result := translator.translate_with_context(
+                                original_chat_message,
+                                source_language=source_language,
+                                target_language=target_language,
+                                message_type=message_type,
+                                context_messages=context_messages,
+                        ):
+                            translated_chat_message = result["result"]
+                            info["usage"] = result["usage"]
                 except HTTPError as http_err:
                     response = getattr(http_err, "response", None)
                     if response is not None:

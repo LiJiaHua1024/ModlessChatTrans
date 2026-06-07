@@ -166,6 +166,71 @@ class Translator:
             message_type=message_type
         )
 
+    def translate_with_context(
+        self,
+        text: str,
+        source_language: str,
+        target_language: str,
+        message_type: MessageType = MessageType.PLAYER,
+        context_messages: list = None,
+    ) -> dict | None:
+        """
+        Public API: 带历史上下文的单条翻译。
+
+        :param text: 待翻译文本
+        :param source_language: 源语言
+        :param target_language: 目标语言
+        :param message_type: 消息类型
+        :param context_messages: 历史上下文 messages 列表（可直接拼入 litellm），为 None/[] 则退化为无上下文
+        """
+        context_messages = context_messages or []
+        return self._dispatch_translation(
+            text, source_language, target_language,
+            mode=TranslationMode.NORMAL,
+            message_type=message_type,
+            context_messages=context_messages,
+        )
+
+    def translate_batch_with_context(
+        self,
+        texts: list[str],
+        source_language: str,
+        target_language: str,
+        message_type: MessageType = MessageType.PLAYER,
+        context_messages: list = None,
+    ) -> list[str] | None:
+        """
+        Public API: 将多条消息打包为一个 request，返回按顺序对应的译文列表。
+
+        :param texts: 待翻译文本列表
+        :param source_language: 源语言
+        :param target_language: 目标语言
+        :param message_type: 消息类型
+        :param context_messages: 历史上下文 messages 列表
+        :return: 与 texts 等长的译文列表，或 None（失败，调用方应降级处理）
+        """
+        if not texts:
+            return []
+        context_messages = context_messages or []
+
+        # 仅 LLM 服务支持批量翻译；传统服务返回 None→降级
+        if self.translation_service_config.service_type != ServiceType.LLM:
+            return None
+
+        # Deep 模式输出结构与批量数组冲突，不参与打包
+        effective_mode = self._get_effective_mode(TranslationMode.NORMAL, message_type)
+        if effective_mode == TranslationMode.DEEP:
+            return None
+
+        try:
+            return self._execute_llm_batch_translation(
+                texts, source_language, target_language,
+                message_type, context_messages
+            )
+        except Exception as e:
+            logger.warning(f"Batch translation failed, will fallback to single: {e}")
+            return None
+
     def translate_with_profanity(self, text, source_language, target_language,
                                  message_type: MessageType = MessageType.SEND):
         """
@@ -183,7 +248,7 @@ class Translator:
         )
 
     def _dispatch_translation(self, text, source_language, target_language, mode: TranslationMode,
-                              message_type: MessageType):
+                              message_type: MessageType, context_messages: list = None):
         """
         Internal Dispatcher: Coordinates prompt building and execution.
 
@@ -192,7 +257,9 @@ class Translator:
         :param target_language: 目标语言
         :param mode: 请求的翻译模式
         :param message_type: 消息类型，用于验证可用模式并选择正确的prompt
+        :param context_messages: 历史上下文 messages（将内嵌入 LLM 请求）
         """
+        context_messages = context_messages or []
         if self.translation_service_config.service_type == ServiceType.LLM:
             # 1. 验证模式是否对当前消息类型可用，如果不可用则降级
             effective_mode = self._get_effective_mode(mode, message_type)
@@ -215,7 +282,8 @@ class Translator:
                 system_prompt,
                 expect_json,
                 include_terms,
-                message_type
+                message_type,
+                context_messages=context_messages,
             )
 
         elif self.translation_service_config.service_type == ServiceType.TRADITIONAL:
@@ -351,6 +419,7 @@ class Translator:
                 "model": mapped_model,
                 "messages": [
                     {"role": "system", "content": system_prompt},
+                    *context_messages,
                     {"role": "user", "content": message}
                 ],
                 "temperature": 0,
@@ -628,6 +697,117 @@ class Translator:
                 "Custom Terms:\n"
                 f"{entries_str}"
             )
+
+    def _execute_llm_batch_translation(
+        self,
+        texts: list[str],
+        source_language: str,
+        target_language: str,
+        message_type: MessageType,
+        context_messages: list,
+    ) -> list[str]:
+        """
+        将多条消息打包成一个 LLM request。
+
+        :param texts: 待翻译文本列表（已过滤空值）
+        :param source_language: 源语言
+        :param target_language: 目标语言
+        :param message_type: 消息类型
+        :param context_messages: 历史上下文 messages
+        :return: 与 texts 等长的译文列表
+        :raises: 任何异常（调用方捕获后降级为单条翻译）
+        """
+        if source_language.lower() == "auto":
+            source_language = ""
+
+        n = len(texts)
+        if source_language:
+            intro = f"Translate the following {n} messages from {source_language} to {target_language}."
+        else:
+            intro = f"Translate the following {n} messages to {target_language}."
+
+        numbered = "\n".join(f"[{i + 1}] {t}" for i, t in enumerate(texts))
+        user_message = (
+            f"{intro}\n"
+            f"Return ONLY a JSON array with exactly {n} translated strings in the same order. "
+            f"No explanations, no extra keys.\n\n"
+            f"{numbered}"
+        )
+
+        provider = self.translation_service_config.llm.provider or "OpenAI"
+        model = self.translation_service_config.llm.model
+
+        extra_body = None
+        if provider == "OpenRouter" and ":" in model:
+            base_model, suffix = model.split(":", 1)
+            suffix_stripped = suffix.strip()
+            suffix_lower = suffix_stripped.lower()
+            if suffix_lower in _OPENROUTER_NATIVE_SUFFIXES:
+                pass
+            elif suffix_lower in _OPENROUTER_SORT_KEYWORDS:
+                model = base_model
+                extra_body = {"provider": {"sort": suffix_lower}}
+            else:
+                model = base_model
+                provider_order = [s for p in suffix_stripped.split(",") if (s := p.strip())]
+                extra_body = {"provider": {"order": provider_order}}
+
+        prefix = LLM_PROVIDERS_PREFIXES[provider]
+        mapped_model = model if model.startswith(prefix) else prefix + model
+
+        llm_params = {
+            "model": mapped_model,
+            "messages": [
+                {"role": "system", "content": self._build_batch_system_prompt()},
+                *context_messages,
+                {"role": "user", "content": user_message},
+            ],
+            "temperature": 0,
+            "max_tokens": 64 * n + 64,
+            "api_key": self.translation_service_config.llm.api_key,
+            "timeout": self.timeout,
+        }
+        if api_base := self.translation_service_config.llm.api_base:
+            llm_params["api_base"] = api_base
+        if extra_body:
+            llm_params["extra_body"] = extra_body
+
+        response = litellm.completion(**llm_params)
+        content_str = (response.choices[0].message.content or "").strip()
+
+        # 尝试解析 JSON 数组
+        try:
+            result = json.loads(content_str)
+        except json.JSONDecodeError:
+            # 清理可能的 markdown 代码块
+            cleaned = re.sub(r"^```(?:json)?\s*([\s\S]*?)\s*```$", r"\1", content_str)
+            result = json.loads(cleaned)
+
+        if not isinstance(result, list) or len(result) != n:
+            raise ValueError(
+                f"Batch translation returned {type(result)} with length "
+                f"{len(result) if isinstance(result, list) else 'N/A'}, expected list of {n}"
+            )
+
+        return [str(item) for item in result]
+
+    def _build_batch_system_prompt(self) -> str:
+        """
+        批量翻译专用 system prompt：要求模型返回严格的 JSON 数组。
+        """
+        return (
+            "You are a Minecraft-specific intelligent translation engine. "
+            "You will receive a numbered list of chat messages. "
+            "Translate each message naturally, preserving gaming slang, cultural nuances, "
+            "and Minecraft formatting codes (e.g., §a, §l) exactly.\n\n"
+            "Output Rules:\n"
+            "1. Return ONLY a valid JSON array of strings.\n"
+            "2. The array must contain exactly the same number of elements as the input messages, "
+            "in the same order.\n"
+            "3. Do NOT add explanations, keys, or any text outside the JSON array.\n"
+            "4. Do NOT translate player names, server names, or Minecraft commands.\n"
+            "5. For untranslatable content (e.g., keyboard mashing), keep the original text."
+        )
 
     def _execute_traditional_translation(self, text, service, source_language, target_language):
         """

@@ -40,3 +40,13 @@ last-update-check-time = "1970-01-01T00:00:00"
 [blacklist]
 user-blacklist = []
 message-blacklist = []
+
+[context]
+# 上下文翻译策略: "fixed"（固定长度）或 "time_based"（基于时间跨度）
+strategy = "time_based"
+# 最多保留的历史条数（两种策略均生效）
+context-length = 10
+# 时间跨度阈值（秒），超过则视为新对话（仅 time_based 生效）
+context-timeout = 120.0
+# 是否对传统翻译服务（DeepL/Bing 等）启用上下文（实验性，默认关闭）
+enable-for-traditional = false

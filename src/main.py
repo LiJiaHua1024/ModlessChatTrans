@@ -27,10 +27,11 @@ cfg = read_config()
 init_logger(cfg.settings.debug)
 set_language(cfg.settings.interface_language)
 
-from modless_chat_trans.web_display import start_httpserver_thread, display_message
+from modless_chat_trans.web_display import start_httpserver_thread, display_message, allocate_slot, fill_slot
 from modless_chat_trans.log_monitor import start_log_monitor
 from modless_chat_trans.message_processor import init_processor, init_blacklist, process_message
 from modless_chat_trans.translator import Translator, ts, litellm
+from modless_chat_trans.context_buffer import ContextBuffer, ContextEntry, extract_log_time
 from modless_chat_trans.interface import ProgramInfo, MainWindow, QApplication
 from modless_chat_trans.clipboard_monitor import monitor_clipboard, modify_clipboard
 from modless_chat_trans.i18n import _
@@ -57,33 +58,96 @@ logger.info(f"ModlessChatTrans {program_info.version} started, "
 
 
 def start_translation(config):
-    def callback(data, data_type, rage_mode=False):
+    # 初始化上下文缓冲区
+    ctx_cfg = config.context
+    context_buffer = ContextBuffer(
+        strategy=ctx_cfg.strategy,
+        context_length=ctx_cfg.context_length,
+        context_timeout=ctx_cfg.context_timeout,
+    )
+
+    def callback(line, arrival_time, slot_id=None, data_type="log", rage_mode=False):
+        """
+        并发翻译单条回调。
+        slot_id 为已预分配的 WebUI 展示位置（data_type=='log' 时必须传入）。
+        """
         start_time = time.time()
-        # 重试5次
-        for i in range(5):
-            if data_type == "log":
+
+        if data_type == "log":
+            # 提取日志时间或用行到达时间
+            log_time = extract_log_time(line, arrival_time)
+            ctx_messages = context_buffer.get_context_messages()
+
+            # 如果不含 [CHAT]，这个 slot 不展示任何内容
+            if "[CHAT]" not in line:
+                if slot_id is not None:
+                    # 从 pending_slots 中默默移除（不填充，直接从列表脱除）
+                    from modless_chat_trans.web_display import (
+                        http_messages, messages_by_id, pending_slots, message_condition
+                    )
+                    with message_condition:
+                        rec = messages_by_id.pop(slot_id, None)
+                        if rec:
+                            try:
+                                http_messages.remove(rec)
+                            except ValueError:
+                                pass
+                        pending_slots.discard(slot_id)
+                return
+
+            # 重试5次
+            for attempt in range(5):
                 if processed_message := process_message(
-                        data,
+                        line,
                         data_type,
                         player_translator,
                         source_language=config.message_capture.source_language,
-                        target_language=config.message_capture.target_language
+                        target_language=config.message_capture.target_language,
+                        context_messages=ctx_messages,
                 ):
-                    if processed_message[1]:
-                        duration = time.time() - start_time
-                        display_message(
-                            *processed_message,
-                            duration=duration
-                        )
-                        if processed_message[0] != "[ERROR]":
-                            break
-                        else:
-                            logger.error(processed_message[1])
+                    name, translated, info = processed_message
+                    duration = time.time() - start_time
+                    if slot_id is not None:
+                        fill_slot(slot_id, name or "", translated or "", info, duration=duration)
+                    else:
+                        display_message(name, translated or "", info, duration=duration)
+
+                    if name != "[ERROR]":
+                        if translated:
+                            chat_content = line.split("[CHAT]")[1].strip() if "[CHAT]" in line else ""
+                            if chat_content:
+                                context_buffer.push(ContextEntry(
+                                    original=chat_content,
+                                    translated=translated,
+                                    timestamp=log_time,
+                                    player_name=name or "",
+                                ))
+                        break
+                    else:
+                        logger.error(translated)
+                        if attempt < 4:
+                            continue
+                        break
                 else:
-                    break  # 不是聊天消息，跳过
-            elif data_type in ("clipboard", "webui"):
+                    # 过滤掉了（筛选或黑名单），默默移除 slot
+                    if slot_id is not None:
+                        from modless_chat_trans.web_display import (
+                            http_messages, messages_by_id, pending_slots, message_condition
+                        )
+                        with message_condition:
+                            rec = messages_by_id.pop(slot_id, None)
+                            if rec:
+                                try:
+                                    http_messages.remove(rec)
+                                except ValueError:
+                                    pass
+                            pending_slots.discard(slot_id)
+                    break
+
+        elif data_type in ("clipboard", "webui"):
+            for attempt in range(5):
                 if processed_message := process_message(
-                        data,
+                        line,
                         data_type,
                         send_translator,
                         source_language=config.message_send.source_language,
@@ -102,7 +166,128 @@ def start_translation(config):
                         return processed_message[1]
                     else:
                         display_message(*processed_message)
+                        break
         return None
+
+    def batch_callback(slotted, data_type="log"):
+        """
+        批量回调。slotted 为 [(line, arrival_time, slot_id), ...]。
+        slot_id 已由 OrderedProcessor 预分配，顺序永远正确。
+        """
+        if data_type != "log":
+            for line, arrival_time, slot_id in slotted:
+                callback(line, arrival_time, slot_id=slot_id, data_type=data_type)
+            return
+
+        start_time = time.time()
+
+        # Step 1: 解析每条，过滤非聊天行
+        # parsed: [(i_in_slotted, line, arrival_time, slot_id, chat_content, log_time)]
+        parsed = []
+        dismiss_slots = []  # 需要默默移除的 slot
+
+        for i, (line, arrival_time, slot_id) in enumerate(slotted):
+            if "[CHAT]" not in line:
+                dismiss_slots.append(slot_id)
+                continue
+            chat_content = line.split("[CHAT]")[1].strip()
+            if not chat_content:
+                dismiss_slots.append(slot_id)
+                continue
+            log_time = extract_log_time(line, arrival_time)
+            parsed.append((i, line, arrival_time, slot_id, chat_content, log_time))
+
+        # 移除非聊天行的 slot
+        if dismiss_slots:
+            from modless_chat_trans.web_display import (
+                http_messages as _hm, messages_by_id as _mbi,
+                pending_slots as _ps, message_condition as _mc
+            )
+            with _mc:
+                for sid in dismiss_slots:
+                    rec = _mbi.pop(sid, None)
+                    if rec:
+                        try:
+                            _hm.remove(rec)
+                        except ValueError:
+                            pass
+                    _ps.discard(sid)
+
+        if not parsed:
+            return
+
+        # Step 2: 逐条检查缓存和术语表
+        from modless_chat_trans.file_utils import cache as trans_cache
+        from modless_chat_trans.message_processor import match_and_translate
+
+        need_translate_indices = []  # 在 parsed 中的下标
+        cached_results = {}          # parsed 中的下标 -> 已知译文
+
+        for i, (_, line, arrival_time, slot_id, chat_content, log_time) in enumerate(parsed):
+            if glossary_result := match_and_translate(chat_content):
+                cached_results[i] = glossary_result
+            elif chat_content in trans_cache:
+                cached_results[i] = trans_cache[chat_content]
+            else:
+                need_translate_indices.append(i)
+
+        # Step 3: 批量翻译未命中的条目
+        ctx_messages = context_buffer.get_context_messages()
+        batch_results = {}
+        fallback_to_single = False
+
+        if need_translate_indices:
+            texts_to_translate = [parsed[i][4] for i in need_translate_indices]
+
+            translations = player_translator.translate_batch_with_context(
+                texts=texts_to_translate,
+                source_language=config.message_capture.source_language,
+                target_language=config.message_capture.target_language,
+                context_messages=ctx_messages,
+            )
+
+            if translations is not None:
+                for j, pi in enumerate(need_translate_indices):
+                    batch_results[pi] = translations[j]
+                    chat_content = parsed[pi][4]
+                    if translations[j]:
+                        trans_cache[chat_content] = translations[j]
+            else:
+                fallback_to_single = True
+
+        if fallback_to_single:
+            logger.info("[BatchCallback] Batch failed, falling back to single-item processing.")
+            for _, line, arrival_time, slot_id, _, _ in parsed:
+                # slot 已预分配，直接传给 callback 复用
+                callback(line, arrival_time, slot_id=slot_id, data_type="log")
+            return
+
+        # Step 4: 按原序填充 slot 并更新上下文
+        duration = time.time() - start_time
+        batch_entries = []
+
+        for i, (_, line, arrival_time, slot_id, chat_content, log_time) in enumerate(parsed):
+            translated = cached_results.get(i) or batch_results.get(i, "")
+
+            player_name = ""
+            chat_part = line.split("[CHAT]")[1].strip() if "[CHAT]" in line else ""
+            if chat_part.startswith("<"):
+                gt = chat_part.find(">", 1)
+                if gt != -1:
+                    player_name = chat_part[1:gt].strip()
+
+            fill_slot(slot_id, player_name, translated or "", {}, duration=duration / len(parsed))
+
+            if translated:
+                batch_entries.append(ContextEntry(
+                    original=chat_content,
+                    translated=translated,
+                    timestamp=log_time,
+                    player_name=player_name,
+                ))
+
+        if batch_entries:
+            context_buffer.push_batch(batch_entries)
 
     player_translator = Translator(config.player_translation, config.glossary)
     if config.send_translation_independent:
@@ -112,7 +297,9 @@ def start_translation(config):
 
     start_httpserver_thread(
         http_port=config.message_presentation.web_port,
-        callback=callback
+        callback=lambda data, data_type="webui", rage_mode=False: callback(
+            data, time.time(), slot_id=allocate_slot(name="[INFO]", arrival_time=time.time()), data_type=data_type, rage_mode=rage_mode
+        )
     )
 
     init_processor(
@@ -125,14 +312,21 @@ def start_translation(config):
         target=start_log_monitor,
         args=(
             config.message_capture,
-            callback
+            callback,
+            batch_callback,
         )
     )
     monitor_thread.daemon = True
     monitor_thread.start()
 
     if config.message_send.monitor_clipboard:
-        clipboard_thread = threading.Thread(target=monitor_clipboard, args=(callback,))
+        # monitor_clipboard 调用格式: callback(data, data_type="clipboard")
+        def clipboard_callback(data, data_type="clipboard"):
+            return callback(
+                data, time.time(), slot_id=allocate_slot(name="[INFO]", arrival_time=time.time()), data_type=data_type
+            )
+
+        clipboard_thread = threading.Thread(target=monitor_clipboard, args=(clipboard_callback,))
         clipboard_thread.daemon = True
         clipboard_thread.start()
 

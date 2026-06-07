@@ -18,7 +18,7 @@ import json
 import tomllib
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple, Type
+from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union
 
 import tomli_w
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError
@@ -114,6 +114,18 @@ class BlacklistConfig(BaseConfigModel):
     message_blacklist: List[MessageBlacklistRule] = []  # 消息内容黑名单
 
 
+class ContextConfig(BaseConfigModel):
+    """上下文翻译配置"""
+    # 上下文分割策略：fixed（固定长度）或 time_based（基于时间跨度）
+    strategy: Literal["fixed", "time_based"] = "time_based"
+    # 最多保留的历史条数（两种策略均生效）
+    context_length: int = 10
+    # 时间跨度阈值（秒），超过则视为新对话，仅 time_based 生效
+    context_timeout: float = 120.0
+    # 是否对传统翻译服务（DeepL/Bing 等）启用文本拼接上下文（实验性）
+    enable_for_traditional: bool = False
+
+
 class ConfigV3FromInit(BaseSettings):
     model_config = SettingsConfigDict(
         alias_generator=snake_to_kebab,
@@ -129,6 +141,7 @@ class ConfigV3FromInit(BaseSettings):
     settings: SettingConfig
     glossary: Dict[str, str]
     blacklist: BlacklistConfig = BlacklistConfig()
+    context: ContextConfig = ContextConfig()
 
 
 class ConfigV3(ConfigV3FromInit):

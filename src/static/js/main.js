@@ -807,9 +807,39 @@ function initializeEventSource() {
         var glossaryMatch = jsonData.glossary_match;
         var skipSrcLang = jsonData.skip_src_lang;
         var usage = jsonData.usage;
+        var isPending = jsonData.pending === true;
 
         if (name === "[INFO]" && isTranslating) {
             setTimeout(resetTranslationUI, 500);
+        }
+
+        // Pending 占位消息：直接渲染加载骨架
+        if (isPending) {
+            var pendingItem = document.createElement('li');
+            pendingItem.className = 'message-item message-pending';
+            pendingItem.setAttribute('data-slot-id', messageId);
+
+            var pendingBubble = document.createElement('div');
+            var pendingType = !name ? 'system' : (name === "[ERROR]" ? 'error' : (name === "[INFO]" ? 'info' : 'user'));
+            pendingBubble.className = 'message-bubble ' + pendingType + ' pending-bubble';
+
+            if (name) {
+                var pendingName = document.createElement('div');
+                pendingName.className = 'message-name';
+                pendingName.innerHTML = parseMinecraftText(name);
+                pendingBubble.appendChild(pendingName);
+            }
+
+            var pendingDots = document.createElement('div');
+            pendingDots.className = 'pending-dots';
+            pendingDots.innerHTML = '<span></span><span></span><span></span>';
+            pendingBubble.appendChild(pendingDots);
+
+            pendingItem.appendChild(pendingBubble);
+            messageList.appendChild(pendingItem);
+            pendingMessages--;
+            handleMessageScroll(wasAtBottom);
+            return;
         }
 
         // 检查是否为可合并的消息类型（System, Error, Info）
@@ -964,6 +994,83 @@ function initializeEventSource() {
 
     window.eventSource.addEventListener('heartbeat', function() {
         lastHeartbeat = Date.now();
+    });
+
+    // update 事件：slot 填充完成，找到占位元素并原地替换
+    window.eventSource.addEventListener('update', function(event) {
+        lastHeartbeat = Date.now();
+
+        var jsonData;
+        try {
+            jsonData = JSON.parse(event.data);
+        } catch (e) {
+            return;
+        }
+
+        var slotId = jsonData.id;
+        if (!slotId) return;
+
+        // 找到占位元素
+        var pendingEl = messageList.querySelector('[data-slot-id="' + slotId + '"]');
+        if (!pendingEl) {
+            // 占位元素已被清除（如清空操作），忽略
+            return;
+        }
+
+        var name = jsonData.name || '';
+        var messageText = jsonData.message || '';
+        var messageTime = jsonData.time;
+        var duration = jsonData.duration;
+        var cacheHit = jsonData.cache_hit;
+        var glossaryMatch = jsonData.glossary_match;
+        var skipSrcLang = jsonData.skip_src_lang;
+        var usage = jsonData.usage;
+
+        if (!messageText) {
+            // 译文为空（被过滤等），移除占位元素
+            pendingEl.style.transition = 'opacity 0.2s';
+            pendingEl.style.opacity = '0';
+            setTimeout(function() {
+                if (pendingEl.parentNode) pendingEl.parentNode.removeChild(pendingEl);
+            }, 200);
+            return;
+        }
+
+        // 创建真实消息元素
+        var messageData = createMessageElement(
+            name || null,
+            messageText,
+            messageTime,
+            duration,
+            cacheHit,
+            glossaryMatch,
+            skipSrcLang,
+            usage
+        );
+
+        // 将占位元素替换为真实消息元素（位置保持不变）
+        var wasAtBottom = checkIfAtBottom();
+        pendingEl.classList.add('pending-resolve');
+        setTimeout(function() {
+            if (pendingEl.parentNode) {
+                pendingEl.parentNode.replaceChild(messageData.element, pendingEl);
+            }
+            // 更新合并追踪状态（update 不参与合并逻辑，仅更新最新追踪）
+            var currentType = !name ? 'system' : (name === "[ERROR]" ? 'error' : (name === "[INFO]" ? 'info' : 'user'));
+            if (currentType === 'user') {
+                lastUserMessageText = messageText;
+                lastUserMessageElement = messageData.element;
+                lastUserMessageCount = 1;
+                lastUserMessageSenders = [name];
+            } else {
+                lastMergeableMessageType = currentType;
+                lastMergeableMessageText = messageText;
+                lastMergeableMessageElement = messageData.element;
+                lastMergeableMessageCount = 1;
+            }
+            handleMessageScroll(wasAtBottom);
+            updateClearButtonVisibility();
+        }, 60);
     });
 
     startHeartbeatMonitor();
