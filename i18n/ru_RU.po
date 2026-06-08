@@ -32,6 +32,14 @@ msgstr "Сообщение"
 msgid "输入消息..."
 msgstr "Введите сообщение..."
 
+#: templates/index.html
+msgid "显示原文"
+msgstr "Показать оригинал"
+
+#: templates/index.html
+msgid "显示翻译"
+msgstr "Показать перевод"
+
 #: main.py:100
 msgid "要发送的消息翻译完成，翻译结果已复制到剪切板"
 msgstr ""

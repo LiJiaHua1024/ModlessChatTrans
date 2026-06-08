@@ -31,6 +31,14 @@ msgstr "メッセージ"
 msgid "输入消息..."
 msgstr "メッセージを入力..."
 
+#: templates/index.html
+msgid "显示原文"
+msgstr "原文を表示"
+
+#: templates/index.html
+msgid "显示翻译"
+msgstr "翻訳を表示"
+
 #: main.py:100
 msgid "要发送的消息翻译完成，翻译结果已复制到剪切板"
 msgstr ""

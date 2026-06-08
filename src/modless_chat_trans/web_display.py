@@ -222,7 +222,8 @@ def start_httpserver(port, callback):
                                     "glossary_match": info_payload.get("glossary_match", False),
                                     "skip_src_lang": info_payload.get("skip_src_lang", False),
                                     "cache_hit": info_payload.get("cache_hit", False),
-                                    "usage": info_payload.get("usage")
+                                    "usage": info_payload.get("usage"),
+                                    "original": message.get("original")
                                 }
                                 json_message = json.dumps(message_data, ensure_ascii=False)
                                 yield f"id: {message['id']}\n"
@@ -242,7 +243,8 @@ def start_httpserver(port, callback):
                                     "glossary_match": info_payload.get("glossary_match", False),
                                     "skip_src_lang": info_payload.get("skip_src_lang", False),
                                     "cache_hit": info_payload.get("cache_hit", False),
-                                    "usage": info_payload.get("usage")
+                                    "usage": info_payload.get("usage"),
+                                    "original": record.get("original")
                                 }
                                 json_update = json.dumps(update_data, ensure_ascii=False)
                                 yield "event: update\n"
@@ -315,7 +317,7 @@ def allocate_slot(name="", arrival_time=None):
     return message_id
 
 
-def fill_slot(message_id: int, name: str, message: str, info: dict, duration=None):
+def fill_slot(message_id: int, name: str, message: str, info: dict, duration=None, original=None):
     """
     将已分配的 slot 填充真实内容。
 
@@ -324,6 +326,7 @@ def fill_slot(message_id: int, name: str, message: str, info: dict, duration=Non
     :param message: 译文
     :param info: 相关信息字典
     :param duration: 处理耗时（秒，可为 None）
+    :param original: 原文内容（可选）
     """
     global http_messages, messages_by_id
 
@@ -351,6 +354,7 @@ def fill_slot(message_id: int, name: str, message: str, info: dict, duration=Non
             record["duration"] = duration_str
             record["info"] = info_payload
             record["pending"] = False
+            record["original"] = original
             pending_slots.discard(message_id)
             update_events.append(message_id)
             message_condition.notify_all()
@@ -358,7 +362,7 @@ def fill_slot(message_id: int, name: str, message: str, info: dict, duration=Non
     logger.debug(f"Slot filled: id={message_id} name={name or 'System'} msg={message[:30] if message else ''}")
 
 
-def display_message(name, message, info, duration=None):
+def display_message(name, message, info, duration=None, original=None):
     """
     呼现消息到Web页面
 
@@ -366,6 +370,7 @@ def display_message(name, message, info, duration=None):
     :param message: 消息内容
     :param info: 相关信息（如是否命中缓存、消耗token等）
     :param duration: 消息处理耗时（秒）
+    :param original: 原文内容（可选）
     """
     global http_messages, messages_by_id, message_id_counter
 
@@ -387,7 +392,8 @@ def display_message(name, message, info, duration=None):
             "message": message,
             "time": current_time,
             "duration": duration,
-            "info": info_payload
+            "info": info_payload,
+            "original": original
         }
 
         with message_condition:

@@ -207,6 +207,7 @@ def start_translation(config):
                 return
 
             # 重试5次
+            chat_content = line.split("[CHAT]")[1].strip() if "[CHAT]" in line else ""
             for attempt in range(5):
                 if processed_message := process_message(
                         line,
@@ -218,14 +219,14 @@ def start_translation(config):
                 ):
                     name, translated, info = processed_message
                     duration = time.time() - start_time
+                    original_for_display = chat_content if name != "[ERROR]" else None
                     if slot_id is not None:
-                        fill_slot(slot_id, name or "", translated or "", info, duration=duration)
+                        fill_slot(slot_id, name or "", translated or "", info, duration=duration, original=original_for_display)
                     else:
-                        display_message(name, translated or "", info, duration=duration)
+                        display_message(name, translated or "", info, duration=duration, original=original_for_display)
 
                     if name != "[ERROR]":
                         if translated:
-                            chat_content = line.split("[CHAT]")[1].strip() if "[CHAT]" in line else ""
                             if chat_content:
                                 context_buffer.push(ContextEntry(
                                     original=chat_content,
@@ -393,7 +394,7 @@ def start_translation(config):
                 if gt != -1:
                     player_name = chat_part[1:gt].strip()
 
-            fill_slot(slot_id, player_name, translated or "", {}, duration=duration / len(parsed))
+            fill_slot(slot_id, player_name, translated or "", {}, duration=duration / len(parsed), original=chat_content)
 
             if translated:
                 batch_entries.append(ContextEntry(

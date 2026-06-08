@@ -476,7 +476,7 @@ function updateFoldingBadge(groupElements, count) {
 }
 
 // 创建消息元素的通用函数
-function createMessageElement(name, messageText, messageTime, duration, cacheHit, glossaryMatch, skipSrcLang, usage) {
+function createMessageElement(name, messageText, messageTime, duration, cacheHit, glossaryMatch, skipSrcLang, usage, original) {
     var newMessageItem = document.createElement("li");
     var bubbleDiv = document.createElement('div');
     bubbleDiv.className = 'message-bubble';
@@ -494,6 +494,13 @@ function createMessageElement(name, messageText, messageTime, duration, cacheHit
         var timeDiv = document.createElement('div');
         timeDiv.className = 'message-time';
         timeDiv.textContent = messageTime;
+
+        // Store original text if available
+        if (original) {
+            textDiv.setAttribute('data-original', original);
+            textDiv.setAttribute('data-showing', 'translation');
+            bubbleDiv.setAttribute('data-has-original', 'true');
+        }
 
         bubbleDiv.append(textDiv, timeDiv);
     } else {
@@ -514,6 +521,13 @@ function createMessageElement(name, messageText, messageTime, duration, cacheHit
         var timeDiv = document.createElement('div');
         timeDiv.className = 'message-time';
         timeDiv.textContent = messageTime;
+
+        // Store original text if available
+        if (original) {
+            textDiv.setAttribute('data-original', original);
+            textDiv.setAttribute('data-showing', 'translation');
+            bubbleDiv.setAttribute('data-has-original', 'true');
+        }
 
         bubbleDiv.append(nameSpan, textDiv, timeDiv);
     }
@@ -808,6 +822,7 @@ function initializeEventSource() {
         var skipSrcLang = jsonData.skip_src_lang;
         var usage = jsonData.usage;
         var isPending = jsonData.pending === true;
+        var original = jsonData.original;
 
         if (name === "[INFO]" && isTranslating) {
             setTimeout(resetTranslationUI, 500);
@@ -925,7 +940,8 @@ function initializeEventSource() {
                     glossaryMatch: glossaryMatch,
                     skipSrcLang: skipSrcLang,
                     usage: usage,
-                    messageText: parseMinecraftText(messageText)
+                    messageText: parseMinecraftText(messageText),
+                    original: original
                 });
 
                 pendingMessages--;
@@ -944,7 +960,7 @@ function initializeEventSource() {
             };
         }
 
-        var messageData = createMessageElement(name, messageText, messageTime, duration, cacheHit, glossaryMatch, skipSrcLang, usage);
+        var messageData = createMessageElement(name, messageText, messageTime, duration, cacheHit, glossaryMatch, skipSrcLang, usage, original);
         messageList.appendChild(messageData.element);
 
         // Start tracking for potential folding group
@@ -958,7 +974,8 @@ function initializeEventSource() {
                 glossaryMatch: glossaryMatch,
                 skipSrcLang: skipSrcLang,
                 usage: usage,
-                messageText: parseMinecraftText(messageText)
+                messageText: parseMinecraftText(messageText),
+                original: original
             }],
             element: messageData.element,
             type: currentType,
@@ -1025,7 +1042,7 @@ function initializeEventSource() {
         var glossaryMatch = jsonData.glossary_match;
         var skipSrcLang = jsonData.skip_src_lang;
         var usage = jsonData.usage;
-
+        var original = jsonData.original;
         if (!messageText) {
             // 译文为空（被过滤等），移除占位元素
             pendingEl.style.transition = 'opacity 0.2s';
@@ -1045,7 +1062,8 @@ function initializeEventSource() {
             cacheHit,
             glossaryMatch,
             skipSrcLang,
-            usage
+            usage,
+            original
         );
 
         // 将占位元素替换为真实消息元素（位置保持不变）
@@ -1413,4 +1431,230 @@ document.addEventListener('DOMContentLoaded', (event) => {
             }
         }
     });
+});
+
+// ============================================================
+// Long-Press Context Menu — Show Original / Show Translation
+// ============================================================
+var longPressTimer = null;
+var longPressTarget = null;
+var longPressStartX = 0;
+var longPressStartY = 0;
+var contextMenuEl = null;
+var LONG_PRESS_DURATION = 500;
+var LONG_PRESS_MOVE_THRESHOLD = 10;
+
+// I18N fallback
+var I18N = window.I18N || { showOriginal: 'Show Original', showTranslation: 'Show Translation' };
+
+// --- Context Menu DOM (lazy-create once) ---
+function getContextMenu() {
+    if (contextMenuEl) return contextMenuEl;
+    contextMenuEl = document.createElement('div');
+    contextMenuEl.id = 'context-menu';
+    contextMenuEl.style.display = 'none';
+    document.body.appendChild(contextMenuEl);
+    return contextMenuEl;
+}
+
+// --- Show the context menu near the press point ---
+function showContextMenu(bubbleElement, clientX, clientY) {
+    var menu = getContextMenu();
+    var showing = bubbleElement.getAttribute('data-showing') || 'translation';
+
+    var svgIcon, labelText;
+    if (showing === 'translation') {
+        // Show Original — document icon
+        svgIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>';
+        labelText = I18N.showOriginal;
+    } else {
+        // Show Translation — globe icon
+        svgIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>';
+        labelText = I18N.showTranslation;
+    }
+
+    menu.innerHTML = '<div class="context-menu-item">' + svgIcon + '<span>' + labelText + '</span></div>';
+
+    // Position: prefer below the press point, flip if too close to edge
+    var menuWidth = 200; // approximate
+    var menuHeight = 50; // approximate
+
+    var left = clientX;
+    var top = clientY + 8;
+
+    if (left + menuWidth > window.innerWidth - 12) {
+        left = window.innerWidth - menuWidth - 12;
+    }
+    if (left < 12) left = 12;
+
+    if (top + menuHeight > window.innerHeight - 12) {
+        top = clientY - menuHeight - 8;
+    }
+    if (top < 12) top = 12;
+
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+    menu.style.transformOrigin = (clientX - left) + 'px ' + (clientY - top) + 'px';
+    menu.style.display = 'block';
+    // Re-trigger animation
+    menu.style.animation = 'none';
+    menu.offsetHeight;
+    menu.style.animation = 'contextMenuIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
+
+    // Click handler on menu item
+    var menuItem = menu.querySelector('.context-menu-item');
+    menuItem.onclick = function(e) {
+        e.stopPropagation();
+        toggleMessageText(bubbleElement);
+        dismissContextMenu();
+    };
+}
+
+// --- Toggle message text between original and translation ---
+function toggleMessageText(bubbleElement) {
+    // Find the .message-text div inside
+    var textDiv = bubbleElement.querySelector('.message-text');
+    if (!textDiv) return;
+
+    var showing = textDiv.getAttribute('data-showing') || 'translation';
+    var original = textDiv.getAttribute('data-original');
+    if (!original) return;
+
+    var currentHtml = textDiv.innerHTML;
+
+    if (showing === 'translation') {
+        // Save current (translated) content before swapping
+        textDiv.setAttribute('data-translation-html', currentHtml);
+        // Switch to original
+        textDiv.innerHTML = parseMinecraftText(original);
+        textDiv.setAttribute('data-showing', 'original');
+        bubbleElement.setAttribute('data-showing', 'original');
+    } else {
+        // Restore translation
+        var savedTranslation = textDiv.getAttribute('data-translation-html');
+        if (savedTranslation) {
+            textDiv.innerHTML = savedTranslation;
+        }
+        textDiv.setAttribute('data-showing', 'translation');
+        bubbleElement.setAttribute('data-showing', 'translation');
+    }
+
+    // Animate the text swap
+    textDiv.classList.add('swapping');
+    setTimeout(function() {
+        textDiv.classList.remove('swapping');
+    }, 260);
+}
+
+// --- Dismiss ---
+function dismissContextMenu() {
+    if (!contextMenuEl || contextMenuEl.style.display === 'none') return;
+
+    contextMenuEl.classList.add('dismissing');
+    setTimeout(function() {
+        contextMenuEl.style.display = 'none';
+        contextMenuEl.classList.remove('dismissing');
+    }, 140);
+}
+
+// --- Long-press handlers ---
+function onPressStart(e, bubble) {
+    // Only respond if bubble has original text
+    if (!bubble.getAttribute('data-has-original')) return;
+
+    // Don't show menu on pending bubbles
+    if (bubble.classList.contains('pending-bubble')) return;
+
+    longPressTarget = bubble;
+    longPressStartX = e.type.indexOf('touch') === 0 ? e.touches[0].clientX : e.clientX;
+    longPressStartY = e.type.indexOf('touch') === 0 ? e.touches[0].clientY : e.clientY;
+
+    dismissContextMenu();
+
+    longPressTimer = setTimeout(function() {
+        bubble.classList.add('long-pressing');
+        showContextMenu(bubble, longPressStartX, longPressStartY);
+        longPressTimer = null;
+    }, LONG_PRESS_DURATION);
+}
+
+function onPressMove(e) {
+    if (!longPressTimer) return;
+    var clientX = e.type.indexOf('touch') === 0 ? e.touches[0].clientX : e.clientX;
+    var clientY = e.type.indexOf('touch') === 0 ? e.touches[0].clientY : e.clientY;
+    var dx = clientX - longPressStartX;
+    var dy = clientY - longPressStartY;
+    if (Math.abs(dx) > LONG_PRESS_MOVE_THRESHOLD || Math.abs(dy) > LONG_PRESS_MOVE_THRESHOLD) {
+        cancelLongPress();
+    }
+}
+
+function onPressEnd(e) {
+    cancelLongPress();
+}
+
+function cancelLongPress() {
+    if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+    }
+    if (longPressTarget) {
+        longPressTarget.classList.remove('long-pressing');
+        longPressTarget = null;
+    }
+}
+
+// --- Delegate long-press events on the message list ---
+var messageListEl = document.getElementById('message-list');
+if (messageListEl) {
+    messageListEl.addEventListener('mousedown', function(e) {
+        var bubble = e.target.closest('.message-bubble');
+        if (!bubble) return;
+        onPressStart(e, bubble);
+    });
+
+    messageListEl.addEventListener('mousemove', function(e) {
+        if (longPressTimer) onPressMove(e);
+    });
+
+    messageListEl.addEventListener('mouseup', onPressEnd);
+    messageListEl.addEventListener('mouseleave', onPressEnd);
+
+    messageListEl.addEventListener('touchstart', function(e) {
+        var bubble = e.target.closest('.message-bubble');
+        if (!bubble) return;
+        onPressStart(e, bubble);
+    }, { passive: true });
+
+    messageListEl.addEventListener('touchmove', function(e) {
+        if (longPressTimer) onPressMove(e);
+    }, { passive: true });
+
+    messageListEl.addEventListener('touchend', onPressEnd);
+    messageListEl.addEventListener('touchcancel', onPressEnd);
+}
+
+// --- Global dismiss ---
+document.addEventListener('click', function(e) {
+    if (contextMenuEl && contextMenuEl.style.display !== 'none') {
+        if (!contextMenuEl.contains(e.target)) {
+            dismissContextMenu();
+        }
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        dismissContextMenu();
+    }
+});
+
+window.addEventListener('scroll', function() {
+    if (contextMenuEl && contextMenuEl.style.display !== 'none') {
+        dismissContextMenu();
+    }
+}, { passive: true });
+
+window.addEventListener('resize', function() {
+    dismissContextMenu();
 });
