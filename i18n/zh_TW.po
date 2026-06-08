@@ -946,3 +946,147 @@ msgstr "已清空 {} 個規則"
 #: modless_chat_trans/interface.py:3778
 msgid "黑名单"
 msgstr "黑名單"
+
+#: modless_chat_trans/interface.py:860
+msgid "主力模型"
+msgstr "主力模型"
+
+#: modless_chat_trans/interface.py:865
+msgid "备用模型"
+msgstr "備用模型"
+
+#: modless_chat_trans/interface.py:882
+msgid "备用模型策略："
+msgstr "備用模型策略："
+
+#: modless_chat_trans/interface.py:885
+msgid "直接切换（主模型失败立即使用备用）"
+msgstr "直接切換（主模型失敗立即使用備用）"
+
+#: modless_chat_trans/interface.py:886
+msgid "重试耗尽后切换（主模型重试全部失败后使用备用）"
+msgstr "重試耗盡後切換（主模型重試全部失敗後使用備用）"
+
+#: modless_chat_trans/interface.py:887
+msgid "首次失败竞速（主模型首次失败后并发竞速）"
+msgstr "首次失敗競速（主模型首次失敗後併發競速）"
+
+#: modless_chat_trans/interface.py:888
+msgid "始终竞速（始终并发请求两者取最快）"
+msgstr "始終競速（始終併發請求兩者取最快）"
+
+#: modless_chat_trans/interface.py:1229
+msgid "TTS 朗读设置"
+msgstr "TTS 朗讀設定"
+
+#: modless_chat_trans/interface.py:1242
+#, python-brace-format
+msgid "⚠️ TTS 模块导入失败，TTS 功能已禁用。错误信息：{}"
+msgstr "⚠️ TTS 模組匯入失敗，TTS 功能已停用。錯誤資訊：{}"
+
+#: modless_chat_trans/interface.py:1242 modless_chat_trans/interface.py:1461
+msgid "unknown"
+msgstr "未知"
+
+#: modless_chat_trans/interface.py:1257
+msgid "启用朗读："
+msgstr "啟用朗讀："
+
+#: modless_chat_trans/interface.py:1279
+msgid "朗读语音："
+msgstr "朗讀語音："
+
+#: modless_chat_trans/interface.py:1281
+msgid "加载中..."
+msgstr "載入中..."
+
+#: modless_chat_trans/interface.py:1286
+msgid "不可用"
+msgstr "不可用"
+
+#: modless_chat_trans/interface.py:1297
+msgid "朗读语速："
+msgstr "朗讀語速："
+
+#: modless_chat_trans/interface.py:1300
+msgid "很慢"
+msgstr "很慢"
+
+#: modless_chat_trans/interface.py:1301
+msgid "较慢"
+msgstr "較慢"
+
+#: modless_chat_trans/interface.py:1302
+msgid "正常"
+msgstr "正常"
+
+#: modless_chat_trans/interface.py:1303
+msgid "较快"
+msgstr "較快"
+
+#: modless_chat_trans/interface.py:1304
+msgid "很快"
+msgstr "很快"
+
+#: modless_chat_trans/interface.py:1324
+msgid "朗读玩家名："
+msgstr "朗讀玩家名："
+
+#: modless_chat_trans/interface.py:1344
+msgid "开启后朗读格式为\"玩家名 说：消息内容\"，关闭后只朗读消息内容"
+msgstr "開啟後朗讀格式為\"玩家名 說：訊息內容\"，關閉後只朗讀訊息內容"
+
+#: modless_chat_trans/interface.py:1359
+msgid "测试朗读"
+msgstr "測試朗讀"
+
+#: modless_chat_trans/interface.py:1381
+msgid "依赖库导入失败，TTS 功能不可用"
+msgstr "依賴庫匯入失敗，TTS 功能不可用"
+
+#: modless_chat_trans/interface.py:1417 modless_chat_trans/interface.py:1418
+msgid "自动（根据目标语言）"
+msgstr "自動（根據目標語言）"
+
+#: modless_chat_trans/interface.py:1421
+msgid "⚠ 语音列表加载失败，将使用默认语音"
+msgstr "⚠ 語音列表載入失敗，將使用預設語音"
+
+#: modless_chat_trans/interface.py:1446
+#, python-brace-format
+msgid "已加载 {} 种语音，保存设置后启动翻译生效"
+msgstr "已載入 {} 種語音，儲存設定後啟動翻譯生效"
+
+#: modless_chat_trans/interface.py:1460
+msgid "TTS 不可用"
+msgstr "TTS 不可用"
+
+#: modless_chat_trans/interface.py:1461
+#, python-brace-format
+msgid "TTS 依赖库未安装或导入失败：{}"
+msgstr "TTS 依賴庫未安裝或匯入失敗：{}"
+
+#: modless_chat_trans/interface.py:1480
+msgid "你好，这是一条来自ModlessChatTrans的TTS朗读测试消息。"
+msgstr "你好，這是一條來自ModlessChatTrans的TTS朗讀測試訊息。"
+
+#: modless_chat_trans/interface.py:1538
+msgid "测试完成"
+msgstr "測試完成"
+
+#: modless_chat_trans/interface.py:1539
+msgid "TTS 朗读测试已完成，请检查声音输出"
+msgstr "TTS 朗讀測試已完成，請檢查聲音輸出"
+
+#: modless_chat_trans/interface.py:1548
+msgid "测试失败"
+msgstr "測試失敗"
+
+#: modless_chat_trans/interface.py:1549
+#, python-brace-format
+msgid "TTS 朗读测试失败：{}"
+msgstr "TTS 朗讀測試失敗：{}"
+
+#: modless_chat_trans/interface.py:3864
+msgid "⚠ 更新依赖不可用"
+msgstr "⚠ 更新依賴不可用"

@@ -975,3 +975,147 @@ msgstr "{} règles effacées"
 #: modless_chat_trans/interface.py:3778
 msgid "黑名单"
 msgstr "Liste noire"
+
+#: modless_chat_trans/interface.py:860
+msgid "主力模型"
+msgstr "Modèle principal"
+
+#: modless_chat_trans/interface.py:865
+msgid "备用模型"
+msgstr "Modèle de secours"
+
+#: modless_chat_trans/interface.py:882
+msgid "备用模型策略："
+msgstr "Stratégie de secours :"
+
+#: modless_chat_trans/interface.py:885
+msgid "直接切换（主模型失败立即使用备用）"
+msgstr "Basculement direct (Utiliser le secours dès l'échec du principal)"
+
+#: modless_chat_trans/interface.py:886
+msgid "重试耗尽后切换（主模型重试全部失败后使用备用）"
+msgstr "Basculement après épuisement (Secours utilisé si le principal échoue tout essai)"
+
+#: modless_chat_trans/interface.py:887
+msgid "首次失败竞速（主模型首次失败后并发竞速）"
+msgstr "Course après premier échec (Requête simultanée après un échec du principal)"
+
+#: modless_chat_trans/interface.py:888
+msgid "始终竞速（始终并发请求两者取最快）"
+msgstr "Toujours en course (Demander aux deux simultanément et utiliser le plus rapide)"
+
+#: modless_chat_trans/interface.py:1229
+msgid "TTS 朗读设置"
+msgstr "Paramètres de lecture TTS"
+
+#: modless_chat_trans/interface.py:1242
+#, python-brace-format
+msgid "⚠️ TTS 模块导入失败，TTS 功能已禁用。错误信息：{}"
+msgstr "⚠️ Échec d'importation du module TTS, fonction désactivée. Erreur : {}"
+
+#: modless_chat_trans/interface.py:1242 modless_chat_trans/interface.py:1461
+msgid "unknown"
+msgstr "inconnu"
+
+#: modless_chat_trans/interface.py:1257
+msgid "启用朗读："
+msgstr "Activer la lecture :"
+
+#: modless_chat_trans/interface.py:1279
+msgid "朗读语音："
+msgstr "Voix TTS :"
+
+#: modless_chat_trans/interface.py:1281
+msgid "加载中..."
+msgstr "Chargement..."
+
+#: modless_chat_trans/interface.py:1286
+msgid "不可用"
+msgstr "Indisponible"
+
+#: modless_chat_trans/interface.py:1297
+msgid "朗读语速："
+msgstr "Vitesse TTS :"
+
+#: modless_chat_trans/interface.py:1300
+msgid "很慢"
+msgstr "Très lente"
+
+#: modless_chat_trans/interface.py:1301
+msgid "较慢"
+msgstr "Lente"
+
+#: modless_chat_trans/interface.py:1302
+msgid "正常"
+msgstr "Normale"
+
+#: modless_chat_trans/interface.py:1303
+msgid "较快"
+msgstr "Rapide"
+
+#: modless_chat_trans/interface.py:1304
+msgid "很快"
+msgstr "Très rapide"
+
+#: modless_chat_trans/interface.py:1324
+msgid "朗读玩家名："
+msgstr "Lire nom du joueur :"
+
+#: modless_chat_trans/interface.py:1344
+msgid "开启后朗读格式为\"玩家名 说：消息内容\"，关闭后只朗读消息内容"
+msgstr "Si activé, lit \"Joueur dit : Message\". Désactivé, lit uniquement le message."
+
+#: modless_chat_trans/interface.py:1359
+msgid "测试朗读"
+msgstr "Tester le TTS"
+
+#: modless_chat_trans/interface.py:1381
+msgid "依赖库导入失败，TTS 功能不可用"
+msgstr "Échec d'importation des dépendances, TTS indisponible."
+
+#: modless_chat_trans/interface.py:1417 modless_chat_trans/interface.py:1418
+msgid "自动（根据目标语言）"
+msgstr "Auto (Selon la langue cible)"
+
+#: modless_chat_trans/interface.py:1421
+msgid "⚠ 语音列表加载失败，将使用默认语音"
+msgstr "⚠ Impossible de charger les voix, la voix par défaut sera utilisée."
+
+#: modless_chat_trans/interface.py:1446
+#, python-brace-format
+msgid "已加载 {} 种语音，保存设置后启动翻译生效"
+msgstr "{} voix chargées. Effectif après sauvegarde et lancement de la traduction."
+
+#: modless_chat_trans/interface.py:1460
+msgid "TTS 不可用"
+msgstr "TTS indisponible"
+
+#: modless_chat_trans/interface.py:1461
+#, python-brace-format
+msgid "TTS 依赖库未安装或导入失败：{}"
+msgstr "Dépendance TTS manquante ou erreur d'importation : {}"
+
+#: modless_chat_trans/interface.py:1480
+msgid "你好，这是一条来自ModlessChatTrans的TTS朗读测试消息。"
+msgstr "Bonjour, ceci est un message de test TTS de ModlessChatTrans."
+
+#: modless_chat_trans/interface.py:1538
+msgid "测试完成"
+msgstr "Test terminé"
+
+#: modless_chat_trans/interface.py:1539
+msgid "TTS 朗读测试已完成，请检查声音输出"
+msgstr "Test de lecture TTS terminé, veuillez vérifier la sortie audio."
+
+#: modless_chat_trans/interface.py:1548
+msgid "测试失败"
+msgstr "Échec du test"
+
+#: modless_chat_trans/interface.py:1549
+#, python-brace-format
+msgid "TTS 朗读测试失败：{}"
+msgstr "Échec du test TTS : {}"
+
+#: modless_chat_trans/interface.py:3864
+msgid "⚠ 更新依赖不可用"
+msgstr "⚠ Dépendance de mise à jour indisponible"

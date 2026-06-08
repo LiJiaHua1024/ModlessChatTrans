@@ -976,3 +976,147 @@ msgstr "{} regras foram limpas"
 #: modless_chat_trans/interface.py:3778
 msgid "黑名单"
 msgstr "Lista negra"
+
+#: modless_chat_trans/interface.py:860
+msgid "主力模型"
+msgstr "Modelo Principal"
+
+#: modless_chat_trans/interface.py:865
+msgid "备用模型"
+msgstr "Modelo de Reserva"
+
+#: modless_chat_trans/interface.py:882
+msgid "备用模型策略："
+msgstr "Estratégia do Modelo de Reserva:"
+
+#: modless_chat_trans/interface.py:885
+msgid "直接切换（主模型失败立即使用备用）"
+msgstr "Troca Direta (Usar reserva imediatamente se o principal falhar)"
+
+#: modless_chat_trans/interface.py:886
+msgid "重试耗尽后切换（主模型重试全部失败后使用备用）"
+msgstr "Troca após esgotamento (Usar reserva após principal falhar em todas as tentativas)"
+
+#: modless_chat_trans/interface.py:887
+msgid "首次失败竞速（主模型首次失败后并发竞速）"
+msgstr "Corrida na 1ª Falha (Corrida simultânea após a primeira falha do principal)"
+
+#: modless_chat_trans/interface.py:888
+msgid "始终竞速（始终并发请求两者取最快）"
+msgstr "Sempre em corrida (Solicitar ambos simultaneamente e usar o mais rápido)"
+
+#: modless_chat_trans/interface.py:1229
+msgid "TTS 朗读设置"
+msgstr "Configurações de Leitura TTS"
+
+#: modless_chat_trans/interface.py:1242
+#, python-brace-format
+msgid "⚠️ TTS 模块导入失败，TTS 功能已禁用。错误信息：{}"
+msgstr "⚠️ Falha ao importar módulo TTS, função desativada. Erro: {}"
+
+#: modless_chat_trans/interface.py:1242 modless_chat_trans/interface.py:1461
+msgid "unknown"
+msgstr "desconhecido"
+
+#: modless_chat_trans/interface.py:1257
+msgid "启用朗读："
+msgstr "Ativar Leitura:"
+
+#: modless_chat_trans/interface.py:1279
+msgid "朗读语音："
+msgstr "Voz do TTS:"
+
+#: modless_chat_trans/interface.py:1281
+msgid "加载中..."
+msgstr "Carregando..."
+
+#: modless_chat_trans/interface.py:1286
+msgid "不可用"
+msgstr "Indisponível"
+
+#: modless_chat_trans/interface.py:1297
+msgid "朗读语速："
+msgstr "Velocidade do TTS:"
+
+#: modless_chat_trans/interface.py:1300
+msgid "很慢"
+msgstr "Muito Lenta"
+
+#: modless_chat_trans/interface.py:1301
+msgid "较慢"
+msgstr "Lenta"
+
+#: modless_chat_trans/interface.py:1302
+msgid "正常"
+msgstr "Normal"
+
+#: modless_chat_trans/interface.py:1303
+msgid "较快"
+msgstr "Rápida"
+
+#: modless_chat_trans/interface.py:1304
+msgid "很快"
+msgstr "Muito Rápida"
+
+#: modless_chat_trans/interface.py:1324
+msgid "朗读玩家名："
+msgstr "Ler Nome do Jogador:"
+
+#: modless_chat_trans/interface.py:1344
+msgid "开启后朗读格式为\"玩家名 说：消息内容\"，关闭后只朗读消息内容"
+msgstr "Se ativado, lê: \"Jogador diz: Mensagem\". Desativado, lê apenas a mensagem."
+
+#: modless_chat_trans/interface.py:1359
+msgid "测试朗读"
+msgstr "Testar TTS"
+
+#: modless_chat_trans/interface.py:1381
+msgid "依赖库导入失败，TTS 功能不可用"
+msgstr "Falha na dependência, a função TTS não está disponível."
+
+#: modless_chat_trans/interface.py:1417 modless_chat_trans/interface.py:1418
+msgid "自动（根据目标语言）"
+msgstr "Automático (Baseado no idioma de destino)"
+
+#: modless_chat_trans/interface.py:1421
+msgid "⚠ 语音列表加载失败，将使用默认语音"
+msgstr "⚠ Falha ao carregar lista de vozes, a voz padrão será usada."
+
+#: modless_chat_trans/interface.py:1446
+#, python-brace-format
+msgid "已加载 {} 种语音，保存设置后启动翻译生效"
+msgstr "{} vozes carregadas. Entrará em vigor após salvar e iniciar a tradução."
+
+#: modless_chat_trans/interface.py:1460
+msgid "TTS 不可用"
+msgstr "TTS Indisponível"
+
+#: modless_chat_trans/interface.py:1461
+#, python-brace-format
+msgid "TTS 依赖库未安装或导入失败：{}"
+msgstr "Dependência do TTS ausente ou falha na importação: {}"
+
+#: modless_chat_trans/interface.py:1480
+msgid "你好，这是一条来自ModlessChatTrans的TTS朗读测试消息。"
+msgstr "Olá, esta é uma mensagem de teste de leitura TTS do ModlessChatTrans."
+
+#: modless_chat_trans/interface.py:1538
+msgid "测试完成"
+msgstr "Teste Concluído"
+
+#: modless_chat_trans/interface.py:1539
+msgid "TTS 朗读测试已完成，请检查声音输出"
+msgstr "Teste de leitura TTS concluído, verifique a saída de áudio."
+
+#: modless_chat_trans/interface.py:1548
+msgid "测试失败"
+msgstr "Falha no Teste"
+
+#: modless_chat_trans/interface.py:1549
+#, python-brace-format
+msgid "TTS 朗读测试失败：{}"
+msgstr "Falha no teste do TTS: {}"
+
+#: modless_chat_trans/interface.py:3864
+msgid "⚠ 更新依赖不可用"
+msgstr "⚠ Dependência de atualização indisponível"
