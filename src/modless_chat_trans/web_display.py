@@ -342,12 +342,13 @@ def fill_slot(message_id: int, name: str, message: str, info: dict, duration=Non
 
     info_payload = dict(info) if isinstance(info, dict) else {}
 
+    fallback = False
     with message_condition:
         record = messages_by_id.get(message_id)
         if record is None:
             # slot 已被脱队（消息对象过旧），降级为直接添加
             logger.warning(f"fill_slot: id={message_id} not found, falling back to display_message")
-            message_condition.notify_all()
+            fallback = True
         else:
             record["name"] = name
             record["message"] = message
@@ -358,6 +359,9 @@ def fill_slot(message_id: int, name: str, message: str, info: dict, duration=Non
             pending_slots.discard(message_id)
             update_events.append(message_id)
             message_condition.notify_all()
+
+    if fallback:
+        display_message(name, message, info, duration, original)
 
     logger.debug(f"Slot filled: id={message_id} name={name or 'System'} msg={message[:30] if message else ''}")
 

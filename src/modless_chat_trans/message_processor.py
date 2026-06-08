@@ -422,8 +422,15 @@ def process_decorator(function):
 @process_decorator
 def process_message(data, data_type, replace_garbled_character=False):
     """
-    处理日志文件中的一行
+    处理日志文件中的一行（包含翻译和过滤的入口）
+    """
+    return parse_message(data, data_type, replace_garbled_character)
 
+
+def parse_message(data, data_type, replace_garbled_character=False):
+    """
+    解析日志文件中的一行（仅解析，不含翻译和过滤）
+    
     :param data: 需要处理的数据
     :param data_type: 数据类型 ("log", "clipboard", "webui")
     :return: 元组 (玩家名称, 聊天内容, 消息类型)
