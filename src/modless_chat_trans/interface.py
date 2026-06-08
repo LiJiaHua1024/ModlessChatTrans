@@ -1081,6 +1081,10 @@ class MessagePresentationInterface(QFrame):
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.main_layout.addWidget(title)
 
+        # TTS 朗读设置卡片
+        tts_card = self.create_tts_card()
+        self.main_layout.addWidget(tts_card)
+
         # 创建网格布局用于表单
         self.grid_layout = QGridLayout()
         self.grid_layout.setSpacing(15)
@@ -1101,6 +1105,286 @@ class MessagePresentationInterface(QFrame):
 
         self.main_layout.addLayout(self.grid_layout)
         self.main_layout.addStretch()
+
+    def create_tts_card(self):
+        """创建 TTS 朗读设置卡片"""
+        card = SimpleCardWidget(self)
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(20, 16, 20, 16)
+        card_layout.setSpacing(12)
+
+        # 卡片标题
+        card_title = SubtitleLabel(_('TTS 朗读设置'), card)
+        setFont(card_title, 16, weight=QFont.Weight.DemiBold)
+        card_layout.addWidget(card_title)
+
+        # 内容区域
+        content_frame = QFrame(card)
+        content_layout = QGridLayout(content_frame)
+        content_layout.setContentsMargins(0, 8, 0, 0)
+        content_layout.setHorizontalSpacing(16)
+        content_layout.setVerticalSpacing(12)
+
+        # 启用开关
+        tts_enable_label = BodyLabel(_('启用朗读：'), content_frame)
+
+        self.tts_enable_switch = SwitchButton(content_frame)
+        self.tts_enable_switch.setOffText(_("关闭"))
+        self.tts_enable_switch.setOnText(_("开启"))
+
+        if self.config and hasattr(self.config, 'tts'):
+            self.tts_enable_switch.setChecked(self.config.tts.enabled)
+
+        switch_container = QHBoxLayout()
+        switch_container.setSpacing(5)
+        switch_container.addWidget(self.tts_enable_switch)
+        switch_container.addStretch()
+
+        content_layout.addWidget(tts_enable_label, 0, 0, Qt.AlignmentFlag.AlignRight)
+        content_layout.addLayout(switch_container, 0, 1)
+
+        # 语音选择
+        voice_label = BodyLabel(_('朗读语音：'), content_frame)
+        self.tts_voice_combo = ComboBox(content_frame)
+        self.tts_voice_combo.setPlaceholderText(_("加载中..."))
+        self.tts_voice_combo.setFixedWidth(280)
+
+        # 异步加载语音列表
+        self._tts_voices_loaded = False
+        QTimer.singleShot(100, self._load_tts_voices)
+
+        content_layout.addWidget(voice_label, 1, 0, Qt.AlignmentFlag.AlignRight)
+        content_layout.addWidget(self.tts_voice_combo, 1, 1)
+
+        # 语速选择
+        speed_label = BodyLabel(_('朗读语速：'), content_frame)
+        self.tts_speed_combo = ComboBox(content_frame)
+        speed_options = [
+            (_("很慢"), "-50%"),
+            (_("较慢"), "-25%"),
+            (_("正常"), "+0%"),
+            (_("较快"), "+25%"),
+            (_("很快"), "+50%"),
+        ]
+        for label, value in speed_options:
+            self.tts_speed_combo.addItem(label, userData=value)
+
+        if self.config and hasattr(self.config, 'tts'):
+            current_speed = self.config.tts.speed
+            for i in range(self.tts_speed_combo.count()):
+                if self.tts_speed_combo.itemData(i) == current_speed:
+                    self.tts_speed_combo.setCurrentIndex(i)
+                    break
+
+        self.tts_speed_combo.setFixedWidth(200)
+        content_layout.addWidget(speed_label, 2, 0, Qt.AlignmentFlag.AlignRight)
+        content_layout.addWidget(self.tts_speed_combo, 2, 1)
+
+        # 朗读玩家名开关
+        name_label = BodyLabel(_('朗读玩家名：'), content_frame)
+
+        self.tts_read_name_switch = SwitchButton(content_frame)
+        self.tts_read_name_switch.setOffText(_("关闭"))
+        self.tts_read_name_switch.setOnText(_("开启"))
+
+        if self.config and hasattr(self.config, 'tts'):
+            self.tts_read_name_switch.setChecked(self.config.tts.read_player_name)
+        else:
+            self.tts_read_name_switch.setChecked(True)
+
+        name_container = QHBoxLayout()
+        name_container.setSpacing(5)
+        name_container.addWidget(self.tts_read_name_switch)
+
+        help_button_name = create_help_button(
+            content_frame,
+            _("开启后朗读格式为\"玩家名 说：消息内容\"，关闭后只朗读消息内容")
+        )
+        name_container.addWidget(help_button_name)
+        name_container.addStretch()
+
+        content_layout.addWidget(name_label, 3, 0, Qt.AlignmentFlag.AlignRight)
+        content_layout.addLayout(name_container, 3, 1)
+
+        # 操作按钮行
+        button_frame = QFrame(content_frame)
+        button_layout = QHBoxLayout(button_frame)
+        button_layout.setContentsMargins(0, 0, 0, 0)
+        button_layout.setSpacing(12)
+
+        # 测试按钮
+        self.tts_test_button = PushButton(_('测试朗读'), button_frame)
+        self.tts_test_button.clicked.connect(self.on_tts_test)
+        button_layout.addWidget(self.tts_test_button)
+
+        # 测试加载动画
+        self.tts_test_spinner = IndeterminateProgressRing(button_frame)
+        self.tts_test_spinner.setFixedSize(20, 20)
+        self.tts_test_spinner.setStrokeWidth(2)
+        self.tts_test_spinner.hide()
+        button_layout.addWidget(self.tts_test_spinner)
+
+        button_layout.addStretch()
+        content_layout.addWidget(button_frame, 4, 1)
+
+        # 状态提示
+        self.tts_status_label = CaptionLabel('', content_frame)
+        self.tts_status_label.setStyleSheet("color: #888888;")
+        content_layout.addWidget(self.tts_status_label, 5, 1)
+
+        content_layout.setColumnStretch(2, 1)
+        card_layout.addWidget(content_frame)
+        return card
+
+    def _load_tts_voices(self):
+        """异步加载 Edge TTS 语音列表"""
+        if self._tts_voices_loaded:
+            return
+
+        def load_in_thread():
+            try:
+                from modless_chat_trans.tts_engine import get_available_voices_sync
+                voices = get_available_voices_sync()
+                return voices
+            except Exception as e:
+                logger.error(f"[TTS] Failed to load voices: {e}")
+                return []
+
+        class VoiceLoaderThread(QThread):
+            voices_loaded = Signal(list)
+
+            def run(self_):
+                voices = load_in_thread()
+                self_.voices_loaded.emit(voices)
+
+        self._voice_loader = VoiceLoaderThread(self)
+        # noinspection PyUnresolvedReferences
+        self._voice_loader.voices_loaded.connect(self._on_voices_loaded)
+        self._voice_loader.start()
+
+    def _on_voices_loaded(self, voices):
+        """语音列表加载完成"""
+        self.tts_voice_combo.clear()
+        self.tts_voice_combo.setPlaceholderText(_("自动（根据目标语言）"))
+        self.tts_voice_combo.addItem(_("自动（根据目标语言）"), userData="auto")
+
+        if not voices:
+            self.tts_status_label.setText(_("⚠ 语音列表加载失败，将使用默认语音"))
+            self._tts_voices_loaded = True
+            return
+
+        # 按语言分组
+        seen_locales = set()
+        for v in voices:
+            locale = v.get("Locale", "")
+            if locale not in seen_locales:
+                seen_locales.add(locale)
+                name = v.get("ShortName") or v.get("Name", "")
+                display = f"{name}  ({locale})"
+                self.tts_voice_combo.addItem(display, userData=name)
+
+        # 选择当前配置的语音
+        if self.config and hasattr(self.config, 'tts') and self.config.tts.voice:
+            configured = self.config.tts.voice
+            if configured != "auto":
+                for i in range(self.tts_voice_combo.count()):
+                    if self.tts_voice_combo.itemData(i) == configured:
+                        self.tts_voice_combo.setCurrentIndex(i)
+                        break
+
+        self._tts_voices_loaded = True
+        self.tts_status_label.setText(
+            _("已加载 {} 种语音，保存设置后启动翻译生效").format(len(seen_locales))
+        )
+
+    def on_tts_test(self):
+        """测试 TTS 朗读"""
+        self.tts_test_button.setEnabled(False)
+        self.tts_test_spinner.show()
+
+        voice = self.tts_voice_combo.currentData()
+        if voice is None:
+            voice = "auto"
+        speed = self.tts_speed_combo.currentData()
+        if speed is None:
+            speed = "+0%"
+
+        test_text = _("你好，这是一条来自ModlessChatTrans的TTS朗读测试消息。")
+
+        class TestTTSThread(QThread):
+            test_finished = Signal(bool, str)
+
+            def run(self_):
+                import asyncio
+                import tempfile
+                import os
+                import edge_tts
+                try:
+                    from modless_chat_trans.tts_engine import infer_voice
+
+                    actual_voice = voice
+                    if actual_voice == "auto":
+                        actual_voice = infer_voice("Simplified Chinese", "auto")
+
+                    fd, tmp_path = tempfile.mkstemp(suffix=".mp3", prefix="mct_tts_test_")
+                    os.close(fd)
+
+                    async def synthesize():
+                        communicate = edge_tts.Communicate(
+                            text=test_text,
+                            voice=actual_voice,
+                            rate=speed,
+                        )
+                        await asyncio.wait_for(communicate.save(tmp_path), timeout=15.0)
+
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    loop.run_until_complete(synthesize())
+                    loop.close()
+
+                    import miniaudio
+                    from modless_chat_trans.tts_engine import _play_mp3_file
+                    _play_mp3_file(tmp_path)
+
+                    try:
+                        os.unlink(tmp_path)
+                    except Exception:
+                        pass
+
+                    self_.test_finished.emit(True, "")
+                except Exception as e:
+                    self_.test_finished.emit(False, str(e))
+
+        self._tts_test_thread = TestTTSThread(self)
+        # noinspection PyUnresolvedReferences
+        self._tts_test_thread.test_finished.connect(self._on_tts_test_finished)
+        self._tts_test_thread.start()
+
+    def _on_tts_test_finished(self, success, error_msg):
+        """TTS 测试完成"""
+        self.tts_test_button.setEnabled(True)
+        self.tts_test_spinner.hide()
+
+        if success:
+            InfoBar.success(
+                title=_('测试完成'),
+                content=_('TTS 朗读测试已完成，请检查声音输出'),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self
+            )
+        else:
+            InfoBar.error(
+                title=_('测试失败'),
+                content=_('TTS 朗读测试失败：{}').format(error_msg),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=5000,
+                parent=self
+            )
 
 
 class MessageSendInterface(QFrame):
@@ -2611,6 +2895,14 @@ class StartInterface(QFrame):
         cfg.settings.auto_check_update_frequency = setting.update_frequency_combo.currentData()
         cfg.settings.include_prerelease = setting.include_prerelease_check.isChecked()
         # 其余 settings 字段（debug/last_update_check_time 等）保持不变
+
+        # 8) TTS 朗读设置
+        cfg.tts.enabled = msg_present.tts_enable_switch.isChecked()
+        voice_data = msg_present.tts_voice_combo.currentData()
+        cfg.tts.voice = voice_data if voice_data is not None else "auto"
+        speed_data = msg_present.tts_speed_combo.currentData()
+        cfg.tts.speed = speed_data if speed_data is not None else "+0%"
+        cfg.tts.read_player_name = msg_present.tts_read_name_switch.isChecked()
 
         # 返回内存中的配置对象（调用方可选择是否落盘）
         return cfg

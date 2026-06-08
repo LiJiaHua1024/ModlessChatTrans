@@ -50,3 +50,19 @@ context-length = 10
 context-timeout = 120.0
 # 是否对传统翻译服务（DeepL/Bing 等）启用上下文（实验性，默认关闭）
 enable-for-traditional = false
+
+[tts]
+# 是否启用 Edge TTS 朗读
+enabled = false
+# 语音选择: "auto" 根据目标语言自动选择，或指定 Edge TTS 语音名（如 zh-CN-XiaoxiaoNeural）
+voice = "auto"
+# 语速: -100% ~ +100%
+speed = "+0%"
+# 音调: -50Hz ~ +50Hz
+pitch = "+0Hz"
+# 最大排队消息数（超出的消息会被丢弃）
+max-queue-size = 3
+# 是否朗读玩家名称（"某某说：消息内容"）
+read-player-name = true
+# 不朗读消息的用户列表（净化后的玩家名）
+mute-users = []

@@ -126,6 +126,17 @@ class ContextConfig(BaseConfigModel):
     enable_for_traditional: bool = False
 
 
+class TTSConfig(BaseConfigModel):
+    """TTS 朗读配置"""
+    enabled: bool = False
+    voice: str = "auto"  # "auto" = 根据目标语言自动选择
+    speed: str = "+0%"   # 语速，范围 -100% ~ +100%
+    pitch: str = "+0Hz"  # 音调，范围 -50Hz ~ +50Hz
+    max_queue_size: int = 3        # 最大排队消息数
+    read_player_name: bool = True  # 是否朗读玩家名称
+    mute_users: List[str] = []     # 不朗读的用户列表
+
+
 class ConfigV3FromInit(BaseSettings):
     model_config = SettingsConfigDict(
         alias_generator=snake_to_kebab,
@@ -142,6 +153,7 @@ class ConfigV3FromInit(BaseSettings):
     glossary: Dict[str, str]
     blacklist: BlacklistConfig = BlacklistConfig()
     context: ContextConfig = ContextConfig()
+    tts: TTSConfig = TTSConfig()
 
 
 class ConfigV3(ConfigV3FromInit):

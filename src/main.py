@@ -34,6 +34,7 @@ from modless_chat_trans.translator import Translator, ts, litellm
 from modless_chat_trans.context_buffer import ContextBuffer, ContextEntry, extract_log_time
 from modless_chat_trans.interface import ProgramInfo, MainWindow, QApplication
 from modless_chat_trans.clipboard_monitor import monitor_clipboard, modify_clipboard
+from modless_chat_trans.tts_engine import TTSEngine
 from modless_chat_trans.i18n import _
 from modless_chat_trans.updater import Updater
 
@@ -65,6 +66,11 @@ def start_translation(config):
         context_length=ctx_cfg.context_length,
         context_timeout=ctx_cfg.context_timeout,
     )
+
+    # 初始化 TTS 朗读引擎
+    tts_engine = TTSEngine(config.tts)
+    if config.tts.enabled:
+        tts_engine.start()
 
     def callback(line, arrival_time, slot_id=None, data_type="log", rage_mode=False):
         """
@@ -122,6 +128,12 @@ def start_translation(config):
                                     timestamp=log_time,
                                     player_name=name or "",
                                 ))
+                        # TTS 朗读
+                        if tts_engine.enabled and translated:
+                            tts_engine.enqueue(
+                                name or "", translated,
+                                config.message_capture.target_language
+                            )
                         break
                     else:
                         logger.error(translated)
@@ -288,6 +300,14 @@ def start_translation(config):
 
         if batch_entries:
             context_buffer.push_batch(batch_entries)
+
+        # TTS 朗读批量消息
+        if tts_engine.enabled:
+            for entry in batch_entries:
+                tts_engine.enqueue(
+                    entry.player_name, entry.translated,
+                    config.message_capture.target_language
+                )
 
     player_translator = Translator(config.player_translation, config.glossary)
     if config.send_translation_independent:
