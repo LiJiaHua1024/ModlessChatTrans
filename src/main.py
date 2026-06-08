@@ -353,6 +353,12 @@ def start_translation(config):
         batch_results = {}
         fallback_to_single = False
 
+        # 检查是否为 LLM 服务（决定是否走 AI 名称提取路径）
+        from modless_chat_trans.config import ServiceType
+        use_ai_extraction = (
+            player_translator.translation_service_config.service_type == ServiceType.LLM
+        )
+
         if need_translate_indices:
             texts_to_translate = [parsed[i][4] for i in need_translate_indices]
 
@@ -361,6 +367,7 @@ def start_translation(config):
                 source_language=config.message_capture.source_language,
                 target_language=config.message_capture.target_language,
                 context_messages=ctx_messages,
+                extract_name=use_ai_extraction,
             )
 
             if translations is not None:
@@ -384,14 +391,27 @@ def start_translation(config):
         batch_entries = []
 
         for i, (_, line, arrival_time, slot_id, chat_content, log_time) in enumerate(parsed):
-            translated = cached_results.get(i) or batch_results.get(i, "")
+            raw_translated = cached_results.get(i) or batch_results.get(i, "")
 
             player_name = ""
-            chat_part = line.split("[CHAT]")[1].strip() if "[CHAT]" in line else ""
-            if chat_part.startswith("<"):
-                gt = chat_part.find(">", 1)
-                if gt != -1:
-                    player_name = chat_part[1:gt].strip()
+            translated = raw_translated
+
+            # AI 名称提取：翻译结果格式为 name|||translated
+            if use_ai_extraction and raw_translated and "|||" in raw_translated:
+                name_part, msg_part = raw_translated.split("|||", 1)
+                player_name = name_part
+                translated = msg_part
+            elif not use_ai_extraction:
+                # 传统服务：用本地规则提取名称
+                chat_part = line.split("[CHAT]")[1].strip() if "[CHAT]" in line else ""
+                if chat_part.startswith("<"):
+                    gt = chat_part.find(">", 1)
+                    if gt != -1:
+                        player_name = chat_part[1:gt].strip()
+                elif ":" in chat_part:
+                    from modless_chat_trans.message_processor import parse_chat_name_fallback
+                    fallback_name, _, _ = parse_chat_name_fallback(chat_part)
+                    player_name = fallback_name
 
             fill_slot(slot_id, player_name, translated or "", {}, duration=duration / len(parsed))
 

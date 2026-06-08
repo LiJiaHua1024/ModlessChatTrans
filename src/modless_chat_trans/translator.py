@@ -178,6 +178,7 @@ class Translator:
         target_language: str,
         message_type: MessageType = MessageType.PLAYER,
         context_messages: list = None,
+        extract_name: bool = False,
     ) -> dict | None:
         """
         Public API: 带历史上下文的单条翻译。
@@ -187,6 +188,7 @@ class Translator:
         :param target_language: 目标语言
         :param message_type: 消息类型
         :param context_messages: 历史上下文 messages 列表（可直接拼入 litellm），为 None/[] 则退化为无上下文
+        :param extract_name: 是否让 AI 同时提取发送者名称（仅 LLM 有效）
         """
         context_messages = context_messages or []
         return self._dispatch_translation(
@@ -194,6 +196,7 @@ class Translator:
             mode=TranslationMode.NORMAL,
             message_type=message_type,
             context_messages=context_messages,
+            extract_name=extract_name,
         )
 
     def translate_batch_with_context(
@@ -203,6 +206,7 @@ class Translator:
         target_language: str,
         message_type: MessageType = MessageType.PLAYER,
         context_messages: list = None,
+        extract_name: bool = False,
     ) -> list[str] | None:
         """
         Public API: 将多条消息打包为一个 request，返回按顺序对应的译文列表。
@@ -212,6 +216,7 @@ class Translator:
         :param target_language: 目标语言
         :param message_type: 消息类型
         :param context_messages: 历史上下文 messages 列表
+        :param extract_name: 是否让 AI 同时提取发送者名称（仅 LLM 有效）
         :return: 与 texts 等长的译文列表，或 None（失败，调用方应降级处理）
         """
         if not texts:
@@ -230,14 +235,16 @@ class Translator:
         try:
             return self._execute_llm_batch_translation(
                 texts, source_language, target_language,
-                message_type, context_messages
+                message_type, context_messages,
+                extract_name=extract_name,
             )
         except Exception as e:
             logger.warning(f"Batch translation failed, will fallback to single: {e}")
             return None
 
     def translate_with_profanity(self, text, source_language, target_language,
-                                 message_type: MessageType = MessageType.SEND):
+                                 message_type: MessageType = MessageType.SEND,
+                                 extract_name: bool = False):
         """
         Public API: Rage Mode translation.
 
@@ -245,15 +252,18 @@ class Translator:
         :param source_language: 源语言
         :param target_language: 目标语言
         :param message_type: 消息类型，决定可用的翻译模式
+        :param extract_name: 是否让 AI 同时提取发送者名称（仅 LLM 有效）
         """
         return self._dispatch_translation(
             text, source_language, target_language,
             mode=TranslationMode.RAGE,
-            message_type=message_type
+            message_type=message_type,
+            extract_name=extract_name,
         )
 
     def _dispatch_translation(self, text, source_language, target_language, mode: TranslationMode,
-                              message_type: MessageType, context_messages: list = None):
+                              message_type: MessageType, context_messages: list = None,
+                              extract_name: bool = False):
         """
         Internal Dispatcher: Coordinates prompt building and execution.
 
@@ -263,6 +273,7 @@ class Translator:
         :param mode: 请求的翻译模式
         :param message_type: 消息类型，用于验证可用模式并选择正确的prompt
         :param context_messages: 历史上下文 messages（将内嵌入 LLM 请求）
+        :param extract_name: 是否让 AI 同时提取发送者名称
         """
         context_messages = context_messages or []
         if self.translation_service_config.service_type == ServiceType.LLM:
@@ -270,7 +281,7 @@ class Translator:
             effective_mode = self._get_effective_mode(mode, message_type)
 
             # 2. Prompt Factory - 根据消息类型和模式构建prompt
-            system_prompt = self._build_system_prompt(effective_mode, message_type)
+            system_prompt = self._build_system_prompt(effective_mode, message_type, extract_name)
 
             # 3. Execution Engine Configuration
             # 'deep' mode expects JSON output; others expect plain text currently
@@ -289,6 +300,7 @@ class Translator:
                 include_terms,
                 message_type,
                 context_messages=context_messages,
+                extract_name=extract_name,
             )
 
         elif self.translation_service_config.service_type == ServiceType.TRADITIONAL:
@@ -343,7 +355,8 @@ class Translator:
     def _execute_llm_translation(self, text, model, source_language, target_language, provider, system_prompt,
                                  expect_json, include_terms, message_type: MessageType = MessageType.PLAYER,
                                  context_messages: list = None,
-                                 llm_config_override=None):
+                                 llm_config_override=None,
+                                 extract_name: bool = False):
         """
         Execution Engine: Handles API calls and response parsing.
 
@@ -358,6 +371,7 @@ class Translator:
         :param message_type: 消息类型
         :param context_messages: 历史上下文 messages
         :param llm_config_override: 可选的 LLMS erviceConfig 覆盖（用于备用模型）
+        :param extract_name: 是否让 AI 同时提取发送者名称
         """
         context_messages = context_messages or []
         # 选择有效的 LLM 配置（备用模型配置或主模型配置）
@@ -435,7 +449,7 @@ class Translator:
                     {"role": "user", "content": message}
                 ],
                 "temperature": 0,
-                "max_tokens": 256 if expect_json else 64,
+                "max_tokens": 256 if expect_json else (80 if extract_name else 64),
                 "api_key": llm_cfg.api_key,
             }
 
@@ -473,30 +487,35 @@ class Translator:
                     raise ValueError("Failed to parse optimized translation JSON") from e2
 
             translated_message = content_dict.get("result", None)
+            extracted_name = content_dict.get("name", "") if extract_name else None
         else:
             translated_message = content_str
+            extracted_name = None
 
-        # # 更新累计 token 使用量
-        # if usage_info and usage_info.get("total_tokens", None):
-        #     try:
-        #         global _PENDING_TOKENS
-        #         _PENDING_TOKENS += usage_info["total_tokens"]
-        #
-        #         if _PENDING_TOKENS >= _SAVE_THRESHOLD:
-        #             flush_pending_tokens()
-        #     except Exception as e:
-        #         # 避免因为读取或写入配置失败阻止翻译结果返回
-        #         logger.warning(f"Failed to update total token usage: {e}")
+        # 解析 name|||message 格式
+        if extract_name and not expect_json and translated_message:
+            if "|||" in translated_message:
+                name_part, msg_part = translated_message.split("|||", 1)
+                extracted_name = name_part.strip()
+                translated_message = msg_part
+            else:
+                logger.warning(
+                    f"extract_name=True but response missing '|||' separator. "
+                    f"Treating entire response as message. Raw: {translated_message[:80]}"
+                )
+                extracted_name = ""
 
-        return {
-            "result": translated_message,
-            "usage": usage_info
-        }
+        result = {"result": translated_message, "usage": usage_info}
+        if extract_name:
+            result["name"] = extracted_name
+
+        return result
 
     def _execute_with_fallback(self, text, model, source_language, target_language,
                                provider, system_prompt, expect_json, include_terms,
                                message_type: MessageType = MessageType.PLAYER,
-                               context_messages: list = None):
+                               context_messages: list = None,
+                               extract_name: bool = False):
         """
         带备用模型策略的 LLM 翻译执行。
 
@@ -519,7 +538,8 @@ class Translator:
             return self._race_primary_fallback(
                 text, source_language, target_language, provider,
                 system_prompt, expect_json, include_terms,
-                message_type, context_messages
+                message_type, context_messages,
+                extract_name=extract_name,
             )
 
         # 尝试主模型
@@ -527,7 +547,8 @@ class Translator:
             return self._execute_llm_translation(
                 text, model, source_language, target_language, provider,
                 system_prompt, expect_json, include_terms, message_type,
-                context_messages=context_messages
+                context_messages=context_messages,
+                extract_name=extract_name,
             )
         except Exception as e:
             logger.warning(f"Primary model ({provider}/{model}) failed: {e}")
@@ -543,7 +564,8 @@ class Translator:
                     self.fallback_llm_config.provider,
                     system_prompt, expect_json, include_terms,
                     message_type, context_messages=context_messages,
-                    llm_config_override=self.fallback_llm_config
+                    llm_config_override=self.fallback_llm_config,
+                    extract_name=extract_name,
                 )
 
             # Strategy B: Retry exhausted — 重试耗尽后切换
@@ -554,7 +576,8 @@ class Translator:
                             text, model, source_language, target_language,
                             provider, system_prompt, expect_json,
                             include_terms, message_type,
-                            context_messages=context_messages
+                            context_messages=context_messages,
+                            extract_name=extract_name,
                         )
                     except Exception as e2:
                         logger.warning(f"Primary retry {retry + 1}/4 failed: {e2}")
@@ -565,7 +588,8 @@ class Translator:
                     self.fallback_llm_config.provider,
                     system_prompt, expect_json, include_terms,
                     message_type, context_messages=context_messages,
-                    llm_config_override=self.fallback_llm_config
+                    llm_config_override=self.fallback_llm_config,
+                    extract_name=extract_name,
                 )
 
             # Strategy C: Race on first failure — 首次失败后并发竞速
@@ -574,7 +598,8 @@ class Translator:
                 return self._race_primary_fallback(
                     text, source_language, target_language, provider,
                     system_prompt, expect_json, include_terms,
-                    message_type, context_messages
+                    message_type, context_messages,
+                    extract_name=extract_name,
                 )
 
             raise  # 未知策略，不应到达
@@ -582,7 +607,8 @@ class Translator:
     def _race_primary_fallback(self, text, source_language, target_language,
                                provider, system_prompt, expect_json, include_terms,
                                message_type: MessageType = MessageType.PLAYER,
-                               context_messages: list = None):
+                               context_messages: list = None,
+                               extract_name: bool = False):
         """
         并发请求主模型和备用模型，返回最先成功的结果。
         如果两者都失败，抛出异常。
@@ -596,7 +622,8 @@ class Translator:
                 text, self.translation_service_config.llm.model,
                 source_language, target_language, provider,
                 system_prompt, expect_json, include_terms,
-                message_type, context_messages=context_messages
+                message_type, context_messages=context_messages,
+                extract_name=extract_name,
             )
 
         def call_fallback():
@@ -606,7 +633,8 @@ class Translator:
                 self.fallback_llm_config.provider,
                 system_prompt, expect_json, include_terms,
                 message_type, context_messages=context_messages,
-                llm_config_override=self.fallback_llm_config
+                llm_config_override=self.fallback_llm_config,
+                extract_name=extract_name,
             )
 
         with ThreadPoolExecutor(max_workers=2) as executor:
@@ -630,38 +658,40 @@ class Translator:
             error_details = "; ".join(f"{name}: {err}" for name, err in errors)
             raise Exception(f"Both primary and fallback models failed: {error_details}")
 
-    def _build_system_prompt(self, mode: TranslationMode, message_type: MessageType) -> str:
+    def _build_system_prompt(self, mode: TranslationMode, message_type: MessageType,
+                            extract_name: bool = False) -> str:
         """
         Prompt Factory: Returns the system prompt for the specified mode and message type.
 
         :param mode: 翻译模式
         :param message_type: 消息类型
+        :param extract_name: 是否添加名称提取输出格式指令
         :return: 系统提示词
         """
         # System消息使用正式的Normal prompt（独立于player/send的normal）
         if message_type == MessageType.SYSTEM:
-            return self._build_system_normal_prompt()
+            return self._build_system_normal_prompt(extract_name)
 
         # Player/Send消息的Normal mode使用标准口语化prompt
         if mode == TranslationMode.NORMAL:
-            return self._build_player_normal_prompt()
+            return self._build_player_normal_prompt(extract_name)
 
         # Deep mode
         if mode == TranslationMode.DEEP:
-            return self._build_deep_prompt()
+            return self._build_deep_prompt(extract_name)
 
         # Rage mode
         if mode == TranslationMode.RAGE:
-            return self._build_rage_prompt()
+            return self._build_rage_prompt(extract_name)
 
         raise ValueError(f"Invalid mode: {mode}")
 
-    def _build_system_normal_prompt(self) -> str:
+    def _build_system_normal_prompt(self, extract_name: bool = False) -> str:
         """
         System消息专用的极简Normal prompt。
         利用LLM默认的正式语气，仅针对格式安全和术语进行硬性约束。
         """
-        return (
+        prompt = (
             "You are a Minecraft server localization engine. "
             "Translate server announcements, game notifications, and plugin messages.\n"
             "Rules:\n"
@@ -670,12 +700,22 @@ class Translator:
             "symbols. Do NOT translate command syntax (e.g., `/help`).\n"
             "3. Output: Output ONLY the translation result."
         )
+        if extract_name:
+            prompt += (
+                "\n\n## Output Format\n"
+                "Your response MUST follow this exact format:\n"
+                "player_name|||translated_message\n\n"
+                "For system/server messages that have no player sender, "
+                "output an empty name: |||translated_message\n"
+                "The '|||' is a triple-pipe separator — it must appear exactly once in your response."
+            )
+        return prompt
 
-    def _build_player_normal_prompt(self) -> str:
+    def _build_player_normal_prompt(self, extract_name: bool = False) -> str:
         """
         Player/Send消息专用的Normal prompt（口语化风格）。
         """
-        return (
+        prompt = (
             "You are a Minecraft-specific intelligent translation engine, focused on providing "
             "high-quality localization transformations in terms of cultural adaptation and "
             "language naturalization.\n\n"
@@ -702,17 +742,41 @@ class Translator:
             "6. Proper Nouns and Player Names: Do not translate player IDs, server names, or "
             "non-standard game terms without a widely accepted translation.\n"
             "7. Untranslatable Content: For meaningless keyboard mashing (e.g., \"asdasd\") "
-            "or garbled text, keep the original text as is.\n\n"
-            "## Output Requirement\n\n"
-            "Your response MUST ONLY contain the final translated text. Do not add any "
-            "prefixes, suffixes, explanations, or notes."
+            "or garbled text, keep the original text as is.\n"
         )
+        if extract_name:
+            prompt += (
+                "\n## Input Format & Name Extraction\n"
+                "The text you receive is a raw Minecraft chat line. It may start with a player "
+                "name prefix (e.g. `<PlayerName>` or `PlayerName:`). "
+                "You MUST extract the player name and translate only the message part.\n\n"
+                "## Output Format\n"
+                "Your response MUST follow this exact format:\n"
+                "player_name|||translated_message\n\n"
+                "- Extract the player name from the chat line. Use the raw name as-is, "
+                "including any rank prefixes/tags (e.g. `§a[VIP] Steve`).\n"
+                "- If the text is a server announcement or system message with no player sender, "
+                "output an empty name: |||translated_message\n"
+                "- The '|||' is a triple-pipe separator — it must appear exactly once in your response.\n"
+                "- Do NOT include '|||' in the translated message itself.\n"
+                "- Example 1: `<Steve> Hello` → `Steve|||你好`\n"
+                "- Example 2: `[MVP+] Alex: Let's go` → `[MVP+] Alex|||冲啊`\n"
+                "- Example 3: `Server: Restarting in 5 minutes` → `|||服务器将在5分钟后重启`"
+            )
+        else:
+            prompt += (
+                "\n## Output Requirement\n\n"
+                "Your response MUST ONLY contain the final translated text. Do not add any "
+                "prefixes, suffixes, explanations, or notes."
+            )
+        return prompt
 
-    def _build_deep_prompt(self) -> str:
+    def _build_deep_prompt(self, extract_name: bool = False) -> str:
         """
         Deep mode prompt（CoT思维链模式）。
         """
-        return (
+        name_field = '  // Extracted player name (empty string for system/server messages)\n  name: string;\n' if extract_name else ''
+        prompt = (
             "You are a Minecraft-specific intelligent translation engine, focused on providing "
             "high-quality localization transformations in terms of cultural adaptation and "
             "language naturalization.\n\n"
@@ -752,16 +816,23 @@ class Translator:
             "    // Definition, explanation, or context of the term\n"
             "    meaning: string;\n"
             "  }[];\n"
+            + name_field +
             "  // Final natural translation result after cultural adaptation and colloquial processing\n"
             "  result: string;\n"
             "}"
         )
+        if extract_name:
+            prompt += (
+                "\n\nThe 'name' field must contain the player name extracted from the chat line. "
+                "If no player name is present (server/system message), use an empty string \"\"."
+            )
+        return prompt
 
-    def _build_rage_prompt(self) -> str:
+    def _build_rage_prompt(self, extract_name: bool = False) -> str:
         """
         Rage mode prompt（红温模式）。
         """
-        return (
+        prompt = (
             "You are the embodiment of a toxic, tilted, and aggressive Minecraft PVPer. "
             "You are NOT a polite translator. Your job is to translate chat messages into "
             "the most emotionally charged, sarcastic, and 'salty' version possible.\n\n"
@@ -778,10 +849,19 @@ class Translator:
             "    - NO SPACES BEFORE PUNCTUATION: 'why?' (CORRECT) vs 'why ?' (WRONG). "
             "Attach punctuation directly to the last letter.\n"
             "    - NO MARKDOWN: No bold (**), no italics. Just raw text.\n"
-            "5. NO CENSORSHIP: Do NOT filter profanity. Use the most stinging vocabulary.\n\n"
-            "## Output Requirement\n\n"
-            "Your response MUST ONLY contain the final translated text. No explanations."
+            "5. NO CENSORSHIP: Do NOT filter profanity. Use the most stinging vocabulary.\n"
         )
+        if extract_name:
+            prompt += (
+                "\n## Output Format\n"
+                "Your response MUST follow this exact format:\n"
+                "player_name|||rage_translated_message\n\n"
+                "Extract the player name from the chat line. If no player name, use empty: |||message\n"
+                "The '|||' is a triple-pipe separator — it must appear exactly once in your response."
+            )
+        else:
+            prompt += "\n## Output Requirement\n\nYour response MUST ONLY contain the final translated text. No explanations."
+        return prompt
 
     def _collect_in_text_terms(self, text: str, max_terms: int = 50):
         """
@@ -854,6 +934,7 @@ class Translator:
         target_language: str,
         message_type: MessageType,
         context_messages: list,
+        extract_name: bool = False,
     ) -> list[str]:
         """
         将多条消息打包成一个 LLM request。
@@ -863,7 +944,8 @@ class Translator:
         :param target_language: 目标语言
         :param message_type: 消息类型
         :param context_messages: 历史上下文 messages
-        :return: 与 texts 等长的译文列表
+        :param extract_name: 是否让 AI 同时提取发送者名称
+        :return: 与 texts 等长的译文列表（若 extract_name=True 则为 name|||message 格式）
         :raises: 任何异常（调用方捕获后降级为单条翻译）
         """
         if source_language.lower() == "auto":
@@ -876,12 +958,26 @@ class Translator:
             intro = f"Translate the following {n} messages to {target_language}."
 
         numbered = "\n".join(f"[{i + 1}] {t}" for i, t in enumerate(texts))
-        user_message = (
-            f"{intro}\n"
-            f"Return ONLY a JSON array with exactly {n} translated strings in the same order. "
-            f"No explanations, no extra keys.\n\n"
-            f"{numbered}"
-        )
+
+        if extract_name:
+            user_message = (
+                f"{intro}\n"
+                f"Return ONLY a JSON array with exactly {n} strings in the same order. "
+                f"Each string must use the format: player_name|||translated_message\n"
+                f"Extract the player name from each chat line. If no player name, use empty: |||translated_message\n"
+                f"The '|||' is a triple-pipe separator.\n"
+                f"No explanations, no extra keys.\n\n"
+                f"{numbered}"
+            )
+            max_tokens = 80 * n + 64
+        else:
+            user_message = (
+                f"{intro}\n"
+                f"Return ONLY a JSON array with exactly {n} translated strings in the same order. "
+                f"No explanations, no extra keys.\n\n"
+                f"{numbered}"
+            )
+            max_tokens = 64 * n + 64
 
         provider = self.translation_service_config.llm.provider or "OpenAI"
         model = self.translation_service_config.llm.model
@@ -907,12 +1003,12 @@ class Translator:
         llm_params = {
             "model": mapped_model,
             "messages": [
-                {"role": "system", "content": self._build_batch_system_prompt()},
+                {"role": "system", "content": self._build_batch_system_prompt(extract_name)},
                 *context_messages,
                 {"role": "user", "content": user_message},
             ],
             "temperature": 0,
-            "max_tokens": 64 * n + 64,
+            "max_tokens": max_tokens,
             "api_key": self.translation_service_config.llm.api_key,
             "timeout": self.timeout,
         }
@@ -940,11 +1036,11 @@ class Translator:
 
         return [str(item) for item in result]
 
-    def _build_batch_system_prompt(self) -> str:
+    def _build_batch_system_prompt(self, extract_name: bool = False) -> str:
         """
         批量翻译专用 system prompt：要求模型返回严格的 JSON 数组。
         """
-        return (
+        prompt = (
             "You are a Minecraft-specific intelligent translation engine. "
             "You will receive a numbered list of chat messages. "
             "Translate each message naturally, preserving gaming slang, cultural nuances, "
@@ -957,6 +1053,14 @@ class Translator:
             "4. Do NOT translate player names, server names, or Minecraft commands.\n"
             "5. For untranslatable content (e.g., keyboard mashing), keep the original text."
         )
+        if extract_name:
+            prompt += (
+                "\n6. Each array element must use the format: player_name|||translated_message\n"
+                "   Extract the player name from each chat line. If no player name is present, "
+                "use an empty name: |||translated_message\n"
+                "   The '|||' is a triple-pipe separator — it must appear exactly once per element."
+            )
+        return prompt
 
     def _execute_traditional_translation(self, text, service, source_language, target_language):
         """

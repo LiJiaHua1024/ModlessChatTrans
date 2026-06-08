@@ -18,6 +18,7 @@ from requests.exceptions import HTTPError
 from modless_chat_trans.i18n import _
 from modless_chat_trans.file_utils import cache
 from modless_chat_trans.translator import services, MessageType
+from modless_chat_trans.translator import ServiceType as _ServiceType  # 用于 is_service_llm()
 from modless_chat_trans.logger import logger
 
 # 预编译的正则表达式常量
@@ -292,9 +293,18 @@ def match_and_translate(original_chat_message: str) -> str | None:
     return None
 
 
+def is_service_llm(translator) -> bool:
+    """检查 translator 当前配置是否为 LLM 服务"""
+    return translator.translation_service_config.service_type == _ServiceType.LLM
+
+
 def process_decorator(function):
     """
-    为process_message添加翻译步骤
+    为process_message添加翻译步骤。
+
+    对于 log 数据：若使用 LLM 翻译，名称提取与翻译合并到一次 AI 调用中
+    (extract_name=True)，AI 返回 name|||translated_message 格式。
+    对于传统翻译服务，使用本地 parse_chat_name_fallback() 解析名称。
     """
 
     def wrapper(data, data_type, translator, source_language, target_language,
@@ -327,73 +337,89 @@ def process_decorator(function):
         info: dict = {}
         context_messages = context_messages or []
 
-        # 黑名单检查（PLAYER 和 SYSTEM 消息生效，SEND 不生效）
+        # 消息内容黑名单检查（对所有非 SEND 消息生效，在翻译前过滤）
         if message_type != MessageType.SEND and original_chat_message:
-            # 用户黑名单检查（仅对玩家消息，因为需要用户名）
-            if name:
-                sanitized_name = sanitize_hypixel_name(name)
-                if is_user_in_blacklist(sanitized_name):
-                    logger.info(f"User '{sanitized_name}' in blacklist, discarding message")
-                    return None
-
-            # 消息内容黑名单检查（对所有非 SEND 消息生效）
             if is_message_blocked(original_chat_message):
                 logger.info(f"Message blocked by content blacklist: {original_chat_message[:50]}...")
                 return None
 
-        if data_type == "log" and filter_server_messages and not name:
+        if data_type == "log" and filter_server_messages and not name and name is not None:
+            # name="" (本地解析结果为系统消息) 且启用过滤 → 丢弃
+            # name=None 表示等待 AI 提取，不在此过滤
             return "", "", MessageType.SYSTEM
         if original_chat_message:
+            # ── 决定是否走 AI 名称提取路径 ──
+            use_ai_extraction = (
+                data_type == "log"
+                and is_service_llm(translator)
+            )
+
+            # ── 传统服务：本地规则提取名称 ──
+            if not use_ai_extraction and data_type == "log" and name is None:
+                name, _, _ = parse_chat_name_fallback(original_chat_message)
+                if filter_server_messages and not name:
+                    return None
+
+            # ── 术语表匹配 ──
             if matched_translated_message := match_and_translate(original_chat_message):
                 logger.debug(f"Using custom glossary: {original_chat_message} -> {matched_translated_message}")
                 translated_chat_message = matched_translated_message
                 info["glossary_match"] = True
+                # 术语表匹配时，名称仍需提取
+                if use_ai_extraction:
+                    # 仍用本地后备提取名称（术语表匹配跳过了 AI 调用）
+                    extracted_name, _, _ = parse_chat_name_fallback(original_chat_message)
+                    name = extracted_name
+            # ── 缓存命中 ──
             elif not rage_mode and original_chat_message in cache:
                 logger.debug(f"Translation cache hit: {original_chat_message}")
-                translated_chat_message = cache[original_chat_message]
+                cached = cache[original_chat_message]
+                if use_ai_extraction and "|||" in cached:
+                    name, translated_chat_message = cached.split("|||", 1)
+                else:
+                    translated_chat_message = cached
                 info["cache_hit"] = True
+            # ── 实时翻译 ──
             else:
                 try:
                     if rage_mode:
                         translate_fn = translator.translate_with_profanity
-                        if result := translate_fn(
-                                original_chat_message,
-                                source_language=source_language,
-                                target_language=target_language,
-                                message_type=message_type
-                        ):
-                            translated_chat_message = result["result"]
-                            info["usage"] = result["usage"]
+                        result = translate_fn(
+                            original_chat_message,
+                            source_language=source_language,
+                            target_language=target_language,
+                            message_type=message_type,
+                            extract_name=use_ai_extraction,
+                        )
                     else:
-                        if result := translator.translate_with_context(
-                                original_chat_message,
-                                source_language=source_language,
-                                target_language=target_language,
-                                message_type=message_type,
-                                context_messages=context_messages,
-                        ):
-                            translated_chat_message = result["result"]
-                            info["usage"] = result["usage"]
+                        result = translator.translate_with_context(
+                            original_chat_message,
+                            source_language=source_language,
+                            target_language=target_language,
+                            message_type=message_type,
+                            context_messages=context_messages,
+                            extract_name=use_ai_extraction,
+                        )
+                    if result:
+                        translated_chat_message = result["result"]
+                        info["usage"] = result["usage"]
+                        # AI-extracted name
+                        if use_ai_extraction:
+                            name = result.get("name", "")
                 except HTTPError as http_err:
                     response = getattr(http_err, "response", None)
                     if response is not None:
                         if response.status_code == 429:
-                            # 请求过多
                             return "[ERROR]", _("翻译失败：请求次数过多，请稍后重试。"), info
                         elif 500 <= response.status_code < 600:
-                            # 服务器错误
                             return "[ERROR]", _("翻译失败：服务器错误，请稍后重试。"), info
                         else:
-                            # 其他 HTTP 错误
                             return "[ERROR]", _("翻译失败：发生HTTP错误。"), info
                     else:
-                        # 无法获取响应对象，可能是网络问题
                         return "[ERROR]", _("翻译失败：网络问题或发生HTTP错误。"), info
                 except JSONDecodeError:
-                    # JSON 解码错误，可能是网络问题或服务器返回了非 JSON 数据
                     return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
                 except Exception as e:
-                    # 捕获其他未知错误
                     return "[ERROR]", f"{_('翻译失败，错误：')} {e}", info
 
                 if translated_chat_message:
@@ -407,7 +433,22 @@ def process_decorator(function):
                             f"Translation successful, caching result:"
                             f" {original_chat_message} -> {translated_chat_message}"
                         )
-                        cache[original_chat_message] = translated_chat_message
+                        # 缓存存储 name|||translated 格式（若 AI 提取了名称）
+                        if use_ai_extraction and name:
+                            cache[original_chat_message] = f"{name}|||{translated_chat_message}"
+                        else:
+                            cache[original_chat_message] = translated_chat_message
+
+            # ── 后翻译黑名单检查（用户黑名单，需要名称）──
+            if data_type == "log" and name:
+                sanitized_name = sanitize_hypixel_name(name)
+                if is_user_in_blacklist(sanitized_name):
+                    logger.info(f"User '{sanitized_name}' in blacklist, discarding message")
+                    return None
+
+            # ── filter_server_messages 后翻译检查 ──
+            if data_type == "log" and filter_server_messages and not name:
+                return None
 
             if data_type == "log":
                 return name or "", translated_chat_message, info
@@ -419,14 +460,55 @@ def process_decorator(function):
     return wrapper
 
 
+def parse_chat_name_fallback(chat_message: str):
+    """
+    使用本地规则解析聊天行，提取玩家名称和消息内容。
+    这是传统翻译服务（非 LLM）的后备方案。
+
+    支持两种格式:
+    - 原版 Minecraft <PlayerName> message
+    - Hypixel/模组服 PlayerName: message
+
+    :param chat_message: 去除 [CHAT] 前缀后的聊天内容
+    :return: (name, message_text, MessageType)
+    """
+    if chat_message.startswith("<"):
+        gt_pos = chat_message.find(">", 1)
+        if gt_pos != -1:
+            name = chat_message[1:gt_pos].strip()
+            if _is_valid_minecraft_name(name):
+                return name, chat_message[gt_pos + 1:].strip(), MessageType.PLAYER
+        return "", chat_message.strip(), MessageType.SYSTEM
+
+    else:
+        colon_pos = chat_message.find(":")
+        if colon_pos == -1:
+            return "", chat_message.strip(), MessageType.SYSTEM
+
+        name = chat_message[:colon_pos].strip()
+        text = chat_message[colon_pos + 1:]
+
+        sanitized_name = sanitize_hypixel_name(name)
+
+        if _is_valid_minecraft_name(sanitized_name):
+            return name, text.strip(), MessageType.PLAYER
+
+        return "", chat_message.strip(), MessageType.SYSTEM
+
+
 @process_decorator
 def process_message(data, data_type, replace_garbled_character=False):
     """
-    处理日志文件中的一行
+    处理日志文件中的一行。
+
+    对于 log 数据：剥离 [CHAT] 前缀，返回原始聊天内容。
+    名称提取由 AI 在翻译时完成（通过 extract_name 参数）。
+    对于传统翻译服务，parse_chat_name_fallback() 提供本地规则解析。
 
     :param data: 需要处理的数据
     :param data_type: 数据类型 ("log", "clipboard", "webui")
     :return: 元组 (玩家名称, 聊天内容, 消息类型)
+            log: (None, chat_message, MessageType.PLAYER) — None 表示名称由 AI 提取
     """
 
     chat_message: str = ""
@@ -441,33 +523,10 @@ def process_message(data, data_type, replace_garbled_character=False):
         chat_message = chat_message.replace("\ufffd\ufffd", "\u00A7")
 
     # 处理原版 Minecraft 聊天格式 <name>
-    if chat_message.startswith("<"):
-        # 尝试提取 <name> 格式
-        gt_pos = chat_message.find(">", 1)
-        if gt_pos != -1:
-            name = chat_message[1:gt_pos].strip()
-            # 对于尖括号格式，通常是原版聊天，直接验证即可
-            if _is_valid_minecraft_name(name):
-                return name, chat_message[gt_pos + 1:].strip(), MessageType.PLAYER
-
-        return "", chat_message.strip(), MessageType.SYSTEM
-
-    else:
-        colon_pos = chat_message.find(":")
-        if colon_pos == -1:
-            return "", chat_message.strip(), MessageType.SYSTEM
-
-        # 尝试提取 name: 格式
-        name = chat_message[:colon_pos].strip()
-        text = chat_message[colon_pos + 1:]
-
-        # 净化名称用于验证
-        sanitized_name = sanitize_hypixel_name(name)
-
-        # 验证净化后的名称是否符合 Minecraft 玩家名规则
-        if _is_valid_minecraft_name(sanitized_name):
-            # 返回原始未净化的名称和消息内容
-            return name, text.strip(), MessageType.PLAYER
-
-        # 不符合规则,整条消息作为系统消息返回
-        return "", chat_message.strip(), MessageType.SYSTEM
+    # ══════════════════════════════════════════════════════════════════
+    # NOTE: 本地解析已废弃，改为 AI 提取名称。
+    # 对于传统翻译服务（非 LLM），保留 parse_chat_name_fallback() 作为后备。
+    # 对于 LLM 翻译，process_message 只剥离 [CHAT] 前缀并返回原始聊天内容，
+    # 名称提取在翻译阶段由 AI 完成（通过 extract_name 参数）。
+    # ══════════════════════════════════════════════════════════════════
+    return None, chat_message, MessageType.PLAYER
