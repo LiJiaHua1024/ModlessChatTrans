@@ -26,7 +26,7 @@ from typing import Dict, Callable, Set
 from urllib.parse import urlencode
 import lazy_loader as lazy
 from modless_chat_trans.logger import logger
-from modless_chat_trans.config import ServiceType
+from modless_chat_trans.config import ServiceType, FallbackStrategy
 
 
 class MessageType(Enum):
@@ -131,16 +131,21 @@ service_supported_languages = _LazyLanguageDict()
 
 
 class Translator:
-    def __init__(self, translation_service_config, glossary):
+    def __init__(self, translation_service_config, glossary,
+                 fallback_llm_config=None, fallback_strategy="direct"):
         """
         初始化 Translator 类, 提供多种翻译相关选项及服务参数
 
         :param translation_service_config: config.TranslationServiceConfig
         :param glossary: config.glossary
+        :param fallback_llm_config: 备用 LLM 配置（可选）
+        :param fallback_strategy: 备用模型切换策略
         """
 
         self.translation_service_config = translation_service_config
         self.glossary = glossary
+        self.fallback_llm_config = fallback_llm_config
+        self.fallback_strategy = fallback_strategy
         self.timeout = 15.0
         self._variable_pattern = re.compile(r"\{\{([a-zA-Z0-9_-]+)(?::[^}]+)?\}\}")
         self._literal_glossary = {
@@ -273,7 +278,7 @@ class Translator:
 
             include_terms = (effective_mode != TranslationMode.RAGE)
 
-            return self._execute_llm_translation(
+            return self._execute_with_fallback(
                 text,
                 self.translation_service_config.llm.model,
                 source_language,
@@ -336,7 +341,9 @@ class Translator:
         return next(iter(available_modes))
 
     def _execute_llm_translation(self, text, model, source_language, target_language, provider, system_prompt,
-                                 expect_json, include_terms, message_type: MessageType = MessageType.PLAYER):
+                                 expect_json, include_terms, message_type: MessageType = MessageType.PLAYER,
+                                 context_messages: list = None,
+                                 llm_config_override=None):
         """
         Execution Engine: Handles API calls and response parsing.
 
@@ -349,7 +356,12 @@ class Translator:
         :param expect_json: 是否期望JSON格式输出
         :param include_terms: 是否包含术语表
         :param message_type: 消息类型
+        :param context_messages: 历史上下文 messages
+        :param llm_config_override: 可选的 LLMS erviceConfig 覆盖（用于备用模型）
         """
+        context_messages = context_messages or []
+        # 选择有效的 LLM 配置（备用模型配置或主模型配置）
+        llm_cfg = llm_config_override or self.translation_service_config.llm
         if source_language.lower() == "auto":
             source_language = ""
 
@@ -424,11 +436,11 @@ class Translator:
                 ],
                 "temperature": 0,
                 "max_tokens": 256 if expect_json else 64,
-                "api_key": self.translation_service_config.llm.api_key,
+                "api_key": llm_cfg.api_key,
             }
 
             # API URL 留空自动
-            if api_base := self.translation_service_config.llm.api_base:
+            if api_base := llm_cfg.api_base:
                 llm_params["api_base"] = api_base
 
             llm_params["timeout"] = self.timeout
@@ -480,6 +492,143 @@ class Translator:
             "result": translated_message,
             "usage": usage_info
         }
+
+    def _execute_with_fallback(self, text, model, source_language, target_language,
+                               provider, system_prompt, expect_json, include_terms,
+                               message_type: MessageType = MessageType.PLAYER,
+                               context_messages: list = None):
+        """
+        带备用模型策略的 LLM 翻译执行。
+
+        根据 fallback_strategy 决定主模型失败后的行为：
+        - DIRECT: 主模型失败 → 立即使用备用模型
+        - RETRY_EXHAUSTED: 主模型重试全部失败 → 使用备用模型
+        - RACE_ON_FAILURE: 主模型首次失败 → 并发竞速主模型和备用模型
+        - ALWAYS_RACE: 始终并发请求两者，取最快返回结果
+        """
+        context_messages = context_messages or []
+        has_fallback = (
+            self.fallback_llm_config is not None
+            and self.fallback_llm_config.api_key
+        )
+        strategy = self.fallback_strategy
+
+        # Strategy D: Always race — 始终并发竞速
+        if has_fallback and strategy == FallbackStrategy.ALWAYS_RACE:
+            logger.info("Fallback strategy: ALWAYS_RACE — concurrently requesting primary and fallback")
+            return self._race_primary_fallback(
+                text, source_language, target_language, provider,
+                system_prompt, expect_json, include_terms,
+                message_type, context_messages
+            )
+
+        # 尝试主模型
+        try:
+            return self._execute_llm_translation(
+                text, model, source_language, target_language, provider,
+                system_prompt, expect_json, include_terms, message_type,
+                context_messages=context_messages
+            )
+        except Exception as e:
+            logger.warning(f"Primary model ({provider}/{model}) failed: {e}")
+            if not has_fallback:
+                raise
+
+            # Strategy A: Direct fallback — 主模型失败立即使用备用
+            if strategy == FallbackStrategy.DIRECT:
+                logger.info("Fallback strategy: DIRECT — switching to fallback model immediately")
+                return self._execute_llm_translation(
+                    text, self.fallback_llm_config.model,
+                    source_language, target_language,
+                    self.fallback_llm_config.provider,
+                    system_prompt, expect_json, include_terms,
+                    message_type, context_messages=context_messages,
+                    llm_config_override=self.fallback_llm_config
+                )
+
+            # Strategy B: Retry exhausted — 重试耗尽后切换
+            elif strategy == FallbackStrategy.RETRY_EXHAUSTED:
+                for retry in range(4):  # 再重试4次（总计5次）
+                    try:
+                        return self._execute_llm_translation(
+                            text, model, source_language, target_language,
+                            provider, system_prompt, expect_json,
+                            include_terms, message_type,
+                            context_messages=context_messages
+                        )
+                    except Exception as e2:
+                        logger.warning(f"Primary retry {retry + 1}/4 failed: {e2}")
+                logger.info("Fallback strategy: RETRY_EXHAUSTED — all primary retries exhausted, switching to fallback")
+                return self._execute_llm_translation(
+                    text, self.fallback_llm_config.model,
+                    source_language, target_language,
+                    self.fallback_llm_config.provider,
+                    system_prompt, expect_json, include_terms,
+                    message_type, context_messages=context_messages,
+                    llm_config_override=self.fallback_llm_config
+                )
+
+            # Strategy C: Race on first failure — 首次失败后并发竞速
+            elif strategy == FallbackStrategy.RACE_ON_FAILURE:
+                logger.info("Fallback strategy: RACE_ON_FAILURE — primary failed, racing primary vs fallback")
+                return self._race_primary_fallback(
+                    text, source_language, target_language, provider,
+                    system_prompt, expect_json, include_terms,
+                    message_type, context_messages
+                )
+
+            raise  # 未知策略，不应到达
+
+    def _race_primary_fallback(self, text, source_language, target_language,
+                               provider, system_prompt, expect_json, include_terms,
+                               message_type: MessageType = MessageType.PLAYER,
+                               context_messages: list = None):
+        """
+        并发请求主模型和备用模型，返回最先成功的结果。
+        如果两者都失败，抛出异常。
+        """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        context_messages = context_messages or []
+
+        def call_primary():
+            return self._execute_llm_translation(
+                text, self.translation_service_config.llm.model,
+                source_language, target_language, provider,
+                system_prompt, expect_json, include_terms,
+                message_type, context_messages=context_messages
+            )
+
+        def call_fallback():
+            return self._execute_llm_translation(
+                text, self.fallback_llm_config.model,
+                source_language, target_language,
+                self.fallback_llm_config.provider,
+                system_prompt, expect_json, include_terms,
+                message_type, context_messages=context_messages,
+                llm_config_override=self.fallback_llm_config
+            )
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = {
+                executor.submit(call_primary): "primary",
+                executor.submit(call_fallback): "fallback",
+            }
+            errors = []
+            for future in as_completed(futures):
+                try:
+                    result = future.result()
+                    logger.info(f"Race won by: {futures[future]}")
+                    # 取消另一个还在运行的任务（尽力而为）
+                    for f in futures:
+                        f.cancel()
+                    return result
+                except Exception as e:
+                    errors.append((futures[future], str(e)))
+                    logger.warning(f"Race contender {futures[future]} failed: {e}")
+            # 两者都失败
+            error_details = "; ".join(f"{name}: {err}" for name, err in errors)
+            raise Exception(f"Both primary and fallback models failed: {error_details}")
 
     def _build_system_prompt(self, mode: TranslationMode, message_type: MessageType) -> str:
         """

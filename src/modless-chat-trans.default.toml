@@ -20,6 +20,16 @@ api-base = ""
 model = "gpt-5-mini"
 deep-translate = false
 
+# 备用 LLM 模型（可选，仅 service-type="llm" 时生效）
+fallback-strategy = "direct"
+
+[player-translation.fallback-llm]
+provider = "OpenAI"
+api-key = ""
+api-base = ""
+model = "gpt-5-mini"
+deep-translate = false
+
 [message-presentation]
 web-port = 56552
 

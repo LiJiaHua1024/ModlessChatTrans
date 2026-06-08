@@ -55,6 +55,14 @@ class MonitorMode(Enum):
     COMPATIBLE = "compatible"
 
 
+class FallbackStrategy(str, Enum):
+    """备用模型切换策略"""
+    DIRECT = "direct"                     # 主模型失败 → 立即用备用
+    RETRY_EXHAUSTED = "retry_exhausted"   # 主模型重试全部失败 → 再用备用
+    RACE_ON_FAILURE = "race_on_failure"   # 主模型首次失败 → 并发竞速两者
+    ALWAYS_RACE = "always_race"           # 始终并发竞速，取最快结果
+
+
 class LLMServiceConfig(BaseConfigModel):
     provider: str
     api_key: str
@@ -72,6 +80,8 @@ class TranslationServiceConfig(BaseConfigModel):
     service_type: ServiceType
     llm: Optional[LLMServiceConfig] = None
     traditional: Optional[TraditionalServiceConfig] = None
+    fallback_llm: Optional[LLMServiceConfig] = None
+    fallback_strategy: FallbackStrategy = FallbackStrategy.DIRECT
 
 
 class MessageCaptureConfig(BaseConfigModel):

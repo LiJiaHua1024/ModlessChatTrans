@@ -54,7 +54,7 @@ from qfluentwidgets import (
     FluentIcon, FluentWindow, HyperlinkLabel, IconWidget,
     IndeterminateProgressRing, InfoBar, InfoBarIcon, InfoBarPosition,
     LineEdit, MessageBox, MessageBoxBase, NavigationItemPosition,
-    ProgressBar, PushButton, RadioButton, RoundMenu, SegmentedWidget,
+    Pivot, ProgressBar, PushButton, RadioButton, RoundMenu, SegmentedWidget,
     setFont, SimpleCardWidget, SpinBox, SubtitleLabel, SwitchButton,
     TabBar, TabCloseButtonDisplayMode, TableWidget, TeachingTip,
     TeachingTipTailPosition, TitleLabel, ToolTipFilter, ToolTipPosition,
@@ -65,7 +65,7 @@ from modless_chat_trans.file_utils import get_path
 from modless_chat_trans.i18n import supported_languages, _
 from modless_chat_trans.logger import logger
 from modless_chat_trans.config import (
-    ServiceType, MonitorMode, update_config, save_config,
+    ServiceType, MonitorMode, FallbackStrategy, update_config, save_config,
     TranslationServiceConfig, LLMServiceConfig, TraditionalServiceConfig
 )
 from modless_chat_trans.translator import (
@@ -722,143 +722,236 @@ class TranslationServiceInterface(QFrame):
         elif service_id == "send":
             self.send_service_type_changed.emit(service_type)
 
-    def create_llm_service_widget(self, parent, service_id):
-        """创建LLM服务界面"""
-        widget = QFrame(parent)
-        layout = QGridLayout(widget)
-        layout.setContentsMargins(0, 20, 0, 0)
-        layout.setHorizontalSpacing(15)
-        layout.setVerticalSpacing(15)
+    def _create_llm_fields(self, parent, config_section):
+        """创建LLM配置字段，返回控件引用字典"""
+        fields = {}
+        grid = QGridLayout()
+        grid.setContentsMargins(0, 20, 0, 0)
+        grid.setHorizontalSpacing(15)
+        grid.setVerticalSpacing(15)
 
         # 服务选择
-        service_label = BodyLabel(_('选择服务：'), widget)
-        llm_service_combo = ComboBox(widget)
-        llm_service_combo.addItems(LLM_PROVIDERS)
-        llm_service_combo.setPlaceholderText(_("请选择翻译服务"))
-        llm_service_combo.setCurrentIndex(-1)
-        llm_service_combo.setFixedWidth(200)
+        service_label = BodyLabel(_('选择服务：'), parent)
+        service_combo = ComboBox(parent)
+        service_combo.addItems(LLM_PROVIDERS)
+        service_combo.setPlaceholderText(_("请选择翻译服务"))
+        service_combo.setCurrentIndex(-1)
+        service_combo.setFixedWidth(200)
 
-        # 根据配置设置默认值
-        if self.config:
-            if service_id == "player" and self.config.player_translation and self.config.player_translation.llm:
-                provider = self.config.player_translation.llm.provider
-                index = llm_service_combo.findText(provider)
-                if index >= 0:
-                    llm_service_combo.setCurrentIndex(index)
-            elif service_id == "send" and self.config.send_translation and self.config.send_translation.llm:
-                provider = self.config.send_translation.llm.provider
-                index = llm_service_combo.findText(provider)
-                if index >= 0:
-                    llm_service_combo.setCurrentIndex(index)
+        if config_section and config_section.provider:
+            index = service_combo.findText(config_section.provider)
+            if index >= 0:
+                service_combo.setCurrentIndex(index)
 
-        layout.addWidget(service_label, 0, 0, Qt.AlignmentFlag.AlignRight)
-        layout.addWidget(llm_service_combo, 0, 1)
+        grid.addWidget(service_label, 0, 0, Qt.AlignmentFlag.AlignRight)
+        grid.addWidget(service_combo, 0, 1)
 
         # API Key输入
-        api_key_label = BodyLabel(_('API Key：'), widget)
-        llm_api_key_edit = LineEdit(widget)
-        llm_api_key_edit.setPlaceholderText(_("请输入您的API Key"))
-        llm_api_key_edit.setFixedWidth(300)
+        api_key_label = BodyLabel(_('API Key：'), parent)
+        api_key_edit = LineEdit(parent)
+        api_key_edit.setPlaceholderText(_("请输入您的API Key"))
+        api_key_edit.setFixedWidth(300)
 
-        # 根据配置设置默认值
-        if self.config:
-            if service_id == "player" and self.config.player_translation and self.config.player_translation.llm:
-                llm_api_key_edit.setText(self.config.player_translation.llm.api_key)
-            elif service_id == "send" and self.config.send_translation and self.config.send_translation.llm:
-                llm_api_key_edit.setText(self.config.send_translation.llm.api_key)
+        if config_section:
+            api_key_edit.setText(config_section.api_key)
 
-        layout.addWidget(api_key_label, 1, 0, Qt.AlignmentFlag.AlignRight)
-        layout.addWidget(llm_api_key_edit, 1, 1)
+        grid.addWidget(api_key_label, 1, 0, Qt.AlignmentFlag.AlignRight)
+        grid.addWidget(api_key_edit, 1, 1)
 
         # API URL输入
-        llm_api_url_label = BodyLabel(_('API地址：'), widget)
-        llm_api_url_edit = EditableComboBox(widget)
-        llm_api_url_edit.addItem(_("默认端点"), userData="Ciallo～")
-        llm_api_url_edit.setCurrentText(_("默认端点"))
-        llm_api_url_edit.setFixedWidth(300)
+        api_url_label = BodyLabel(_('API地址：'), parent)
+        api_url_edit = EditableComboBox(parent)
+        api_url_edit.addItem(_("默认端点"), userData="Ciallo～")
+        api_url_edit.setCurrentText(_("默认端点"))
+        api_url_edit.setFixedWidth(300)
 
-        # 根据配置设置默认值
-        if self.config:
-            if service_id == "player" and self.config.player_translation and self.config.player_translation.llm:
-                api_base = self.config.player_translation.llm.api_base
-                if api_base:
-                    llm_api_url_edit.addItem(api_base)
-                    llm_api_url_edit.setCurrentText(api_base)
-            elif service_id == "send" and self.config.send_translation and self.config.send_translation.llm:
-                api_base = self.config.send_translation.llm.api_base
-                if api_base:
-                    llm_api_url_edit.addItem(api_base)
-                    llm_api_url_edit.setCurrentText(api_base)
+        if config_section and config_section.api_base:
+            api_url_edit.addItem(config_section.api_base)
+            api_url_edit.setCurrentText(config_section.api_base)
 
-        layout.addWidget(llm_api_url_label, 2, 0, Qt.AlignmentFlag.AlignRight)
-        layout.addWidget(llm_api_url_edit, 2, 1)
+        grid.addWidget(api_url_label, 2, 0, Qt.AlignmentFlag.AlignRight)
+        grid.addWidget(api_url_edit, 2, 1)
 
         # 模型代号输入
-        model_label = BodyLabel(_('模型代号：'), widget)
-        llm_model_edit = LineEdit(widget)
-        llm_model_edit.setPlaceholderText(_("请输入模型代号，如：gpt-3.5-turbo"))
-        llm_model_edit.setClearButtonEnabled(True)
-        llm_model_edit.setFixedWidth(300)
+        model_label = BodyLabel(_('模型代号：'), parent)
+        model_edit = LineEdit(parent)
+        model_edit.setPlaceholderText(_("请输入模型代号，如：gpt-3.5-turbo"))
+        model_edit.setClearButtonEnabled(True)
+        model_edit.setFixedWidth(300)
 
-        # 根据配置设置默认值
-        if self.config:
-            if service_id == "player" and self.config.player_translation and self.config.player_translation.llm:
-                llm_model_edit.setText(self.config.player_translation.llm.model)
-            elif service_id == "send" and self.config.send_translation and self.config.send_translation.llm:
-                llm_model_edit.setText(self.config.send_translation.llm.model)
+        if config_section:
+            model_edit.setText(config_section.model)
 
-        layout.addWidget(model_label, 3, 0, Qt.AlignmentFlag.AlignRight)
-        layout.addWidget(llm_model_edit, 3, 1)
+        grid.addWidget(model_label, 3, 0, Qt.AlignmentFlag.AlignRight)
+        grid.addWidget(model_edit, 3, 1)
 
         # 深度翻译模式开关
-        optimization_label = BodyLabel(_('深度翻译模式：'), widget)
+        optimization_label = BodyLabel(_('深度翻译模式：'), parent)
 
-        # 创建开关和帮助按钮的容器
         switch_container = QHBoxLayout()
         switch_container.setSpacing(5)
 
-        llm_optimization_switch = SwitchButton(widget)
-        llm_optimization_switch.setOffText(_("关闭"))
-        llm_optimization_switch.setOnText(_("开启"))
+        optimization_switch = SwitchButton(parent)
+        optimization_switch.setOffText(_("关闭"))
+        optimization_switch.setOnText(_("开启"))
 
         help_button_optimization = create_help_button(
-            widget,
+            parent,
             _("启用显式思维链（Chain of Thought）翻译策略\n"
               "优点：提供更高质量的翻译\n"
               "缺点：一定程度增加token消耗，响应延迟提高"),
-            llm_optimization_switch
+            optimization_switch
         )
 
-        switch_container.addWidget(llm_optimization_switch)
+        switch_container.addWidget(optimization_switch)
         switch_container.addWidget(help_button_optimization)
         switch_container.addStretch()
 
-        # 根据配置设置默认值
-        if self.config:
-            if service_id == "player" and self.config.player_translation and self.config.player_translation.llm:
-                llm_optimization_switch.setChecked(self.config.player_translation.llm.deep_translate)
-            elif service_id == "send" and self.config.send_translation and self.config.send_translation.llm:
-                llm_optimization_switch.setChecked(self.config.send_translation.llm.deep_translate)
+        if config_section:
+            optimization_switch.setChecked(config_section.deep_translate)
         else:
-            llm_optimization_switch.setChecked(False)  # 默认关闭
+            optimization_switch.setChecked(False)
 
-        layout.addWidget(optimization_label, 4, 0, Qt.AlignmentFlag.AlignRight)
-        layout.addLayout(switch_container, 4, 1)
+        grid.addWidget(optimization_label, 4, 0, Qt.AlignmentFlag.AlignRight)
+        grid.addLayout(switch_container, 4, 1)
 
-        # 添加弹性空间
-        layout.setColumnStretch(2, 1)
-        layout.setRowStretch(5, 1)
+        grid.setColumnStretch(2, 1)
+        grid.setRowStretch(5, 1)
 
-        # 保存控件引用
-        widget.llm_service_combo = llm_service_combo
-        widget.llm_api_key_edit = llm_api_key_edit
-        widget.llm_api_url_label = llm_api_url_label
-        widget.llm_api_url_edit = llm_api_url_edit
-        widget.llm_model_edit = llm_model_edit
-        widget.llm_optimization_switch = llm_optimization_switch
+        fields['service_combo'] = service_combo
+        fields['api_key_edit'] = api_key_edit
+        fields['api_url_edit'] = api_url_edit
+        fields['model_edit'] = model_edit
+        fields['optimization_switch'] = optimization_switch
+        fields['grid'] = grid
+
+        return fields
+
+    def create_llm_service_widget(self, parent, service_id):
+        """创建LLM服务界面（含主模型/备用模型 Pivot 导航）"""
+        widget = QFrame(parent)
+        outer_layout = QVBoxLayout(widget)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.setSpacing(12)
+
+        # ── Pivot 导航（主模型 / 备用模型） ──
+        pivot = Pivot(widget)
+
+        # 主模型配置页
+        main_page = QFrame(widget)
+        main_config = self._get_llm_config_for_service(service_id)
+        main_fields = self._create_llm_fields(main_page, main_config)
+        main_page.setLayout(main_fields['grid'])
+
+        # 备用模型配置页
+        fallback_page = QFrame(widget)
+        fallback_config = self._get_fallback_llm_config_for_service(service_id)
+        fallback_fields = self._create_llm_fields(fallback_page, fallback_config)
+        fallback_page.setLayout(fallback_fields['grid'])
+
+        # QStackedWidget 承载两页
+        model_stacked = QStackedWidget(widget)
+        model_stacked.addWidget(main_page)      # index 0
+        model_stacked.addWidget(fallback_page)   # index 1
+
+        # 添加Pivot项
+        pivot.addItem(
+            routeKey=f"main_{service_id}",
+            text=_("主力模型"),
+            onClick=lambda: model_stacked.setCurrentIndex(0)
+        )
+        pivot.addItem(
+            routeKey=f"fallback_{service_id}",
+            text=_("备用模型"),
+            onClick=lambda: model_stacked.setCurrentIndex(1)
+        )
+
+        # Pivot 与 QStackedWidget 双向同步
+        model_stacked.currentChanged.connect(
+            lambda idx: pivot.setCurrentItem(
+                f"main_{service_id}" if idx == 0 else f"fallback_{service_id}"
+            )
+        )
+        pivot.setCurrentItem(f"main_{service_id}")
+        model_stacked.setCurrentIndex(0)
+
+        outer_layout.addWidget(pivot, 0, Qt.AlignmentFlag.AlignHCenter)
+        outer_layout.addWidget(model_stacked)
+
+        # ── 备用策略选择 ──
+        strategy_label = BodyLabel(_('备用模型策略：'), widget)
+        strategy_combo = ComboBox(widget)
+        strategy_items = [
+            (_('直接切换（主模型失败立即使用备用）'), FallbackStrategy.DIRECT),
+            (_('重试耗尽后切换（主模型重试全部失败后使用备用）'), FallbackStrategy.RETRY_EXHAUSTED),
+            (_('首次失败竞速（主模型首次失败后并发竞速）'), FallbackStrategy.RACE_ON_FAILURE),
+            (_('始终竞速（始终并发请求两者取最快）'), FallbackStrategy.ALWAYS_RACE),
+        ]
+        for label, value in strategy_items:
+            strategy_combo.addItem(label, userData=value)
+        strategy_combo.setFixedWidth(400)
+
+        # 从配置加载当前策略
+        strategy = self._get_fallback_strategy_for_service(service_id)
+        for i in range(strategy_combo.count()):
+            if strategy_combo.itemData(i) == strategy:
+                strategy_combo.setCurrentIndex(i)
+                break
+
+        strategy_row = QHBoxLayout()
+        strategy_row.setSpacing(10)
+        strategy_row.addWidget(strategy_label)
+        strategy_row.addWidget(strategy_combo)
+        strategy_row.addStretch()
+
+        outer_layout.addLayout(strategy_row)
+        outer_layout.addStretch()
+
+        # ── 保存控件引用 ──
+        widget.main_fields = main_fields
+        widget.fallback_fields = fallback_fields
+        widget.pivot = pivot
+        widget.strategy_combo = strategy_combo
         widget.service_id = service_id
 
+        # 向后兼容的别名（指向主模型字段，旧代码可能引用）
+        widget.llm_service_combo = main_fields['service_combo']
+        widget.llm_api_key_edit = main_fields['api_key_edit']
+        widget.llm_api_url_edit = main_fields['api_url_edit']
+        widget.llm_model_edit = main_fields['model_edit']
+        widget.llm_optimization_switch = main_fields['optimization_switch']
+
         return widget
+
+    def _get_llm_config_for_service(self, service_id):
+        """获取指定服务的LLM配置（用于UI填充）"""
+        if not self.config:
+            return None
+        if service_id == "player" and self.config.player_translation and self.config.player_translation.llm:
+            return self.config.player_translation.llm
+        elif service_id == "send" and self.config.send_translation and self.config.send_translation.llm:
+            return self.config.send_translation.llm
+        return None
+
+    def _get_fallback_llm_config_for_service(self, service_id):
+        """获取指定服务的备用LLM配置（用于UI填充）"""
+        if not self.config:
+            return None
+        if service_id == "player" and self.config.player_translation and self.config.player_translation.fallback_llm:
+            return self.config.player_translation.fallback_llm
+        elif service_id == "send" and self.config.send_translation and self.config.send_translation.fallback_llm:
+            return self.config.send_translation.fallback_llm
+        return None
+
+    def _get_fallback_strategy_for_service(self, service_id):
+        """获取指定服务的备用策略"""
+        if not self.config:
+            return FallbackStrategy.DIRECT
+        if service_id == "player" and self.config.player_translation:
+            return self.config.player_translation.fallback_strategy
+        elif service_id == "send" and self.config.send_translation:
+            return self.config.send_translation.fallback_strategy
+        return FallbackStrategy.DIRECT
 
     def create_traditional_service_widget(self, parent, service_id):
         """创建传统翻译服务界面"""
@@ -2895,17 +2988,31 @@ class StartInterface(QFrame):
         player_widget = trans_service.player_service_widget.stacked_widget.currentWidget()
         if player_type == ServiceType.LLM:
             llm = LLMServiceConfig(
-                provider=player_widget.llm_service_combo.currentText(),
-                api_key=player_widget.llm_api_key_edit.text(),
-                api_base=None if player_widget.llm_api_url_edit.currentData()
-                else player_widget.llm_api_url_edit.currentText(),
-                model=player_widget.llm_model_edit.text(),
-                deep_translate=player_widget.llm_optimization_switch.isChecked()
+                provider=player_widget.main_fields['service_combo'].currentText(),
+                api_key=player_widget.main_fields['api_key_edit'].text(),
+                api_base=None if player_widget.main_fields['api_url_edit'].currentData()
+                else player_widget.main_fields['api_url_edit'].currentText(),
+                model=player_widget.main_fields['model_edit'].text(),
+                deep_translate=player_widget.main_fields['optimization_switch'].isChecked()
             )
+            # 备用模型（仅当 API Key 非空时才保存）
+            fallback_llm = None
+            fb_fields = player_widget.fallback_fields
+            if fb_fields['api_key_edit'].text().strip():
+                fallback_llm = LLMServiceConfig(
+                    provider=fb_fields['service_combo'].currentText(),
+                    api_key=fb_fields['api_key_edit'].text(),
+                    api_base=None if fb_fields['api_url_edit'].currentData()
+                    else fb_fields['api_url_edit'].currentText(),
+                    model=fb_fields['model_edit'].text(),
+                    deep_translate=fb_fields['optimization_switch'].isChecked()
+                )
             cfg.player_translation = TranslationServiceConfig(
                 service_type=ServiceType.LLM,
                 llm=llm,
-                traditional=None
+                traditional=None,
+                fallback_llm=fallback_llm,
+                fallback_strategy=player_widget.strategy_combo.currentData()
             )
         else:
             trad = TraditionalServiceConfig(
@@ -2925,17 +3032,31 @@ class StartInterface(QFrame):
             send_widget = trans_service.send_service_widget.stacked_widget.currentWidget()
             if send_type == ServiceType.LLM:
                 llm = LLMServiceConfig(
-                    provider=send_widget.llm_service_combo.currentText(),
-                    api_key=send_widget.llm_api_key_edit.text(),
-                    api_base=None if send_widget.llm_api_url_edit.currentData()
-                    else send_widget.llm_api_url_edit.currentText(),
-                    model=send_widget.llm_model_edit.text(),
-                    deep_translate=send_widget.llm_optimization_switch.isChecked()
+                    provider=send_widget.main_fields['service_combo'].currentText(),
+                    api_key=send_widget.main_fields['api_key_edit'].text(),
+                    api_base=None if send_widget.main_fields['api_url_edit'].currentData()
+                    else send_widget.main_fields['api_url_edit'].currentText(),
+                    model=send_widget.main_fields['model_edit'].text(),
+                    deep_translate=send_widget.main_fields['optimization_switch'].isChecked()
                 )
+                # 备用模型（仅当 API Key 非空时才保存）
+                fallback_llm = None
+                fb_fields = send_widget.fallback_fields
+                if fb_fields['api_key_edit'].text().strip():
+                    fallback_llm = LLMServiceConfig(
+                        provider=fb_fields['service_combo'].currentText(),
+                        api_key=fb_fields['api_key_edit'].text(),
+                        api_base=None if fb_fields['api_url_edit'].currentData()
+                        else fb_fields['api_url_edit'].currentText(),
+                        model=fb_fields['model_edit'].text(),
+                        deep_translate=fb_fields['optimization_switch'].isChecked()
+                    )
                 cfg.send_translation = TranslationServiceConfig(
                     service_type=ServiceType.LLM,
                     llm=llm,
-                    traditional=None
+                    traditional=None,
+                    fallback_llm=fallback_llm,
+                    fallback_strategy=send_widget.strategy_combo.currentData()
                 )
             else:
                 trad = TraditionalServiceConfig(

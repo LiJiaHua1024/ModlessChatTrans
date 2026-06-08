@@ -414,9 +414,19 @@ def start_translation(config):
                     config.message_capture.target_language
                 )
 
-    player_translator = Translator(config.player_translation, config.glossary)
+    player_translator = Translator(
+        config.player_translation,
+        config.glossary,
+        fallback_llm_config=config.player_translation.fallback_llm,
+        fallback_strategy=config.player_translation.fallback_strategy,
+    )
     if config.send_translation_independent:
-        send_translator = Translator(config.send_translation, config.glossary)
+        send_translator = Translator(
+            config.send_translation,
+            config.glossary,
+            fallback_llm_config=config.send_translation.fallback_llm,
+            fallback_strategy=config.send_translation.fallback_strategy,
+        )
     else:
         send_translator = player_translator
 
