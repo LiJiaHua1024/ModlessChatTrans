@@ -16,7 +16,6 @@
 import sys
 import threading
 import time
-from importlib.metadata import version
 from datetime import datetime
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -135,9 +134,10 @@ except Exception as _tts_exc:
     logger.warning(f"[Startup] TTS module failed to load, TTS will be disabled: {_tts_exc}")
 from modless_chat_trans.i18n import _
 from modless_chat_trans.updater import Updater
+from modless_chat_trans._version import get_version_string
 
 program_info = ProgramInfo(
-    version=f"v{version('ModlessChatTrans')}",
+    version=get_version_string(),
     author="LiJiaHua1024",
     email="minecraft_benli@163.com",
     github="https://github.com/LiJiaHua1024/ModlessChatTrans",

@@ -43,7 +43,18 @@ class Updater:
     def __init__(self, current_version, owner, repo, include_prerelease=False):
         logger.info(f"Initializing updater: version={current_version}, repo={owner}/{repo}")
         if UPDATER_AVAILABLE:
-            self.current_version = Version(current_version.lstrip("v"))
+            version_str = current_version.lstrip("v")
+            try:
+                self.current_version = Version(version_str)
+            except InvalidVersion:
+                # 非正式版本（如 3.2.1-canary+abc12345），提取基础版本号
+                import re
+                base = re.split(r"[-+]", version_str, maxsplit=1)[0]
+                logger.debug(f"Non-PEP 440 version '{version_str}', using base '{base}' for comparison")
+                try:
+                    self.current_version = Version(base)
+                except InvalidVersion:
+                    self.current_version = version_str
         else:
             self.current_version = current_version.lstrip("v")
         self.owner = owner

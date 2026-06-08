@@ -41,49 +41,82 @@ jobs:
         uv add nuitka zstandard
       shell: pwsh
 
-    - name: Determine version
+    - name: Determine version and generate build info
       id: determine_version
       run: |
-        if ("${{ github.event_name }}" -eq "workflow_dispatch") {
-            $inputVersion = "${{ github.event.inputs.version }}"
+        # 从 pyproject.toml 读取基础版本号（用于文件命名）
+        $baseVersion = (Select-String -Path "pyproject.toml" -Pattern '^version\s*=\s*"(.+)"' | ForEach-Object { $_.Matches.Groups[1].Value })
+        $commitSha = "${{ github.sha }}".Substring(0, 8)
+        $branchName = "${{ github.ref_name }}"
 
-            if ([string]::IsNullOrWhiteSpace($inputVersion)) {
-                # 如果用户没有输入版本号，使用commit哈希的前8位
-                $version = "${{ github.sha }}".Substring(0, 8)
-                $fileVersion = "0.0.0.0"
-                $productVersion = "0.0.0.0"
+        if ("${{ github.event_name }}" -eq "push" -and "${{ github.ref_type }}" -eq "tag") {
+            # ═══ Tag 触发：正式版本 ═══
+            $version = $branchName -replace "^v", ""
+            $fileVersion = $version
+            $productVersion = $version
+            $outputFileName = "ModlessChatTrans_v$version"
+            $buildChannel = "stable"
+        }
+        elseif ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $inputVersion = "${{ github.event.inputs.version }}"
+            $branch = $branchName
+
+            # 从分支名推断构建通道
+            if ($branch -match "^canary-exp") {
+                $buildChannel = "canary-exp"
+            } elseif ($branch -match "^canary") {
+                $buildChannel = "canary"
+            } else {
+                $buildChannel = $branch -replace "[/\\]", "-"
             }
-            elseif ($inputVersion -match "^v?\d+\.\d+\.\d+$") {
-                # 如果输入格式为vx.x.x或x.x.x
+
+            if (-not [string]::IsNullOrWhiteSpace($inputVersion) -and $inputVersion -match "^v?\d+\.\d+\.\d+$") {
+                # 用户手动指定了正式版本号
                 $version = $inputVersion -replace "^v", ""
                 $fileVersion = $version
                 $productVersion = $version
+                $outputFileName = "ModlessChatTrans_v$version"
+                $buildChannel = "stable"
             }
             else {
-                # 如果输入格式不符合，使用用户输入内容
-                $version = $inputVersion
+                # 非正式版本
                 $fileVersion = "0.0.0.0"
                 $productVersion = "0.0.0.0"
+                $safeBranch = $branch -replace "[/\\]", "-"
+                $outputFileName = "ModlessChatTrans_${safeBranch}_${commitSha}"
             }
-        } else {
-            # 自动触发时的处理
-            $version = "${{ github.ref_name }}"
-            if ($version -match "^v") {
-              $version = $version.Substring(1)
-            }
+        }
+        else {
+            # 后备处理
+            $version = $baseVersion
             $fileVersion = $version
             $productVersion = $version
+            $outputFileName = "ModlessChatTrans_v$version"
+            $buildChannel = "unknown"
         }
 
-        echo "version=$version" >> $env:GITHUB_OUTPUT
+        # 生成 _build_info.py（仅包含 CI 构建元数据）
+        @"
+        BUILD_CHANNEL = "$buildChannel"
+        BRANCH = "$branchName"
+        COMMIT_SHA = "$commitSha"
+        "@ -split "`n" | ForEach-Object { $_.TrimStart() } | Set-Content -Path "src/modless_chat_trans/_build_info.py" -Encoding utf8
+
         echo "file_version=$fileVersion" >> $env:GITHUB_OUTPUT
         echo "product_version=$productVersion" >> $env:GITHUB_OUTPUT
+        echo "output_file_name=$outputFileName" >> $env:GITHUB_OUTPUT
+
+        Write-Host "Build info:"
+        Write-Host "  Base version:  $baseVersion"
+        Write-Host "  Build channel: $buildChannel"
+        Write-Host "  Branch:        $branchName"
+        Write-Host "  Commit:        $commitSha"
+        Write-Host "  Output file:   $outputFileName"
       shell: pwsh
 
     - name: Build with Nuitka
       shell: pwsh
       run: |
-        $version = "${{ steps.determine_version.outputs.version }}"
         $fileVersion = "${{ steps.determine_version.outputs.file_version }}"
         $productVersion = "${{ steps.determine_version.outputs.product_version }}"
         $keepConsole = "${{ github.event.inputs.keep_console }}"
@@ -125,8 +158,8 @@ jobs:
 
     - name: Rename executable
       run: |
-        $version = "${{ steps.determine_version.outputs.version }}"
-        ren ModlessChatTrans.exe ModlessChatTrans_v$version.exe
+        $outputName = "${{ steps.determine_version.outputs.output_file_name }}"
+        ren ModlessChatTrans.exe "${outputName}.exe"
       shell: pwsh
 
     - name: Upload artifact
@@ -134,4 +167,4 @@ jobs:
       with:
         name: ModlessChatTrans
         path: |
-          ./ModlessChatTrans_v${{ steps.determine_version.outputs.version }}.exe
+          ./${{ steps.determine_version.outputs.output_file_name }}.exe
