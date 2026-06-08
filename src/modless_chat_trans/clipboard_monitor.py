@@ -13,9 +13,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import pyperclip
 import time
 from modless_chat_trans.logger import logger
+
+# ──────────────────────────────
+# 可选依赖：pyperclip
+# 导入失败时禁用剪切板监听功能
+# ──────────────────────────────
+try:
+    import pyperclip
+    CLIPBOARD_AVAILABLE = True
+    CLIPBOARD_IMPORT_ERROR = None
+except ImportError as _clip_exc:
+    pyperclip = None  # type: ignore[assignment]
+    CLIPBOARD_AVAILABLE = False
+    CLIPBOARD_IMPORT_ERROR = str(_clip_exc)
+    logger.warning(f"[Clipboard] 'pyperclip' not available, clipboard monitoring disabled: {_clip_exc}")
 
 # 初始化剪贴板内容
 previous_clipboard_content = None
@@ -27,6 +40,10 @@ def monitor_clipboard(callback):
 
     :param callback: 检测到新内容的回调函数
     """
+    if not CLIPBOARD_AVAILABLE:
+        logger.warning("[Clipboard] pyperclip not available, clipboard monitoring is a no-op")
+        return
+
     logger.info("Starting clipboard monitoring")
     global previous_clipboard_content
 
@@ -57,6 +74,9 @@ def monitor_clipboard(callback):
 
 
 def modify_clipboard(data):
+    if not CLIPBOARD_AVAILABLE:
+        logger.warning("[Clipboard] pyperclip not available, cannot modify clipboard")
+        return
     logger.debug(f"Modifying clipboard with new content (length: {len(data)})")
     global previous_clipboard_content
     try:

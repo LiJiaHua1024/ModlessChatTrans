@@ -19,8 +19,27 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Tuple
 
-import markdown
-import netifaces
+# ────────────────────────────────────────
+# 可选依赖：markdown / netifaces
+# 导入失败时降级，不影响程序启动
+# ────────────────────────────────────────
+try:
+    import markdown
+    MARKDOWN_AVAILABLE = True
+except ImportError as _md_exc:
+    markdown = None  # type: ignore[assignment]
+    MARKDOWN_AVAILABLE = False
+    import logging as _logging
+    _logging.getLogger(__name__).warning(f"[UI] 'markdown' not available, release notes will be plain text: {_md_exc}")
+
+try:
+    import netifaces
+    NETIFACES_AVAILABLE = True
+except ImportError as _nif_exc:
+    netifaces = None  # type: ignore[assignment]
+    NETIFACES_AVAILABLE = False
+    import logging as _logging
+    _logging.getLogger(__name__).warning(f"[UI] 'netifaces' not available, IP detection will use fallback: {_nif_exc}")
 
 from PySide6.QtCore import QObject, QSize, Qt, QThread, QTimer, QUrl, Signal
 from PySide6.QtGui import QIcon, QFont, QColor, QDesktopServices
@@ -1118,6 +1137,22 @@ class MessagePresentationInterface(QFrame):
         setFont(card_title, 16, weight=QFont.Weight.DemiBold)
         card_layout.addWidget(card_title)
 
+        # 如果 TTS 依赖库不可用，显示错误提示并禁用所有控件
+        try:
+            from modless_chat_trans.tts_engine import TTS_AVAILABLE as _tts_avail, TTS_IMPORT_ERROR as _tts_err
+        except Exception as _e:
+            _tts_avail = False
+            _tts_err = str(_e)
+
+        if not _tts_avail:
+            err_label = BodyLabel(
+                _('⚠️ TTS 模块导入失败，TTS 功能已禁用。错误信息：{}').format(_tts_err or _('unknown')),
+                card
+            )
+            err_label.setWordWrap(True)
+            err_label.setStyleSheet("color: #e05252; padding: 4px 0;")
+            card_layout.addWidget(err_label)
+
         # 内容区域
         content_frame = QFrame(card)
         content_layout = QGridLayout(content_frame)
@@ -1135,6 +1170,10 @@ class MessagePresentationInterface(QFrame):
         if self.config and hasattr(self.config, 'tts'):
             self.tts_enable_switch.setChecked(self.config.tts.enabled)
 
+        if not _tts_avail:
+            self.tts_enable_switch.setChecked(False)
+            self.tts_enable_switch.setEnabled(False)
+
         switch_container = QHBoxLayout()
         switch_container.setSpacing(5)
         switch_container.addWidget(self.tts_enable_switch)
@@ -1149,9 +1188,14 @@ class MessagePresentationInterface(QFrame):
         self.tts_voice_combo.setPlaceholderText(_("加载中..."))
         self.tts_voice_combo.setFixedWidth(280)
 
-        # 异步加载语音列表
-        self._tts_voices_loaded = False
-        QTimer.singleShot(100, self._load_tts_voices)
+        if not _tts_avail:
+            self.tts_voice_combo.setEnabled(False)
+            self.tts_voice_combo.setPlaceholderText(_("不可用"))
+            self._tts_voices_loaded = True
+        else:
+            # 异步加载语音列表
+            self._tts_voices_loaded = False
+            QTimer.singleShot(100, self._load_tts_voices)
 
         content_layout.addWidget(voice_label, 1, 0, Qt.AlignmentFlag.AlignRight)
         content_layout.addWidget(self.tts_voice_combo, 1, 1)
@@ -1176,6 +1220,9 @@ class MessagePresentationInterface(QFrame):
                     self.tts_speed_combo.setCurrentIndex(i)
                     break
 
+        if not _tts_avail:
+            self.tts_speed_combo.setEnabled(False)
+
         self.tts_speed_combo.setFixedWidth(200)
         content_layout.addWidget(speed_label, 2, 0, Qt.AlignmentFlag.AlignRight)
         content_layout.addWidget(self.tts_speed_combo, 2, 1)
@@ -1191,6 +1238,9 @@ class MessagePresentationInterface(QFrame):
             self.tts_read_name_switch.setChecked(self.config.tts.read_player_name)
         else:
             self.tts_read_name_switch.setChecked(True)
+
+        if not _tts_avail:
+            self.tts_read_name_switch.setEnabled(False)
 
         name_container = QHBoxLayout()
         name_container.setSpacing(5)
@@ -1215,6 +1265,8 @@ class MessagePresentationInterface(QFrame):
         # 测试按钮
         self.tts_test_button = PushButton(_('测试朗读'), button_frame)
         self.tts_test_button.clicked.connect(self.on_tts_test)
+        if not _tts_avail:
+            self.tts_test_button.setEnabled(False)
         button_layout.addWidget(self.tts_test_button)
 
         # 测试加载动画
@@ -1229,7 +1281,11 @@ class MessagePresentationInterface(QFrame):
 
         # 状态提示
         self.tts_status_label = CaptionLabel('', content_frame)
-        self.tts_status_label.setStyleSheet("color: #888888;")
+        if _tts_avail:
+            self.tts_status_label.setStyleSheet("color: #888888;")
+        else:
+            self.tts_status_label.setStyleSheet("color: #e05252;")
+            self.tts_status_label.setText(_("依赖库导入失败，TTS 功能不可用"))
         content_layout.addWidget(self.tts_status_label, 5, 1)
 
         content_layout.setColumnStretch(2, 1)
@@ -1299,6 +1355,25 @@ class MessagePresentationInterface(QFrame):
 
     def on_tts_test(self):
         """测试 TTS 朗读"""
+        # 先检查 TTS 依赖是否可用
+        try:
+            from modless_chat_trans.tts_engine import TTS_AVAILABLE as _tts_avail, TTS_IMPORT_ERROR as _tts_err
+        except Exception as _e:
+            _tts_avail = False
+            _tts_err = str(_e)
+
+        if not _tts_avail:
+            InfoBar.error(
+                title=_('TTS 不可用'),
+                content=_('TTS 依赖库未安装或导入失败：{}').format(_tts_err or _('unknown')),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=5000,
+                parent=self
+            )
+            return
+
         self.tts_test_button.setEnabled(False)
         self.tts_test_spinner.show()
 
@@ -2573,30 +2648,34 @@ class StartInterface(QFrame):
         """获取所有IP地址并按优先级排序"""
         ips = []
 
-        try:
-            for interface in netifaces.interfaces():
-                addrs = netifaces.ifaddresses(interface)
-
-                # 只处理IPv4地址
-                if netifaces.AF_INET in addrs:
-                    for addr in addrs[netifaces.AF_INET]:
-                        ip = addr['addr']
-
-                        # 局域网地址判断
-                        if ip.startswith('192.168.') or ip.startswith('10.'):
-                            ips.append((ip, 1))  # 局域网地址最优先
-                        elif ip.startswith('172.'):
-                            second_octet = int(ip.split('.')[1])
-                            if 16 <= second_octet <= 31:
-                                ips.append((ip, 1))  # 172.16-31.x.x 也是局域网
-                        elif ip in ['127.0.0.1', '0.0.0.0']:
-                            ips.append((ip, 2))  # 本地地址次优先
-                        # 其他地址（包括公网IP、169.254.x.x等）都不加入列表
-
-        except Exception as e:
-            logger.error(f"Failed to get network interfaces: {e}")
-            # 至少返回本地地址
+        if not NETIFACES_AVAILABLE:
+            # netifaces 不可用，直接走本地地址
             ips = [('127.0.0.1', 2)]
+        else:
+            try:
+                for interface in netifaces.interfaces():
+                    addrs = netifaces.ifaddresses(interface)
+
+                    # 只处理IPv4地址
+                    if netifaces.AF_INET in addrs:
+                        for addr in addrs[netifaces.AF_INET]:
+                            ip = addr['addr']
+
+                            # 局域网地址判断
+                            if ip.startswith('192.168.') or ip.startswith('10.'):
+                                ips.append((ip, 1))  # 局域网地址最优先
+                            elif ip.startswith('172.'):
+                                second_octet = int(ip.split('.')[1])
+                                if 16 <= second_octet <= 31:
+                                    ips.append((ip, 1))  # 172.16-31.x.x 也是局域网
+                            elif ip in ['127.0.0.1', '0.0.0.0']:
+                                ips.append((ip, 2))  # 本地地址次优先
+                            # 其他地址（包括公网IP、169.254.x.x等）都不加入列表
+
+            except Exception as e:
+                logger.error(f"Failed to get network interfaces: {e}")
+                # 至少返回本地地址
+                ips = [('127.0.0.1', 2)]
 
         # 添加localhost作为备选
         ips.append(('localhost', 2))
@@ -3234,59 +3313,63 @@ class UpdateDialog(MessageBoxBase):
         release_body = self.latest_release.get('body', _('暂无更新说明'))
 
         # 尝试将 Markdown 转换为 HTML
-        try:
-            html_content = markdown.markdown(
-                release_body,
-                extensions=['extra', 'nl2br']
-            )
+        if MARKDOWN_AVAILABLE:
+            try:
+                html_content = markdown.markdown(
+                    release_body,
+                    extensions=['extra', 'nl2br']
+                )
 
-            # 添加基础样式
-            styled_html = f"""
-            <style>
-                body {{ 
-                    font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif; 
-                    font-size: 13px;
-                    line-height: 1.6;
-                    color: #333;
-                    margin: 8px;
-                }}
-                h1, h2, h3, h4, h5, h6 {{ 
-                    font-weight: bold; 
-                    margin-top: 12px; 
-                    margin-bottom: 8px;
-                }}
-                h1 {{ font-size: 20px; }}
-                h2 {{ font-size: 18px; }}
-                h3 {{ font-size: 16px; }}
-                code {{
-                    background-color: #f4f4f4;
-                    padding: 2px 4px;
-                    border-radius: 3px;
-                    font-family: 'Consolas', 'Monaco', monospace;
-                }}
-                pre {{
-                    background-color: #f4f4f4;
-                    padding: 10px;
-                    border-radius: 5px;
-                    overflow-x: auto;
-                }}
-                ul, ol {{
-                    margin-left: 20px;
-                }}
-                a {{
-                    color: #0078d4;
-                    text-decoration: none;
-                }}
-                a:hover {{
-                    text-decoration: underline;
-                }}
-            </style>
-            <body>{html_content}</body>
-            """
+                # 添加基础样式
+                styled_html = f"""
+                <style>
+                    body {{ 
+                        font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif; 
+                        font-size: 13px;
+                        line-height: 1.6;
+                        color: #333;
+                        margin: 8px;
+                    }}
+                    h1, h2, h3, h4, h5, h6 {{ 
+                        font-weight: bold; 
+                        margin-top: 12px; 
+                        margin-bottom: 8px;
+                    }}
+                    h1 {{ font-size: 20px; }}
+                    h2 {{ font-size: 18px; }}
+                    h3 {{ font-size: 16px; }}
+                    code {{
+                        background-color: #f4f4f4;
+                        padding: 2px 4px;
+                        border-radius: 3px;
+                        font-family: 'Consolas', 'Monaco', monospace;
+                    }}
+                    pre {{
+                        background-color: #f4f4f4;
+                        padding: 10px;
+                        border-radius: 5px;
+                        overflow-x: auto;
+                    }}
+                    ul, ol {{
+                        margin-left: 20px;
+                    }}
+                    a {{
+                        color: #0078d4;
+                        text-decoration: none;
+                    }}
+                    a:hover {{
+                        text-decoration: underline;
+                    }}
+                </style>
+                <body>{html_content}</body>
+                """
 
-            self.note_browser.setHtml(styled_html)
-        except Exception as e:
-            logger.error(f"Error processing release note: {e}")
+                self.note_browser.setHtml(styled_html)
+            except Exception as e:
+                logger.error(f"Error processing release note: {e}")
+                self.note_browser.setPlainText(release_body)
+        else:
+            # markdown 库不可用，直接显示纯文本
             self.note_browser.setPlainText(release_body)
 
         layout.addWidget(self.note_browser)
@@ -3649,6 +3732,17 @@ class SettingInterface(QFrame):
         self.check_update_button = PushButton(_('检查更新'), check_container)
         self.check_update_button.setIcon(FluentIcon.UPDATE)
         self.check_update_button.clicked.connect(self.check_for_updates)
+
+        # 若更新依赖不可用，禁用按钮并显示提示
+        try:
+            from modless_chat_trans.updater import UPDATER_AVAILABLE as _upd_avail
+        except Exception:
+            _upd_avail = False
+        if not _upd_avail:
+            self.check_update_button.setEnabled(False)
+            upd_unavail_label = CaptionLabel(_('⚠ 更新依赖不可用'), check_container)
+            upd_unavail_label.setStyleSheet("color: #e05252;")
+            check_layout.addWidget(upd_unavail_label)
 
         self.update_loading_spinner = IndeterminateProgressRing(check_container)
         self.update_loading_spinner.setFixedSize(20, 20)

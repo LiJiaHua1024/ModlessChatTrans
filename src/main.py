@@ -13,10 +13,101 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import sys
 import threading
 import time
 from importlib.metadata import version
 from datetime import datetime
+
+# ═══════════════════════════════════════════════════════════════════════
+# 核心依赖预检（Pre-flight Check）
+# 必须在任何第三方模块导入之前运行，使用纯 stdlib 完成探测。
+# 若任何核心依赖缺失，显示友好错误提示并退出，而不是以崩溃方式终止。
+# ═══════════════════════════════════════════════════════════════════════
+
+# 核心依赖表：(包名, 用途说明)
+_CORE_DEPS = [
+    ("loguru",           "日志系统"),
+    ("PySide6",          "GUI 框架（图形界面）"),
+    ("qfluentwidgets",   "GUI 组件库（Fluent 风格控件）"),
+    ("pydantic",         "配置验证与解析"),
+    ("pydantic_settings","配置文件加载"),
+    ("tomli_w",          "TOML 配置文件写入"),
+    ("flask",            "WebUI 服务器（翻译结果展示）"),
+    ("diskcache",        "翻译结果缓存"),
+    ("lazy_loader",      "模块懒加载（翻译服务）"),
+    ("requests",         "HTTP 客户端（翻译 API 请求）"),
+]
+
+
+def _preflight_check() -> list[tuple[str, str, str]]:
+    """探测所有核心依赖，返回缺失项列表 [(包名, 错误信息, 用途), ...]"""
+    missing = []
+    for pkg, purpose in _CORE_DEPS:
+        try:
+            __import__(pkg)
+        except ImportError as e:
+            missing.append((pkg, str(e), purpose))
+    return missing
+
+
+def _show_fatal_error_and_exit(missing: list[tuple[str, str, str]]) -> None:
+    """
+    以友好方式展示致命错误，按 Qt → tkinter → 控制台 顺序降级。
+    展示后调用 sys.exit(1) 终止进程。
+    """
+    title = "ModlessChatTrans — 启动失败"
+    brief = "以下核心依赖库缺失或无法导入，程序无法启动："
+    detail_lines = []
+    for pkg, err, purpose in missing:
+        detail_lines.append(f"  • {pkg}（{purpose}）\n      {err}")
+    detail = "\n".join(detail_lines)
+    footer = "\n请检查安装是否完整，或重新安装程序。\n如使用可执行文件，请尝试重新下载。"
+    full_msg = f"{brief}\n\n{detail}\n{footer}"
+
+    # ── 尝试 Qt 对话框 ──────────────────────────────────────────────────
+    try:
+        from PySide6.QtWidgets import QApplication, QMessageBox
+        _app = QApplication.instance() or QApplication(sys.argv)
+        box = QMessageBox()
+        box.setWindowTitle(title)
+        box.setIcon(QMessageBox.Icon.Critical)
+        box.setText(brief)
+        box.setDetailedText(detail + footer)
+        box.exec()
+        sys.exit(1)
+    except Exception:
+        pass
+
+    # ── 尝试 tkinter 对话框（stdlib，通常随 Python 安装）──────────────
+    try:
+        import tkinter as _tk
+        from tkinter import messagebox as _mb
+        _root = _tk.Tk()
+        _root.withdraw()
+        _mb.showerror(title, full_msg)
+        _root.destroy()
+        sys.exit(1)
+    except Exception:
+        pass
+
+    # ── 控制台兜底 ──────────────────────────────────────────────────────
+    sep = "═" * 60
+    print(f"\n{sep}\n[致命错误] {title}\n{sep}\n{full_msg}\n{sep}", file=sys.stderr)
+    try:
+        input("按 Enter 键退出...")
+    except Exception:
+        pass
+    sys.exit(1)
+
+
+_missing_core = _preflight_check()
+if _missing_core:
+    _show_fatal_error_and_exit(_missing_core)
+
+# ═══════════════════════════════════════════════════════════════════════
+# 以下开始正常导入（核心依赖已确认全部可用）
+# ═══════════════════════════════════════════════════════════════════════
 
 from modless_chat_trans.file_utils import get_platform
 from modless_chat_trans.config import read_config, MonitorMode, ServiceType
@@ -34,7 +125,13 @@ from modless_chat_trans.translator import Translator, ts, litellm
 from modless_chat_trans.context_buffer import ContextBuffer, ContextEntry, extract_log_time
 from modless_chat_trans.interface import ProgramInfo, MainWindow, QApplication
 from modless_chat_trans.clipboard_monitor import monitor_clipboard, modify_clipboard
-from modless_chat_trans.tts_engine import TTSEngine
+try:
+    from modless_chat_trans.tts_engine import TTSEngine, TTS_AVAILABLE, TTS_IMPORT_ERROR
+except Exception as _tts_exc:
+    TTSEngine = None  # type: ignore[assignment,misc]
+    TTS_AVAILABLE = False
+    TTS_IMPORT_ERROR = str(_tts_exc)
+    logger.warning(f"[Startup] TTS module failed to load, TTS will be disabled: {_tts_exc}")
 from modless_chat_trans.i18n import _
 from modless_chat_trans.updater import Updater
 
@@ -67,10 +164,18 @@ def start_translation(config):
         context_timeout=ctx_cfg.context_timeout,
     )
 
-    # 初始化 TTS 朗读引擎
-    tts_engine = TTSEngine(config.tts)
-    if config.tts.enabled:
-        tts_engine.start()
+    # 初始化 TTS 朗读引擎（若依赖库不可用则使用 no-op stub）
+    if TTS_AVAILABLE and TTSEngine is not None:
+        tts_engine = TTSEngine(config.tts)
+        if config.tts.enabled:
+            tts_engine.start()
+    else:
+        class _NoOpTTS:
+            enabled = False
+            def enqueue(self, *a, **kw): pass
+            def start(self): pass
+            def stop(self): pass
+        tts_engine = _NoOpTTS()
 
     def callback(line, arrival_time, slot_id=None, data_type="log", rage_mode=False):
         """

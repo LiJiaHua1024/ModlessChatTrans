@@ -21,8 +21,22 @@ from queue import Queue, Empty
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Tuple, Callable
 
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+# ──────────────────────────────
+# 可选依赖：watchdog
+# 导入失败时降级为兼容（轮询）模式
+# ──────────────────────────────
+try:
+    from watchdog.observers import Observer
+    from watchdog.events import FileSystemEventHandler
+    WATCHDOG_AVAILABLE = True
+except ImportError as _wd_exc:
+    Observer = None  # type: ignore[assignment,misc]
+    FileSystemEventHandler = object  # type: ignore[assignment,misc]
+    WATCHDOG_AVAILABLE = False
+    import logging as _logging
+    _logging.getLogger(__name__).warning(
+        f"[LogMonitor] 'watchdog' not available, efficient mode disabled: {_wd_exc}"
+    )
 
 from modless_chat_trans.file_utils import find_latest_log
 from modless_chat_trans.logger import logger
@@ -653,6 +667,23 @@ def start_log_monitor(config: MessageCaptureConfig, callback, batch_callback=Non
         return
 
     # 高效模式：watchdog 事件驱动
+    if not WATCHDOG_AVAILABLE:
+        logger.warning(
+            "[LogMonitor] watchdog not available; falling back to compatible (polling) mode automatically."
+        )
+        poller = CompatiblePollingMonitor(
+            log_path=log_path,
+            user_encoding=user_encoding,
+            line_queue=line_queue,
+            interval=0.2
+        )
+        try:
+            poller.run()
+        finally:
+            processor.stop()
+            processor.join(timeout=5)
+        return
+
     handler = EfficientLogMonitor(
         log_path=log_path,
         user_encoding=user_encoding,

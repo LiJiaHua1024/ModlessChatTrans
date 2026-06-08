@@ -13,21 +13,39 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import requests
 import shutil
 import os
 import time
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from packaging.version import Version, InvalidVersion
 from modless_chat_trans.file_utils import get_path, get_platform
 from modless_chat_trans.logger import logger
+
+# ──────────────────────────────
+# 可选依赖：requests / packaging
+# 任一导入失败则禁用自动更新功能
+# ──────────────────────────────
+try:
+    import requests
+    from packaging.version import Version, InvalidVersion
+    UPDATER_AVAILABLE = True
+    UPDATER_IMPORT_ERROR = None
+except ImportError as _upd_exc:
+    requests = None  # type: ignore[assignment]
+    Version = None  # type: ignore[assignment,misc]
+    InvalidVersion = Exception  # type: ignore[assignment,misc]
+    UPDATER_AVAILABLE = False
+    UPDATER_IMPORT_ERROR = str(_upd_exc)
+    logger.warning(f"[Updater] Dependencies not available, auto-update disabled: {_upd_exc}")
 
 
 class Updater:
     def __init__(self, current_version, owner, repo, include_prerelease=False):
         logger.info(f"Initializing updater: version={current_version}, repo={owner}/{repo}")
-        self.current_version = Version(current_version.lstrip("v"))
+        if UPDATER_AVAILABLE:
+            self.current_version = Version(current_version.lstrip("v"))
+        else:
+            self.current_version = current_version.lstrip("v")
         self.owner = owner
         self.repo = repo
         self.include_prerelease = include_prerelease
@@ -35,6 +53,9 @@ class Updater:
         logger.debug(f"API URL set to: {self.api_url}")
 
     def check_update(self):
+        if not UPDATER_AVAILABLE:
+            logger.debug("[Updater] Skipping update check: dependencies not available")
+            return None
         logger.info("Checking for updates")
         try:
             latest_release = self._get_latest_release()
@@ -70,6 +91,9 @@ class Updater:
         Returns:
             下载文件的路径，如果失败或取消返回 None
         """
+        if not UPDATER_AVAILABLE:
+            logger.debug("[Updater] Skipping download: dependencies not available")
+            return None
         logger.info(f"Downloading update: {latest_release.get('tag_name')}")
 
         try:

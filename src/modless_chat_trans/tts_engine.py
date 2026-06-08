@@ -22,10 +22,23 @@ import threading
 from collections import deque
 from typing import Optional, List
 
-import edge_tts
-import miniaudio
-
 from modless_chat_trans.logger import logger
+
+# ─────────────────────────────────────
+# 可选依赖：edge_tts / miniaudio
+# 若导入失败则降级：TTS_AVAILABLE=False，功能被禁用
+# ─────────────────────────────────────
+try:
+    import edge_tts
+    import miniaudio
+    TTS_AVAILABLE = True
+    TTS_IMPORT_ERROR: Optional[str] = None
+except ImportError as _tts_import_exc:
+    edge_tts = None  # type: ignore[assignment]
+    miniaudio = None  # type: ignore[assignment]
+    TTS_AVAILABLE = False
+    TTS_IMPORT_ERROR = str(_tts_import_exc)
+    logger.warning(f"[TTS] Optional TTS dependencies not available, TTS disabled: {_tts_import_exc}")
 
 # ─────────────────────────────────────
 # 预编译正则（文本预处理）
@@ -167,7 +180,11 @@ async def get_available_voices() -> List[dict]:
     """
     获取所有可用的 Edge TTS 语音列表。
     返回 [{"Name": "zh-CN-XiaoxiaoNeural", "Locale": "zh-CN", "Gender": "Female"}, ...]
+    如果 edge_tts 不可用，直接返回空列表。
     """
+    if not TTS_AVAILABLE:
+        return []
+
     global _voice_list_cache
     with _voice_cache_lock:
         if _voice_list_cache is not None:
@@ -185,6 +202,9 @@ async def get_available_voices() -> List[dict]:
 
 def get_available_voices_sync() -> List[dict]:
     """同步包装器，在线程安全的情况下获取可用语音"""
+    if not TTS_AVAILABLE:
+        return []
+
     global _voice_list_cache
     if _voice_list_cache is not None:
         return _voice_list_cache
@@ -268,7 +288,8 @@ class TTSEngine:
         )
         self._lock = threading.Lock()
         self._running = False
-        self._enabled = config.enabled
+        # 若依赖库不可用，强制禁用 TTS
+        self._enabled = config.enabled and TTS_AVAILABLE
         self._playback_thread: Optional[threading.Thread] = None
         self._last_spoken_text: Optional[str] = None
         self._currently_playing = False
@@ -379,7 +400,10 @@ class TTSEngine:
         logger.debug(f"[TTS] Enqueued ({queue_len} in queue): {speak_text[:50]}...")
 
     def set_enabled(self, enabled: bool):
-        """动态启用/禁用 TTS"""
+        """动态启用/禁用 TTS；若依赖库不可用则始终保持禁用"""
+        if not TTS_AVAILABLE and enabled:
+            logger.warning("[TTS] Cannot enable TTS: dependencies not available")
+            return
         if enabled == self._enabled:
             return
         self._enabled = enabled
@@ -457,6 +481,9 @@ class TTSEngine:
         pitch = self._config.pitch if hasattr(self._config, 'pitch') else "+0Hz"
 
         tmp_path: Optional[str] = None
+
+        if not TTS_AVAILABLE:
+            return
 
         try:
             # 1. 创建临时文件用于音频输出
