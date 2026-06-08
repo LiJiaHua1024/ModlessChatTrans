@@ -120,7 +120,8 @@ set_language(cfg.settings.interface_language)
 
 from modless_chat_trans.web_display import start_httpserver_thread, display_message, allocate_slot, fill_slot
 from modless_chat_trans.log_monitor import start_log_monitor
-from modless_chat_trans.message_processor import init_processor, init_blacklist, process_message
+from modless_chat_trans.message_processor import init_processor, init_blacklist, process_message, parse_message, is_user_in_blacklist, is_message_blocked, sanitize_hypixel_name, MessageType
+import modless_chat_trans.message_processor as message_processor
 from modless_chat_trans.translator import Translator, ts, litellm
 from modless_chat_trans.context_buffer import ContextBuffer, ContextEntry, extract_log_time
 from modless_chat_trans.interface import ProgramInfo, MainWindow, QApplication
@@ -246,19 +247,8 @@ def start_translation(config):
                             continue
                         break
                 else:
-                    # 过滤掉了（筛选或黑名单），默默移除 slot
                     if slot_id is not None:
-                        from modless_chat_trans.web_display import (
-                            http_messages, messages_by_id, pending_slots, message_condition
-                        )
-                        with message_condition:
-                            rec = messages_by_id.pop(slot_id, None)
-                            if rec:
-                                try:
-                                    http_messages.remove(rec)
-                                except ValueError:
-                                    pass
-                            pending_slots.discard(slot_id)
+                        fill_slot(slot_id, "", "", {})
                     break
 
         elif data_type in ("clipboard", "webui"):
@@ -274,15 +264,16 @@ def start_translation(config):
                     if not processed_message[0]:
                         modify_clipboard(processed_message[1])
                         duration = time.time() - start_time
-                        display_message(
-                            "[INFO]",
-                            _("要发送的消息翻译完成，翻译结果已复制到剪切板"),
-                            processed_message[2],
-                            duration=duration
-                        )
+                        if slot_id is not None:
+                            fill_slot(slot_id, "[INFO]", _("要发送的消息翻译完成，翻译结果已复制到剪切板"), processed_message[2], duration=duration)
+                        else:
+                            display_message("[INFO]", _("要发送的消息翻译完成，翻译结果已复制到剪切板"), processed_message[2], duration=duration)
                         return processed_message[1]
                     else:
-                        display_message(*processed_message)
+                        if slot_id is not None:
+                            fill_slot(slot_id, *processed_message)
+                        else:
+                            display_message(*processed_message)
                         break
         return None
 
@@ -299,36 +290,41 @@ def start_translation(config):
         start_time = time.time()
 
         # Step 1: 解析每条，过滤非聊天行
-        # parsed: [(i_in_slotted, line, arrival_time, slot_id, chat_content, log_time)]
+        # parsed: [(i_in_slotted, line, arrival_time, slot_id, chat_content, log_time, player_name)]
         parsed = []
-        dismiss_slots = []  # 需要默默移除的 slot
+        dismiss_slots = []  # 需要移除的 slot
 
         for i, (line, arrival_time, slot_id) in enumerate(slotted):
             if "[CHAT]" not in line:
                 dismiss_slots.append(slot_id)
                 continue
-            chat_content = line.split("[CHAT]")[1].strip()
+                
+            name, chat_content, msg_type = parse_message(line, "log", config.message_capture.replace_garbled_chars)
+            
+            should_dismiss = False
             if not chat_content:
+                should_dismiss = True
+            elif msg_type != MessageType.SEND:
+                if is_message_blocked(chat_content):
+                    should_dismiss = True
+                elif name is not None:
+                    if name:
+                        s_name = sanitize_hypixel_name(name)
+                        if is_user_in_blacklist(s_name):
+                            should_dismiss = True
+                    elif message_processor.filter_server_messages:
+                        should_dismiss = True
+            
+            if should_dismiss:
                 dismiss_slots.append(slot_id)
                 continue
-            log_time = extract_log_time(line, arrival_time)
-            parsed.append((i, line, arrival_time, slot_id, chat_content, log_time))
 
-        # 移除非聊天行的 slot
-        if dismiss_slots:
-            from modless_chat_trans.web_display import (
-                http_messages as _hm, messages_by_id as _mbi,
-                pending_slots as _ps, message_condition as _mc
-            )
-            with _mc:
-                for sid in dismiss_slots:
-                    rec = _mbi.pop(sid, None)
-                    if rec:
-                        try:
-                            _hm.remove(rec)
-                        except ValueError:
-                            pass
-                    _ps.discard(sid)
+            log_time = extract_log_time(line, arrival_time)
+            parsed.append((i, line, arrival_time, slot_id, chat_content, log_time, name))
+
+        # 移除被过滤的 slot 的占位符
+        for sid in dismiss_slots:
+            fill_slot(sid, "", "", {})
 
         if not parsed:
             return
@@ -340,7 +336,7 @@ def start_translation(config):
         need_translate_indices = []  # 在 parsed 中的下标
         cached_results = {}          # parsed 中的下标 -> 已知译文
 
-        for i, (_, line, arrival_time, slot_id, chat_content, log_time) in enumerate(parsed):
+        for i, (_, line, arrival_time, slot_id, chat_content, log_time, _) in enumerate(parsed):
             if glossary_result := match_and_translate(chat_content):
                 cached_results[i] = glossary_result
             elif chat_content in trans_cache:
@@ -381,7 +377,7 @@ def start_translation(config):
 
         if fallback_to_single:
             logger.info("[BatchCallback] Batch failed, falling back to single-item processing.")
-            for _, line, arrival_time, slot_id, _, _ in parsed:
+            for _, line, arrival_time, slot_id, _, _, _ in parsed:
                 # slot 已预分配，直接传给 callback 复用
                 callback(line, arrival_time, slot_id=slot_id, data_type="log")
             return
@@ -390,7 +386,7 @@ def start_translation(config):
         duration = time.time() - start_time
         batch_entries = []
 
-        for i, (_, line, arrival_time, slot_id, chat_content, log_time) in enumerate(parsed):
+        for i, (_, line, arrival_time, slot_id, chat_content, log_time, original_name) in enumerate(parsed):
             raw_translated = cached_results.get(i) or batch_results.get(i, "")
 
             player_name = ""
@@ -402,16 +398,16 @@ def start_translation(config):
                 player_name = name_part
                 translated = msg_part
             elif not use_ai_extraction:
-                # 传统服务：用本地规则提取名称
-                chat_part = line.split("[CHAT]")[1].strip() if "[CHAT]" in line else ""
-                if chat_part.startswith("<"):
-                    gt = chat_part.find(">", 1)
-                    if gt != -1:
-                        player_name = chat_part[1:gt].strip()
-                elif ":" in chat_part:
-                    from modless_chat_trans.message_processor import parse_chat_name_fallback
-                    fallback_name, _, _ = parse_chat_name_fallback(chat_part)
-                    player_name = fallback_name
+                player_name = original_name or ""
+
+            # 后置过滤（由于 AI 提取导致黑名单必须在翻译后拦截）
+            if translated and use_ai_extraction:
+                if player_name:
+                    s_name = sanitize_hypixel_name(player_name)
+                    if is_user_in_blacklist(s_name):
+                        translated = ""
+                elif message_processor.filter_server_messages:
+                    translated = ""
 
             fill_slot(slot_id, player_name, translated or "", {}, duration=duration / len(parsed))
 

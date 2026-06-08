@@ -637,19 +637,17 @@ class Translator:
                 extract_name=extract_name,
             )
 
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            futures = {
-                executor.submit(call_primary): "primary",
-                executor.submit(call_fallback): "fallback",
-            }
-            errors = []
+        executor = ThreadPoolExecutor(max_workers=2)
+        futures = {
+            executor.submit(call_primary): "primary",
+            executor.submit(call_fallback): "fallback",
+        }
+        errors = []
+        try:
             for future in as_completed(futures):
                 try:
                     result = future.result()
                     logger.info(f"Race won by: {futures[future]}")
-                    # 取消另一个还在运行的任务（尽力而为）
-                    for f in futures:
-                        f.cancel()
                     return result
                 except Exception as e:
                     errors.append((futures[future], str(e)))
@@ -657,6 +655,9 @@ class Translator:
             # 两者都失败
             error_details = "; ".join(f"{name}: {err}" for name, err in errors)
             raise Exception(f"Both primary and fallback models failed: {error_details}")
+        finally:
+            # wait=False prevents blocking on the slower model; cancel_futures cancels pending tasks.
+            executor.shutdown(wait=False, cancel_futures=True)
 
     def _build_system_prompt(self, mode: TranslationMode, message_type: MessageType,
                             extract_name: bool = False) -> str:

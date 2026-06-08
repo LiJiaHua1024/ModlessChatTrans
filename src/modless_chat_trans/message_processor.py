@@ -499,18 +499,24 @@ def parse_chat_name_fallback(chat_message: str):
 @process_decorator
 def process_message(data, data_type, replace_garbled_character=False):
     """
-    处理日志文件中的一行。
-
+    处理日志文件中的一行（包含翻译和过滤的入口）。
+    
     对于 log 数据：剥离 [CHAT] 前缀，返回原始聊天内容。
     名称提取由 AI 在翻译时完成（通过 extract_name 参数）。
     对于传统翻译服务，parse_chat_name_fallback() 提供本地规则解析。
+    """
+    return parse_message(data, data_type, replace_garbled_character)
 
+
+def parse_message(data, data_type, replace_garbled_character=False):
+    """
+    解析日志文件中的一行（仅解析，不含翻译和过滤）
+    
     :param data: 需要处理的数据
     :param data_type: 数据类型 ("log", "clipboard", "webui")
     :return: 元组 (玩家名称, 聊天内容, 消息类型)
             log: (None, chat_message, MessageType.PLAYER) — None 表示名称由 AI 提取
     """
-
     chat_message: str = ""
     if data_type == "log":
         chat_message = data.split("[CHAT]")[1].strip()
