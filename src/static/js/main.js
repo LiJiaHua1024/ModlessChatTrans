@@ -1479,11 +1479,20 @@ function showContextMenu(bubbleElement, clientX, clientY) {
         labelText = I18N.showTranslation;
     }
 
-    menu.innerHTML = '<div class="context-menu-item">' + svgIcon + '<span>' + labelText + '</span></div>';
+    var copyIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+    var copyLabelText = I18N.copy || '复制';
+    
+    var readIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>';
+    var readLabelText = I18N.readAloud || '朗读';
+
+    menu.innerHTML = 
+        '<div class="context-menu-item" id="menu-toggle-translation">' + svgIcon + '<span>' + labelText + '</span></div>' +
+        '<div class="context-menu-item" id="menu-copy">' + copyIcon + '<span>' + copyLabelText + '</span></div>' +
+        '<div class="context-menu-item" id="menu-read-aloud">' + readIcon + '<span>' + readLabelText + '</span></div>';
 
     // Position: prefer below the press point, flip if too close to edge
     var menuWidth = 200; // approximate
-    var menuHeight = 50; // approximate
+    var menuHeight = 140; // approximate for 3 items
 
     var left = clientX;
     var top = clientY + 8;
@@ -1507,11 +1516,44 @@ function showContextMenu(bubbleElement, clientX, clientY) {
     menu.offsetHeight;
     menu.style.animation = 'contextMenuIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
 
-    // Click handler on menu item
-    var menuItem = menu.querySelector('.context-menu-item');
-    menuItem.onclick = function(e) {
+    // Click handlers
+    var textDiv = bubbleElement.querySelector('.message-text');
+    var textContent = textDiv ? textDiv.textContent : '';
+
+    menu.querySelector('#menu-toggle-translation').onclick = function(e) {
         e.stopPropagation();
         toggleMessageText(bubbleElement);
+        dismissContextMenu();
+    };
+
+    menu.querySelector('#menu-copy').onclick = function(e) {
+        e.stopPropagation();
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(textContent);
+        } else {
+            // fallback
+            var textArea = document.createElement("textarea");
+            textArea.value = textContent;
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try { document.execCommand('copy'); } catch (err) {}
+            document.body.removeChild(textArea);
+        }
+        dismissContextMenu();
+    };
+
+    menu.querySelector('#menu-read-aloud').onclick = function(e) {
+        e.stopPropagation();
+        fetch('/read-aloud', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ text: textContent })
+        }).catch(function(err) {
+            console.error('Failed to trigger read aloud:', err);
+        });
         dismissContextMenu();
     };
 }

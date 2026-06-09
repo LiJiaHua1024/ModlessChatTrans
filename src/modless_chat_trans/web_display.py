@@ -45,7 +45,7 @@ def start_httpserver_thread(**kwargs):
     try:
         server_thread = threading.Thread(
             target=start_httpserver,
-            args=(kwargs["http_port"], kwargs["callback"])
+            args=(kwargs["http_port"], kwargs["callback"], kwargs.get("tts_engine"))
         )
         server_thread.daemon = True
         server_thread.start()
@@ -55,7 +55,7 @@ def start_httpserver_thread(**kwargs):
         raise e
 
 
-def start_httpserver(port, callback):
+def start_httpserver(port, callback, tts_engine=None):
     global http_messages, messages_by_id, message_id_counter, clear_revision, sse_clients
     logger.info(f"Starting HTTP server on port {port}")
 
@@ -120,6 +120,23 @@ def start_httpserver(port, callback):
                 return jsonify({'success': True})
             except Exception as e:
                 logger.error(f"Error clearing messages: {str(e)}")
+                return jsonify({'success': False, 'error': str(e)}), 500
+
+        @flask_app.route('/read-aloud', methods=['POST'])
+        def read_aloud():
+            if tts_engine is None:
+                return jsonify({'success': False, 'error': 'TTS engine is not available'}), 503
+            try:
+                data = request.json
+                text = data.get('text', '')
+                if not text:
+                    return jsonify({'success': False, 'error': 'Empty text'}), 400
+                    
+                target_lang = getattr(tts_engine._config, 'target_language', '') # fallback if possible
+                tts_engine.interrupt_and_read(text, target_lang)
+                return jsonify({'success': True})
+            except Exception as e:
+                logger.error(f"Error in /read-aloud: {str(e)}")
                 return jsonify({'success': False, 'error': str(e)}), 500
 
         @flask_app.route('/stream')

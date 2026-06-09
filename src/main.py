@@ -427,7 +427,8 @@ def start_translation(config):
         http_port=config.message_presentation.web_port,
         callback=lambda data, data_type="webui", rage_mode=False: callback(
             data, time.time(), slot_id=allocate_slot(name="[INFO]", arrival_time=time.time()), data_type=data_type, rage_mode=rage_mode
-        )
+        ),
+        tts_engine=tts_engine
     )
 
     init_processor(

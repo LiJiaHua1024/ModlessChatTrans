@@ -331,6 +331,8 @@ h1:after {
     position: relative;
     transition: all var(--transition-speed), background 0.3s ease; /* 添加背景过渡 */
     animation: fadeIn 0.3s ease-in-out;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .message-bubble:hover {

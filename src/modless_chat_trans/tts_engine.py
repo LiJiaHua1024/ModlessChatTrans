@@ -294,6 +294,7 @@ class TTSEngine:
         self._last_spoken_text: Optional[str] = None
         self._currently_playing = False
         self._stop_requested = False
+        self._interrupt_requested = False
 
     # ── 属性 ──────────────────────────
 
@@ -399,6 +400,33 @@ class TTSEngine:
 
         logger.debug(f"[TTS] Enqueued ({queue_len} in queue): {speak_text[:50]}...")
 
+    def interrupt_and_read(self, text: str, target_language: str = ""):
+        """
+        打断当前正在播放的内容，优先朗读指定文本，然后恢复队列。
+
+        :param text: 要优先朗读的文本
+        :param target_language: 目标语言
+        """
+        if not self._enabled or not self._running:
+            return
+
+        if not text:
+            return
+
+        # 文本预处理
+        cleaned = preprocess_for_tts(text)
+        if not cleaned:
+            return
+
+        logger.info(f"[TTS] Interrupt and read: {cleaned[:50]}...")
+
+        # 1. 设置中断信号，停止当前合成/播放
+        self._interrupt_requested = True
+
+        # 2. 将新文本插入到队列最前端
+        with self._lock:
+            self._message_queue.appendleft((cleaned, target_language))
+
     def set_enabled(self, enabled: bool):
         """动态启用/禁用 TTS；若依赖库不可用则始终保持禁用"""
         if not TTS_AVAILABLE and enabled:
@@ -437,6 +465,7 @@ class TTSEngine:
         logger.info("[TTS] Playback loop started")
 
         while self._running:
+            self._interrupt_requested = False
             speak_text: Optional[str] = None
             target_language: str = ""
 
@@ -504,7 +533,7 @@ class TTSEngine:
                 timeout=15.0,
             )
 
-            if self._stop_requested:
+            if self._stop_requested or self._interrupt_requested:
                 return
 
             # 3. 播放音频（在线程池中执行以避免阻塞事件循环）
@@ -513,7 +542,7 @@ class TTSEngine:
                 None,
                 _play_mp3_file,
                 tmp_path,
-                lambda: self._stop_requested,
+                lambda: self._stop_requested or self._interrupt_requested,
             )
 
             if not completed:
