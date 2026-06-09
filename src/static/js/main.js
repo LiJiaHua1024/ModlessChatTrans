@@ -838,6 +838,11 @@ function initializeEventSource() {
             var pendingType = !name ? 'system' : (name === "[ERROR]" ? 'error' : (name === "[INFO]" ? 'info' : 'user'));
             pendingBubble.className = 'message-bubble ' + pendingType + ' pending-bubble';
 
+            // 应用过滤器：如果该类型被过滤掉，则隐藏 pending 气泡
+            if (messageFilters.hasOwnProperty(pendingType) && !messageFilters[pendingType]) {
+                pendingBubble.classList.add('hidden');
+            }
+
             if (name) {
                 var pendingName = document.createElement('div');
                 pendingName.className = 'message-name';
@@ -1211,7 +1216,8 @@ function applyFilters() {
             } else {
                 bubble.classList.add('hidden');
             }
-        } else {
+        } else if (!messageType) {
+            // 无法识别类型的气泡（如 folding-group-container），保持可见
             bubble.classList.remove('hidden');
         }
     });

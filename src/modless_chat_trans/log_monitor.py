@@ -14,12 +14,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import re
 import time
 import threading
 import locale
 from queue import Queue, Empty
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Tuple, Callable
+
+# 预编译用于快速判断玩家消息格式的正则表达式
+# 匹配如 "PlayerName:", "[VIP] PlayerName:" 等格式
+_RE_PLAYER_NAME_IN_CHAT = re.compile(r'(?:^|\])\s*([a-zA-Z0-9_]{3,16})\s*:')
 
 # ──────────────────────────────
 # 可选依赖：watchdog
@@ -102,6 +107,7 @@ class OrderedProcessor:
     def _run(self):
         # 延迟导入以避免循环依赖（web_display 在启动后才可用）
         from modless_chat_trans.web_display import allocate_slot
+        from modless_chat_trans import message_processor
 
         while not self._stop:
             # 1. 阻塞等待第一条
@@ -121,12 +127,33 @@ class OrderedProcessor:
 
             # 3. 预分配 slot（在主循环线程中按序完成，保证顺序）
             #    slot_id 代表这条消息在 WebUI 中的固定位置
+            #
+            #    【关键过滤】在分配 slot 之前先做快速检查，跳过以下情形：
+            #      a) 不含 [CHAT] 的行（系统日志、调试行等）—— 不会产生任何消息
+            #      b) 不含玩家名的聊天行且 filter_server_messages=True —— 系统消息会被过滤
+            #    这样可避免为最终不显示的内容创建 pending 加载气泡。
             slotted = []
             for line, arrival_time in batch:
-                # 尝试从日志行提取发送者名，用于 pending 占位显示
+                # 快速检查：不含 [CHAT] 的行无需分配 slot，直接交给 callback 处理
+                if "[CHAT]" not in line:
+                    # 仍需提交给 callback 以保证状态一致性，但不分配 slot
+                    self._executor.submit(self._callback, line, arrival_time, None, data_type="log")
+                    continue
+
+                # 快速检查：系统消息过滤
                 player_name = _extract_player_name_fast(line)
+                if not player_name and message_processor.filter_server_messages:
+                    # 快速判断：如果这条聊天行很可能是纯系统消息（非玩家发言），跳过分配 slot
+                    if _is_likely_system_message(line):
+                        self._executor.submit(self._callback, line, arrival_time, None, data_type="log")
+                        continue
+                    # 格式复杂（如 [VIP] Name: msg），无法快速判断 —— 仍分配 slot 以显示 pending
+
                 slot_id = allocate_slot(name=player_name, arrival_time=arrival_time)
                 slotted.append((line, arrival_time, slot_id))
+
+            if not slotted:
+                continue
 
             # 4. 提交到线程池并发翻译（不等待结果）
             if len(slotted) == 1:
@@ -139,7 +166,7 @@ class OrderedProcessor:
 def _extract_player_name_fast(line: str) -> str:
     """
     从日志行快速提取玩家名，用于 pending 占位显示。
-    不做完整解析，只取 <Name> 格式的名字。
+    仅处理标准 <Name> 格式；复杂格式（如 [VIP] Name: msg）返回空字符串。
     """
     try:
         chat_part = line.split("[CHAT]", 1)[1].strip() if "[CHAT]" in line else ""
@@ -150,6 +177,28 @@ def _extract_player_name_fast(line: str) -> str:
     except Exception:
         pass
     return ""
+
+
+def _is_likely_system_message(line: str) -> bool:
+    """
+    快速判断一条 CHAT 行是否很可能是纯系统消息（非玩家发言）。
+    仅在 _extract_player_name_fast 返回空字符串时调用。
+
+    规则（保守策略，宁可误判为「可能是玩家消息」）：
+    - 如果 chat 部分含有冒号并且冒号前有合法 Minecraft 名（字母/数字/下划线 3~16 位），
+      则认为「可能是玩家消息」，返回 False。
+    - 否则认为是系统消息，返回 True。
+    """
+    try:
+        chat_part = line.split("[CHAT]", 1)[1].strip() if "[CHAT]" in line else ""
+        if not chat_part:
+            return True
+        # 如果含有「名字:」模式，保守地认为可能是玩家消息
+        if _RE_PLAYER_NAME_IN_CHAT.search(chat_part):
+            return False
+    except Exception:
+        pass
+    return True
 
 
 # ------------------------------
