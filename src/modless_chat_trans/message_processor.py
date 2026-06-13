@@ -346,7 +346,7 @@ def process_decorator(function):
         if data_type == "log" and filter_server_messages and not name and name is not None:
             # name="" (本地解析结果为系统消息) 且启用过滤 → 丢弃
             # name=None 表示等待 AI 提取，不在此过滤
-            return "", "", MessageType.SYSTEM
+            return None
         if original_chat_message:
             # ── 决定是否走 AI 名称提取路径 ──
             use_ai_extraction = (
