@@ -342,7 +342,7 @@ def process_decorator(function):
                 return None
 
         if data_type == "log" and filter_server_messages and not name:
-            return "", "", MessageType.SYSTEM
+            return None
         if original_chat_message:
             if matched_translated_message := match_and_translate(original_chat_message):
                 logger.debug(f"Using custom glossary: {original_chat_message} -> {matched_translated_message}")
