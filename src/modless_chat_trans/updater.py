@@ -201,7 +201,7 @@ class MultiThreadDownloader:
         try:
             # 首先检查服务器是否支持断点续传
             headers = {'Range': 'bytes=0-0'}
-            test_response = requests.head(self.url, headers=headers, allow_redirects=True)
+            test_response = requests.head(self.url, headers=headers, allow_redirects=True, timeout=30)
 
             # 获取文件总大小
             if 'content-range' in test_response.headers:
@@ -272,7 +272,7 @@ class MultiThreadDownloader:
                 # 等待所有下载完成
                 for future in as_completed(futures):
                     if self.cancelled:
-                        executor.shutdown(wait=False)
+                        executor.shutdown(wait=True, cancel_futures=True)
                         break
 
                     try:
@@ -280,22 +280,22 @@ class MultiThreadDownloader:
                         if not result:
                             logger.error(f"Thread {futures[future]} failed")
                             self.cancelled = True
-                            executor.shutdown(wait=False)
+                            executor.shutdown(wait=True, cancel_futures=True)
                             break
                     except Exception as e:
                         logger.error(f"Thread {futures[future]} error: {str(e)}")
                         self.cancelled = True
-                        executor.shutdown(wait=False)
+                        executor.shutdown(wait=True, cancel_futures=True)
                         break
 
             if self.cancelled:
-                # 清理临时文件
+                # 清理临时文件（此时线程池已 wait=True 等待全部线程退出，文件句柄已释放）
                 for temp_file in temp_files:
                     try:
                         if os.path.exists(temp_file):
                             os.remove(temp_file)
-                    except:
-                        pass
+                    except OSError as e:
+                        logger.warning(f"Failed to remove temp file {temp_file}: {e}")
                 return None
 
             # 合并文件
@@ -321,8 +321,8 @@ class MultiThreadDownloader:
                 try:
                     if os.path.exists(temp_file):
                         os.remove(temp_file)
-                except:
-                    pass
+                except OSError as e:
+                    logger.warning(f"Failed to remove temp file {temp_file}: {e}")
             return None
 
     def _download_chunk(self, url, start, end, temp_file, part_num, download_stats):
@@ -330,7 +330,7 @@ class MultiThreadDownloader:
         headers = {'Range': f'bytes={start}-{end}'}
 
         try:
-            response = requests.get(url, headers=headers, stream=True)
+            response = requests.get(url, headers=headers, stream=True, timeout=30)
             response.raise_for_status()
 
             with open(temp_file, 'wb') as f:
@@ -393,7 +393,7 @@ class MultiThreadDownloader:
         final_path = get_path(self.filename, temp_path=False)
 
         try:
-            response = requests.get(self.url, stream=True)
+            response = requests.get(self.url, stream=True, timeout=30)
             response.raise_for_status()
 
             self.total_size = int(response.headers.get('content-length', 0))

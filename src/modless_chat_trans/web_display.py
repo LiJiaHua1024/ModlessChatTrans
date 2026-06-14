@@ -35,8 +35,9 @@ sse_clients = []
 # slot 系统：pending_slots 记录已预分配但尚未填充的 message_id 集合
 pending_slots: set = set()
 # update_queue 记录最近已填充的 slot 事件（用于 SSE 推送 update）
-# 元素为 message_id
-update_events: deque = deque(maxlen=200)
+# 元素为 (event_id, message_id)，event_id 为单调递增序号，解决 deque 截断后游标失效的问题
+_update_event_counter = count(1)
+update_events: deque = deque()
 update_condition = threading.Condition(message_condition)
 
 
@@ -182,8 +183,8 @@ def start_httpserver(port, callback, tts_engine=None):
                     else:
                         next_event_id = last_event_id + 1
 
-                # 每个 SSE 连接维护自己的 update_cursor
-                sent_update_count = 0
+                # 每个 SSE 连接维护自己的 update_cursor（基于单调 event_id）
+                sent_update_event_id = 0
 
                 try:
                     while True:
@@ -196,7 +197,6 @@ def start_httpserver(port, callback, tts_engine=None):
                                 current_clear_revision = clear_revision
                                 send_clear_signal = True
                                 next_event_id = http_messages[0]['id'] if http_messages else 1
-                                sent_update_count = len(update_events)
 
                             while True:
                                 if http_messages and next_event_id < http_messages[0]['id']:
@@ -209,18 +209,16 @@ def start_httpserver(port, callback, tts_engine=None):
                                 new_messages.append(message)
                                 next_event_id = message['id'] + 1
 
-                            current_len = len(update_events)
-                            if current_len > sent_update_count:
-                                for i in range(sent_update_count, current_len):
-                                    uid = update_events[i]
-                                    record = messages_by_id.get(uid)
+                            # 基于单调 event_id 收集尚未推送的 update 事件
+                            for eid, mid in update_events:
+                                if eid > sent_update_event_id:
+                                    record = messages_by_id.get(mid)
                                     if record and not record.get('pending', True):
                                         new_updates.append(record)
-                                sent_update_count = current_len
+                                    sent_update_event_id = eid
 
                             if not send_clear_signal and not new_messages and not new_updates:
                                 message_condition.wait(timeout=heartbeat_interval)
-                                continue
 
                         if send_clear_signal:
                             yield 'data: {"clear": true}\n\n'
@@ -374,7 +372,10 @@ def fill_slot(message_id: int, name: str, message: str, info: dict, duration=Non
             record["pending"] = False
             record["original"] = original
             pending_slots.discard(message_id)
-            update_events.append(message_id)
+            update_events.append((next(_update_event_counter), message_id))
+            # 保持 update_events 最多 200 条，避免无限增长
+            while len(update_events) > 200:
+                update_events.popleft()
             message_condition.notify_all()
 
     if fallback:

@@ -41,9 +41,14 @@ def extract_log_time(line: str, fallback: float) -> float:
             today = datetime.now().date()
             dt = datetime.combine(today, dt_time(h, mi, s))
             ts = dt.timestamp()
-            # 跨午夜修正：若解析时间比系统时间早超过 12 小时，说明已跨天
-            if fallback - ts > 43200:
+            # 跨午夜修正：若解析时间与系统时间偏差超过 12 小时，说明已跨天
+            diff = fallback - ts
+            if diff > 43200:
+                # 解析时间在 fallback 之前超过 12 小时（如昨天凌晨）：加一天
                 ts += 86400
+            elif diff < -43200:
+                # 解析时间在 fallback 之后超过 12 小时（如昨晚日志跨零点）：减一天
+                ts -= 86400
             return ts
         except (ValueError, OverflowError):
             pass

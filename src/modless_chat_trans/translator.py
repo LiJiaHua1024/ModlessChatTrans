@@ -467,7 +467,8 @@ class Translator:
                 logger.info(f"Initial JSON parsing failed ({e1}), attempting to clean and retry...")
 
                 try:
-                    content_dict = json.loads(re.sub(r"^```json\s*([\s\S]*?)\s*```$", r"\1", content_str))
+                    m = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", content_str)
+                    content_dict = json.loads(m.group(1) if m else content_str)
                 except json.JSONDecodeError as e2:
                     logger.warning("Failed to parse optimized translation JSON even after cleaning")
                     raise ValueError("Failed to parse optimized translation JSON") from e2
@@ -930,7 +931,8 @@ class Translator:
             result = json.loads(content_str)
         except json.JSONDecodeError:
             # 清理可能的 markdown 代码块
-            cleaned = re.sub(r"^```(?:json)?\s*([\s\S]*?)\s*```$", r"\1", content_str)
+            m = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", content_str)
+            cleaned = m.group(1) if m else content_str
             result = json.loads(cleaned)
 
         if not isinstance(result, list) or len(result) != n:
@@ -1005,7 +1007,7 @@ class Translator:
             "text": [text],
             "target_lang": target_language.split("-")[0].upper(),
         }
-        if source_language:
+        if source_language and source_language.lower() != "auto":
             data["source_lang"] = source_language.split("-")[0].upper()
 
         response = requests.post(url, headers=headers, data=data, timeout=timeout)
@@ -1053,7 +1055,12 @@ class Translator:
 
     def _translate_alibaba(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
         timeout = self.timeout
-        access_key_id, access_key_secret = api_key.split(":")
+        if ":" not in api_key:
+            raise ValueError(
+                "Alibaba API key must be in 'access_key_id:access_key_secret' format. "
+                "Please check your configuration."
+            )
+        access_key_id, access_key_secret = api_key.split(":", 1)
 
         url = "https://mt.cn-hangzhou.aliyuncs.com/"
 
@@ -1105,7 +1112,7 @@ class Translator:
         }
         payload = {
             "source": [text],
-            "trans_type": f"{source_language.split('-')[0] if source_language else 'auto'}{target_language.split('-')[0]}"
+            "trans_type": f"{source_language.split('-')[0] if source_language else 'auto'}2{target_language.split('-')[0]}"
         }
 
         response = requests.post(url, headers=headers, json=payload, timeout=timeout)
@@ -1117,8 +1124,12 @@ class Translator:
     def _translate_youdao(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
         timeout = self.timeout
         url = "https://openapi.youdao.com/api"
-        app_key = api_key.split(":")[0]
-        app_secret = api_key.split(":")[1]
+        if ":" not in api_key:
+            raise ValueError(
+                "Youdao API key must be in 'app_key:app_secret' format. "
+                "Please check your configuration."
+            )
+        app_key, app_secret = api_key.split(":", 1)
 
         def encrypt(sign_str):
             hash_algorithm = hashlib.sha256()

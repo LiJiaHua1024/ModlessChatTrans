@@ -685,8 +685,8 @@ def start_log_monitor(config: MessageCaptureConfig, callback, batch_callback=Non
     # 如果没有专属批量回调，用单条回调包装一下
     if batch_callback is None:
         def batch_callback(items, data_type="log"):
-            for line, arrival_time in items:
-                callback(line, arrival_time, data_type=data_type)
+            for line, arrival_time, slot_id in items:
+                callback(line, arrival_time, slot_id, data_type=data_type)
 
     # 共享队列（生产者写入，OrderedProcessor 读取）
     line_queue: Queue = Queue(maxsize=500)

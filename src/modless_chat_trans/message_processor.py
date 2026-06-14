@@ -322,7 +322,7 @@ def process_decorator(function):
                     - [2]: 相关信息（如是否命中缓存、消耗token等）
         """
 
-        name, original_chat_message, message_type = function(data, data_type)
+        name, original_chat_message, message_type = function(data, data_type, replace_garbled_character)
         translated_chat_message: str = ""
         info: dict = {}
         context_messages = context_messages or []
