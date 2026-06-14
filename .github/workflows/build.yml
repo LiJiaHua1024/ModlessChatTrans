@@ -12,6 +12,11 @@ on:
         type: boolean
         required: false
         default: false
+      fast_mode:
+        description: 'Fast mode (disables LTO for quicker builds)'
+        type: boolean
+        required: false
+        default: true
   push:
     tags:
       - 'v*'
@@ -36,10 +41,100 @@ jobs:
       shell: pwsh
 
     - name: Install dependencies with uv
-      run: |
-        uv sync
-        uv add nuitka zstandard
       shell: pwsh
+      run: |
+        $maxRetries = 3
+        for ($i = 1; $i -le $maxRetries; $i++) {
+          Write-Host "::group::uv sync (attempt $i / $maxRetries)"
+          uv sync
+          if ($LASTEXITCODE -eq 0) { Write-Host "::endgroup::"; break }
+          Write-Host "::endgroup::"
+          Write-Host "::warning::uv sync failed (attempt $i / $maxRetries)"
+          if ($i -lt $maxRetries) { Start-Sleep -Seconds 10 } else { Write-Host "::error::uv sync failed after $maxRetries attempts"; exit 1 }
+        }
+        for ($i = 1; $i -le $maxRetries; $i++) {
+          Write-Host "::group::uv add nuitka zstandard (attempt $i / $maxRetries)"
+          uv add nuitka zstandard
+          if ($LASTEXITCODE -eq 0) { Write-Host "::endgroup::"; break }
+          Write-Host "::endgroup::"
+          Write-Host "::warning::uv add failed (attempt $i / $maxRetries)"
+          if ($i -lt $maxRetries) { Start-Sleep -Seconds 10 } else { Write-Host "::error::uv add nuitka zstandard failed after $maxRetries attempts"; exit 1 }
+        }
+        # Sanity: verify key packages are importable
+        uv run python -c "import nuitka; import zstandard; print('nuitka OK, zstandard', zstandard.__version__)"
+        if ($LASTEXITCODE -ne 0) {
+          Write-Host "::error::Key packages (nuitka, zstandard) not importable after install"
+          exit 1
+        }
+
+    - name: Install LLVM/Clang
+      shell: pwsh
+      run: |
+        $maxRetries = 3
+        for ($i = 1; $i -le $maxRetries; $i++) {
+          Write-Host "::group::Installing LLVM (attempt $i / $maxRetries)"
+          choco install llvm --no-progress -y --allow-downgrade
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "::endgroup::"
+            break
+          }
+          Write-Host "::endgroup::"
+          Write-Host "::warning::choco install llvm failed (attempt $i / $maxRetries)"
+          if ($i -lt $maxRetries) {
+            Start-Sleep -Seconds 15
+          } else {
+            Write-Host "::error::Failed to install LLVM/Clang after $maxRetries attempts"
+            exit 1
+          }
+        }
+        echo "C:\Program Files\LLVM\bin" >> $env:GITHUB_PATH
+        # Update PATH for this step so verification works
+        $env:Path = "C:\Program Files\LLVM\bin;$env:Path"
+        if (-not (Get-Command clang-cl.exe -ErrorAction SilentlyContinue)) {
+          Write-Host "::error::clang-cl.exe not found after LLVM install — check chocolatey output above"
+          exit 1
+        }
+        Write-Host "clang-cl version: $(& clang-cl --version)"
+        if ($LASTEXITCODE -ne 0) {
+          Write-Host "::error::clang-cl.exe present but returned non-zero exit code"
+          exit 1
+        }
+
+    - name: Install ccache
+      shell: pwsh
+      run: |
+        $maxRetries = 3
+        for ($i = 1; $i -le $maxRetries; $i++) {
+          Write-Host "::group::Installing ccache (attempt $i / $maxRetries)"
+          choco install ccache --no-progress -y --allow-downgrade
+          if ($LASTEXITCODE -eq 0) { Write-Host "::endgroup::"; break }
+          Write-Host "::endgroup::"
+          Write-Host "::warning::choco install ccache failed (attempt $i / $maxRetries)"
+          if ($i -lt $maxRetries) { Start-Sleep -Seconds 10 } else { Write-Host "::error::Failed to install ccache after $maxRetries attempts"; exit 1 }
+        }
+        # Verify ccache is on PATH
+        ccache --version
+        if ($LASTEXITCODE -ne 0) { Write-Host "::error::ccache installed but not runnable"; exit 1 }
+        # Configure cache directory and limits
+        $ccacheDir = "${{ github.workspace }}\.ccache"
+        echo "CCACHE_DIR=${ccacheDir}" >> $env:GITHUB_ENV
+        echo "CCACHE_MAXSIZE=1G" >> $env:GITHUB_ENV
+        echo "CCACHE_COMPILERTYPE=clang" >> $env:GITHUB_ENV
+        # Apply to current step as well
+        $env:CCACHE_DIR = $ccacheDir
+        $env:CCACHE_MAXSIZE = "1G"
+        $env:CCACHE_COMPILERTYPE = "clang"
+        ccache --zero-stats --max-size=1G
+        Write-Host "ccache ready — cache dir: ${ccacheDir}"
+
+    - name: Restore ccache
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: ccache-windows-clang-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+        restore-keys: |
+          ccache-windows-clang-${{ hashFiles('pyproject.toml') }}
+          ccache-windows-clang-
 
     - name: Determine version and generate build info
       id: determine_version
@@ -120,11 +215,11 @@ jobs:
         $fileVersion = "${{ steps.determine_version.outputs.file_version }}"
         $productVersion = "${{ steps.determine_version.outputs.product_version }}"
         $keepConsole = "${{ github.event.inputs.keep_console }}"
+        $fastMode = "${{ github.event.inputs.fast_mode }}"
 
         $commonArgs = @(
           '--onefile'
-          '--mingw64'
-          '--lto=yes'
+          '--clang'
           '--noinclude-pytest-mode=nofollow'
           '--windows-icon-from-ico=src/icon.ico'
           '--enable-plugin=dill-compat'
@@ -154,13 +249,75 @@ jobs:
           $commonArgs += '--windows-console-mode=disable'
         }
 
-        uv run nuitka @commonArgs src/main.py
+        # LTO 策略：Tag 触发（Release）始终开启 LTO；
+        # 手动触发时，Fast Mode 默认开启 → 关闭 LTO 以加速编译
+        if ("${{ github.event_name }}" -eq "push") {
+          $commonArgs += '--lto=yes'
+          Write-Host "LTO: enabled (release build)"
+        } elseif ($fastMode -eq "true") {
+          Write-Host "LTO: disabled (fast mode)"
+        } else {
+          $commonArgs += '--lto=yes'
+          Write-Host "LTO: enabled (manual, fast mode off)"
+        }
+
+        # ---- Nuitka build with retry ----
+        # Nuitka may fail spuriously when downloading toolchain / dependency
+        # packages over flaky networks. Retry a few times with back-off.
+        $maxBuildRetries = 3
+        $buildSucceeded = $false
+        for ($i = 1; $i -le $maxBuildRetries; $i++) {
+          Write-Host "::group::Nuitka build (attempt $i / $maxBuildRetries)"
+          uv run nuitka @commonArgs src/main.py
+          if ($LASTEXITCODE -eq 0) {
+            $buildSucceeded = $true
+            Write-Host "::endgroup::"
+            break
+          }
+          Write-Host "::endgroup::"
+          Write-Host "::warning::Nuitka build failed (attempt $i / $maxBuildRetries, exit code $LASTEXITCODE)"
+          if ($i -lt $maxBuildRetries) {
+            $delay = 30 * [Math]::Pow(2, $i - 1)   # 30, 60, 120 s
+            Write-Host "Retrying in $delay seconds..."
+            Start-Sleep -Seconds $delay
+          }
+        }
+        if (-not $buildSucceeded) {
+          Write-Host "::error::Nuitka build failed after $maxBuildRetries attempts — check logs above for the underlying error"
+          exit 1
+        }
+
+        # ---- Post-build sanity checks ----
+        if (-not (Test-Path "ModlessChatTrans.exe")) {
+          Write-Host "::error::ModlessChatTrans.exe not found after successful Nuitka exit — build may have silently failed"
+          exit 1
+        }
+        $exeSize = (Get-Item "ModlessChatTrans.exe").Length
+        Write-Host "ModlessChatTrans.exe size: $([math]::Round($exeSize / 1MB, 1)) MB"
+        if ($exeSize -lt 1048576) {
+          Write-Host "::error::ModlessChatTrans.exe is smaller than 1 MB ($exeSize bytes) — likely a corrupted / stub binary"
+          exit 1
+        }
+
+        # ---- ccache statistics ----
+        Write-Host "::group::ccache stats"
+        ccache --show-stats --verbose 2>&1 || ccache --show-stats
+        Write-Host "::endgroup::"
 
     - name: Rename executable
+      shell: pwsh
       run: |
         $outputName = "${{ steps.determine_version.outputs.output_file_name }}"
+        if (-not (Test-Path "ModlessChatTrans.exe")) {
+          Write-Host "::error::ModlessChatTrans.exe missing before rename — previous steps may have reported false success"
+          exit 1
+        }
         ren ModlessChatTrans.exe "${outputName}.exe"
-      shell: pwsh
+        if (-not (Test-Path "${outputName}.exe")) {
+          Write-Host "::error::Rename to ${outputName}.exe failed"
+          exit 1
+        }
+        Write-Host "Artifact ready: ${outputName}.exe ($([math]::Round((Get-Item "${outputName}.exe").Length / 1MB, 1)) MB)"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
