@@ -478,6 +478,9 @@ def start_translation(config):
 
 
 def run_scheduled_update_check(update_check_func):
+    if cfg.settings.debug:
+        logger.debug("Skipping scheduled update check: debug mode is enabled")
+        return
     acuf = cfg.settings.auto_check_update_frequency
     luct = cfg.settings.last_update_check_time
     now = datetime.now()
