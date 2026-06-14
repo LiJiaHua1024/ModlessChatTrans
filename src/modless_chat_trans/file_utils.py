@@ -23,7 +23,7 @@ from diskcache import Cache
 from modless_chat_trans.logger import logger
 
 base_path = os.path.dirname(os.path.dirname(__file__))
-cache = Cache("mct-cache")
+cache = Cache("mct-cache", eviction_policy="least-frequently-used")
 
 
 def get_path(path: str, temp_path=True) -> str:
@@ -39,6 +39,40 @@ def is_file_exists(file_path: str) -> bool:
 
 def get_platform() -> int:
     return {"nt": 0, "posix": 1}.get(os.name, 2)
+
+
+def prune_stale_cache(*, dry_run: bool = False) -> tuple[int, int]:
+    """
+    清理缓存中从未被读取过的条目（access_count == 0）。
+
+    Args:
+        dry_run: 为 True 时只统计不删除，返回 (stale_count, total)。
+
+    Returns:
+        (stale_count, total): dry_run 模式返回待清理数和总数；
+                              实际删除后返回已清理数和清理前总数。
+    """
+    rows = cache._sql('SELECT key FROM Cache WHERE access_count = 0')
+    stale_keys = [row[0] for row in rows]
+
+    if dry_run or not stale_keys:
+        total = len(cache)
+        if not stale_keys:
+            logger.debug(f"Cache prune: no stale entries found (total={total})")
+        return len(stale_keys), total
+
+    total_before = len(cache)
+    deleted = 0
+    for key in stale_keys:
+        try:
+            del cache[key]
+            deleted += 1
+        except KeyError:
+            pass
+
+    logger.info(f"Cache pruned: deleted {deleted} stale entries (access_count=0), "
+                f"{len(cache)} remaining (was {total_before})")
+    return deleted, total_before
 
 
 def find_latest_log(directory: str) -> str:

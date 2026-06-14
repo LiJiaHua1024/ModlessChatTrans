@@ -61,7 +61,7 @@ from qfluentwidgets import (
     TransparentToolButton
 )
 
-from modless_chat_trans.file_utils import get_path
+from modless_chat_trans.file_utils import get_path, cache, prune_stale_cache
 from modless_chat_trans.i18n import supported_languages, _
 from modless_chat_trans.logger import logger
 from modless_chat_trans.config import (
@@ -3728,6 +3728,10 @@ class SettingInterface(QFrame):
         update_card = self.create_update_card()
         scroll_layout.addWidget(update_card)
 
+        # 缓存管理卡片
+        cache_card = self.create_cache_card()
+        scroll_layout.addWidget(cache_card)
+
         scroll_layout.addStretch()
         self.main_layout.addWidget(scroll_widget)
 
@@ -3892,6 +3896,90 @@ class SettingInterface(QFrame):
 
         card_layout.addWidget(content_frame)
         return card
+
+    def create_cache_card(self):
+        """创建缓存管理卡片"""
+        card = SimpleCardWidget(self)
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(20, 16, 20, 16)
+        card_layout.setSpacing(12)
+
+        # 卡片标题
+        card_title = SubtitleLabel(_('缓存管理'), card)
+        setFont(card_title, 16, weight=QFont.Weight.DemiBold)
+        card_layout.addWidget(card_title)
+
+        # 缓存管理内容区域
+        content_frame = QFrame(card)
+        content_layout = QGridLayout(content_frame)
+        content_layout.setContentsMargins(0, 8, 0, 0)
+        content_layout.setHorizontalSpacing(16)
+        content_layout.setVerticalSpacing(12)
+
+        # 清除缓存按钮
+        clear_label = BodyLabel(_('清除缓存：'), content_frame)
+        self.clear_cache_button = PushButton(_('清理不常用缓存'), content_frame)
+        self.clear_cache_button.clicked.connect(self.clear_cache)
+
+        content_layout.addWidget(clear_label, 0, 0, Qt.AlignmentFlag.AlignRight)
+        content_layout.addWidget(self.clear_cache_button, 0, 1)
+
+        # 设置列拉伸
+        content_layout.setColumnStretch(2, 1)
+
+        card_layout.addWidget(content_frame)
+        return card
+
+    def clear_cache(self):
+        """清理不常用缓存条目（access_count == 0，即从未被读取过的条目）"""
+        try:
+            stale_count, total_before = prune_stale_cache(dry_run=True)
+        except Exception as e:
+            logger.error(f"Failed to query cache: {e}")
+            InfoBar.error(
+                title=_('清理失败'),
+                content=_('查询缓存时出错：{}').format(str(e)),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self
+            )
+            return
+
+        if stale_count == 0:
+            InfoBar.info(
+                title=_('无需清理'),
+                content=_('没有不常用的缓存条目，所有缓存都曾被使用过。'),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self
+            )
+            return
+
+        kept = total_before - stale_count
+
+        w = MessageBox(
+            _("确认清理"),
+            _("将清理 {} 条不常用缓存条目（从未被读取），总计 {} 条中保留 {} 条。此操作不可恢复。").format(
+                stale_count, total_before, kept
+            ),
+            self.window()
+        )
+
+        if w.exec():
+            prune_stale_cache()
+            InfoBar.success(
+                title=_('清理成功'),
+                content=_('已清理 {} 条不常用缓存条目').format(stale_count),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self
+            )
 
     def apply_language_setting(self):
         """应用语言设置"""
