@@ -1225,64 +1225,6 @@ h1:after {
     background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23e0e0e0%22%20d%3D%22M287%2069.4a17.6%2017.6%0A0%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.4-5.4-13z%22%2F%3E%3C%2Fsvg%3E');
 }
 
-/* --------------------
-   Pending Messages
--------------------- */
-.message-pending {
-    opacity: 0.7;
-    transition: opacity 0.3s ease;
-}
-
-.pending-bubble {
-    display: inline-block;
-    padding: 12px 18px;
-    border-radius: 12px;
-}
-
-.pending-dots {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    height: 1.5em; /* Match standard text height */
-    padding: 0 4px;
-}
-
-.pending-dots span {
-    width: 6px;
-    height: 6px;
-    background-color: var(--text-primary);
-    border-radius: 50%;
-    animation: bounce 1.4s infinite ease-in-out both;
-    opacity: 0.6;
-}
-
-.pending-dots span:nth-child(1) {
-    animation-delay: -0.32s;
-}
-
-.pending-dots span:nth-child(2) {
-    animation-delay: -0.16s;
-}
-
-@keyframes bounce {
-    0%, 80%, 100% { 
-        transform: scale(0);
-    } 
-    40% { 
-        transform: scale(1);
-    }
-}
-
-.pending-resolve {
-    animation: slot-fill 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-@keyframes slot-fill {
-    0% { transform: scale(0.95); opacity: 0.8; }
-    50% { transform: scale(1.02); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
-}
 
 /* --------------------
    Context Menu (Long-Press)

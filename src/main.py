@@ -181,7 +181,7 @@ def start_translation(config):
     def callback(line, arrival_time, slot_id=None, data_type="log", rage_mode=False):
         """
         并发翻译单条回调。
-        slot_id 为已预分配的 WebUI 展示位置（data_type=='log' 时必须传入）。
+        slot_id 为已预分配的 WebUI 展示位置。
         """
         start_time = time.time()
 
@@ -190,10 +190,8 @@ def start_translation(config):
             log_time = extract_log_time(line, arrival_time)
             ctx_messages = context_buffer.get_context_messages()
 
-            # 如果不含 [CHAT]，这个 slot 不展示任何内容
             if "[CHAT]" not in line:
                 if slot_id is not None:
-                    # 移除加载占位符
                     fill_slot(slot_id, "", "", {})
                 return
 
@@ -238,7 +236,7 @@ def start_translation(config):
                             continue
                         break
                 else:
-                    # 过滤掉了（筛选或黑名单），发送空消息以移除占位符
+                    # 过滤掉了（筛选或黑名单），清除占位 slot
                     if slot_id is not None:
                         fill_slot(slot_id, "", "", {})
                     break
@@ -276,35 +274,32 @@ def start_translation(config):
                     if slot_id is not None:
                         fill_slot(slot_id, "", "", {})
                     break
-            else:
-                if slot_id is not None:
-                    fill_slot(slot_id, "", "", {})
         return None
 
-    def batch_callback(slotted, data_type="log"):
+    def batch_callback(items, data_type="log"):
         """
-        批量回调。slotted 为 [(line, arrival_time, slot_id), ...]。
-        slot_id 已由 OrderedProcessor 预分配，顺序永远正确。
+        批量回调。items 为 [(line, arrival_time, slot_id), ...]。
+        slot_id 已由 OrderedProcessor 预分配。
         """
         if data_type != "log":
-            for line, arrival_time, slot_id in slotted:
+            for line, arrival_time, slot_id in items:
                 callback(line, arrival_time, slot_id=slot_id, data_type=data_type)
             return
 
         start_time = time.time()
 
         # Step 1: 解析每条，过滤非聊天行
-        # parsed: [(i_in_slotted, line, arrival_time, slot_id, chat_content, log_time)]
+        # parsed: [(i_in_items, line, arrival_time, slot_id, chat_content, log_time, player_name)]
         parsed = []
-        dismiss_slots = []  # 需要默默移除的 slot
+        dismiss_slots = []
 
-        for i, (line, arrival_time, slot_id) in enumerate(slotted):
+        for i, (line, arrival_time, slot_id) in enumerate(items):
             if "[CHAT]" not in line:
                 dismiss_slots.append(slot_id)
                 continue
-                
+
             name, chat_content, msg_type = parse_message(line, "log", config.message_capture.replace_garbled_chars)
-            
+
             should_dismiss = False
             if not chat_content:
                 should_dismiss = True
@@ -315,10 +310,10 @@ def start_translation(config):
                         should_dismiss = True
                 if is_message_blocked(chat_content):
                     should_dismiss = True
-            
+
             if message_processor.filter_server_messages and not name:
                 should_dismiss = True
-                
+
             if should_dismiss:
                 dismiss_slots.append(slot_id)
                 continue
@@ -337,8 +332,8 @@ def start_translation(config):
         from modless_chat_trans.file_utils import cache as trans_cache
         from modless_chat_trans.message_processor import match_and_translate
 
-        need_translate_indices = []  # 在 parsed 中的下标
-        cached_results = {}          # parsed 中的下标 -> 已知译文
+        need_translate_indices = []
+        cached_results = {}
 
         for i, (_, line, arrival_time, slot_id, chat_content, log_time, player_name) in enumerate(parsed):
             if glossary_result := match_and_translate(chat_content):
@@ -374,8 +369,7 @@ def start_translation(config):
 
         if fallback_to_single:
             logger.info("[BatchCallback] Batch failed, falling back to single-item processing.")
-            for _, line, arrival_time, slot_id, _, _, _ in parsed:
-                # slot 已预分配，直接传给 callback 复用
+            for _, line, arrival_time, slot_id, chat_content, log_time, player_name in parsed:
                 callback(line, arrival_time, slot_id=slot_id, data_type="log")
             return
 
@@ -449,7 +443,6 @@ def start_translation(config):
     monitor_thread.start()
 
     if config.message_send.monitor_clipboard:
-        # monitor_clipboard 调用格式: callback(data, data_type="clipboard")
         def clipboard_callback(data, data_type="clipboard"):
             return callback(
                 data, time.time(), slot_id=allocate_slot(name="[INFO]", arrival_time=time.time()), data_type=data_type

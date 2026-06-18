@@ -32,14 +32,6 @@ MAX_HTTP_MESSAGES = 2000
 clear_revision = 0
 sse_clients = []
 
-# slot 系统：pending_slots 记录已预分配但尚未填充的 message_id 集合
-pending_slots: set = set()
-# update_queue 记录最近已填充的 slot 事件（用于 SSE 推送 update）
-# 元素为 (event_id, message_id)，event_id 为单调递增序号，解决 deque 截断后游标失效的问题
-_update_event_counter = count(1)
-update_events: deque = deque()
-update_condition = threading.Condition(message_condition)
-
 
 def start_httpserver_thread(**kwargs):
     """启动HTTP服务器线程"""
@@ -183,14 +175,10 @@ def start_httpserver(port, callback, tts_engine=None):
                     else:
                         next_event_id = last_event_id + 1
 
-                # 每个 SSE 连接维护自己的 update_cursor（基于单调 event_id）
-                sent_update_event_id = 0
-
                 try:
                     while True:
                         send_clear_signal = False
                         new_messages = []
-                        new_updates = []
 
                         with message_condition:
                             if clear_revision != current_clear_revision:
@@ -205,19 +193,18 @@ def start_httpserver(port, callback, tts_engine=None):
                                 message = messages_by_id.get(next_event_id)
                                 if not message:
                                     break
+                                # 跳过 pending slot，等待 fill_slot 完成后继续
+                                if message.get('pending'):
+                                    break
+
+                                next_event_id = message['id'] + 1
+                                # 跳过被过滤的空消息（slot 已 fill 但无内容）
+                                if not message.get('message'):
+                                    continue
 
                                 new_messages.append(message)
-                                next_event_id = message['id'] + 1
 
-                            # 基于单调 event_id 收集尚未推送的 update 事件
-                            for eid, mid in update_events:
-                                if eid > sent_update_event_id:
-                                    record = messages_by_id.get(mid)
-                                    if record and not record.get('pending', True):
-                                        new_updates.append(record)
-                                    sent_update_event_id = eid
-
-                            if not send_clear_signal and not new_messages and not new_updates:
+                            if not send_clear_signal and not new_messages:
                                 message_condition.wait(timeout=heartbeat_interval)
 
                         if send_clear_signal:
@@ -233,7 +220,6 @@ def start_httpserver(port, callback, tts_engine=None):
                                     "message": message['message'],
                                     "time": message['time'],
                                     "duration": message['duration'],
-                                    "pending": message.get('pending', False),
                                     "glossary_match": info_payload.get("glossary_match", False),
                                     "skip_src_lang": info_payload.get("skip_src_lang", False),
                                     "cache_hit": info_payload.get("cache_hit", False),
@@ -243,27 +229,6 @@ def start_httpserver(port, callback, tts_engine=None):
                                 json_message = json.dumps(message_data, ensure_ascii=False)
                                 yield f"id: {message['id']}\n"
                                 yield f"data: {json_message}\n\n"
-                            last_heartbeat_sent = time.time()
-
-                        if new_updates:
-                            for record in new_updates:
-                                info_payload = record.get('info') or {}
-                                update_data = {
-                                    "id": record['id'],
-                                    "name": record['name'],
-                                    "message": record['message'],
-                                    "time": record['time'],
-                                    "duration": record['duration'],
-                                    "pending": False,
-                                    "glossary_match": info_payload.get("glossary_match", False),
-                                    "skip_src_lang": info_payload.get("skip_src_lang", False),
-                                    "cache_hit": info_payload.get("cache_hit", False),
-                                    "usage": info_payload.get("usage"),
-                                    "original": record.get("original")
-                                }
-                                json_update = json.dumps(update_data, ensure_ascii=False)
-                                yield "event: update\n"
-                                yield f"data: {json_update}\n\n"
                             last_heartbeat_sent = time.time()
 
                         if time.time() - last_heartbeat_sent >= heartbeat_interval:
@@ -287,101 +252,6 @@ def start_httpserver(port, callback, tts_engine=None):
         flask_app.run(debug=False, host='0.0.0.0', port=port)
     except Exception as e:
         logger.error(f"Failed to start HTTP server: {str(e)}")
-
-
-def allocate_slot(name="", arrival_time=None):
-    """
-    预分配一个带序号的 pending slot。
-
-    返回 message_id，并在 http_messages / messages_by_id 中创建一个 pending 占位符。
-    前端会立即收到这个 pending消息（显示加载动画）。
-    翻译完成后调用 fill_slot() 补充内容。
-
-    :param name: 发送者名（可为空）
-    :param arrival_time: 行到达时刻（epoch），用于显示时间
-    :return: message_id (int)
-    """
-    global http_messages, messages_by_id, message_id_counter
-
-    current_time = datetime.now().strftime("%H:%M")
-    message_id = next(message_id_counter)
-
-    record = {
-        "id": message_id,
-        "name": name,
-        "message": None,        # 占位：翻译中
-        "time": current_time,
-        "duration": None,
-        "info": {},
-        "pending": True,        # 标识此条尚未完成
-    }
-
-    with message_condition:
-        http_messages.append(record)
-        messages_by_id[message_id] = record
-        pending_slots.add(message_id)
-
-        if len(http_messages) > MAX_HTTP_MESSAGES:
-            removed = http_messages.popleft()
-            messages_by_id.pop(removed['id'], None)
-            pending_slots.discard(removed['id'])
-
-        message_condition.notify_all()
-
-    logger.debug(f"Slot allocated: id={message_id} name={name or 'System'}")
-    return message_id
-
-
-def fill_slot(message_id: int, name: str, message: str, info: dict, duration=None, original=None):
-    """
-    将已分配的 slot 填充真实内容。
-
-    :param message_id: allocate_slot() 返回的 id
-    :param name: 发送者名
-    :param message: 译文
-    :param info: 相关信息字典
-    :param duration: 处理耗时（秒，可为 None）
-    :param original: 原文内容（可选）
-    """
-    global http_messages, messages_by_id
-
-    if duration is not None:
-        if duration < 0.001:
-            duration_str = "instant"
-        elif duration < 1:
-            duration_str = f"{round(duration * 1000)}ms"
-        else:
-            duration_str = f"{round(duration, 2)}s"
-    else:
-        duration_str = None
-
-    info_payload = dict(info) if isinstance(info, dict) else {}
-
-    fallback = False
-    with message_condition:
-        record = messages_by_id.get(message_id)
-        if record is None:
-            # slot 已被脱队（消息对象过旧），降级为直接添加
-            logger.warning(f"fill_slot: id={message_id} not found, falling back to display_message")
-            fallback = True
-        else:
-            record["name"] = name
-            record["message"] = message
-            record["duration"] = duration_str
-            record["info"] = info_payload
-            record["pending"] = False
-            record["original"] = original
-            pending_slots.discard(message_id)
-            update_events.append((next(_update_event_counter), message_id))
-            # 保持 update_events 最多 200 条，避免无限增长
-            while len(update_events) > 200:
-                update_events.popleft()
-            message_condition.notify_all()
-
-    if fallback:
-        display_message(name, message, info, duration, original)
-
-    logger.debug(f"Slot filled: id={message_id} name={name or 'System'} msg={message[:30] if message else ''}")
 
 
 def display_message(name, message, info, duration=None, original=None):
@@ -431,3 +301,83 @@ def display_message(name, message, info, duration=None, original=None):
         logger.debug(f"Adding message from {name if name else 'System'} to HTTP server queue")
     except Exception as e:
         logger.error(f"Error adding message to HTTP server: {str(e)}")
+
+
+def allocate_slot(name="", arrival_time=None):
+    """
+    预分配一个带固定序号的展示 slot，保证并发翻译时显示顺序正确。
+
+    :param name: 发送者名（可为空）
+    :param arrival_time: 行到达时刻（epoch）
+    :return: message_id (int)
+    """
+    global http_messages, messages_by_id, message_id_counter
+
+    current_time = datetime.now().strftime("%H:%M")
+    message_id = next(message_id_counter)
+
+    record = {
+        "id": message_id,
+        "name": name,
+        "message": None,
+        "time": current_time,
+        "duration": None,
+        "info": {},
+        "pending": True,
+    }
+
+    with message_condition:
+        http_messages.append(record)
+        messages_by_id[message_id] = record
+
+        if len(http_messages) > MAX_HTTP_MESSAGES:
+            removed = http_messages.popleft()
+            messages_by_id.pop(removed['id'], None)
+
+        message_condition.notify_all()
+
+    logger.debug(f"Slot allocated: id={message_id} name={name or 'System'}")
+    return message_id
+
+
+def fill_slot(message_id: int, name: str, message: str, info: dict, duration=None, original=None):
+    """
+    填充已预分配的 slot。若 slot 已被淘汰则降级为 display_message。
+
+    :param message_id: allocate_slot() 返回的 id
+    :param name: 发送者名
+    :param message: 译文
+    :param info: 相关信息字典
+    :param duration: 处理耗时（秒）
+    :param original: 原文内容（可选）
+    """
+    global http_messages, messages_by_id
+
+    if duration is not None:
+        if duration < 0.001:
+            duration_str = "instant"
+        elif duration < 1:
+            duration_str = f"{round(duration * 1000)}ms"
+        else:
+            duration_str = f"{round(duration, 2)}s"
+    else:
+        duration_str = None
+
+    info_payload = dict(info) if isinstance(info, dict) else {}
+
+    with message_condition:
+        record = messages_by_id.get(message_id)
+        if record is None:
+            logger.warning(f"fill_slot: id={message_id} not found, falling back to display_message")
+            display_message(name, message, info, duration, original)
+            return
+
+        record["name"] = name
+        record["message"] = message
+        record["duration"] = duration_str
+        record["info"] = info_payload
+        record["pending"] = False
+        record["original"] = original
+        message_condition.notify_all()
+
+    logger.debug(f"Slot filled: id={message_id} name={name or 'System'} msg={message[:30] if message else ''}")
