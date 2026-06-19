@@ -256,6 +256,7 @@ jobs:
           $commonArgs += '--lto=yes'
           Write-Host "LTO: enabled (release build)"
         } elseif ($fastMode -eq "true") {
+          $commonArgs += '--lto=no'
           Write-Host "LTO: disabled (fast mode)"
         } else {
           $commonArgs += '--lto=yes'
