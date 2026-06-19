@@ -100,41 +100,38 @@ jobs:
           exit 1
         }
 
-    - name: Install ccache
+    - name: Configure clcache directory
       shell: pwsh
       run: |
-        $maxRetries = 3
-        for ($i = 1; $i -le $maxRetries; $i++) {
-          Write-Host "::group::Installing ccache (attempt $i / $maxRetries)"
-          choco install ccache --no-progress -y --allow-downgrade
-          if ($LASTEXITCODE -eq 0) { Write-Host "::endgroup::"; break }
-          Write-Host "::endgroup::"
-          Write-Host "::warning::choco install ccache failed (attempt $i / $maxRetries)"
-          if ($i -lt $maxRetries) { Start-Sleep -Seconds 10 } else { Write-Host "::error::Failed to install ccache after $maxRetries attempts"; exit 1 }
-        }
-        # Verify ccache is on PATH
-        ccache --version
-        if ($LASTEXITCODE -ne 0) { Write-Host "::error::ccache installed but not runnable"; exit 1 }
-        # Configure cache directory and limits
-        $ccacheDir = "${{ github.workspace }}\.ccache"
-        echo "CCACHE_DIR=${ccacheDir}" >> $env:GITHUB_ENV
-        echo "CCACHE_MAXSIZE=1G" >> $env:GITHUB_ENV
-        echo "CCACHE_COMPILERTYPE=clang" >> $env:GITHUB_ENV
-        # Apply to current step as well
-        $env:CCACHE_DIR = $ccacheDir
-        $env:CCACHE_MAXSIZE = "1G"
-        $env:CCACHE_COMPILERTYPE = "clang"
-        ccache --zero-stats --max-size=1G
-        Write-Host "ccache ready — cache dir: ${ccacheDir}"
+        # Nuitka on Windows with --clang uses an INLINE clcache copy (not ccache!).
+        # It reads CLCACHE_DIR from the environment. If unset, it defaults to a
+        # Nuitka-local path that gets wiped on every ephemeral runner.
+        # By setting CLCACHE_DIR here, Nuitka will use our persistent directory.
+        $clcacheDir = "${{ github.workspace }}\.clcache"
+        New-Item -ItemType Directory -Force -Path $clcacheDir | Out-Null
+        echo "CLCACHE_DIR=$clcacheDir" >> $env:GITHUB_ENV
+        # Also export for this step's shell (defensive)
+        $env:CLCACHE_DIR = $clcacheDir
+        Write-Host "clcache directory: $clcacheDir"
 
-    - name: Restore ccache
+    - name: Restore clcache
       uses: actions/cache@v5
       with:
-        path: ${{ github.workspace }}/.ccache
-        key: ccache-windows-clang-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+        path: ${{ github.workspace }}/.clcache
+        # Key includes dependency hashes so cache is invalidated when deps change.
+        # clcache itself does content hashing, so stale entries auto-miss safely.
+        key: clcache-windows-clang-py3.12-${{ hashFiles('pyproject.toml', 'uv.lock') }}
         restore-keys: |
-          ccache-windows-clang-${{ hashFiles('pyproject.toml') }}
-          ccache-windows-clang-
+          clcache-windows-clang-py3.12-
+
+    - name: Restore Nuitka download cache
+      uses: actions/cache@v5
+      with:
+        path: |
+          C:\Users\runneradmin\AppData\Local\Nuitka\Nuitka\Cache\downloads
+        key: nuitka-downloads-windows-clang-${{ hashFiles('uv.lock') }}
+        restore-keys: |
+          nuitka-downloads-windows-clang-
 
     - name: Determine version and generate build info
       id: determine_version
@@ -212,6 +209,10 @@ jobs:
     - name: Build with Nuitka
       shell: pwsh
       run: |
+        # Ensure CLCACHE_DIR is set in this shell (already in GITHUB_ENV, but defensive)
+        $env:CLCACHE_DIR = "${{ github.workspace }}\.clcache"
+        New-Item -ItemType Directory -Force -Path $env:CLCACHE_DIR -ErrorAction SilentlyContinue | Out-Null
+
         $fileVersion = "${{ steps.determine_version.outputs.file_version }}"
         $productVersion = "${{ steps.determine_version.outputs.product_version }}"
         $keepConsole = "${{ github.event.inputs.keep_console }}"
@@ -299,9 +300,17 @@ jobs:
           exit 1
         }
 
-        # ---- ccache statistics ----
-        Write-Host "::group::ccache stats"
-        ccache --show-stats --verbose 2>&1 || ccache --show-stats
+        # ---- clcache statistics ----
+        # Nuitka already prints clcache hit/miss summary in its build output.
+        # Here we show the cache directory size for verification.
+        Write-Host "::group::clcache stats"
+        $clcacheSize = (Get-ChildItem -Path $env:CLCACHE_DIR -Recurse -ErrorAction SilentlyContinue |
+            Measure-Object -Property Length -Sum).Sum
+        if ($clcacheSize) {
+          Write-Host "clcache directory size: $([math]::Round($clcacheSize / 1MB, 1)) MB"
+        } else {
+          Write-Host "clcache directory is empty (first run or cache was not restored)"
+        }
         Write-Host "::endgroup::"
 
     - name: Rename executable
