@@ -126,14 +126,20 @@ class BlacklistConfig(BaseConfigModel):
 
 class ContextConfig(BaseConfigModel):
     """上下文翻译配置"""
-    # 上下文分割策略：fixed（固定长度）或 time_based（基于时间跨度）
-    strategy: Literal["fixed", "time_based"] = "time_based"
-    # 最多保留的历史条数（两种策略均生效）
+    model_config = ConfigDict(
+        alias_generator=snake_to_kebab,
+        populate_by_name=True,
+        extra="ignore",
+    )
+    # 上下文分割策略：disabled（不启用）, fixed（固定长度）或 time_based（基于时间跨度）
+    strategy: Literal["disabled", "fixed", "time_based"] = "time_based"
+    # 最多保留的历史条数（0 = 无限制）
     context_length: int = 10
     # 时间跨度阈值（秒），超过则视为新对话，仅 time_based 生效
     context_timeout: float = 120.0
-    # 是否对传统翻译服务（DeepL/Bing 等）启用文本拼接上下文（实验性）
-    enable_for_traditional: bool = False
+    # 分块截断大小: "disabled"（传统逐条滑动窗口）, "auto"（自动计算为 context-length 的一半）,
+    # 或正整数字符串（如 "5"）。仅在 context-length > 0 且 strategy != "disabled" 时生效
+    block_truncation_size: str = "disabled"
 
 
 class TTSConfig(BaseConfigModel):

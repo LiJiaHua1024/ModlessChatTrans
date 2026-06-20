@@ -163,6 +163,7 @@ def start_translation(config):
         strategy=ctx_cfg.strategy,
         context_length=ctx_cfg.context_length,
         context_timeout=ctx_cfg.context_timeout,
+        block_truncation_size=ctx_cfg.block_truncation_size,
     )
 
     # 初始化 TTS 朗读引擎（若依赖库不可用则使用 no-op stub）
