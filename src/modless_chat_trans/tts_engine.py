@@ -48,6 +48,7 @@ _RE_BRACKET_TAGS = re.compile(r'\[.*?\]')
 _RE_URL = re.compile(r'https?://\S+')
 _RE_REPEATED_PUNCT_EN = re.compile(r'([!?,.:;])\1{2,}')
 _RE_REPEATED_PUNCT_CJK = re.compile(r'([。！？，、；：])\1{1,}')
+_RE_REPEATED_CHARS = re.compile(r'(.{1,10}?)\1{3,}')
 _RE_CONTROL_CHARS = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]')
 _RE_MULTI_SPACE = re.compile(r'\s{2,}')
 
@@ -109,6 +110,9 @@ def preprocess_for_tts(text: str) -> str:
     # 4. 规范化重复标点
     text = _RE_REPEATED_PUNCT_EN.sub(r'\1', text)
     text = _RE_REPEATED_PUNCT_CJK.sub(r'\1', text)
+
+    # 4.1 规范化重复字符（如 hahahaha, www, 2333333 替换为 3 次重复以防语音刷屏）
+    text = _RE_REPEATED_CHARS.sub(r'\1\1\1', text)
 
     # 5. 移除控制字符
     text = _RE_CONTROL_CHARS.sub('', text)
