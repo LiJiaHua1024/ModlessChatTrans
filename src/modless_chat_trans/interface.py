@@ -50,7 +50,7 @@ from PySide6.QtWidgets import (
 )
 from qfluentwidgets import (
     Action, BodyLabel, CaptionLabel, CheckBox, ComboBox,
-    DropDownPushButton, EditableComboBox, ElevatedCardWidget,
+    DropDownPushButton, DoubleSpinBox, EditableComboBox, ElevatedCardWidget,
     FluentIcon, FluentWindow, HyperlinkLabel, IconWidget,
     IndeterminateProgressRing, InfoBar, InfoBarIcon, InfoBarPosition,
     LineEdit, MessageBox, MessageBoxBase, NavigationItemPosition,
@@ -1687,6 +1687,173 @@ class MessageSendInterface(QFrame):
                 self.tgt_lang_combo.setCurrentIndex(index)
 
 
+class ContextTranslationInterface(QFrame):
+    """上下文翻译界面组件"""
+
+    def __init__(self, parent, config=None):
+        super().__init__(parent=parent)
+        self.setObjectName("contextTranslation")
+        self.config = config
+        self.init_ui()
+
+    def hideEvent(self, event):
+        """当界面隐藏时，关闭TeachingTip"""
+        TeachingTipManager.close_current()
+        super().hideEvent(event)
+
+    def init_ui(self):
+        # 主布局
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(30, 30, 30, 30)
+        self.main_layout.setSpacing(20)
+
+        # 标题
+        title = SubtitleLabel(_('上下文翻译设置'), self)
+        setFont(title, 24)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.main_layout.addWidget(title)
+
+        # 表单网格
+        self.grid_layout = QGridLayout()
+        self.grid_layout.setSpacing(15)
+        self.grid_layout.setColumnStretch(1, 1)
+
+        # 1. 策略
+        strategy_label = BodyLabel(_('上下文分割策略：'), self)
+        self.strategy_combo = ComboBox(self)
+        self.strategy_combo.addItem(_('不启用'), userData="disabled")
+        self.strategy_combo.addItem(_('固定长度'), userData="fixed")
+        self.strategy_combo.addItem(_('基于时间跨度'), userData="time_based")
+        
+        help_button_strategy = create_help_button(
+            self,
+            _("配置如何管理上下文对话。\n- 不启用：不保存任何上下文\n- 固定长度：保留固定条数的历史记录\n- 基于时间跨度：在设定的时间跨度内视为同一对话"),
+            self.strategy_combo
+        )
+        
+        strategy_layout = QHBoxLayout()
+        strategy_layout.setSpacing(5)
+        strategy_layout.addWidget(self.strategy_combo)
+        strategy_layout.addWidget(help_button_strategy)
+        strategy_layout.addStretch()
+
+        self.grid_layout.addWidget(strategy_label, 0, 0)
+        self.grid_layout.addLayout(strategy_layout, 0, 1)
+
+        # 2. 历史条数
+        length_label = BodyLabel(_('最大保留历史条数：'), self)
+        self.context_length_spin = SpinBox(self)
+        self.context_length_spin.setRange(0, 999)
+        
+        help_button_length = create_help_button(
+            self,
+            _("最多保留的历史对话条数（0 表示无限制）"),
+            self.context_length_spin
+        )
+        
+        length_layout = QHBoxLayout()
+        length_layout.setSpacing(5)
+        length_layout.addWidget(self.context_length_spin)
+        length_layout.addWidget(help_button_length)
+        length_layout.addStretch()
+
+        self.grid_layout.addWidget(length_label, 1, 0)
+        self.grid_layout.addLayout(length_layout, 1, 1)
+
+        # 3. 时间跨度
+        timeout_label = BodyLabel(_('时间跨度阈值(秒)：'), self)
+        self.context_timeout_spin = DoubleSpinBox(self)
+        self.context_timeout_spin.setRange(0.0, 9999.0)
+        
+        help_button_timeout = create_help_button(
+            self,
+            _("超过此时长（秒）没有新消息，则视为新对话。\n仅在“基于时间跨度”策略下生效。"),
+            self.context_timeout_spin
+        )
+        
+        timeout_layout = QHBoxLayout()
+        timeout_layout.setSpacing(5)
+        timeout_layout.addWidget(self.context_timeout_spin)
+        timeout_layout.addWidget(help_button_timeout)
+        timeout_layout.addStretch()
+
+        self.grid_layout.addWidget(timeout_label, 2, 0)
+        self.grid_layout.addLayout(timeout_layout, 2, 1)
+
+        # 4. 分块截断大小
+        truncation_label = BodyLabel(_('分块截断大小：'), self)
+        
+        self.block_truncation_combo = ComboBox(self)
+        self.block_truncation_combo.addItem(_('自动'), userData="auto")
+        self.block_truncation_combo.addItem(_('关闭'), userData="disabled")
+        self.block_truncation_combo.addItem(_('自定义'), userData="custom")
+        
+        self.block_truncation_spin = SpinBox(self)
+        self.block_truncation_spin.setRange(1, 999)
+        self.block_truncation_spin.hide()
+        
+        self.block_truncation_combo.currentIndexChanged.connect(self._on_truncation_mode_changed)
+        
+        help_button_trunc = create_help_button(
+            self,
+            _("分块截断大小：\n- 自动：自动计算为最大保留历史条数的一半\n- 关闭：传统逐条滑动窗口\n- 自定义：设置具体的截断大小"),
+            self.block_truncation_combo
+        )
+        
+        trunc_layout = QHBoxLayout()
+        trunc_layout.setSpacing(5)
+        trunc_layout.addWidget(self.block_truncation_combo)
+        trunc_layout.addWidget(self.block_truncation_spin)
+        trunc_layout.addWidget(help_button_trunc)
+        trunc_layout.addStretch()
+
+        self.grid_layout.addWidget(truncation_label, 3, 0)
+        self.grid_layout.addLayout(trunc_layout, 3, 1)
+
+        self.main_layout.addLayout(self.grid_layout)
+        self.main_layout.addStretch()
+
+        # 加载初始值
+        if self.config and hasattr(self.config, 'context'):
+            ctx = self.config.context
+            
+            # strategy
+            idx = self.strategy_combo.findData(ctx.strategy)
+            if idx >= 0:
+                self.strategy_combo.setCurrentIndex(idx)
+                
+            # context_length
+            self.context_length_spin.setValue(ctx.context_length)
+            
+            # context_timeout
+            self.context_timeout_spin.setValue(ctx.context_timeout)
+            
+            # block_truncation_size
+            trunc_val = str(ctx.block_truncation_size)
+            if trunc_val in ["disabled", "auto"]:
+                idx = self.block_truncation_combo.findData(trunc_val)
+                if idx >= 0:
+                    self.block_truncation_combo.setCurrentIndex(idx)
+            else:
+                idx = self.block_truncation_combo.findData("custom")
+                if idx >= 0:
+                    self.block_truncation_combo.setCurrentIndex(idx)
+                try:
+                    self.block_truncation_spin.setValue(int(trunc_val))
+                except ValueError:
+                    self.block_truncation_spin.setValue(1)
+            
+            # 触发一次以更新数字框的可见性
+            self._on_truncation_mode_changed(self.block_truncation_combo.currentIndex())
+
+    def _on_truncation_mode_changed(self, index):
+        data = self.block_truncation_combo.itemData(index)
+        if data == "custom":
+            self.block_truncation_spin.show()
+        else:
+            self.block_truncation_spin.hide()
+
+
 class GlossaryInterface(QFrame):
     """术语表界面组件"""
 
@@ -2959,6 +3126,7 @@ class StartInterface(QFrame):
         trans_service = main.translation_service_interface
         msg_present = main.message_presentation_interface
         msg_send = main.message_send_interface
+        context = main.context_translation_interface
         glossary = main.glossary_interface
         blacklist = main.blacklist_interface
         setting = main.setting_interface
@@ -3083,6 +3251,16 @@ class StartInterface(QFrame):
         else:
             cfg.message_send.source_language = msg_send.src_lang_combo.currentText()
             cfg.message_send.target_language = msg_send.tgt_lang_combo.currentText()
+
+        # 4.5) 上下文翻译
+        cfg.context.strategy = context.strategy_combo.currentData()
+        cfg.context.context_length = context.context_length_spin.value()
+        cfg.context.context_timeout = context.context_timeout_spin.value()
+        trunc_mode = context.block_truncation_combo.currentData()
+        if trunc_mode == "custom":
+            cfg.context.block_truncation_size = str(context.block_truncation_spin.value())
+        else:
+            cfg.context.block_truncation_size = str(trunc_mode)
 
         # 5) 术语表
         cfg.glossary = glossary.get_glossary_data()
@@ -4234,6 +4412,7 @@ class MainWindow(FluentWindow):
         self.translation_service_interface = TranslationServiceInterface(self, config)
         self.message_presentation_interface = MessagePresentationInterface(self, config)
         self.message_send_interface = MessageSendInterface(self, initial_send_service_type, config)
+        self.context_translation_interface = ContextTranslationInterface(self, config)
         self.glossary_interface = GlossaryInterface(self, config)
         self.blacklist_interface = BlacklistInterface(self, config)
         self.start_interface = StartInterface(self)  # 已改为卡片式布局且提供启动/保存
@@ -4407,6 +4586,7 @@ class MainWindow(FluentWindow):
         self.addSubInterface(self.translation_service_interface, FluentIcon.LANGUAGE, _('翻译服务'))
         self.addSubInterface(self.message_presentation_interface, FluentIcon.VIEW, _('翻译结果显示'))
         self.addSubInterface(self.message_send_interface, FluentIcon.SEND, _('发送消息'))
+        self.addSubInterface(self.context_translation_interface, FluentIcon.HISTORY, _('上下文翻译'))
         self.addSubInterface(self.glossary_interface, FluentIcon.DICTIONARY, _('术语表'))
         self.addSubInterface(self.blacklist_interface, FluentIcon.FILTER, _('黑名单'))
         self.addSubInterface(self.start_interface, FluentIcon.POWER_BUTTON, _('启动'))
