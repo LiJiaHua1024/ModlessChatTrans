@@ -197,7 +197,9 @@ def start_translation(config):
                 return
 
             # 重试5次
-            chat_content = line.split("[CHAT]")[1].strip() if "[CHAT]" in line else ""
+            chat_content = line.split("[CHAT]")[1].strip()
+            if config.message_capture.replace_garbled_chars:
+                chat_content = chat_content.replace("\ufffd\ufffd", "\u00A7")
             for attempt in range(5):
                 if processed_message := process_message(
                         line,
@@ -252,30 +254,37 @@ def start_translation(config):
                         target_language=config.message_send.target_language,
                         rage_mode=rage_mode
                 ):
-                    if not processed_message[0]:
-                        modify_clipboard(processed_message[1])
+                    is_error, translated, info = processed_message
+                    if not is_error:
+                        modify_clipboard(translated)
                         duration = time.time() - start_time
+                        if not info:
+                            info = {}
+                        info["send_translation_complete"] = True
                         if slot_id is not None:
-                            fill_slot(slot_id, "[INFO]", _("要发送的消息翻译完成，翻译结果已复制到剪切板"), processed_message[2], duration=duration)
+                            fill_slot(slot_id, "[INFO]", _("要发送的消息翻译完成，翻译结果已复制到剪切板"), info, duration=duration)
                         else:
                             display_message(
                                 "[INFO]",
                                 _("要发送的消息翻译完成，翻译结果已复制到剪切板"),
-                                processed_message[2],
+                                info,
                                 duration=duration
                             )
-                        return processed_message[1]
+                        return translated
                     else:
+                        logger.error(f"[Clipboard/WebUI] Translation attempt {attempt + 1} failed: {translated}")
+                        if attempt < 4:
+                            continue
                         if slot_id is not None:
-                            fill_slot(slot_id, processed_message[0], processed_message[1], processed_message[2])
+                            fill_slot(slot_id, is_error, translated, info)
                         else:
-                            display_message(*processed_message)
+                            display_message(is_error, translated, info)
                         break
                 else:
                     if slot_id is not None:
                         fill_slot(slot_id, "", "", {})
                     break
-        return None
+            return None
 
     def batch_callback(items, data_type="log"):
         """
@@ -453,22 +462,16 @@ def start_translation(config):
         clipboard_thread.daemon = True
         clipboard_thread.start()
 
-    def load_litellm():
-        litellm_name = litellm.__name__
-        logger.info(f"'litellm'(name: {litellm_name}) library preloaded")
-
-    def load_translators():
-        ts_version = ts.__version__
-        logger.info(f"'translators'(version: {ts_version}) library preloaded")
+    from modless_chat_trans.translator import ensure_litellm_loaded, ensure_ts_loaded
 
     services_to_load = {config.player_translation.service_type}
     if config.send_translation_independent:
         services_to_load.add(config.send_translation.service_type)
 
     if ServiceType.LLM in services_to_load:
-        threading.Thread(target=load_litellm, daemon=True).start()
+        threading.Thread(target=ensure_litellm_loaded, daemon=True).start()
     if ServiceType.TRADITIONAL in services_to_load:
-        threading.Thread(target=load_translators, daemon=True).start()
+        threading.Thread(target=ensure_ts_loaded, daemon=True).start()
 
 
 def run_scheduled_update_check(update_check_func):

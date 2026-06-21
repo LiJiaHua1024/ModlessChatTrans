@@ -106,8 +106,20 @@ TRADITIONAL_SERVICES = [
 ]
 services = LLM_PROVIDERS + TRADITIONAL_SERVICES
 
+import threading
+
 ts = lazy.load("translators")
 litellm = lazy.load("litellm")
+
+_import_lock = threading.Lock()
+
+def ensure_ts_loaded():
+    with _import_lock:
+        _ = ts.__name__
+
+def ensure_litellm_loaded():
+    with _import_lock:
+        _ = litellm.__name__
 
 
 def get_supported_languages(service):
@@ -914,7 +926,7 @@ class Translator:
                 {"role": "user", "content": user_message},
             ],
             "temperature": 0,
-            "max_tokens": 64 * n + 64,
+            "max_tokens": max(2048, 128 * n + 512),
             "api_key": self.translation_service_config.llm.api_key,
             "timeout": self.timeout,
         }
@@ -969,29 +981,27 @@ class Translator:
         """
 
         traditional_api_key: str = self.translation_service_config.traditional.api_key
-        if traditional_api_key:
-            service = service.lower()
+        service_lower = service.lower()
 
-            dispatch_map: Dict[str, Callable[[str, str, str, str], str]] = {
-                "deepl": self._translate_deepl,
-                "google": self._translate_google,
-                "yandex": self._translate_yandex,
-                "alibaba": self._translate_alibaba,
-                "caiyun": self._translate_caiyun,
-                "youdao": self._translate_youdao,
-                "bing": self._translate_bing
-            }
+        dispatch_map: Dict[str, Callable[[str, str, str, str], str]] = {
+            "deepl": self._translate_deepl,
+            "google": self._translate_google,
+            "yandex": self._translate_yandex,
+            "alibaba": self._translate_alibaba,
+            "caiyun": self._translate_caiyun,
+            "youdao": self._translate_youdao,
+            "bing": self._translate_bing
+        }
 
-            if service in dispatch_map:
-                return dispatch_map[service](text, traditional_api_key, source_language, target_language)
-            else:
-                raise ValueError(f"Unsupported translation service: {service}")
+        if traditional_api_key and service_lower in dispatch_map:
+            return dispatch_map[service_lower](text, traditional_api_key, source_language, target_language)
         else:
-            if translated_message := ts.translate_text(text, translator=service.lower(),
-                                                       from_language=source_language, to_language=target_language):
+            translated_message = ts.translate_text(text, translator=service_lower,
+                                                   from_language=source_language, to_language=target_language)
+            if translated_message:
                 return translated_message
             else:
-                raise Exception(f"Traditional translation failed: {translated_message}")
+                raise Exception(f"Traditional translation failed (no result returned from '{service}')")
 
     def _translate_deepl(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
         timeout = self.timeout

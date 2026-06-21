@@ -394,7 +394,7 @@ class TTSEngine:
 
             # 与队尾比较
             if self._message_queue:
-                last_queued = self._message_queue[-1][1]
+                last_queued = self._message_queue[-1][0]
                 if speak_text == last_queued:
                     logger.debug(f"[TTS] Same as tail, skipped: {speak_text[:40]}...")
                     return

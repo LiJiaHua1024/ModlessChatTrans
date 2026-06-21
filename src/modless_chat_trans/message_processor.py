@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import re
+import threading
 from json import JSONDecodeError
 from requests.exceptions import HTTPError
 from modless_chat_trans.i18n import _
@@ -33,6 +34,7 @@ filter_server_messages = True
 glossary = {}
 _compiled_glossary_patterns = {}
 glossary_compiled = False
+_glossary_lock = threading.Lock()
 replace_garbled_character = False
 user_blacklist = []
 user_blacklist_set = set()  # 预构建的用户黑名单集合（用于O(1)查找）
@@ -228,8 +230,11 @@ def match_and_translate(original_chat_message: str) -> str | None:
     使用更新后的规则（包括重复变量检查）来匹配和翻译消息。
     """
 
+    global glossary_compiled
     if not glossary_compiled:
-        _compile_glossary_patterns()
+        with _glossary_lock:
+            if not glossary_compiled:
+                _compile_glossary_patterns()
 
     # 1. 尝试通过编译后的模式进行匹配
     for pattern_key, pattern_data in _compiled_glossary_patterns.items():

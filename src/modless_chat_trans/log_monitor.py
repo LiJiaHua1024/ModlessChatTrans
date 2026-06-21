@@ -659,9 +659,17 @@ def start_log_monitor(config: MessageCaptureConfig, callback, batch_callback=Non
             line_queue=line_queue,
             interval=0.2
         )
+        import atexit
+        def poller_cleanup():
+            logger.info("[Compat] Performing atexit cleanup...")
+            poller.stop()
+            processor.stop()
+            processor.join(timeout=5)
+        atexit.register(poller_cleanup)
         try:
             poller.run()
         finally:
+            atexit.unregister(poller_cleanup)
             processor.stop()
             processor.join(timeout=5)
         return
@@ -676,6 +684,19 @@ def start_log_monitor(config: MessageCaptureConfig, callback, batch_callback=Non
     logger.info(f"[Efficient] Observer scheduled for directory: {handler.base_dir}. Starting observer.")
     observer.start()
 
+    import atexit
+    def observer_cleanup():
+        logger.info("[Efficient] Performing atexit cleanup...")
+        observer.stop()
+        observer.join()
+        try:
+            handler.close()
+        except Exception:
+            pass
+        processor.stop()
+        processor.join(timeout=5)
+    atexit.register(observer_cleanup)
+
     try:
         observer.join()
     except KeyboardInterrupt:
@@ -687,6 +708,7 @@ def start_log_monitor(config: MessageCaptureConfig, callback, batch_callback=Non
         logger.error("[Efficient] Observer stopped due to unexpected error.")
 
     observer.join()
+    atexit.unregister(observer_cleanup)
     logger.info("Log monitoring stopped.")
     try:
         handler.close()

@@ -195,7 +195,12 @@ def start_httpserver(port, callback, tts_engine=None):
                                     break
                                 # 跳过 pending slot，等待 fill_slot 完成后继续
                                 if message.get('pending'):
-                                    break
+                                    if time.time() - message.get('created_at', 0) > 10.0:
+                                        logger.warning(f"Pending message slot {next_event_id} timed out. Skipping.")
+                                        message['pending'] = False
+                                        message['message'] = ""
+                                    else:
+                                        break
 
                                 next_event_id = message['id'] + 1
                                 # 跳过被过滤的空消息（slot 已 fill 但无内容）
@@ -224,7 +229,8 @@ def start_httpserver(port, callback, tts_engine=None):
                                     "skip_src_lang": info_payload.get("skip_src_lang", False),
                                     "cache_hit": info_payload.get("cache_hit", False),
                                     "usage": info_payload.get("usage"),
-                                    "original": message.get("original")
+                                    "original": message.get("original"),
+                                    "send_translation_complete": info_payload.get("send_translation_complete", False)
                                 }
                                 json_message = json.dumps(message_data, ensure_ascii=False)
                                 yield f"id: {message['id']}\n"
@@ -324,6 +330,7 @@ def allocate_slot(name="", arrival_time=None):
         "duration": None,
         "info": {},
         "pending": True,
+        "created_at": time.time(),
     }
 
     with message_condition:

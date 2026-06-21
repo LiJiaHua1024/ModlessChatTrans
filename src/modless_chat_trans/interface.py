@@ -3269,7 +3269,9 @@ class StartInterface(QFrame):
         cfg.blacklist = blacklist.get_blacklist_data()
 
         # 7) 设置
-        cfg.settings.interface_language = setting.language_combo.currentData()
+        lang_data = setting.language_combo.currentData()
+        if lang_data:
+            cfg.settings.interface_language = lang_data
         cfg.settings.auto_check_update_frequency = setting.update_frequency_combo.currentData()
         cfg.settings.include_prerelease = setting.include_prerelease_check.isChecked()
         # 其余 settings 字段（debug/last_update_check_time 等）保持不变
@@ -4471,8 +4473,6 @@ class MainWindow(FluentWindow):
                     if provider:
                         # 触发语言加载
                         self.on_traditional_service_changed(provider, "player")
-                        # 设置默认语言值
-                        QTimer.singleShot(500, lambda: self.set_initial_traditional_languages("player"))
 
         # 加载发送消息服务的语言（如果独立设置）
         if self.config.send_translation_independent and hasattr(self.config,
@@ -4483,8 +4483,6 @@ class MainWindow(FluentWindow):
                     if provider:
                         # 触发语言加载
                         self.on_traditional_service_changed(provider, "send")
-                        # 设置默认语言值
-                        QTimer.singleShot(500, lambda: self.set_initial_traditional_languages("send"))
 
     def set_initial_traditional_languages(self, service_id):
         """设置传统翻译服务的初始语言值"""
@@ -4562,7 +4560,6 @@ class MainWindow(FluentWindow):
                         provider = self.config.send_translation.traditional.provider
                         if provider:
                             self.on_traditional_service_changed(provider, "send")
-                            QTimer.singleShot(500, lambda: self.set_initial_traditional_languages("send"))
         else:
             # 如果取消勾选，同步当前玩家服务的设置到发送消息界面
             player_service_type = self.translation_service_interface.get_current_service_type("player")

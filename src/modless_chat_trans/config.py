@@ -446,7 +446,7 @@ def save_config(config: ConfigV3 | ConfigV3FromInit) -> bool:
         with open("modless-chat-trans.toml", 'wb') as f:
             tomli_w.dump(config.model_dump(by_alias=True, mode='json', exclude_none=True), f)
         return True
-    except:
+    except Exception:
         return False
 
 

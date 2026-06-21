@@ -823,7 +823,7 @@ function initializeEventSource() {
         var usage = jsonData.usage;
         var original = jsonData.original;
 
-        if (name === "[INFO]" && isTranslating) {
+        if (name === "[INFO]" && isTranslating && jsonData.send_translation_complete) {
             setTimeout(resetTranslationUI, 500);
         }
 
