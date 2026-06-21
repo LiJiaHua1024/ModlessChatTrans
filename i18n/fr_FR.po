@@ -1127,3 +1127,139 @@ msgstr "Échec du test TTS : {}"
 #: modless_chat_trans/interface.py:3864
 msgid "⚠ 更新依赖不可用"
 msgstr "⚠ Dépendance de mise à jour indisponible"
+
+#: modless_chat_trans/interface.py:1711
+msgid "上下文翻译设置"
+msgstr "Paramètres de traduction du contexte"
+
+#: modless_chat_trans/interface.py:1722
+msgid "上下文分割策略："
+msgstr "Stratégie de division de contexte :"
+
+#: modless_chat_trans/interface.py:1724
+msgid "不启用"
+msgstr "Désactivé"
+
+#: modless_chat_trans/interface.py:1725
+msgid "固定长度"
+msgstr "Longueur fixe"
+
+#: modless_chat_trans/interface.py:1726
+msgid "基于时间跨度"
+msgstr "Basé sur la durée"
+
+#: modless_chat_trans/interface.py:1730
+msgid ""
+"配置如何管理上下文对话。\n"
+"- 不启用：不保存任何上下文\n"
+"- 固定长度：保留固定条数的历史记录\n"
+"- 基于时间跨度：在设定的时间跨度内视为同一对话"
+msgstr ""
+"Configurez la gestion des conversations en contexte.\n"
+"- Désactivé : ne sauvegarde aucun contexte.\n"
+"- Longueur fixe : conserve un nombre défini d'enregistrements historiques.\n"
+"- Basé sur la durée : considérée comme la même conversation dans le laps de temps défini."
+
+#: modless_chat_trans/interface.py:1744
+msgid "最大保留历史条数："
+msgstr "Max d'enregistrements historiques conservés :"
+
+#: modless_chat_trans/interface.py:1750
+msgid "最多保留的历史对话条数（0 表示无限制）"
+msgstr "Nombre maximum d'enregistrements d'historique (0 pour illimité)"
+
+#: modless_chat_trans/interface.py:1764
+msgid "时间跨度阈值(秒)："
+msgstr "Seuil de durée (secondes) :"
+
+#: modless_chat_trans/interface.py:1770
+msgid ""
+"超过此时长（秒）没有新消息，则视为新对话。\n"
+"仅在“基于时间跨度”策略下生效。"
+msgstr ""
+"S'il n'y a pas de nouveau message pendant cette durée (secondes), c'est considéré comme une nouvelle conversation.\n"
+"Valable uniquement pour la stratégie « Basé sur la durée »."
+
+#: modless_chat_trans/interface.py:1784
+msgid "分块截断大小："
+msgstr "Taille de troncature de bloc :"
+
+#: modless_chat_trans/interface.py:1787
+msgid "自动"
+msgstr "Automatique"
+
+#: modless_chat_trans/interface.py:1789
+msgid "自定义"
+msgstr "Personnalisé"
+
+#: modless_chat_trans/interface.py:1799
+msgid ""
+"分块截断大小：\n"
+"- 自动：自动计算为最大保留历史条数的一半\n"
+"- 关闭：传统逐条滑动窗口\n"
+"- 自定义：设置具体的截断大小"
+msgstr ""
+"Taille de troncature de bloc :\n"
+"- Auto : calculé automatiquement comme la moitié du max d'enregistrements conservés.\n"
+"- Désactivé : fenêtre glissante élément par élément classique.\n"
+"- Personnalisé : définissez une taille de troncature spécifique."
+
+#: modless_chat_trans/interface.py:4086
+msgid "缓存管理"
+msgstr "Gestion du cache"
+
+#: modless_chat_trans/interface.py:4098
+msgid "清除缓存："
+msgstr "Vider le cache :"
+
+#: modless_chat_trans/interface.py:4099
+msgid "清理不常用缓存"
+msgstr "Nettoyer le cache inutilisé"
+
+#: modless_chat_trans/interface.py:4118
+msgid "清理失败"
+msgstr "Échec du nettoyage"
+
+#: modless_chat_trans/interface.py:4119
+#, python-brace-format
+msgid "查询缓存时出错：{}"
+msgstr "Erreur lors de l'interrogation du cache : {}"
+
+#: modless_chat_trans/interface.py:4130
+msgid "无需清理"
+msgstr "Aucun nettoyage nécessaire"
+
+#: modless_chat_trans/interface.py:4131
+msgid "没有不常用的缓存条目，所有缓存都曾被使用过。"
+msgstr "Aucune entrée de cache inutilisée, tous les caches ont été utilisés."
+
+#: modless_chat_trans/interface.py:4143
+msgid "确认清理"
+msgstr "Confirmer le nettoyage"
+
+#: modless_chat_trans/interface.py:4144
+#, python-brace-format
+msgid "将清理 {} 条不常用缓存条目（从未被读取），总计 {} 条中保留 {} 条。此操作不可恢复。"
+msgstr "Va nettoyer {} entrées de cache inutilisées (jamais lues), en conservant {} sur {} au total. Cette opération est irréversible."
+
+#: modless_chat_trans/interface.py:4153
+msgid "清理成功"
+msgstr "Nettoyage réussi"
+
+#: modless_chat_trans/interface.py:4154
+#, python-brace-format
+msgid "已清理 {} 条不常用缓存条目"
+msgstr "{} entrées de cache inutilisées nettoyées"
+
+#: modless_chat_trans/interface.py:4589
+msgid "上下文翻译"
+msgstr "Traduction du contexte"
+
+#: templates/index.html:106
+msgid "复制"
+msgstr "Copier"
+
+#: templates/index.html:107
+msgid "朗读"
+msgstr "Lire à haute voix"
+

@@ -1125,3 +1125,139 @@ msgstr "TTS-Test fehlgeschlagen: {}"
 #: modless_chat_trans/interface.py:3864
 msgid "⚠ 更新依赖不可用"
 msgstr "⚠ Update-Abhängigkeit nicht verfügbar"
+
+#: modless_chat_trans/interface.py:1711
+msgid "上下文翻译设置"
+msgstr "Kontext-Übersetzungseinstellungen"
+
+#: modless_chat_trans/interface.py:1722
+msgid "上下文分割策略："
+msgstr "Kontext-Aufteilungsstrategie:"
+
+#: modless_chat_trans/interface.py:1724
+msgid "不启用"
+msgstr "Deaktiviert"
+
+#: modless_chat_trans/interface.py:1725
+msgid "固定长度"
+msgstr "Feste Länge"
+
+#: modless_chat_trans/interface.py:1726
+msgid "基于时间跨度"
+msgstr "Basierend auf Zeitspanne"
+
+#: modless_chat_trans/interface.py:1730
+msgid ""
+"配置如何管理上下文对话。\n"
+"- 不启用：不保存任何上下文\n"
+"- 固定长度：保留固定条数的历史记录\n"
+"- 基于时间跨度：在设定的时间跨度内视为同一对话"
+msgstr ""
+"Konfigurieren Sie, wie Kontext-Konversationen verwaltet werden.\n"
+"- Deaktiviert: Es wird kein Kontext gespeichert.\n"
+"- Feste Länge: Eine feste Anzahl von Verlaufsdatensätzen wird aufbewahrt.\n"
+"- Basierend auf Zeitspanne: Innerhalb einer bestimmten Zeitspanne als dieselbe Konversation betrachtet."
+
+#: modless_chat_trans/interface.py:1744
+msgid "最大保留历史条数："
+msgstr "Maximale Anzahl an Verlaufsdatensätzen:"
+
+#: modless_chat_trans/interface.py:1750
+msgid "最多保留的历史对话条数（0 表示无限制）"
+msgstr "Maximal zu behaltende Verlaufsdatensätze (0 für unbegrenzt)"
+
+#: modless_chat_trans/interface.py:1764
+msgid "时间跨度阈值(秒)："
+msgstr "Zeitspannen-Schwellenwert (Sekunden):"
+
+#: modless_chat_trans/interface.py:1770
+msgid ""
+"超过此时长（秒）没有新消息，则视为新对话。\n"
+"仅在“基于时间跨度”策略下生效。"
+msgstr ""
+"Wenn für diese Dauer (Sekunden) keine neue Nachricht gesendet wird, wird dies als neue Konversation betrachtet.\n"
+"Gilt nur für die Strategie \"Basierend auf Zeitspanne\"."
+
+#: modless_chat_trans/interface.py:1784
+msgid "分块截断大小："
+msgstr "Chunk-Kürzungsgröße:"
+
+#: modless_chat_trans/interface.py:1787
+msgid "自动"
+msgstr "Automatisch"
+
+#: modless_chat_trans/interface.py:1789
+msgid "自定义"
+msgstr "Benutzerdefiniert"
+
+#: modless_chat_trans/interface.py:1799
+msgid ""
+"分块截断大小：\n"
+"- 自动：自动计算为最大保留历史条数的一半\n"
+"- 关闭：传统逐条滑动窗口\n"
+"- 自定义：设置具体的截断大小"
+msgstr ""
+"Chunk-Kürzungsgröße:\n"
+"- Automatisch: Wird automatisch als Hälfte der maximal beibehaltenen Verlaufsdatensätze berechnet.\n"
+"- Aus: Traditionelles Schiebefenster (einzeln).\n"
+"- Benutzerdefiniert: Stellen Sie eine bestimmte Kürzungsgröße ein."
+
+#: modless_chat_trans/interface.py:4086
+msgid "缓存管理"
+msgstr "Cache-Verwaltung"
+
+#: modless_chat_trans/interface.py:4098
+msgid "清除缓存："
+msgstr "Cache leeren:"
+
+#: modless_chat_trans/interface.py:4099
+msgid "清理不常用缓存"
+msgstr "Nicht verwendeten Cache bereinigen"
+
+#: modless_chat_trans/interface.py:4118
+msgid "清理失败"
+msgstr "Bereinigung fehlgeschlagen"
+
+#: modless_chat_trans/interface.py:4119
+#, python-brace-format
+msgid "查询缓存时出错：{}"
+msgstr "Fehler bei der Cache-Abfrage: {}"
+
+#: modless_chat_trans/interface.py:4130
+msgid "无需清理"
+msgstr "Keine Bereinigung erforderlich"
+
+#: modless_chat_trans/interface.py:4131
+msgid "没有不常用的缓存条目，所有缓存都曾被使用过。"
+msgstr "Keine ungenutzten Cache-Einträge, alle Caches wurden verwendet."
+
+#: modless_chat_trans/interface.py:4143
+msgid "确认清理"
+msgstr "Bereinigung bestätigen"
+
+#: modless_chat_trans/interface.py:4144
+#, python-brace-format
+msgid "将清理 {} 条不常用缓存条目（从未被读取），总计 {} 条中保留 {} 条。此操作不可恢复。"
+msgstr "Es werden {} nicht verwendete Cache-Einträge (nie gelesen) bereinigt, wobei {} von insgesamt {} erhalten bleiben. Dieser Vorgang kann nicht rückgängig gemacht werden."
+
+#: modless_chat_trans/interface.py:4153
+msgid "清理成功"
+msgstr "Erfolgreich bereinigt"
+
+#: modless_chat_trans/interface.py:4154
+#, python-brace-format
+msgid "已清理 {} 条不常用缓存条目"
+msgstr "{} nicht verwendete Cache-Einträge bereinigt."
+
+#: modless_chat_trans/interface.py:4589
+msgid "上下文翻译"
+msgstr "Kontext-Übersetzung"
+
+#: templates/index.html:106
+msgid "复制"
+msgstr "Kopieren"
+
+#: templates/index.html:107
+msgid "朗读"
+msgstr "Vorlesen"
+

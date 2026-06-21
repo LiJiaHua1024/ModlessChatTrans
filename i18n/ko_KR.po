@@ -1111,3 +1111,139 @@ msgstr "TTS 테스트 실패: {}"
 #: modless_chat_trans/interface.py:3864
 msgid "⚠ 更新依赖不可用"
 msgstr "⚠ 업데이트 종속성 사용 불가"
+
+#: modless_chat_trans/interface.py:1711
+msgid "上下文翻译设置"
+msgstr "컨텍스트 번역 설정"
+
+#: modless_chat_trans/interface.py:1722
+msgid "上下文分割策略："
+msgstr "컨텍스트 분할 전략:"
+
+#: modless_chat_trans/interface.py:1724
+msgid "不启用"
+msgstr "사용 안 함"
+
+#: modless_chat_trans/interface.py:1725
+msgid "固定长度"
+msgstr "고정 길이"
+
+#: modless_chat_trans/interface.py:1726
+msgid "基于时间跨度"
+msgstr "시간 범위 기반"
+
+#: modless_chat_trans/interface.py:1730
+msgid ""
+"配置如何管理上下文对话。\n"
+"- 不启用：不保存任何上下文\n"
+"- 固定长度：保留固定条数的历史记录\n"
+"- 基于时间跨度：在设定的时间跨度内视为同一对话"
+msgstr ""
+"컨텍스트 대화 관리 방법을 구성합니다.\n"
+"- 사용 안 함: 컨텍스트를 저장하지 않습니다.\n"
+"- 고정 길이: 고정된 수의 기록을 유지합니다.\n"
+"- 시간 범위 기반: 설정된 시간 내에서는 동일한 대화로 간주합니다."
+
+#: modless_chat_trans/interface.py:1744
+msgid "最大保留历史条数："
+msgstr "최대 유지 기록 수:"
+
+#: modless_chat_trans/interface.py:1750
+msgid "最多保留的历史对话条数（0 表示无限制）"
+msgstr "최대 유지 기록 수 (0은 무제한)"
+
+#: modless_chat_trans/interface.py:1764
+msgid "时间跨度阈值(秒)："
+msgstr "시간 범위 임계값(초):"
+
+#: modless_chat_trans/interface.py:1770
+msgid ""
+"超过此时长（秒）没有新消息，则视为新对话。\n"
+"仅在“基于时间跨度”策略下生效。"
+msgstr ""
+"이 시간(초) 동안 새 메시지가 없으면 새 대화로 간주됩니다.\n"
+"\"시간 범위 기반\" 전략에서만 유효합니다."
+
+#: modless_chat_trans/interface.py:1784
+msgid "分块截断大小："
+msgstr "청크 잘림 크기:"
+
+#: modless_chat_trans/interface.py:1787
+msgid "自动"
+msgstr "자동"
+
+#: modless_chat_trans/interface.py:1789
+msgid "自定义"
+msgstr "사용자 지정"
+
+#: modless_chat_trans/interface.py:1799
+msgid ""
+"分块截断大小：\n"
+"- 自动：自动计算为最大保留历史条数的一半\n"
+"- 关闭：传统逐条滑动窗口\n"
+"- 自定义：设置具体的截断大小"
+msgstr ""
+"청크 잘림 크기:\n"
+"- 자동: 최대 유지 기록의 절반으로 자동 계산됩니다.\n"
+"- 끄기: 전통적인 항목별 슬라이딩 창입니다.\n"
+"- 사용자 지정: 특정 잘림 크기를 설정합니다."
+
+#: modless_chat_trans/interface.py:4086
+msgid "缓存管理"
+msgstr "캐시 관리"
+
+#: modless_chat_trans/interface.py:4098
+msgid "清除缓存："
+msgstr "캐시 지우기:"
+
+#: modless_chat_trans/interface.py:4099
+msgid "清理不常用缓存"
+msgstr "사용되지 않는 캐시 정리"
+
+#: modless_chat_trans/interface.py:4118
+msgid "清理失败"
+msgstr "정리 실패"
+
+#: modless_chat_trans/interface.py:4119
+#, python-brace-format
+msgid "查询缓存时出错：{}"
+msgstr "캐시 쿼리 오류: {}"
+
+#: modless_chat_trans/interface.py:4130
+msgid "无需清理"
+msgstr "정리 필요 없음"
+
+#: modless_chat_trans/interface.py:4131
+msgid "没有不常用的缓存条目，所有缓存都曾被使用过。"
+msgstr "사용되지 않는 캐시 항목이 없습니다. 모든 캐시가 사용되었습니다."
+
+#: modless_chat_trans/interface.py:4143
+msgid "确认清理"
+msgstr "정리 확인"
+
+#: modless_chat_trans/interface.py:4144
+#, python-brace-format
+msgid "将清理 {} 条不常用缓存条目（从未被读取），总计 {} 条中保留 {} 条。此操作不可恢复。"
+msgstr "사용되지 않는(읽지 않은) 캐시 항목 {}개를 정리하고, 총 {}개 중 {}개를 유지합니다. 이 작업은 되돌릴 수 없습니다."
+
+#: modless_chat_trans/interface.py:4153
+msgid "清理成功"
+msgstr "정리 성공"
+
+#: modless_chat_trans/interface.py:4154
+#, python-brace-format
+msgid "已清理 {} 条不常用缓存条目"
+msgstr "사용되지 않는 캐시 항목 {}개를 정리했습니다."
+
+#: modless_chat_trans/interface.py:4589
+msgid "上下文翻译"
+msgstr "컨텍스트 번역"
+
+#: templates/index.html:106
+msgid "复制"
+msgstr "복사"
+
+#: templates/index.html:107
+msgid "朗读"
+msgstr "소리 내어 읽기"
+

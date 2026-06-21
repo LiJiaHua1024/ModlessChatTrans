@@ -1125,3 +1125,139 @@ msgstr "TTS 読み上げテストに失敗しました：{}"
 #: modless_chat_trans/interface.py:3864
 msgid "⚠ 更新依赖不可用"
 msgstr "⚠ 更新の依存関係が利用不可"
+
+#: modless_chat_trans/interface.py:1711
+msgid "上下文翻译设置"
+msgstr "コンテキスト翻訳設定"
+
+#: modless_chat_trans/interface.py:1722
+msgid "上下文分割策略："
+msgstr "コンテキスト分割戦略："
+
+#: modless_chat_trans/interface.py:1724
+msgid "不启用"
+msgstr "無効"
+
+#: modless_chat_trans/interface.py:1725
+msgid "固定长度"
+msgstr "固定長"
+
+#: modless_chat_trans/interface.py:1726
+msgid "基于时间跨度"
+msgstr "タイムスパンに基づく"
+
+#: modless_chat_trans/interface.py:1730
+msgid ""
+"配置如何管理上下文对话。\n"
+"- 不启用：不保存任何上下文\n"
+"- 固定长度：保留固定条数的历史记录\n"
+"- 基于时间跨度：在设定的时间跨度内视为同一对话"
+msgstr ""
+"コンテキスト会話の管理方法を構成します。\n"
+"- 無効: コンテキストを保存しません。\n"
+"- 固定長: 固定数の履歴レコードを保持します。\n"
+"- タイムスパンに基づく: 設定された期間内は同じ会話と見なされます。"
+
+#: modless_chat_trans/interface.py:1744
+msgid "最大保留历史条数："
+msgstr "最大保持履歴数："
+
+#: modless_chat_trans/interface.py:1750
+msgid "最多保留的历史对话条数（0 表示无限制）"
+msgstr "最大保持履歴数（0 は無制限を意味します）"
+
+#: modless_chat_trans/interface.py:1764
+msgid "时间跨度阈值(秒)："
+msgstr "タイムスパンのしきい値（秒）："
+
+#: modless_chat_trans/interface.py:1770
+msgid ""
+"超过此时长（秒）没有新消息，则视为新对话。\n"
+"仅在“基于时间跨度”策略下生效。"
+msgstr ""
+"この期間（秒）新しいメッセージがない場合、新しい会話と見なされます。\n"
+"「タイムスパンに基づく」戦略でのみ有効です。"
+
+#: modless_chat_trans/interface.py:1784
+msgid "分块截断大小："
+msgstr "チャンク切り捨てサイズ："
+
+#: modless_chat_trans/interface.py:1787
+msgid "自动"
+msgstr "自動"
+
+#: modless_chat_trans/interface.py:1789
+msgid "自定义"
+msgstr "カスタム"
+
+#: modless_chat_trans/interface.py:1799
+msgid ""
+"分块截断大小：\n"
+"- 自动：自动计算为最大保留历史条数的一半\n"
+"- 关闭：传统逐条滑动窗口\n"
+"- 自定义：设置具体的截断大小"
+msgstr ""
+"チャンク切り捨てサイズ：\n"
+"- 自動: 最大保持履歴数の半分として自動的に計算されます。\n"
+"- オフ: 従来の項目別スライディングウィンドウ。\n"
+"- カスタム: 特定の切り捨てサイズを設定します。"
+
+#: modless_chat_trans/interface.py:4086
+msgid "缓存管理"
+msgstr "キャッシュ管理"
+
+#: modless_chat_trans/interface.py:4098
+msgid "清除缓存："
+msgstr "キャッシュをクリア："
+
+#: modless_chat_trans/interface.py:4099
+msgid "清理不常用缓存"
+msgstr "未使用のキャッシュをクリーンアップ"
+
+#: modless_chat_trans/interface.py:4118
+msgid "清理失败"
+msgstr "クリーンアップに失敗しました"
+
+#: modless_chat_trans/interface.py:4119
+#, python-brace-format
+msgid "查询缓存时出错：{}"
+msgstr "キャッシュのクエリ中にエラーが発生しました：{}"
+
+#: modless_chat_trans/interface.py:4130
+msgid "无需清理"
+msgstr "クリーンアップ不要"
+
+#: modless_chat_trans/interface.py:4131
+msgid "没有不常用的缓存条目，所有缓存都曾被使用过。"
+msgstr "未使用のキャッシュエントリはありません。すべてのキャッシュが使用されています。"
+
+#: modless_chat_trans/interface.py:4143
+msgid "确认清理"
+msgstr "クリーンアップを確認"
+
+#: modless_chat_trans/interface.py:4144
+#, python-brace-format
+msgid "将清理 {} 条不常用缓存条目（从未被读取），总计 {} 条中保留 {} 条。此操作不可恢复。"
+msgstr "未使用のキャッシュエントリ（未読）を {} 個クリーンアップし、合計 {} 個中 {} 個を保持します。この操作は元に戻せません。"
+
+#: modless_chat_trans/interface.py:4153
+msgid "清理成功"
+msgstr "クリーンアップ成功"
+
+#: modless_chat_trans/interface.py:4154
+#, python-brace-format
+msgid "已清理 {} 条不常用缓存条目"
+msgstr "{} 個の未使用キャッシュエントリをクリーンアップしました"
+
+#: modless_chat_trans/interface.py:4589
+msgid "上下文翻译"
+msgstr "コンテキスト翻訳"
+
+#: templates/index.html:106
+msgid "复制"
+msgstr "コピー"
+
+#: templates/index.html:107
+msgid "朗读"
+msgstr "読み上げ"
+

@@ -1098,3 +1098,139 @@ msgstr "TTS 朗讀測試失敗：{}"
 #: modless_chat_trans/interface.py:3864
 msgid "⚠ 更新依赖不可用"
 msgstr "⚠ 更新依賴不可用"
+
+#: modless_chat_trans/interface.py:1711
+msgid "上下文翻译设置"
+msgstr "上下文翻譯設定"
+
+#: modless_chat_trans/interface.py:1722
+msgid "上下文分割策略："
+msgstr "上下文分割策略："
+
+#: modless_chat_trans/interface.py:1724
+msgid "不启用"
+msgstr "不啟用"
+
+#: modless_chat_trans/interface.py:1725
+msgid "固定长度"
+msgstr "固定長度"
+
+#: modless_chat_trans/interface.py:1726
+msgid "基于时间跨度"
+msgstr "基於時間跨度"
+
+#: modless_chat_trans/interface.py:1730
+msgid ""
+"配置如何管理上下文对话。\n"
+"- 不启用：不保存任何上下文\n"
+"- 固定长度：保留固定条数的历史记录\n"
+"- 基于时间跨度：在设定的时间跨度内视为同一对话"
+msgstr ""
+"配置如何管理上下文對話。\n"
+"- 不啟用：不保存任何上下文\n"
+"- 固定長度：保留固定條數的歷史記錄\n"
+"- 基於時間跨度：在設定的時間跨度內視為同一對話"
+
+#: modless_chat_trans/interface.py:1744
+msgid "最大保留历史条数："
+msgstr "最大保留歷史條數："
+
+#: modless_chat_trans/interface.py:1750
+msgid "最多保留的历史对话条数（0 表示无限制）"
+msgstr "最多保留的歷史對話條數（0 表示無限制）"
+
+#: modless_chat_trans/interface.py:1764
+msgid "时间跨度阈值(秒)："
+msgstr "時間跨度閾值(秒)："
+
+#: modless_chat_trans/interface.py:1770
+msgid ""
+"超过此时长（秒）没有新消息，则视为新对话。\n"
+"仅在“基于时间跨度”策略下生效。"
+msgstr ""
+"超過此時長（秒）沒有新訊息，則視為新對話。\n"
+"僅在“基於時間跨度”策略下生效。"
+
+#: modless_chat_trans/interface.py:1784
+msgid "分块截断大小："
+msgstr "分塊截斷大小："
+
+#: modless_chat_trans/interface.py:1787
+msgid "自动"
+msgstr "自動"
+
+#: modless_chat_trans/interface.py:1789
+msgid "自定义"
+msgstr "自定義"
+
+#: modless_chat_trans/interface.py:1799
+msgid ""
+"分块截断大小：\n"
+"- 自动：自动计算为最大保留历史条数的一半\n"
+"- 关闭：传统逐条滑动窗口\n"
+"- 自定义：设置具体的截断大小"
+msgstr ""
+"分塊截斷大小：\n"
+"- 自動：自動計算為最大保留歷史條數的一半\n"
+"- 關閉：傳統逐條滑動窗口\n"
+"- 自定義：設置具體的截斷大小"
+
+#: modless_chat_trans/interface.py:4086
+msgid "缓存管理"
+msgstr "快取管理"
+
+#: modless_chat_trans/interface.py:4098
+msgid "清除缓存："
+msgstr "清除快取："
+
+#: modless_chat_trans/interface.py:4099
+msgid "清理不常用缓存"
+msgstr "清理不常用快取"
+
+#: modless_chat_trans/interface.py:4118
+msgid "清理失败"
+msgstr "清理失敗"
+
+#: modless_chat_trans/interface.py:4119
+#, python-brace-format
+msgid "查询缓存时出错：{}"
+msgstr "查詢快取時出錯：{}"
+
+#: modless_chat_trans/interface.py:4130
+msgid "无需清理"
+msgstr "無需清理"
+
+#: modless_chat_trans/interface.py:4131
+msgid "没有不常用的缓存条目，所有缓存都曾被使用过。"
+msgstr "沒有不常用的快取條目，所有快取都曾被使用過。"
+
+#: modless_chat_trans/interface.py:4143
+msgid "确认清理"
+msgstr "確認清理"
+
+#: modless_chat_trans/interface.py:4144
+#, python-brace-format
+msgid "将清理 {} 条不常用缓存条目（从未被读取），总计 {} 条中保留 {} 条。此操作不可恢复。"
+msgstr "將清理 {} 條不常用快取條目（從未被讀取），總計 {} 條中保留 {} 條。此操作不可恢復。"
+
+#: modless_chat_trans/interface.py:4153
+msgid "清理成功"
+msgstr "清理成功"
+
+#: modless_chat_trans/interface.py:4154
+#, python-brace-format
+msgid "已清理 {} 条不常用缓存条目"
+msgstr "已清理 {} 條不常用快取條目"
+
+#: modless_chat_trans/interface.py:4589
+msgid "上下文翻译"
+msgstr "上下文翻譯"
+
+#: templates/index.html:106
+msgid "复制"
+msgstr "複製"
+
+#: templates/index.html:107
+msgid "朗读"
+msgstr "朗讀"
+
