@@ -6,6 +6,13 @@
 
 English | [简体中文](README.md)
 
+> [!IMPORTANT]
+> **🌟 Highly Recommended to Try the Latest Version!**
+>
+> Currently, the `canary` branch has many amazing new features and numerous bug fixes that will significantly enhance your experience! Due to limited time, the author hasn't been able to merge them to the main branch, create a pre-release, or write release notes.
+>
+> We strongly recommend going directly to the [**GitHub Actions**](https://github.com/LiJiaHua1024/ModlessChatTrans/actions) page to download the latest artifacts. There are so many improvements waiting for you, you won't be disappointed!
+
 ## Features
 
 - **AI High-Quality Translation**: Utilizes advanced large language models (LLM) for translation, significantly

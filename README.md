@@ -6,6 +6,13 @@
 
 [English](README_EN.md) | 简体中文
 
+> [!IMPORTANT]
+> **🌟 强烈建议尝试最新版！**
+>
+> 目前 `canary` 分支有非常多令人震撼的新功能以及大量 Bug 修复，能极大地提升用户体验！由于精力有限，作者暂时没有时间合并到主分支、发布 Pre-release 或编写 Release Notes。
+>
+> 强烈建议大家直接前往 [**GitHub Actions**](https://github.com/LiJiaHua1024/ModlessChatTrans/actions) 页面，下载最新的构建版本。那里真的有非常多的改进，一定不会让你失望！
+
 ## 特点
 
 - **AI 高质量翻译**：利用先进的大语言模型 (LLM) 进行翻译，在口语化聊天场景下显著超越传统翻译引擎
