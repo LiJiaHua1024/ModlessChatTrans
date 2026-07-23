@@ -245,6 +245,7 @@ def start_translation(config):
                     break
 
         elif data_type in ("clipboard", "webui"):
+            ctx_messages = context_buffer.get_context_messages()
             for attempt in range(5):
                 if processed_message := process_message(
                         line,
@@ -252,7 +253,8 @@ def start_translation(config):
                         send_translator,
                         source_language=config.message_send.source_language,
                         target_language=config.message_send.target_language,
-                        rage_mode=rage_mode
+                        rage_mode=rage_mode,
+                        context_messages=ctx_messages,
                 ):
                     is_error, translated, info = processed_message
                     if not is_error:
