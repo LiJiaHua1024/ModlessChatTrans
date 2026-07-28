@@ -15,7 +15,7 @@
 
 import re
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, time as dt_time
 from typing import Optional
 
@@ -57,9 +57,8 @@ def extract_log_time(line: str, fallback: float) -> float:
 
 @dataclass
 class ContextEntry:
-    """一条已翻译消息的上下文记录"""
+    """一条消息的上下文记录"""
     original: str           # 原文（单条聊天内容）
-    translated: str         # 译文
     timestamp: float        # epoch 秒（日志时间或行到达系统时间）
     player_name: str = ""   # 发送者玩家名（可为空，系统消息等）
 
@@ -200,7 +199,7 @@ class ContextBuffer:
         first = entries[0]
         if self.strategy == "time_based" and self.should_reset(first.timestamp):
             logger.debug(
-                f"[ContextBuffer] Time gap detected at batch start, resetting context."
+                "[ContextBuffer] Time gap detected at batch start, resetting context."
             )
             self.clear()
 
@@ -218,25 +217,23 @@ class ContextBuffer:
 
     def get_context_messages(self) -> list[dict]:
         """
-        返回可直接拼入 litellm messages 的历史列表，格式：
-        [
-            {"role": "user",      "content": "<原文>"},
-            {"role": "assistant", "content": "<译文>"},
-            ...
-        ]
-        注意：此处 user content 只包含原文本身（不含 "Translate..." 前缀），
-        以保持简洁并最大化 LLM prefix caching 效果。
+        返回一条汇总的 user 消息，包含最近聊天历史。
+        格式：[{"role": "user", "content": "14:30 | [PlayerA] 你好\n14:31 | [SYSTEM] 服务器消息"}]
+        无历史时返回空列表。
 
-        当 strategy == "disabled" 时返回空列表。
+        注意：此返回值会被 translator 注入到 user message 中。
         """
-        if self.strategy == "disabled":
+        if self.strategy == "disabled" or not self._history:
             return []
 
-        messages = []
+        lines = []
         for entry in self._history:
-            messages.append({"role": "user",      "content": entry.original})
-            messages.append({"role": "assistant", "content": entry.translated})
-        return messages
+            time_str = datetime.fromtimestamp(entry.timestamp).strftime("%H:%M")
+            name = entry.player_name if entry.player_name else "[SYSTEM]"
+            lines.append(f"{time_str} | [{name}] {entry.original}")
+
+        content = "\n".join(lines)
+        return [{"role": "user", "content": content}]
 
     # ------------------------------------------------------------------
     # 控制

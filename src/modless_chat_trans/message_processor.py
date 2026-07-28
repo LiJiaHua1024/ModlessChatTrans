@@ -18,7 +18,8 @@ from json import JSONDecodeError
 from requests.exceptions import HTTPError
 from modless_chat_trans.i18n import _
 from modless_chat_trans.file_utils import cache
-from modless_chat_trans.translator import services, MessageType
+from dataclasses import dataclass
+from modless_chat_trans.translator import MessageType
 from modless_chat_trans.logger import logger
 
 # 预编译的正则表达式常量
@@ -326,6 +327,111 @@ def should_skip_message(name: str, original_chat_message: str, message_type: Mes
         return True
 
     return False
+
+
+@dataclass
+class PreparedMessage:
+    """已解析+过滤、等待翻译的消息"""
+    name: str                    # 玩家名（可为空）
+    original: str                # 原文
+    message_type: MessageType    # 消息类型
+
+
+def prepare(data: str, data_type: str, replace_garbled: bool = False) -> PreparedMessage | None:
+    """
+    解析 + 过滤，返回 PreparedMessage 或 None（应被丢弃）。
+    此函数极快（纯 CPU，无 I/O），可在单线程中顺序调用。
+    """
+    name, original, msg_type = parse_message(data, data_type, replace_garbled)
+
+    if not original:
+        return None
+
+    if should_skip_message(name, original, msg_type, data_type):
+        return None
+
+    return PreparedMessage(name=name, original=original, message_type=msg_type)
+
+
+def translate_prepared(
+    prepared: PreparedMessage,
+    translator,
+    source_language: str,
+    target_language: str,
+    context_messages: list[dict] | None = None,
+    rage_mode: bool = False,
+) -> tuple[str, str, dict]:
+    """
+    纯翻译，返回 (name, translated, info)。
+    调用前应已通过 prepare() 过滤。
+    """
+    name = prepared.name
+    original = prepared.original
+    msg_type = prepared.message_type
+    context_messages = context_messages or []
+
+    translated: str = ""
+    info: dict = {}
+
+    # 术语表匹配
+    if matched := match_and_translate(original):
+        logger.debug(f"Using custom glossary: {original} -> {matched}")
+        translated = matched
+        info["glossary_match"] = True
+    elif not rage_mode and original in cache:
+        logger.debug(f"Translation cache hit: {original}")
+        translated = cache[original]
+        info["cache_hit"] = True
+    else:
+        try:
+            if rage_mode:
+                result = translator.translate_with_profanity(
+                    original,
+                    source_language=source_language,
+                    target_language=target_language,
+                    message_type=msg_type,
+                )
+            else:
+                result = translator.translate_with_context(
+                    original,
+                    source_language=source_language,
+                    target_language=target_language,
+                    message_type=msg_type,
+                    context_messages=context_messages,
+                )
+            if result:
+                translated = result["result"]
+                info["usage"] = result["usage"]
+        except HTTPError as http_err:
+            response = getattr(http_err, "response", None)
+            if response is not None:
+                if response.status_code == 429:
+                    return "[ERROR]", _("翻译失败：请求次数过多，请稍后重试。"), info
+                elif 500 <= response.status_code < 600:
+                    return "[ERROR]", _("翻译失败：服务器错误，请稍后重试。"), info
+                else:
+                    return "[ERROR]", _("翻译失败：发生HTTP错误。"), info
+            else:
+                return "[ERROR]", _("翻译失败：网络问题或发生HTTP错误。"), info
+        except JSONDecodeError:
+            return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
+        except Exception as e:
+            return "[ERROR]", f"{_('翻译失败，错误：')} {e}", info
+
+        if translated:
+            if rage_mode:
+                logger.debug(
+                    f"Rage translation generated (skipping cache): "
+                    f"'{original}' -> '{translated}'"
+                )
+            else:
+                logger.debug(
+                    f"Translation successful, caching result:"
+                    f" {original} -> {translated}"
+                )
+                cache[original] = translated
+
+    return name or "", translated, info
 
 
 def process_decorator(function):

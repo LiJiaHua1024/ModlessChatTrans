@@ -165,6 +165,15 @@ class Translator:
             if not self._variable_pattern.search(str(k))
         }
 
+        # 判断是否为 Anthropic 模型
+        provider = getattr(translation_service_config.llm, 'provider', None) or ""
+        model = getattr(translation_service_config.llm, 'model', None) or ""
+        self._is_anthropic = (
+            provider.lower() == "anthropic"
+            or "claude" in model.lower()
+            or "anthropic" in model.lower()
+        )
+
         logger.info(f"Initialized Translator")
         logger.debug(f"Literal glossary terms loaded: {len(self._literal_glossary)}")
 
@@ -265,7 +274,7 @@ class Translator:
         )
 
     def _dispatch_translation(self, text, source_language, target_language, mode: TranslationMode,
-                              message_type: MessageType, context_messages: list = None):
+                               message_type: MessageType, context_messages: list = None):
         """
         Internal Dispatcher: Coordinates prompt building and execution.
 
@@ -281,8 +290,11 @@ class Translator:
             # 1. 验证模式是否对当前消息类型可用，如果不可用则降级
             effective_mode = self._get_effective_mode(mode, message_type)
 
-            # 2. Prompt Factory - 根据消息类型和模式构建prompt
-            system_prompt = self._build_system_prompt(effective_mode, message_type)
+            # 2. Prompt Factory - 构建 system prompt（含上下文指导）
+            system_prompt = self._build_system_prompt(
+                effective_mode, message_type,
+                has_context=bool(context_messages)
+            )
 
             # 3. Execution Engine Configuration
             # 'deep' mode expects JSON output; others expect plain text currently
@@ -300,7 +312,7 @@ class Translator:
                 expect_json,
                 include_terms,
                 message_type,
-                context_messages=context_messages,
+                context_messages=context_messages,  # 传入 user prompt
             )
 
         elif self.translation_service_config.service_type == ServiceType.TRADITIONAL:
@@ -394,12 +406,24 @@ class Translator:
 
         is_provider_anthropic = provider == "Anthropic"
 
+        # 构建 user message
+        # 如果有历史上下文，先拼接历史，再拼接翻译指令
+        if context_messages:
+            history_content = context_messages[0].get("content", "")
+            if self._is_anthropic:
+                # Anthropic 使用 XML 标签
+                history_block = f"<recent_chat_history>\n{history_content}\n</recent_chat_history>\n\n"
+            else:
+                history_block = f"=== Recent Chat History ===\n{history_content}\n=== End of History ===\n\n---\n\n"
+        else:
+            history_block = ""
+
         if is_provider_anthropic:
             base_prompt += f".\n<text_to_translate>{text}</text_to_translate>\n\n"
         else:
             base_prompt += f":\n{text}\n\n"
 
-        message = base_prompt + self._terminology_block(matched_terms, is_provider_anthropic)
+        message = history_block + base_prompt + self._terminology_block(matched_terms, self._is_anthropic)
 
         # 使用 litellm 统一调用各类大模型
         try:
@@ -443,7 +467,6 @@ class Translator:
                 "model": mapped_model,
                 "messages": [
                     {"role": "system", "content": system_prompt},
-                    *context_messages,
                     {"role": "user", "content": message}
                 ],
                 "temperature": 0,
@@ -644,56 +667,79 @@ class Translator:
             # wait=False prevents blocking on the slower model; cancel_futures cancels pending tasks.
             executor.shutdown(wait=False, cancel_futures=True)
 
-    def _build_system_prompt(self, mode: TranslationMode, message_type: MessageType) -> str:
+    @staticmethod
+    def _context_awareness_block() -> str:
+        """公共的上下文感知指导文本"""
+        return (
+            "\n## Context Awareness\n\n"
+            "A recent chat history is provided in the user message. "
+            "Use it to understand ongoing conversations and maintain translation consistency.\n"
+            "Note: Messages closer to the end are more likely to be relevant. "
+            "Earlier messages may be unrelated to the current one — use your judgment.\n"
+        )
+
+    def _build_system_prompt(self, mode: TranslationMode, message_type: MessageType,
+                             has_context: bool = False) -> str:
         """
         Prompt Factory: Returns the system prompt for the specified mode and message type.
 
         :param mode: 翻译模式
         :param message_type: 消息类型
+        :param has_context: 是否有历史上下文
         :return: 系统提示词
         """
         # System消息使用正式的Normal prompt（独立于player/send的normal）
         if message_type == MessageType.SYSTEM:
-            return self._build_system_normal_prompt()
-
+            return self._build_system_normal_prompt(has_context)
         # Player/Send消息的Normal mode使用标准口语化prompt
-        if mode == TranslationMode.NORMAL:
-            return self._build_player_normal_prompt()
-
+        elif mode == TranslationMode.NORMAL:
+            return self._build_player_normal_prompt(has_context)
         # Deep mode
-        if mode == TranslationMode.DEEP:
-            return self._build_deep_prompt()
-
+        elif mode == TranslationMode.DEEP:
+            return self._build_deep_prompt(has_context)
         # Rage mode
-        if mode == TranslationMode.RAGE:
-            return self._build_rage_prompt()
+        elif mode == TranslationMode.RAGE:
+            return self._build_rage_prompt(has_context)
+        else:
+            raise ValueError(f"Invalid mode: {mode}")
 
-        raise ValueError(f"Invalid mode: {mode}")
-
-    def _build_system_normal_prompt(self) -> str:
+    def _build_system_normal_prompt(self, has_context: bool = False) -> str:
         """
         System消息专用的极简Normal prompt。
         利用LLM默认的正式语气，仅针对格式安全和术语进行硬性约束。
         """
-        return (
+        prompt = (
             "You are a Minecraft server localization engine. "
             "Translate server announcements, game notifications, and plugin messages.\n"
-            "Rules:\n"
+        )
+
+        if has_context:
+            prompt += self._context_awareness_block()
+
+        prompt += (
+            "\nRules:\n"
             "1. Priority: You MUST use mappings from `Custom Terms` if provided.\n"
             "2. Safety: STRICTLY preserve all formatting codes (e.g., `§a`, `§l`) and "
             "symbols. Do NOT translate command syntax (e.g., `/help`).\n"
             "3. Output: Output ONLY the translation result."
         )
+        return prompt
 
-    def _build_player_normal_prompt(self) -> str:
+    def _build_player_normal_prompt(self, has_context: bool = False) -> str:
         """
         Player/Send消息专用的Normal prompt（口语化风格）。
         """
-        return (
+        prompt = (
             "You are a Minecraft-specific intelligent translation engine, focused on providing "
             "high-quality localization transformations in terms of cultural adaptation and "
-            "language naturalization.\n\n"
-            "## Translation Guidelines\n\n"
+            "language naturalization.\n"
+        )
+
+        if has_context:
+            prompt += self._context_awareness_block()
+
+        prompt += (
+            "\n## Translation Guidelines\n\n"
             "1. Custom Term Priority: If a `Custom Terms` section is provided in the user's "
             "prompt, its mappings are mandatory and take the highest priority. You MUST use "
             "the specified translation for any term found in this section, overriding all "
@@ -721,16 +767,23 @@ class Translator:
             "Your response MUST ONLY contain the final translated text. Do not add any "
             "prefixes, suffixes, explanations, or notes."
         )
+        return prompt
 
-    def _build_deep_prompt(self) -> str:
+    def _build_deep_prompt(self, has_context: bool = False) -> str:
         """
         Deep mode prompt（CoT思维链模式）。
         """
-        return (
+        prompt = (
             "You are a Minecraft-specific intelligent translation engine, focused on providing "
             "high-quality localization transformations in terms of cultural adaptation and "
-            "language naturalization.\n\n"
-            "## Translation Guidelines\n\n"
+            "language naturalization.\n"
+        )
+
+        if has_context:
+            prompt += self._context_awareness_block()
+
+        prompt += (
+            "\n## Translation Guidelines\n\n"
             "1. Custom Term Priority: If a `Custom Terms` section is provided in the user's "
             "prompt, its mappings are mandatory and take the highest priority. You MUST use "
             "the specified translation for any term found in this section, overriding all "
@@ -758,28 +811,69 @@ class Translator:
             "Strictly return a valid JSON object that conforms EXACTLY to the following "
             "TypeScript interface. Do not wrap the output in Markdown code blocks (e.g., ```json), "
             "and do not output any explanations or additional text.\n\n"
-            "interface TranslationOutput {\n"
-            "  // List of vocabulary requiring special handling (game terms, slang, abbreviations, memes, puns, etc.)\n"
-            "  terms: {\n"
-            "    // The original term found in the source text\n"
-            "    term: string;\n"
-            "    // Definition, explanation, or context of the term\n"
-            "    meaning: string;\n"
-            "  }[];\n"
-            "  // Final natural translation result after cultural adaptation and colloquial processing\n"
-            "  result: string;\n"
-            "}"
         )
 
-    def _build_rage_prompt(self) -> str:
+        if has_context:
+            prompt += (
+                "interface TranslationOutput {\n"
+                "  // Analysis of the recent chat history and how it relates to the current message\n"
+                "  context_analysis: {\n"
+                "    // Summary of the ongoing conversation or topic from the history\n"
+                "    conversation_summary: string;\n"
+                "    // How the history affects interpretation of the current message\n"
+                "    // (e.g., follow-up to a joke, response to a question, continuation of a topic)\n"
+                "    relevance: string;\n"
+                "  };\n"
+                "  // List of vocabulary requiring special handling (game terms, slang, abbreviations, memes, puns, etc.)\n"
+                "  terms: {\n"
+                "    // The original term found in the source text\n"
+                "    term: string;\n"
+                "    // Definition, explanation, or context of the term\n"
+                "    meaning: string;\n"
+                "  }[];\n"
+                "  // Final natural translation result after cultural adaptation and colloquial processing\n"
+                "  // The translation MUST take into account the context_analysis above\n"
+                "  result: string;\n"
+                "}"
+            )
+        else:
+            prompt += (
+                "interface TranslationOutput {\n"
+                "  // List of vocabulary requiring special handling (game terms, slang, abbreviations, memes, puns, etc.)\n"
+                "  terms: {\n"
+                "    // The original term found in the source text\n"
+                "    term: string;\n"
+                "    // Definition, explanation, or context of the term\n"
+                "    meaning: string;\n"
+                "  }[];\n"
+                "  // Final natural translation result after cultural adaptation and colloquial processing\n"
+                "  result: string;\n"
+                "}"
+            )
+
+        return prompt
+
+    def _build_rage_prompt(self, has_context: bool = False) -> str:
         """
         Rage mode prompt（红温模式）。
         """
-        return (
+        prompt = (
             "You are the embodiment of a toxic, tilted, and aggressive Minecraft PVPer. "
             "You are NOT a polite translator. Your job is to translate chat messages into "
-            "the most emotionally charged, sarcastic, and 'salty' version possible.\n\n"
-            "## Core Personality & Guidelines\n\n"
+            "the most emotionally charged, sarcastic, and 'salty' version possible.\n"
+        )
+
+        if has_context:
+            prompt += (
+                "\n## Context Awareness\n\n"
+                "A recent chat history is provided in the user message. "
+                "Use it to understand who you're trash-talking and what started the beef.\n"
+                "Note: Messages closer to the end are more likely to be relevant. "
+                "Earlier messages may be unrelated — use your judgment.\n"
+            )
+
+        prompt += (
+            "\n## Core Personality & Guidelines\n\n"
             "1. AGGRESSION INJECTION: If input is mild (e.g., 'lag'), INJECT rage and blame (server, teammates). "
             "Make it sound like you are smashing the keyboard.\n"
             "2. TRASH TALK & SLANG: Amplify hostility. Use internet slang and memes. "
@@ -796,6 +890,7 @@ class Translator:
             "## Output Requirement\n\n"
             "Your response MUST ONLY contain the final translated text. No explanations."
         )
+        return prompt
 
     def _collect_in_text_terms(self, text: str, max_terms: int = 50):
         """
@@ -897,6 +992,14 @@ class Translator:
             f"{numbered}"
         )
 
+        # 如果有历史上下文，拼接到 user message 前面
+        if context_messages:
+            history_content = context_messages[0].get("content", "")
+            if self._is_anthropic:
+                user_message = f"<recent_chat_history>\n{history_content}\n</recent_chat_history>\n\n{user_message}"
+            else:
+                user_message = f"=== Recent Chat History ===\n{history_content}\n=== End of History ===\n\n---\n\n{user_message}"
+
         provider = self.translation_service_config.llm.provider or "OpenAI"
         model = self.translation_service_config.llm.model
 
@@ -918,11 +1021,13 @@ class Translator:
         prefix = LLM_PROVIDERS_PREFIXES[provider]
         mapped_model = model if model.startswith(prefix) else prefix + model
 
+        # 构建 system prompt（含上下文指导）
+        system_prompt = self._build_batch_system_prompt(has_context=bool(context_messages))
+
         llm_params = {
             "model": mapped_model,
             "messages": [
-                {"role": "system", "content": self._build_batch_system_prompt()},
-                *context_messages,
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message},
             ],
             "temperature": 0,
@@ -955,16 +1060,28 @@ class Translator:
 
         return [str(item) for item in result]
 
-    def _build_batch_system_prompt(self) -> str:
+    def _build_batch_system_prompt(self, has_context: bool = False) -> str:
         """
         批量翻译专用 system prompt：要求模型返回严格的 JSON 数组。
         """
-        return (
+        prompt = (
             "You are a Minecraft-specific intelligent translation engine. "
             "You will receive a numbered list of chat messages. "
             "Translate each message naturally, preserving gaming slang, cultural nuances, "
-            "and Minecraft formatting codes (e.g., §a, §l) exactly.\n\n"
-            "Output Rules:\n"
+            "and Minecraft formatting codes (e.g., §a, §l) exactly.\n"
+        )
+
+        if has_context:
+            prompt += (
+                "\n## Context Awareness\n\n"
+                "A recent chat history is provided in the user message. "
+                "Use it to understand ongoing conversations and maintain translation consistency.\n"
+                "Note: Messages closer to the end are more likely to be relevant. "
+                "Earlier messages may be unrelated — use your judgment.\n"
+            )
+
+        prompt += (
+            "\nOutput Rules:\n"
             "1. Return ONLY a valid JSON array of strings.\n"
             "2. The array must contain exactly the same number of elements as the input messages, "
             "in the same order.\n"
@@ -972,6 +1089,7 @@ class Translator:
             "4. Do NOT translate player names, server names, or Minecraft commands.\n"
             "5. For untranslatable content (e.g., keyboard mashing), keep the original text."
         )
+        return prompt
 
     def _execute_traditional_translation(self, text, service, source_language, target_language):
         """

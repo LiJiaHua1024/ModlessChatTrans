@@ -449,6 +449,12 @@ def start_translation(config):
             config.message_capture,
             callback,
             batch_callback,
+            context_buffer,
+            player_translator,
+            config.message_capture.source_language,
+            config.message_capture.target_language,
+            config.message_capture.replace_garbled_chars,
+            tts_engine,
         )
     )
     monitor_thread.daemon = True
