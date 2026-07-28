@@ -297,6 +297,37 @@ def match_and_translate(original_chat_message: str) -> str | None:
     return None
 
 
+def should_skip_message(name: str, original_chat_message: str, message_type: MessageType, data_type: str) -> bool:
+    """
+    检查消息是否应该被跳过（过滤逻辑）
+
+    :param name: 玩家名称（可能为空）
+    :param original_chat_message: 原始聊天消息
+    :param message_type: 消息类型
+    :param data_type: 数据类型 ("log", "clipboard", "webui")
+    :return: True 如果消息应该被跳过
+    """
+    # 黑名单检查（PLAYER 和 SYSTEM 消息生效，SEND 不生效）
+    if message_type != MessageType.SEND and original_chat_message:
+        # 用户黑名单检查（仅对玩家消息，因为需要用户名）
+        if name:
+            sanitized_name = sanitize_hypixel_name(name)
+            if is_user_in_blacklist(sanitized_name):
+                logger.info(f"User '{sanitized_name}' in blacklist, discarding message")
+                return True
+
+        # 消息内容黑名单检查（对所有非 SEND 消息生效）
+        if is_message_blocked(original_chat_message):
+            logger.info(f"Message blocked by content blacklist: {original_chat_message[:50]}...")
+            return True
+
+    # 系统消息过滤
+    if data_type == "log" and filter_server_messages and not name:
+        return True
+
+    return False
+
+
 def process_decorator(function):
     """
     为process_message添加翻译步骤
@@ -332,21 +363,8 @@ def process_decorator(function):
         info: dict = {}
         context_messages = context_messages or []
 
-        # 黑名单检查（PLAYER 和 SYSTEM 消息生效，SEND 不生效）
-        if message_type != MessageType.SEND and original_chat_message:
-            # 用户黑名单检查（仅对玩家消息，因为需要用户名）
-            if name:
-                sanitized_name = sanitize_hypixel_name(name)
-                if is_user_in_blacklist(sanitized_name):
-                    logger.info(f"User '{sanitized_name}' in blacklist, discarding message")
-                    return None
-
-            # 消息内容黑名单检查（对所有非 SEND 消息生效）
-            if is_message_blocked(original_chat_message):
-                logger.info(f"Message blocked by content blacklist: {original_chat_message[:50]}...")
-                return None
-
-        if data_type == "log" and filter_server_messages and not name:
+        # 使用过滤函数检查是否跳过消息
+        if should_skip_message(name, original_chat_message, message_type, data_type):
             return None
         if original_chat_message:
             if matched_translated_message := match_and_translate(original_chat_message):
