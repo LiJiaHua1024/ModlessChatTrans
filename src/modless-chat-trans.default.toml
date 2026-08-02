@@ -18,7 +18,7 @@ fallback-strategy = "direct"
 provider = "OpenAI"
 api-key = ""
 api-base = ""
-model = "gpt-5-mini"
+model = "gpt-5.6-luna"
 deep-translate = false
 
 # 备用 LLM 模型（可选，仅 service-type="llm" 时生效）。
