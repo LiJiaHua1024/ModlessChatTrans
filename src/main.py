@@ -186,107 +186,127 @@ def start_translation(config):
         """
         start_time = time.time()
 
+        def report_error(error_message, info=None):
+            """确保失败也能结束 pending slot，并通知 WebUI 结束发送状态。"""
+            error_info = dict(info) if isinstance(info, dict) else {}
+            if data_type in ("clipboard", "webui"):
+                error_info["send_translation_complete"] = True
+
+            duration = time.time() - start_time
+            if slot_id is not None:
+                fill_slot(slot_id, "[ERROR]", error_message, error_info, duration=duration)
+            else:
+                display_message("[ERROR]", error_message, error_info, duration=duration)
+
+        def finish_error(error_message, info=None):
+            report_error(error_message, info)
+            if data_type == "webui":
+                return {"error": error_message}
+            return None
+
         if data_type == "log":
             # 提取日志时间或用行到达时间
-            log_time = extract_log_time(line, arrival_time)
-            ctx_messages = context_buffer.get_context_messages()
+            try:
+                log_time = extract_log_time(line, arrival_time)
+                ctx_messages = context_buffer.get_context_messages()
+            except Exception as error:
+                logger.exception(f"[Log] Failed to prepare translation context: {error}")
+                report_error(f"{_('翻译失败，错误：')} {error}")
+                return
 
             if "[CHAT]" not in line:
                 if slot_id is not None:
                     fill_slot(slot_id, "", "", {})
                 return
 
-            # 重试5次
             chat_content = line.split("[CHAT]")[1].strip()
             if config.message_capture.replace_garbled_chars:
                 chat_content = chat_content.replace("\ufffd\ufffd", "\u00A7")
-            for attempt in range(5):
-                if processed_message := process_message(
-                        line,
-                        data_type,
-                        player_translator,
-                        source_language=config.message_capture.source_language,
-                        target_language=config.message_capture.target_language,
-                        context_messages=ctx_messages,
-                ):
-                    name, translated, info = processed_message
-                    duration = time.time() - start_time
-                    original_for_display = chat_content if name != "[ERROR]" else None
-                    if slot_id is not None:
-                        fill_slot(slot_id, name or "", translated or "", info, duration=duration, original=original_for_display)
-                    else:
-                        display_message(name, translated or "", info, duration=duration, original=original_for_display)
+            try:
+                processed_message = process_message(
+                    line,
+                    data_type,
+                    player_translator,
+                    source_language=config.message_capture.source_language,
+                    target_language=config.message_capture.target_language,
+                    context_messages=ctx_messages,
+                )
+            except Exception as error:
+                logger.exception(f"[Log] Unexpected translation failure: {error}")
+                report_error(f"{_('翻译失败，错误：')} {error}")
+                return
 
-                    if name != "[ERROR]":
-                        if translated:
-                            if chat_content:
-                                context_buffer.push(ContextEntry(
-                                    original=chat_content,
-                                    translated=translated,
-                                    timestamp=log_time,
-                                    player_name=name or "",
-                                ))
-                        # TTS 朗读
-                        if tts_engine.enabled and translated:
-                            tts_engine.enqueue(
-                                name or "", translated,
-                                config.message_capture.target_language
-                            )
-                        break
-                    else:
-                        logger.error(translated)
-                        if attempt < 4:
-                            continue
-                        break
-                else:
-                    # 过滤掉了（筛选或黑名单），清除占位 slot
-                    if slot_id is not None:
-                        fill_slot(slot_id, "", "", {})
-                    break
+            if not processed_message:
+                # 过滤掉了（筛选或黑名单），清除占位 slot
+                if slot_id is not None:
+                    fill_slot(slot_id, "", "", {})
+                return
+
+            name, translated, info = processed_message
+            duration = time.time() - start_time
+            if name == "[ERROR]":
+                logger.error(translated)
+                report_error(translated, info)
+                return
+
+            original_for_display = chat_content
+            if slot_id is not None:
+                fill_slot(slot_id, name or "", translated or "", info, duration=duration, original=original_for_display)
+            else:
+                display_message(name, translated or "", info, duration=duration, original=original_for_display)
+
+            if translated and chat_content:
+                context_buffer.push(ContextEntry(
+                    original=chat_content,
+                    translated=translated,
+                    timestamp=log_time,
+                    player_name=name or "",
+                ))
+            # TTS 朗读
+            if tts_engine.enabled and translated:
+                tts_engine.enqueue(
+                    name or "", translated,
+                    config.message_capture.target_language
+                )
 
         elif data_type in ("clipboard", "webui"):
-            ctx_messages = context_buffer.get_context_messages()
-            for attempt in range(5):
-                if processed_message := process_message(
-                        line,
-                        data_type,
-                        send_translator,
-                        source_language=config.message_send.source_language,
-                        target_language=config.message_send.target_language,
-                        rage_mode=rage_mode,
-                        context_messages=ctx_messages,
-                ):
-                    is_error, translated, info = processed_message
-                    if not is_error:
-                        modify_clipboard(translated)
-                        duration = time.time() - start_time
-                        if not info:
-                            info = {}
-                        info["send_translation_complete"] = True
-                        if slot_id is not None:
-                            fill_slot(slot_id, "[INFO]", _("要发送的消息翻译完成，翻译结果已复制到剪切板"), info, duration=duration)
-                        else:
-                            display_message(
-                                "[INFO]",
-                                _("要发送的消息翻译完成，翻译结果已复制到剪切板"),
-                                info,
-                                duration=duration
-                            )
-                        return translated
-                    else:
-                        logger.error(f"[Clipboard/WebUI] Translation attempt {attempt + 1} failed: {translated}")
-                        if attempt < 4:
-                            continue
-                        if slot_id is not None:
-                            fill_slot(slot_id, is_error, translated, info)
-                        else:
-                            display_message(is_error, translated, info)
-                        break
+            try:
+                ctx_messages = context_buffer.get_context_messages()
+                processed_message = process_message(
+                    line,
+                    data_type,
+                    send_translator,
+                    source_language=config.message_send.source_language,
+                    target_language=config.message_send.target_language,
+                    rage_mode=rage_mode,
+                    context_messages=ctx_messages,
+                )
+            except Exception as error:
+                logger.exception(f"[Clipboard/WebUI] Unexpected translation failure: {error}")
+                return finish_error(f"{_('翻译失败，错误：')} {error}")
+
+            if not processed_message:
+                return finish_error(_("翻译失败，未生成翻译结果。"))
+
+            is_error, translated, info = processed_message
+            if not is_error and translated:
+                modify_clipboard(translated)
+                duration = time.time() - start_time
+                info = dict(info) if isinstance(info, dict) else {}
+                info["send_translation_complete"] = True
+                if slot_id is not None:
+                    fill_slot(slot_id, "[INFO]", _("要发送的消息翻译完成，翻译结果已复制到剪切板"), info, duration=duration)
                 else:
-                    if slot_id is not None:
-                        fill_slot(slot_id, "", "", {})
-                    break
-            return None
+                    display_message(
+                        "[INFO]",
+                        _("要发送的消息翻译完成，翻译结果已复制到剪切板"),
+                        info,
+                        duration=duration
+                    )
+                return translated
+
+            logger.error(f"[Clipboard/WebUI] Translation failed: {translated}")
+            return finish_error(translated or _("翻译失败，未生成翻译结果。"), info)
 
     def batch_callback(items, data_type="log"):
         """

@@ -29,6 +29,7 @@ messages_by_id = {}
 message_condition = threading.Condition()
 message_id_counter = count(1)
 MAX_HTTP_MESSAGES = 2000
+PENDING_SLOT_TIMEOUT = 10.0
 clear_revision = 0
 sse_clients = []
 
@@ -93,6 +94,9 @@ def start_httpserver(port, callback, tts_engine=None):
                     f"{preview[:30]}..." if len(preview) > 30 else preview
                 )
                 translated = callback(data['message'], data_type="webui", rage_mode=rage_mode)
+                if isinstance(translated, dict) and translated.get("error"):
+                    logger.warning(f"WebUI translation failed: {translated['error']}")
+                    return jsonify(translated), 502
                 logger.debug("Message translated successfully")
                 return jsonify({'translated': translated})
             except Exception as e:
@@ -179,6 +183,7 @@ def start_httpserver(port, callback, tts_engine=None):
                     while True:
                         send_clear_signal = False
                         new_messages = []
+                        wait_timeout = heartbeat_interval
 
                         with message_condition:
                             if clear_revision != current_clear_revision:
@@ -193,13 +198,28 @@ def start_httpserver(port, callback, tts_engine=None):
                                 message = messages_by_id.get(next_event_id)
                                 if not message:
                                     break
-                                # 跳过 pending slot，等待 fill_slot 完成后继续
                                 if message.get('pending'):
-                                    if time.time() - message.get('created_at', 0) > 10.0:
-                                        logger.warning(f"Pending message slot {next_event_id} timed out. Skipping.")
-                                        message['pending'] = False
-                                        message['message'] = ""
+                                    pending_age = time.time() - message.get('created_at', time.time())
+                                    if pending_age >= PENDING_SLOT_TIMEOUT:
+                                        logger.error(
+                                            f"Pending message slot {next_event_id} exceeded "
+                                            f"{PENDING_SLOT_TIMEOUT:g}s; publishing timeout error."
+                                        )
+                                        message["name"] = "[ERROR]"
+                                        message["message"] = _("翻译超时，请稍后重试。")
+                                        message["duration"] = "timeout"
+                                        message["info"] = {
+                                            "send_translation_complete": True,
+                                            "translation_timeout": True,
+                                        }
+                                        message["original"] = None
+                                        message["pending"] = False
+                                        message["timed_out"] = True
                                     else:
+                                        wait_timeout = min(
+                                            wait_timeout,
+                                            max(PENDING_SLOT_TIMEOUT - pending_age, 0.1),
+                                        )
                                         break
 
                                 next_event_id = message['id'] + 1
@@ -210,7 +230,7 @@ def start_httpserver(port, callback, tts_engine=None):
                                 new_messages.append(message)
 
                             if not send_clear_signal and not new_messages:
-                                message_condition.wait(timeout=heartbeat_interval)
+                                message_condition.wait(timeout=wait_timeout)
 
                         if send_clear_signal:
                             yield 'data: {"clear": true}\n\n'
@@ -372,19 +392,27 @@ def fill_slot(message_id: int, name: str, message: str, info: dict, duration=Non
 
     info_payload = dict(info) if isinstance(info, dict) else {}
 
+    late_result = False
     with message_condition:
         record = messages_by_id.get(message_id)
         if record is None:
             logger.warning(f"fill_slot: id={message_id} not found, falling back to display_message")
-            display_message(name, message, info, duration, original)
-            return
+            late_result = True
+        elif record.get("timed_out"):
+            # SSE 已经发布超时错误，迟到的真实结果另起一条消息，避免静默丢失。
+            logger.warning(f"fill_slot: id={message_id} completed after timeout, publishing late result")
+            late_result = True
+        else:
+            record["name"] = name
+            record["message"] = message
+            record["duration"] = duration_str
+            record["info"] = info_payload
+            record["pending"] = False
+            record["original"] = original
+            message_condition.notify_all()
 
-        record["name"] = name
-        record["message"] = message
-        record["duration"] = duration_str
-        record["info"] = info_payload
-        record["pending"] = False
-        record["original"] = original
-        message_condition.notify_all()
+    if late_result:
+        display_message(name, message, info, duration, original)
+        return
 
     logger.debug(f"Slot filled: id={message_id} name={name or 'System'} msg={message[:30] if message else ''}")

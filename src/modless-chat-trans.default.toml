@@ -12,6 +12,7 @@ target-language = "Simplified Chinese"
 
 [player-translation]
 service-type = "llm"
+fallback-strategy = "direct"
 
 [player-translation.llm]
 provider = "OpenAI"
@@ -20,15 +21,8 @@ api-base = ""
 model = "gpt-5-mini"
 deep-translate = false
 
-# 备用 LLM 模型（可选，仅 service-type="llm" 时生效）
-fallback-strategy = "direct"
-
-[player-translation.fallback-llm]
-provider = "OpenAI"
-api-key = ""
-api-base = ""
-model = "gpt-5-mini"
-deep-translate = false
+# 备用 LLM 模型（可选，仅 service-type="llm" 时生效）。
+# 在界面中填写模型代号后才会写入配置；本地端点可以不填 API Key。
 
 [message-presentation]
 web-port = 56552

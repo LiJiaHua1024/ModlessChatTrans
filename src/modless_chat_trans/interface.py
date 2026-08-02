@@ -3163,10 +3163,10 @@ class StartInterface(QFrame):
                 model=player_widget.main_fields['model_edit'].text(),
                 deep_translate=player_widget.main_fields['optimization_switch'].isChecked()
             )
-            # 备用模型（仅当 API Key 非空时才保存）
+            # 备用模型只要求模型代号；本地/OpenAI 兼容端点可能不需要 API Key。
             fallback_llm = None
             fb_fields = player_widget.fallback_fields
-            if fb_fields['api_key_edit'].text().strip():
+            if fb_fields['model_edit'].text().strip():
                 fallback_llm = LLMServiceConfig(
                     provider=fb_fields['service_combo'].currentText(),
                     api_key=fb_fields['api_key_edit'].text(),
@@ -3207,10 +3207,10 @@ class StartInterface(QFrame):
                     model=send_widget.main_fields['model_edit'].text(),
                     deep_translate=send_widget.main_fields['optimization_switch'].isChecked()
                 )
-                # 备用模型（仅当 API Key 非空时才保存）
+                # 备用模型只要求模型代号；本地/OpenAI 兼容端点可能不需要 API Key。
                 fallback_llm = None
                 fb_fields = send_widget.fallback_fields
-                if fb_fields['api_key_edit'].text().strip():
+                if fb_fields['model_edit'].text().strip():
                     fallback_llm = LLMServiceConfig(
                         provider=fb_fields['service_combo'].currentText(),
                         api_key=fb_fields['api_key_edit'].text(),

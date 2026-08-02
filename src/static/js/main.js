@@ -823,7 +823,7 @@ function initializeEventSource() {
         var usage = jsonData.usage;
         var original = jsonData.original;
 
-        if (name === "[INFO]" && isTranslating && jsonData.send_translation_complete) {
+        if (isTranslating && jsonData.send_translation_complete) {
             setTimeout(resetTranslationUI, 500);
         }
 
@@ -1133,6 +1133,7 @@ function sendMessage() {
     if (translationTimeoutId) {
         clearTimeout(translationTimeoutId);
     }
+    // 后端翻译任务有 10 秒硬上限，给 HTTP/SSE 传播留出少量余量。
     translationTimeoutId = setTimeout(function() {
         if (isTranslating) {
             resetTranslationUI();
@@ -1144,11 +1145,27 @@ function sendMessage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: message, rage_mode: isRageMode })
     })
-    .then(response => response.json())
-    .then(data => {
-        console.log("收到翻译:", data.translated);
+    .then(function(response) {
+        return response.json().catch(function() {
+            return { error: "服务器返回了无效响应" };
+        }).then(function(data) {
+            if (!response.ok && !data.error) {
+                data.error = "翻译请求失败（HTTP " + response.status + "）";
+            }
+            return data;
+        });
     })
-    .catch(() => {
+    .then(function(data) {
+        if (data.error) {
+            console.error("翻译失败:", data.error);
+        } else {
+            console.log("收到翻译:", data.translated);
+        }
+        // HTTP 请求在服务端完成后才返回；成功和失败都必须解除发送锁定。
+        resetTranslationUI();
+    })
+    .catch(function(error) {
+        console.error("发送翻译请求失败:", error);
         resetTranslationUI();
     });
 

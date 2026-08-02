@@ -400,8 +400,12 @@ def translate_prepared(
                     context_messages=context_messages,
                 )
             if result:
-                translated = result["result"]
-                info["usage"] = result["usage"]
+                translated = result.get("result") or ""
+                if not translated:
+                    return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
+                info["usage"] = result.get("usage")
+            else:
+                return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
         except HTTPError as http_err:
             response = getattr(http_err, "response", None)
             if response is not None:
@@ -491,8 +495,12 @@ def process_decorator(function):
                                 target_language=target_language,
                                 message_type=message_type
                         ):
-                            translated_chat_message = result["result"]
-                            info["usage"] = result["usage"]
+                            translated_chat_message = result.get("result") or ""
+                            if not translated_chat_message:
+                                return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
+                            info["usage"] = result.get("usage")
+                        else:
+                            return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
                     else:
                         if result := translator.translate_with_context(
                                 original_chat_message,
@@ -501,8 +509,12 @@ def process_decorator(function):
                                 message_type=message_type,
                                 context_messages=context_messages,
                         ):
-                            translated_chat_message = result["result"]
-                            info["usage"] = result["usage"]
+                            translated_chat_message = result.get("result") or ""
+                            if not translated_chat_message:
+                                return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
+                            info["usage"] = result.get("usage")
+                        else:
+                            return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
                 except HTTPError as http_err:
                     response = getattr(http_err, "response", None)
                     if response is not None:

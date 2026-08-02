@@ -157,16 +157,21 @@ class OrderedProcessor:
 
                 # 分配 slot（保证顺序）
                 slot_id = allocate_slot(name=prepared.name, arrival_time=arrival_time)
-                log_time = extract_log_time(line, arrival_time)
+                try:
+                    log_time = extract_log_time(line, arrival_time)
 
-                # 立即 push 原文到 context_buffer（翻译前）
-                # 这样后续消息的 context_messages 就能看到这条原文
-                if self._context_buffer:
-                    self._context_buffer.push(ContextEntry(
-                        original=prepared.original,
-                        timestamp=log_time,
-                        player_name=prepared.name or "",
-                    ))
+                    # 立即 push 原文到 context_buffer（翻译前）
+                    # 这样后续消息的 context_messages 就能看到这条原文
+                    if self._context_buffer:
+                        self._context_buffer.push(ContextEntry(
+                            original=prepared.original,
+                            timestamp=log_time,
+                            player_name=prepared.name or "",
+                        ))
+                except Exception as error:
+                    logger.exception(f"[Log] Failed to prepare message context: {error}")
+                    fill_slot(slot_id, "[ERROR]", f"翻译失败，错误： {error}", {}, original=prepared.original)
+                    continue
 
                 items.append((prepared, slot_id, log_time))
 
@@ -187,13 +192,13 @@ class OrderedProcessor:
 
         start_time = time.time()
 
-        # 获取上下文（此时 context_buffer 已包含所有 prepare 阶段 push 的原文）
-        ctx_messages = []
-        if self._context_buffer:
-            ctx_messages = self._context_buffer.get_context_messages()
+        # 重试/备用模型策略由 Translator 统一处理，避免调用层重复放大请求次数。
+        try:
+            # 获取上下文（此时 context_buffer 已包含所有 prepare 阶段 push 的原文）
+            ctx_messages = []
+            if self._context_buffer:
+                ctx_messages = self._context_buffer.get_context_messages()
 
-        # 翻译（含重试）
-        for attempt in range(5):
             name, translated, info = translate_prepared(
                 prepared,
                 translator=self._translator,
@@ -201,24 +206,24 @@ class OrderedProcessor:
                 target_language=self._target_language,
                 context_messages=ctx_messages,
             )
+        except Exception as error:
+            logger.exception(f"[Log] Unexpected translation failure: {error}")
+            name, translated, info = "[ERROR]", f"翻译失败，错误： {error}", {}
 
-            if name != "[ERROR]":
-                duration = time.time() - start_time
-                fill_slot(slot_id, name or "", translated or "", info, duration=duration, original=prepared.original)
+        duration = time.time() - start_time
+        if name == "[ERROR]":
+            logger.error(translated)
+            fill_slot(slot_id, name, translated or "翻译失败", info, duration=duration)
+            return
 
-                # TTS
-                if self._tts_engine and self._tts_engine.enabled and translated:
-                    self._tts_engine.enqueue(
-                        name or "", translated,
-                        self._target_language,
-                    )
-                return
-            else:
-                logger.error(translated)
-                if attempt >= 4:
-                    duration = time.time() - start_time
-                    fill_slot(slot_id, name or "", translated or "", info, duration=duration, original=prepared.original)
-                    return
+        fill_slot(slot_id, name or "", translated or "", info, duration=duration, original=prepared.original)
+
+        # TTS
+        if self._tts_engine and self._tts_engine.enabled and translated:
+            self._tts_engine.enqueue(
+                name or "", translated,
+                self._target_language,
+            )
 
 
 

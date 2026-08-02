@@ -143,8 +143,10 @@ service_supported_languages = _LazyLanguageDict()
 
 
 class Translator:
+    MAX_TRANSLATION_SECONDS = 10.0
+
     def __init__(self, translation_service_config, glossary,
-                 fallback_llm_config=None, fallback_strategy="direct"):
+                 fallback_llm_config=None, fallback_strategy=None):
         """
         初始化 Translator 类, 提供多种翻译相关选项及服务参数
 
@@ -156,9 +158,28 @@ class Translator:
 
         self.translation_service_config = translation_service_config
         self.glossary = glossary
-        self.fallback_llm_config = fallback_llm_config
-        self.fallback_strategy = fallback_strategy
-        self.timeout = 15.0
+        self.fallback_llm_config = (
+            fallback_llm_config
+            if fallback_llm_config is not None
+            else getattr(translation_service_config, "fallback_llm", None)
+        )
+        self.fallback_strategy = (
+            fallback_strategy
+            if fallback_strategy is not None
+            else getattr(translation_service_config, "fallback_strategy", FallbackStrategy.DIRECT)
+        )
+        fallback_provider = getattr(self.fallback_llm_config, "provider", "") if self.fallback_llm_config else ""
+        fallback_model = getattr(self.fallback_llm_config, "model", "") if self.fallback_llm_config else ""
+        if not self.fallback_llm_config or not fallback_provider.strip() or not fallback_model.strip():
+            logger.info("Fallback LLM disabled: no complete fallback configuration.")
+        else:
+            logger.info(
+                f"Fallback LLM enabled: {self.fallback_llm_config.provider}/"
+                f"{self.fallback_llm_config.model}, strategy={self.fallback_strategy}"
+            )
+        # 单个请求和整条翻译链路都不能超过 10 秒；备用策略会在此预算内分配时间。
+        self.timeout = self.MAX_TRANSLATION_SECONDS
+        self.translation_deadline = self.MAX_TRANSLATION_SECONDS
         self._variable_pattern = re.compile(r"\{\{([a-zA-Z0-9_-]+)(?::[^}]+)?\}\}")
         self._literal_glossary = {
             k: v for k, v in self.glossary.items()
@@ -367,7 +388,7 @@ class Translator:
     def _execute_llm_translation(self, text, model, source_language, target_language, provider, system_prompt,
                                  expect_json, include_terms, message_type: MessageType = MessageType.PLAYER,
                                  context_messages: list = None,
-                                 llm_config_override=None):
+                                 llm_config_override=None, request_timeout=None):
         """
         Execution Engine: Handles API calls and response parsing.
 
@@ -382,6 +403,7 @@ class Translator:
         :param message_type: 消息类型
         :param context_messages: 历史上下文 messages
         :param llm_config_override: 可选的 LLMS erviceConfig 覆盖（用于备用模型）
+        :param request_timeout: 当前请求剩余的超时时间（秒）
         """
         context_messages = context_messages or []
         # 选择有效的 LLM 配置（备用模型配置或主模型配置）
@@ -463,22 +485,25 @@ class Translator:
                 else prefix + model
             )
 
+            # GPT-5 系列只接受 temperature=1；其它模型继续使用确定性翻译参数。
+            temperature = 1 if re.match(r"^(?:openai/)?gpt-5(?:[-.]|$)", model.lower()) else 0
             llm_params = {
                 "model": mapped_model,
                 "messages": [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": message}
                 ],
-                "temperature": 0,
+                "temperature": temperature,
                 "max_tokens": 256 if expect_json else 64,
                 "api_key": llm_cfg.api_key,
+                "num_retries": 0,
             }
 
             # API URL 留空自动
             if api_base := llm_cfg.api_base:
                 llm_params["api_base"] = api_base
 
-            llm_params["timeout"] = self.timeout
+            llm_params["timeout"] = request_timeout if request_timeout is not None else self.timeout
 
             # 注入 OpenRouter 扩展路由参数
             if extra_body:
@@ -511,6 +536,9 @@ class Translator:
             translated_message = content_dict.get("result", None)
         else:
             translated_message = content_str
+
+        if not translated_message:
+            raise ValueError("LLM returned an empty translation")
 
         # # 更新累计 token 使用量
         # if usage_info and usage_info.get("total_tokens", None):
@@ -545,9 +573,45 @@ class Translator:
         context_messages = context_messages or []
         has_fallback = (
             self.fallback_llm_config is not None
-            and self.fallback_llm_config.api_key
+            and bool((self.fallback_llm_config.provider or "").strip())
+            and bool((self.fallback_llm_config.model or "").strip())
         )
-        strategy = self.fallback_strategy
+        try:
+            strategy = FallbackStrategy(self.fallback_strategy)
+        except ValueError:
+            logger.warning(
+                f"Unknown fallback strategy {self.fallback_strategy!r}; using direct fallback."
+            )
+            strategy = FallbackStrategy.DIRECT
+
+        deadline = time.monotonic() + self.translation_deadline
+
+        def remaining_time():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError(
+                    f"Translation exceeded the {self.translation_deadline:g}-second deadline"
+                )
+            return remaining
+
+        def call_primary(request_timeout):
+            return self._execute_llm_translation(
+                text, model, source_language, target_language, provider,
+                system_prompt, expect_json, include_terms, message_type,
+                context_messages=context_messages,
+                request_timeout=request_timeout,
+            )
+
+        def call_fallback(request_timeout):
+            return self._execute_llm_translation(
+                text, self.fallback_llm_config.model,
+                source_language, target_language,
+                self.fallback_llm_config.provider,
+                system_prompt, expect_json, include_terms,
+                message_type, context_messages=context_messages,
+                llm_config_override=self.fallback_llm_config,
+                request_timeout=request_timeout,
+            )
 
         # Strategy D: Always race — 始终并发竞速
         if has_fallback and strategy == FallbackStrategy.ALWAYS_RACE:
@@ -555,62 +619,68 @@ class Translator:
             return self._race_primary_fallback(
                 text, source_language, target_language, provider,
                 system_prompt, expect_json, include_terms,
-                message_type, context_messages
+                message_type, context_messages, deadline
             )
 
-        # 尝试主模型
-        try:
-            return self._execute_llm_translation(
-                text, model, source_language, target_language, provider,
-                system_prompt, expect_json, include_terms, message_type,
-                context_messages=context_messages
+        # Strategy B: Retry exhausted — 在总预算内平均分配每次尝试的时间。
+        if strategy == FallbackStrategy.RETRY_EXHAUSTED:
+            # 生产环境最多尝试两次：首次请求失败后只再重试一次。
+            primary_attempts = 2
+            last_primary_error = None
+            for attempt in range(primary_attempts):
+                attempts_left = primary_attempts - attempt + (1 if has_fallback else 0)
+                try:
+                    return call_primary(remaining_time() / attempts_left)
+                except Exception as retry_error:
+                    last_primary_error = retry_error
+                    logger.warning(
+                        f"Primary attempt {attempt + 1}/{primary_attempts} failed: {retry_error}"
+                    )
+
+            if not has_fallback:
+                raise last_primary_error
+
+            logger.info(
+                "Fallback strategy: RETRY_EXHAUSTED — primary retries exhausted, "
+                "switching to fallback within the remaining deadline"
             )
-        except Exception as e:
-            logger.warning(f"Primary model ({provider}/{model}) failed: {e}")
+            try:
+                return call_fallback(remaining_time())
+            except Exception as fallback_error:
+                raise RuntimeError(
+                    f"Primary model and retries failed (last error: {last_primary_error}); "
+                    f"fallback model failed: {fallback_error}"
+                ) from fallback_error
+
+        # 其它策略先给主模型一半预算，确保备用模型仍有时间接管。
+        primary_timeout = remaining_time() / 2 if has_fallback else remaining_time()
+        try:
+            return call_primary(primary_timeout)
+        except Exception as primary_error:
+            logger.warning(f"Primary model ({provider}/{model}) failed: {primary_error}")
             if not has_fallback:
                 raise
 
             # Strategy A: Direct fallback — 主模型失败立即使用备用
             if strategy == FallbackStrategy.DIRECT:
                 logger.info("Fallback strategy: DIRECT — switching to fallback model immediately")
-                return self._execute_llm_translation(
-                    text, self.fallback_llm_config.model,
-                    source_language, target_language,
-                    self.fallback_llm_config.provider,
-                    system_prompt, expect_json, include_terms,
-                    message_type, context_messages=context_messages,
-                    llm_config_override=self.fallback_llm_config
-                )
-
-            # Strategy B: Retry exhausted — 重试耗尽后切换
-            elif strategy == FallbackStrategy.RETRY_EXHAUSTED:
-                for retry in range(4):  # 再重试4次（总计5次）
-                    try:
-                        return self._execute_llm_translation(
-                            text, model, source_language, target_language,
-                            provider, system_prompt, expect_json,
-                            include_terms, message_type,
-                            context_messages=context_messages
-                        )
-                    except Exception as e2:
-                        logger.warning(f"Primary retry {retry + 1}/4 failed: {e2}")
-                logger.info("Fallback strategy: RETRY_EXHAUSTED — all primary retries exhausted, switching to fallback")
-                return self._execute_llm_translation(
-                    text, self.fallback_llm_config.model,
-                    source_language, target_language,
-                    self.fallback_llm_config.provider,
-                    system_prompt, expect_json, include_terms,
-                    message_type, context_messages=context_messages,
-                    llm_config_override=self.fallback_llm_config
-                )
+                try:
+                    return call_fallback(remaining_time())
+                except Exception as fallback_error:
+                    raise RuntimeError(
+                        f"Primary model failed: {primary_error}; fallback model failed: {fallback_error}"
+                    ) from fallback_error
 
             # Strategy C: Race on first failure — 首次失败后并发竞速
-            elif strategy == FallbackStrategy.RACE_ON_FAILURE:
-                logger.info("Fallback strategy: RACE_ON_FAILURE — primary failed, racing primary vs fallback")
+            if strategy == FallbackStrategy.RACE_ON_FAILURE:
+                logger.info(
+                    "Fallback strategy: RACE_ON_FAILURE — primary failed, "
+                    "racing primary vs fallback within the remaining deadline"
+                )
                 return self._race_primary_fallback(
                     text, source_language, target_language, provider,
                     system_prompt, expect_json, include_terms,
-                    message_type, context_messages
+                    message_type, context_messages, deadline
                 )
 
             raise  # 未知策略，不应到达
@@ -618,21 +688,33 @@ class Translator:
     def _race_primary_fallback(self, text, source_language, target_language,
                                provider, system_prompt, expect_json, include_terms,
                                message_type: MessageType = MessageType.PLAYER,
-                               context_messages: list = None):
+                               context_messages: list = None,
+                               deadline: float = None):
         """
         并发请求主模型和备用模型，返回最先成功的结果。
         如果两者都失败，抛出异常。
         """
-        from concurrent.futures import ThreadPoolExecutor, as_completed
+        from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError as FuturesTimeoutError
 
         context_messages = context_messages or []
+
+        if deadline is None:
+            deadline = time.monotonic() + self.translation_deadline
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError(
+                f"Translation exceeded the {self.translation_deadline:g}-second deadline"
+            )
+
+        request_timeout = min(self.timeout, remaining)
 
         def call_primary():
             return self._execute_llm_translation(
                 text, self.translation_service_config.llm.model,
                 source_language, target_language, provider,
                 system_prompt, expect_json, include_terms,
-                message_type, context_messages=context_messages
+                message_type, context_messages=context_messages,
+                request_timeout=request_timeout,
             )
 
         def call_fallback():
@@ -642,7 +724,8 @@ class Translator:
                 self.fallback_llm_config.provider,
                 system_prompt, expect_json, include_terms,
                 message_type, context_messages=context_messages,
-                llm_config_override=self.fallback_llm_config
+                llm_config_override=self.fallback_llm_config,
+                request_timeout=request_timeout,
             )
 
         executor = ThreadPoolExecutor(max_workers=2)
@@ -652,7 +735,7 @@ class Translator:
         }
         errors = []
         try:
-            for future in as_completed(futures):
+            for future in as_completed(futures, timeout=remaining):
                 try:
                     result = future.result()
                     logger.info(f"Race won by: {futures[future]}")
@@ -663,6 +746,10 @@ class Translator:
             # 两者都失败
             error_details = "; ".join(f"{name}: {err}" for name, err in errors)
             raise Exception(f"Both primary and fallback models failed: {error_details}")
+        except FuturesTimeoutError as timeout_error:
+            raise TimeoutError(
+                f"Primary and fallback models exceeded the {self.translation_deadline:g}-second deadline"
+            ) from timeout_error
         finally:
             # wait=False prevents blocking on the slower model; cancel_futures cancels pending tasks.
             executor.shutdown(wait=False, cancel_futures=True)
@@ -1024,15 +1111,17 @@ class Translator:
         # 构建 system prompt（含上下文指导）
         system_prompt = self._build_batch_system_prompt(has_context=bool(context_messages))
 
+        temperature = 1 if re.match(r"^(?:openai/)?gpt-5(?:[-.]|$)", model.lower()) else 0
         llm_params = {
             "model": mapped_model,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message},
             ],
-            "temperature": 0,
+            "temperature": temperature,
             "max_tokens": max(2048, 128 * n + 512),
             "api_key": self.translation_service_config.llm.api_key,
+            "num_retries": 0,
             "timeout": self.timeout,
         }
         if api_base := self.translation_service_config.llm.api_base:
