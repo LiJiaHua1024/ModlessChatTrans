@@ -113,9 +113,11 @@ litellm = lazy.load("litellm")
 
 _import_lock = threading.Lock()
 
+
 def ensure_ts_loaded():
     with _import_lock:
         _ = ts.__name__
+
 
 def ensure_litellm_loaded():
     with _import_lock:
@@ -190,10 +192,13 @@ class Translator:
         provider = getattr(translation_service_config.llm, 'provider', None) or ""
         model = getattr(translation_service_config.llm, 'model', None) or ""
         self._is_anthropic = (
-            provider.lower() == "anthropic"
-            or "claude" in model.lower()
-            or "anthropic" in model.lower()
+                provider.lower() == "anthropic"
+                or "claude" in model.lower()
+                or "anthropic" in model.lower()
         )
+
+        # 判断是否为 Gemini 3 系列模型
+        self._is_gemini3 = "gemini-3" in model.lower()
 
         logger.info(f"Initialized Translator")
         logger.debug(f"Literal glossary terms loaded: {len(self._literal_glossary)}")
@@ -214,12 +219,12 @@ class Translator:
         )
 
     def translate_with_context(
-        self,
-        text: str,
-        source_language: str,
-        target_language: str,
-        message_type: MessageType = MessageType.PLAYER,
-        context_messages: list = None,
+            self,
+            text: str,
+            source_language: str,
+            target_language: str,
+            message_type: MessageType = MessageType.PLAYER,
+            context_messages: list = None,
     ) -> dict | None:
         """
         Public API: 带历史上下文的单条翻译。
@@ -239,12 +244,12 @@ class Translator:
         )
 
     def translate_batch_with_context(
-        self,
-        texts: list[str],
-        source_language: str,
-        target_language: str,
-        message_type: MessageType = MessageType.PLAYER,
-        context_messages: list = None,
+            self,
+            texts: list[str],
+            source_language: str,
+            target_language: str,
+            message_type: MessageType = MessageType.PLAYER,
+            context_messages: list = None,
     ) -> list[str] | None:
         """
         Public API: 将多条消息打包为一个 request，返回按顺序对应的译文列表。
@@ -295,7 +300,7 @@ class Translator:
         )
 
     def _dispatch_translation(self, text, source_language, target_language, mode: TranslationMode,
-                               message_type: MessageType, context_messages: list = None):
+                              message_type: MessageType, context_messages: list = None):
         """
         Internal Dispatcher: Coordinates prompt building and execution.
 
@@ -477,6 +482,15 @@ class Translator:
                     provider_order = [s for p in suffix_stripped.split(",") if (s := p.strip())]
                     extra_body = {"provider": {"order": provider_order}}
 
+            # Gemini 3 系列是原生思考模型，思考无法关闭且默认消耗大量输出 token
+            # 显式降级 reasoning 到 minimal effort，避免译文被思考 token 截断
+            if self._is_gemini3 and provider == "OpenRouter":
+                # OpenRouter 通过 extra_body 透传 reasoning 参数
+                extra_body = {**{"reasoning": {"effort": "minimal"}}, **(extra_body or {})}
+                logger.debug(
+                    f"Gemini 3 model ({model}) detected: capping reasoning to minimal effort"
+                )
+
             # 为模型名添加提供商前缀（如果尚未添加）
             prefix = LLM_PROVIDERS_PREFIXES[provider]
             mapped_model = (
@@ -494,10 +508,17 @@ class Translator:
                     {"role": "user", "content": message}
                 ],
                 "temperature": temperature,
-                "max_tokens": 256 if expect_json else 64,
+                "max_tokens": 512 if expect_json else 256,
                 "api_key": llm_cfg.api_key,
                 "num_retries": 0,
             }
+
+            if self._is_gemini3 and provider != "OpenRouter":
+                llm_params["reasoning_effort"] = "minimal"
+                llm_params["drop_params"] = True
+                logger.debug(
+                    f"Gemini 3 model ({model}) detected: sending reasoning_effort=minimal"
+                )
 
             # API URL 留空自动
             if api_base := llm_cfg.api_base:
@@ -572,9 +593,9 @@ class Translator:
         """
         context_messages = context_messages or []
         has_fallback = (
-            self.fallback_llm_config is not None
-            and bool((self.fallback_llm_config.provider or "").strip())
-            and bool((self.fallback_llm_config.model or "").strip())
+                self.fallback_llm_config is not None
+                and bool((self.fallback_llm_config.provider or "").strip())
+                and bool((self.fallback_llm_config.model or "").strip())
         )
         try:
             strategy = FallbackStrategy(self.fallback_strategy)
@@ -1044,12 +1065,12 @@ class Translator:
             )
 
     def _execute_llm_batch_translation(
-        self,
-        texts: list[str],
-        source_language: str,
-        target_language: str,
-        message_type: MessageType,
-        context_messages: list,
+            self,
+            texts: list[str],
+            source_language: str,
+            target_language: str,
+            message_type: MessageType,
+            context_messages: list,
     ) -> list[str]:
         """
         将多条消息打包成一个 LLM request。
@@ -1105,6 +1126,13 @@ class Translator:
                 provider_order = [s for p in suffix_stripped.split(",") if (s := p.strip())]
                 extra_body = {"provider": {"order": provider_order}}
 
+        # Gemini 3 系列是原生思考模型，显式降级 reasoning 到 minimal effort，避免思考 token 挤占批量译文输出
+        if self._is_gemini3 and provider == "OpenRouter":
+            extra_body = {**{"reasoning": {"effort": "minimal"}}, **(extra_body or {})}
+            logger.debug(
+                f"Gemini 3 model ({model}) detected: capping reasoning to minimal effort"
+            )
+
         prefix = LLM_PROVIDERS_PREFIXES[provider]
         mapped_model = model if model.startswith(prefix) else prefix + model
 
@@ -1126,6 +1154,14 @@ class Translator:
         }
         if api_base := self.translation_service_config.llm.api_base:
             llm_params["api_base"] = api_base
+
+        if self._is_gemini3 and provider != "OpenRouter":
+            llm_params["reasoning_effort"] = "minimal"
+            llm_params["drop_params"] = True
+            logger.debug(
+                f"Gemini 3 model ({model}) detected: sending reasoning_effort=minimal"
+            )
+
         if extra_body:
             llm_params["extra_body"] = extra_body
 
