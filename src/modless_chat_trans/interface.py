@@ -1381,6 +1381,66 @@ class MessagePresentationInterface(QFrame):
             self.tts_status_label.setText(_("依赖库导入失败，TTS 功能不可用"))
         content_layout.addWidget(self.tts_status_label, 5, 1)
 
+        # ── Pre-TTS（手动预合成热门音频）──
+        self._pre_tts_available = _tts_avail
+
+        pre_tts_label = BodyLabel(_('Pre-TTS：'), content_frame)
+
+        pre_tts_container = QHBoxLayout()
+        pre_tts_container.setSpacing(12)
+
+        self.pre_tts_button = PushButton(_('预合成热词音频'), content_frame)
+        self.pre_tts_button.clicked.connect(self.on_pre_tts_trigger)
+        pre_tts_container.addWidget(self.pre_tts_button)
+
+        # 预合成进度条
+        self.pre_tts_progress = ProgressBar(content_frame)
+        self.pre_tts_progress.setFixedWidth(180)
+        self.pre_tts_progress.setTextVisible(False)
+        self.pre_tts_progress.hide()
+        pre_tts_container.addWidget(self.pre_tts_progress)
+
+        # 停止预合成按钮
+        self.pre_tts_stop_button = PushButton(_('停止'), content_frame)
+        self.pre_tts_stop_button.clicked.connect(self.on_pre_tts_stop)
+        self.pre_tts_stop_button.hide()
+        pre_tts_container.addWidget(self.pre_tts_stop_button)
+
+        self.pre_tts_clear_button = PushButton(_('清除音频'), content_frame)
+        self.pre_tts_clear_button.clicked.connect(self.clear_pre_tts_audio)
+        pre_tts_container.addWidget(self.pre_tts_clear_button)
+
+        pre_tts_container.addStretch()
+
+        pre_tts_help = create_help_button(
+            content_frame,
+            _("扫描翻译缓存中的热门译文并预合成音频，避免重复合成以减少加载时间。\n"
+              "朗读时自动使用已预合成的音频，未命中则正常合成。\n"
+              "开启\"朗读玩家名\"时不可用。")
+        )
+        pre_tts_container.addWidget(pre_tts_help)
+
+        content_layout.addWidget(pre_tts_label, 6, 0, Qt.AlignmentFlag.AlignRight)
+        content_layout.addLayout(pre_tts_container, 6, 1)
+
+        # Pre-TTS 状态提示
+        self.pre_tts_status_label = CaptionLabel('', content_frame)
+        self.pre_tts_status_label.setStyleSheet("color: #888888;")
+        self.pre_tts_status_label.setText(_("手动预合成热门音频，朗读时自动命中"))
+        content_layout.addWidget(self.pre_tts_status_label, 7, 1)
+
+        self.pre_tts_button.setEnabled(_tts_avail and not self.tts_read_name_switch.isChecked())
+        if not _tts_avail:
+            self.pre_tts_clear_button.setEnabled(False)
+
+        self.tts_read_name_switch.checkedChanged.connect(self._update_pre_tts_state)
+
+        # 定时刷新 Pre-TTS 状态
+        self._pre_tts_timer = QTimer(self)
+        self._pre_tts_timer.setInterval(500)
+        self._pre_tts_timer.timeout.connect(self._update_pre_tts_status)
+        self._pre_tts_timer.start()
+
         content_layout.setColumnStretch(2, 1)
         card_layout.addWidget(content_frame)
         return card
@@ -1553,6 +1613,183 @@ class MessagePresentationInterface(QFrame):
                 duration=5000,
                 parent=self
             )
+
+    # ── Pre-TTS ──────────────────────────────
+
+    def _get_pre_tts_engine(self):
+        """获取全局 Pre-TTS 引擎单例"""
+        try:
+            from modless_chat_trans.pre_tts import get_pre_tts_engine
+            return get_pre_tts_engine()
+        except Exception as e:
+            logger.error(f"[Pre-TTS] Failed to load engine: {e}")
+            return None
+
+    def _update_pre_tts_state(self):
+        """朗读玩家名开关变化时更新 Pre-TTS 状态"""
+        if not self._pre_tts_available:
+            return
+        read_name = self.tts_read_name_switch.isChecked()
+        if read_name:
+            self.pre_tts_button.setEnabled(False)
+            self.pre_tts_status_label.setText(_("开启\"朗读玩家名\"后，Pre-TTS 不可用"))
+        else:
+            self.pre_tts_button.setEnabled(True)
+            self._update_pre_tts_status()
+
+    def _update_pre_tts_status(self):
+        """定时刷新 Pre-TTS 状态显示"""
+        if not self._pre_tts_available:
+            return
+        engine = self._get_pre_tts_engine()
+        if engine is None:
+            return
+        if engine.running:
+            self.pre_tts_button.setEnabled(False)
+            self.pre_tts_stop_button.show()
+            done, total = engine.progress
+            self.pre_tts_progress.setRange(0, max(total, 1))
+            self.pre_tts_progress.setValue(done)
+            self.pre_tts_progress.show()
+            if total > 0:
+                self.pre_tts_status_label.setText(
+                    _("正在预合成 {}/{}...").format(done, total)
+                )
+            return
+        self.pre_tts_stop_button.hide()
+        self.pre_tts_progress.hide()
+        if self.tts_read_name_switch.isChecked():
+            self.pre_tts_button.setEnabled(False)
+            self.pre_tts_status_label.setText(_("开启\"朗读玩家名\"后，Pre-TTS 不可用"))
+            return
+        self.pre_tts_button.setEnabled(True)
+        result = getattr(engine, 'last_result', None) or {}
+        if result:
+            synthesized = result.get("synthesized", 0)
+            skipped = result.get("skipped", 0)
+            total = result.get("total", 0)
+            size_mb = result.get("size_bytes", 0) / (1024 * 1024)
+            self.pre_tts_status_label.setText(
+                _("本次预合成 {} 条，跳过 {} 条；共 {} 条音频（{:.1f} MB）").format(
+                    synthesized, skipped, total, size_mb
+                )
+            )
+        else:
+            self.pre_tts_status_label.setText(_("手动预合成热门音频，朗读时自动命中"))
+
+    def on_pre_tts_trigger(self):
+        """手动触发一轮 Pre-TTS 预合成"""
+        if not self._pre_tts_available:
+            return
+        engine = self._get_pre_tts_engine()
+        if engine is None:
+            InfoBar.error(
+                title=_('Pre-TTS 不可用'),
+                content=_('Pre-TTS 引擎加载失败'),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self
+            )
+            return
+        if self.config is None or not hasattr(self.config, 'tts'):
+            InfoBar.error(
+                title=_('Pre-TTS 不可用'),
+                content=_('配置尚未初始化'),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self
+            )
+            return
+        if engine.running:
+            return
+        if not engine.start(self.config):
+            InfoBar.error(
+                title=_('Pre-TTS 失败'),
+                content=_('启动预合成失败（TTS 依赖不可用或已在运行）'),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self
+            )
+            return
+        self.pre_tts_button.setEnabled(False)
+        self.pre_tts_stop_button.show()
+        self.pre_tts_progress.setRange(0, 1)
+        self.pre_tts_progress.setValue(0)
+        self.pre_tts_progress.show()
+        self.pre_tts_status_label.setText(_("正在扫描翻译缓存..."))
+
+    def on_pre_tts_stop(self):
+        """停止当前 Pre-TTS 预合成"""
+        engine = self._get_pre_tts_engine()
+        if engine is None or not engine.running:
+            return
+        engine.stop()
+        self.pre_tts_stop_button.hide()
+        self.pre_tts_status_label.setText(_("正在停止..."))
+
+    def clear_pre_tts_audio(self):
+        """清除所有已预合成的 Pre-TTS 音频"""
+        try:
+            from modless_chat_trans.file_utils import clear_pre_tts_cache
+        except Exception as e:
+            logger.error(f"[Pre-TTS] Failed to load clear helper: {e}")
+            InfoBar.error(
+                title=_('清理失败'),
+                content=str(e),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self
+            )
+            return
+
+        w = MessageBox(
+            _("确认清理"),
+            _("将清除所有已预合成的 Pre-TTS 音频。此操作不可恢复。"),
+            self.window()
+        )
+        if not w.exec():
+            return
+
+        deleted = clear_pre_tts_cache()
+        if deleted < 0:
+            InfoBar.error(
+                title=_('清理失败'),
+                content=_('清除 Pre-TTS 音频时出错'),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self
+            )
+        elif deleted == 0:
+            InfoBar.info(
+                title=_('无需清理'),
+                content=_('尚未预合成任何 Pre-TTS 音频'),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self
+            )
+        else:
+            InfoBar.success(
+                title=_('清理成功'),
+                content=_('已清除 {} 条 Pre-TTS 音频').format(deleted),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self
+            )
+        self._update_pre_tts_status()
 
 
 class MessageSendInterface(QFrame):

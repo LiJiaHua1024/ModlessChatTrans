@@ -123,8 +123,8 @@ def preprocess_for_tts(text: str) -> str:
     # 7. 去除首尾空白和非可读字符
     text = text.strip()
 
-    # 8. 处理只有符号/空白的文本
-    if not text or all(c in '!@#$%^&*()_+-=[]{}|;:,.<>?/~`\"\' \t\n\r' for c in text):
+    # 8. 处理只有符号/空白的文本（含全角标点）
+    if not text or all(c in '!@#$%^&*()_+-=[]{}|;:,.<>?/~`"\' \t\n\r！？。，、；：（）【】《》「」『』…—·～' for c in text):
         return ""
 
     return text
@@ -228,24 +228,17 @@ def get_available_voices_sync() -> List[dict]:
 # miniaudio 播放辅助
 # ─────────────────────────────────────
 
-def _play_mp3_file(filepath: str, stop_flag: callable = None) -> bool:
+def _play_stream(stream, duration: float, stop_flag: callable = None) -> bool:
     """
-    使用 miniaudio 播放 MP3 文件，阻塞直到播放完成或收到停止信号。
+    使用 miniaudio 播放解码流，阻塞直到播放完成或收到停止信号。
 
-    :param filepath:  MP3 文件路径
+    :param stream:    解码流生成器（如 stream_file / stream_memory 的返回值）
+    :param duration:  音频时长（秒），用于估算播放结束时间
     :param stop_flag: 可调用对象，返回 True 表示需要停止播放
     :return: True 表示正常播放完成，False 表示被中断
     """
     device = None
     try:
-        # 获取音频时长用于估算播放时间
-        try:
-            info = miniaudio.mp3_get_file_info(filepath)
-            duration = info.duration
-        except Exception:
-            duration = 10.0  # 安全的默认值
-
-        stream = miniaudio.stream_file(filepath)
         device = miniaudio.PlaybackDevice()
         device.start(stream)
 
@@ -272,6 +265,45 @@ def _play_mp3_file(filepath: str, stop_flag: callable = None) -> bool:
                 device.close()
             except Exception:
                 pass
+
+
+def _play_mp3_file(filepath: str, stop_flag: callable = None) -> bool:
+    """
+    播放 MP3 文件，阻塞直到播放完成或收到停止信号。
+
+    :param filepath:  MP3 文件路径
+    :param stop_flag: 可调用对象，返回 True 表示需要停止播放
+    :return: True 表示正常播放完成，False 表示被中断
+    """
+    try:
+        # 获取音频时长用于估算播放时间
+        info = miniaudio.mp3_get_file_info(filepath)
+        duration = info.duration
+    except Exception:
+        duration = 10.0  # 安全的默认值
+
+    try:
+        stream = miniaudio.stream_file(filepath)
+    except Exception as e:
+        logger.error(f"[TTS] Playback error: {e}")
+        return False
+    return _play_stream(stream, duration, stop_flag)
+
+
+def _play_mp3_bytes(data: bytes, stop_flag: callable = None) -> bool:
+    """
+    播放内存中的 MP3 字节数据，阻塞直到播放完成或收到停止信号。
+
+    解码或流初始化失败时抛出异常（由调用方决定回退），返回 False 表示被中断。
+
+    :param data:      MP3 音频字节（如 Pre-TTS 缓存中的音频）
+    :param stop_flag: 可调用对象，返回 True 表示需要停止播放
+    :return: True 表示正常播放完成，False 表示被中断
+    """
+    decoded = miniaudio.decode(data)
+    duration = decoded.num_frames / decoded.sample_rate
+    stream = miniaudio.stream_memory(data)
+    return _play_stream(stream, duration, stop_flag)
 
 
 # ─────────────────────────────────────
@@ -517,6 +549,38 @@ class TTSEngine:
 
         if not TTS_AVAILABLE:
             return
+
+        # 0. Pre-TTS 命中：从缓存读取音频并直接内存播放
+        try:
+            from modless_chat_trans.file_utils import pre_tts_cache_exists, get_pre_tts_cache
+
+            if pre_tts_cache_exists():
+                pre_cache = get_pre_tts_cache()
+                key = (voice, speed, pitch, text)
+                cached = pre_cache.get(key)
+                if cached is not None:
+                    logger.debug(f"[TTS] Pre-TTS cache hit: {text[:50]}...")
+                    loop = asyncio.get_running_loop()
+                    try:
+                        completed = await loop.run_in_executor(
+                            None,
+                            _play_mp3_bytes,
+                            cached,
+                            lambda: self._stop_requested or self._interrupt_requested,
+                        )
+                    except Exception as e:
+                        # 缓存音频损坏/无法解码 → 删除该条目并回退正常合成
+                        logger.warning(f"[TTS] Pre-TTS audio unplayable, falling back: {e}")
+                        try:
+                            pre_cache.pop(key, None)
+                        except Exception:
+                            pass
+                    else:
+                        if not completed:
+                            logger.debug("[TTS] Playback interrupted by stop signal")
+                        return
+        except Exception as e:
+            logger.warning(f"[TTS] Pre-TTS cache lookup failed: {e}")
 
         try:
             # 1. 创建临时文件用于音频输出
