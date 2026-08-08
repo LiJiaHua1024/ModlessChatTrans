@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import importlib.util
+import os
 import sys
 import threading
 import time
@@ -21,6 +23,8 @@ from datetime import datetime
 # ═══════════════════════════════════════════════════════════════════════
 # 核心依赖预检（Pre-flight Check）
 # 必须在任何第三方模块导入之前运行，使用纯 stdlib 完成探测。
+# 使用 importlib.util.find_spec 做轻量探测（不真正导入模块），
+# 避免预检阶段就触发 PySide6 / qfluentwidgets 等重模块的加载。
 # 若任何核心依赖缺失，显示友好错误提示并退出，而不是以崩溃方式终止。
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -39,14 +43,20 @@ _CORE_DEPS = [
 ]
 
 
+def _pkg_available(pkg: str) -> bool:
+    """轻量探测包是否可导入（find_spec 不触发真正的模块导入）"""
+    try:
+        return importlib.util.find_spec(pkg) is not None
+    except (ImportError, ValueError):
+        return False
+
+
 def _preflight_check() -> list[tuple[str, str, str]]:
     """探测所有核心依赖，返回缺失项列表 [(包名, 错误信息, 用途), ...]"""
     missing = []
     for pkg, purpose in _CORE_DEPS:
-        try:
-            __import__(pkg)
-        except ImportError as e:
-            missing.append((pkg, str(e), purpose))
+        if not _pkg_available(pkg):
+            missing.append((pkg, "module not found", purpose))
     return missing
 
 
@@ -105,58 +115,34 @@ if _missing_core:
     _show_fatal_error_and_exit(_missing_core)
 
 # ═══════════════════════════════════════════════════════════════════════
-# 以下开始正常导入（核心依赖已确认全部可用）
+# 启动流程
+# 所有第三方模块的导入都被推迟到 main() / start_translation() 内部，
+# 让启动画面（纯 PySide6）能第一时间显示，再在幕后加载重模块。
 # ═══════════════════════════════════════════════════════════════════════
-
-from modless_chat_trans.file_utils import get_platform
-from modless_chat_trans.config import read_config, MonitorMode, ServiceType
-from modless_chat_trans.i18n import set_language
-from modless_chat_trans.logger import init_logger, logger
-
-cfg = read_config()
-init_logger(cfg.settings.debug)
-set_language(cfg.settings.interface_language)
-
-from modless_chat_trans.web_display import start_httpserver_thread, display_message, allocate_slot, fill_slot
-from modless_chat_trans.log_monitor import start_log_monitor
-from modless_chat_trans import message_processor
-from modless_chat_trans.message_processor import init_processor, init_blacklist, process_message, parse_message, is_user_in_blacklist, is_message_blocked, sanitize_hypixel_name
-from modless_chat_trans.translator import Translator, ts, litellm, MessageType
-from modless_chat_trans.context_buffer import ContextBuffer, ContextEntry, extract_log_time
-from modless_chat_trans.interface import ProgramInfo, MainWindow, QApplication
-from modless_chat_trans.clipboard_monitor import monitor_clipboard, modify_clipboard
-try:
-    from modless_chat_trans.tts_engine import TTSEngine, TTS_AVAILABLE, TTS_IMPORT_ERROR
-except Exception as _tts_exc:
-    TTSEngine = None  # type: ignore[assignment,misc]
-    TTS_AVAILABLE = False
-    TTS_IMPORT_ERROR = str(_tts_exc)
-    logger.warning(f"[Startup] TTS module failed to load, TTS will be disabled: {_tts_exc}")
-from modless_chat_trans.i18n import _
-from modless_chat_trans.updater import Updater
-from modless_chat_trans._version import get_version_string
-
-program_info = ProgramInfo(
-    version=get_version_string(),
-    author="LiJiaHua1024",
-    email="minecraft_benli@163.com",
-    github="https://github.com/LiJiaHua1024/ModlessChatTrans",
-    license=("GNU General Public License v3.0", "https://www.gnu.org/licenses/gpl-3.0.html")
-)
-
-updater = Updater(
-    program_info.version,
-    program_info.author,
-    "ModlessChatTrans",
-    include_prerelease=cfg.settings.include_prerelease
-)
-
-logger.info(f"ModlessChatTrans {program_info.version} started, "
-            f"Platform: {'Windows' if get_platform() == 0 else 'Linux'}, "
-            f"Debug mode: {cfg.settings.debug}")
 
 
 def start_translation(config):
+    # 重模块延迟到「开始翻译」时才导入，避免拖慢窗口出现时间
+    from modless_chat_trans.logger import logger
+    from modless_chat_trans.i18n import _
+    from modless_chat_trans.config import ServiceType
+    from modless_chat_trans.context_buffer import ContextBuffer, ContextEntry, extract_log_time
+    from modless_chat_trans.web_display import start_httpserver_thread, display_message, allocate_slot, fill_slot
+    from modless_chat_trans.log_monitor import start_log_monitor
+    from modless_chat_trans import message_processor
+    from modless_chat_trans.message_processor import (
+        init_processor, init_blacklist, process_message, parse_message,
+        is_user_in_blacklist, is_message_blocked, sanitize_hypixel_name,
+    )
+    from modless_chat_trans.translator import Translator, MessageType
+    from modless_chat_trans.clipboard_monitor import monitor_clipboard, modify_clipboard
+    try:
+        from modless_chat_trans.tts_engine import TTSEngine, TTS_AVAILABLE
+    except Exception as _tts_exc:
+        TTSEngine = None  # type: ignore[assignment,misc]
+        TTS_AVAILABLE = False
+        logger.warning(f"[Startup] TTS module failed to load, TTS will be disabled: {_tts_exc}")
+
     # 初始化上下文缓冲区
     ctx_cfg = config.context
     context_buffer = ContextBuffer(
@@ -367,7 +353,7 @@ def start_translation(config):
         need_translate_indices = []
         cached_results = {}
 
-        for i, (_, line, arrival_time, slot_id, chat_content, log_time, player_name) in enumerate(parsed):
+        for i, (item_i, line, arrival_time, slot_id, chat_content, log_time, player_name) in enumerate(parsed):
             if glossary_result := match_and_translate(chat_content):
                 cached_results[i] = glossary_result
             elif chat_content in trans_cache:
@@ -401,7 +387,7 @@ def start_translation(config):
 
         if fallback_to_single:
             logger.info("[BatchCallback] Batch failed, falling back to single-item processing.")
-            for _, line, arrival_time, slot_id, chat_content, log_time, player_name in parsed:
+            for item_i, line, arrival_time, slot_id, chat_content, log_time, player_name in parsed:
                 callback(line, arrival_time, slot_id=slot_id, data_type="log")
             return
 
@@ -409,7 +395,7 @@ def start_translation(config):
         duration = time.time() - start_time
         batch_entries = []
 
-        for i, (_, line, arrival_time, slot_id, chat_content, log_time, player_name) in enumerate(parsed):
+        for i, (item_i, line, arrival_time, slot_id, chat_content, log_time, player_name) in enumerate(parsed):
             translated = cached_results.get(i) or batch_results.get(i, "")
 
             fill_slot(slot_id, player_name, translated or "", {}, duration=duration / len(parsed), original=chat_content)
@@ -502,7 +488,8 @@ def start_translation(config):
         threading.Thread(target=ensure_ts_loaded, daemon=True).start()
 
 
-def run_scheduled_update_check(update_check_func):
+def run_scheduled_update_check(update_check_func, cfg):
+    from modless_chat_trans.logger import logger
     if cfg.settings.debug:
         logger.debug("Skipping scheduled update check: debug mode is enabled")
         return
@@ -518,11 +505,106 @@ def run_scheduled_update_check(update_check_func):
         update_check_func(silent=True)
 
 
+def _dismiss_nuitka_splash():
+    """关闭 Nuitka onefile 原生启动画面（删除反馈文件，由 qfw 启动画面接力）"""
+    if "NUITKA_ONEFILE_PARENT" not in os.environ:
+        return
+    try:
+        splash_filename = os.path.join(
+            os.environ.get("TEMP", os.environ.get("TMP", "/tmp")),
+            f"onefile_{int(os.environ['NUITKA_ONEFILE_PARENT'])}_splash_feedback.tmp",
+        )
+        if os.path.exists(splash_filename):
+            os.unlink(splash_filename)
+    except Exception:
+        pass
+
+
+def _start_background_preload(cfg):
+    """
+    主窗口显示后，在后台线程按配置预加载翻译服务与 TTS 依赖。
+    与懒加载配合：启动关键路径不被拖慢，第一条翻译消息到来时依赖已就绪。
+    翻译服务与 TTS 使用独立线程并行预加载，互不拖累。
+    """
+    def _preload_services():
+        try:
+            from modless_chat_trans.config import ServiceType
+            from modless_chat_trans.logger import logger
+            from modless_chat_trans.translator import ensure_litellm_loaded, ensure_ts_loaded
+
+            services_to_load = {cfg.player_translation.service_type}
+            if cfg.send_translation_independent:
+                services_to_load.add(cfg.send_translation.service_type)
+
+            # litellm 与 translators 使用独立锁，可并行预加载
+            if ServiceType.LLM in services_to_load:
+                ensure_litellm_loaded()
+            if ServiceType.TRADITIONAL in services_to_load:
+                ensure_ts_loaded()
+        except Exception as _preload_exc:
+            from modless_chat_trans.logger import logger
+            logger.warning(f"[Startup] Translation service preload failed: {_preload_exc}")
+
+    def _preload_tts():
+        try:
+            if getattr(cfg.tts, "enabled", False):
+                from modless_chat_trans.logger import logger
+                from modless_chat_trans.tts_engine import ensure_tts_dependencies
+                ensure_tts_dependencies()
+        except Exception as _preload_exc:
+            from modless_chat_trans.logger import logger
+            logger.warning(f"[Startup] TTS preload failed: {_preload_exc}")
+
+    threading.Thread(target=_preload_services, daemon=True, name="startup-preload-services").start()
+    threading.Thread(target=_preload_tts, daemon=True, name="startup-preload-tts").start()
+
+
 def main():
+    # ══ 1. QApplication（qfw 启动画面随主窗口显示，见 MainWindow.showEvent）══
+    from PySide6.QtWidgets import QApplication
     app = QApplication([])
+
+    # ══ 2. 配置 / 日志 / i18n（pydantic 等重依赖在启动画面背后加载）══
+    from modless_chat_trans.config import read_config
+    from modless_chat_trans.file_utils import get_platform
+    from modless_chat_trans.i18n import set_language
+    from modless_chat_trans.logger import init_logger, logger
+
+    cfg = read_config()
+    init_logger(cfg.settings.debug)
+    set_language(cfg.settings.interface_language)
+
+    # ══ 3. GUI 主窗口（qfluentwidgets 最重，splash 期间加载）══
+    from modless_chat_trans.interface import ProgramInfo, MainWindow
+    from modless_chat_trans.updater import Updater
+    from modless_chat_trans._version import get_version_string
+
+    program_info = ProgramInfo(
+        version=get_version_string(),
+        author="LiJiaHua1024",
+        email="minecraft_benli@163.com",
+        github="https://github.com/LiJiaHua1024/ModlessChatTrans",
+        license=("GNU General Public License v3.0", "https://www.gnu.org/licenses/gpl-3.0.html")
+    )
+
+    updater = Updater(
+        program_info.version,
+        program_info.author,
+        "ModlessChatTrans",
+        include_prerelease=cfg.settings.include_prerelease
+    )
+
+    logger.info(f"ModlessChatTrans {program_info.version} started, "
+                f"Platform: {'Windows' if get_platform() == 0 else 'Linux'}, "
+                f"Debug mode: {cfg.settings.debug}")
+
     main_window = MainWindow(program_info, updater, cfg, start_translation)
-    run_scheduled_update_check(main_window.setting_interface.check_for_updates)
+    run_scheduled_update_check(main_window.setting_interface.check_for_updates, cfg)
     main_window.show()
+    # Nuitka onefile 原生 splash 保持到主窗口就位，由 qfw 启动画面接力
+    _dismiss_nuitka_splash()
+    # 窗口已就绪，后台预热翻译服务/TTS，避免第一条消息现场加载
+    _start_background_preload(cfg)
     app.exec()
 
 

@@ -32,7 +32,7 @@ from qfluentwidgets import (
     IndeterminateProgressRing, InfoBar, InfoBarIcon, InfoBarPosition,
     LineEdit, MessageBox, MessageBoxBase, NavigationItemPosition,
     Pivot, ProgressBar, PushButton, RadioButton, RoundMenu, SegmentedWidget,
-    setFont, SimpleCardWidget, SpinBox, SubtitleLabel, SwitchButton,
+    setFont, SimpleCardWidget, SpinBox, SplashScreen, SubtitleLabel, SwitchButton,
     TabBar, TabCloseButtonDisplayMode, TableWidget, TeachingTip,
     TeachingTipTailPosition, TitleLabel, ToolTipFilter, ToolTipPosition,
     TransparentToolButton
@@ -4627,6 +4627,11 @@ class MainWindow(FluentWindow):
 
         self.setWindowIcon(QIcon(get_path("icon.ico")))
 
+        # 启动画面：覆盖主窗口直至 UI 完全就绪（qfw 原生组件）
+        self.splashScreen = SplashScreen(self.windowIcon(), self)
+        self.splashScreen.setIconSize(QSize(106, 106))
+        self._splash_finished = False
+
         # 根据配置初始化服务类型
         initial_player_service_type = ServiceType.LLM
         initial_send_service_type = ServiceType.LLM
@@ -4681,6 +4686,19 @@ class MainWindow(FluentWindow):
 
         # 初始化后加载传统翻译服务的语言（如果需要）
         self.load_initial_languages()
+
+    def showEvent(self, event):
+        """首次显示时保持启动画面覆盖，待主窗口渲染一帧后关闭"""
+        super().showEvent(event)
+        if not self._splash_finished:
+            self.splashScreen.raise_()
+            QTimer.singleShot(100, self._finish_splash)
+
+    def _finish_splash(self):
+        """关闭启动画面（幂等）"""
+        if not self._splash_finished:
+            self._splash_finished = True
+            self.splashScreen.finish()
 
     def mousePressEvent(self, event):
         """鼠标点击时关闭TeachingTip"""
