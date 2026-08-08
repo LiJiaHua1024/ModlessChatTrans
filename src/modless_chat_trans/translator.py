@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import requests
 import json
 import re
 import time
@@ -27,6 +26,12 @@ from urllib.parse import urlencode
 import lazy_loader as lazy
 from modless_chat_trans.logger import logger
 from modless_chat_trans.config import ServiceType, FallbackStrategy
+
+
+def _http():
+    """懒加载 requests，避免拖慢程序启动"""
+    import requests
+    return requests
 
 
 class MessageType(Enum):
@@ -111,16 +116,21 @@ import threading
 ts = lazy.load("translators")
 litellm = lazy.load("litellm")
 
-_import_lock = threading.Lock()
+# 独立锁：litellm 与 translators 可并行预加载，互不阻塞
+_llm_import_lock = threading.Lock()
+_ts_import_lock = threading.Lock()
 
 
 def ensure_ts_loaded():
-    with _import_lock:
+    """确保传统翻译服务依赖已加载（translators 及其使用的 requests）"""
+    with _ts_import_lock:
         _ = ts.__name__
+        _http()
 
 
 def ensure_litellm_loaded():
-    with _import_lock:
+    """确保 LLM 翻译服务依赖已加载（litellm）"""
+    with _llm_import_lock:
         _ = litellm.__name__
 
 
@@ -1263,7 +1273,7 @@ class Translator:
         if source_language and source_language.lower() != "auto":
             data["source_lang"] = source_language.split("-")[0].upper()
 
-        response = requests.post(url, headers=headers, data=data, timeout=timeout)
+        response = _http().post(url, headers=headers, data=data, timeout=timeout)
         if response.status_code == 200:
             return response.json()["translations"][0]["text"]
         else:
@@ -1280,7 +1290,7 @@ class Translator:
         if source_language:
             params["source"] = source_language.split("-")[0]
 
-        response = requests.post(url, params=params, timeout=timeout)
+        response = _http().post(url, params=params, timeout=timeout)
         if response.status_code == 200:
             return response.json()["data"]["translations"][0]["translatedText"]
         else:
@@ -1300,7 +1310,7 @@ class Translator:
         if source_language:
             data["sourceLanguageCode"] = source_language.split("-")[0]
 
-        response = requests.post(url, headers=headers, json=data, timeout=timeout)
+        response = _http().post(url, headers=headers, json=data, timeout=timeout)
         if response.status_code == 200:
             return response.json()["translations"][0]["text"]
         else:
@@ -1349,7 +1359,7 @@ class Translator:
         parameters['Signature'] = signature
 
         # 发送请求
-        response = requests.get(url, params=parameters, timeout=timeout)
+        response = _http().get(url, params=parameters, timeout=timeout)
 
         if response.status_code == 200:
             return response.json().get("Data", {}).get("Translated")
@@ -1368,7 +1378,7 @@ class Translator:
             "trans_type": f"{source_language.split('-')[0] if source_language else 'auto'}2{target_language.split('-')[0]}"
         }
 
-        response = requests.post(url, headers=headers, json=payload, timeout=timeout)
+        response = _http().post(url, headers=headers, json=payload, timeout=timeout)
         if response.status_code == 200:
             return response.json()["target"][0]
         else:
@@ -1410,7 +1420,7 @@ class Translator:
             'curtime': curtime,
         }
 
-        response = requests.post(url, data=data, timeout=timeout)
+        response = _http().post(url, data=data, timeout=timeout)
         if response.status_code == 200:
             return response.json()["translation"][0]
         else:
@@ -1432,7 +1442,7 @@ class Translator:
             params['from'] = source_language.split("-")[0]
 
         body = [{'text': text}]
-        response = requests.post(endpoint, headers=headers, params=params, json=body, timeout=timeout)
+        response = _http().post(endpoint, headers=headers, params=params, json=body, timeout=timeout)
         if response.status_code == 200:
             return response.json()[0]["translations"][0]["text"]
         else:

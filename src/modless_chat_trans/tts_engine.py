@@ -26,19 +26,45 @@ from modless_chat_trans.logger import logger
 
 # ─────────────────────────────────────
 # 可选依赖：edge_tts / miniaudio
-# 若导入失败则降级：TTS_AVAILABLE=False，功能被禁用
+# 启动时仅做轻量探测（find_spec，不真正导入），
+# 首次实际使用时才导入，避免拖慢程序启动。
 # ─────────────────────────────────────
-try:
-    import edge_tts
-    import miniaudio
-    TTS_AVAILABLE = True
-    TTS_IMPORT_ERROR: Optional[str] = None
-except ImportError as _tts_import_exc:
-    edge_tts = None  # type: ignore[assignment]
-    miniaudio = None  # type: ignore[assignment]
-    TTS_AVAILABLE = False
-    TTS_IMPORT_ERROR = str(_tts_import_exc)
-    logger.warning(f"[TTS] Optional TTS dependencies not available, TTS disabled: {_tts_import_exc}")
+import importlib.util
+
+
+def _dependency_available(mod_name: str) -> bool:
+    try:
+        return importlib.util.find_spec(mod_name) is not None
+    except (ImportError, ValueError):
+        return False
+
+
+edge_tts = None  # type: ignore[assignment]
+miniaudio = None  # type: ignore[assignment]
+TTS_AVAILABLE = _dependency_available("edge_tts") and _dependency_available("miniaudio")
+TTS_IMPORT_ERROR: Optional[str] = None
+_tts_deps_lock = threading.Lock()
+
+
+def ensure_tts_dependencies():
+    """首次实际使用时才真正导入 edge_tts / miniaudio（线程安全，可安全预热）"""
+    global edge_tts, miniaudio, TTS_AVAILABLE, TTS_IMPORT_ERROR
+    if not TTS_AVAILABLE or (edge_tts is not None and miniaudio is not None):
+        return
+    with _tts_deps_lock:
+        if edge_tts is not None and miniaudio is not None:
+            return
+        try:
+            import edge_tts as _edge_tts
+            import miniaudio as _miniaudio
+            edge_tts = _edge_tts
+            miniaudio = _miniaudio
+        except ImportError as _tts_import_exc:
+            edge_tts = None
+            miniaudio = None
+            TTS_AVAILABLE = False
+            TTS_IMPORT_ERROR = str(_tts_import_exc)
+            logger.warning(f"[TTS] TTS dependencies failed to load, TTS disabled: {_tts_import_exc}")
 
 # ─────────────────────────────────────
 # 预编译正则（文本预处理）
@@ -194,6 +220,10 @@ async def get_available_voices() -> List[dict]:
         if _voice_list_cache is not None:
             return _voice_list_cache
 
+    ensure_tts_dependencies()
+    if not TTS_AVAILABLE:
+        return []
+
     try:
         voices = await edge_tts.list_voices()
         _voice_list_cache = voices
@@ -239,6 +269,9 @@ def _play_stream(stream, duration: float, stop_flag: callable = None) -> bool:
     """
     device = None
     try:
+        ensure_tts_dependencies()
+        if not TTS_AVAILABLE:
+            return False
         device = miniaudio.PlaybackDevice()
         device.start(stream)
 
@@ -276,6 +309,9 @@ def _play_mp3_file(filepath: str, stop_flag: callable = None) -> bool:
     :return: True 表示正常播放完成，False 表示被中断
     """
     try:
+        ensure_tts_dependencies()
+        if not TTS_AVAILABLE:
+            return False
         # 获取音频时长用于估算播放时间
         info = miniaudio.mp3_get_file_info(filepath)
         duration = info.duration
@@ -300,6 +336,9 @@ def _play_mp3_bytes(data: bytes, stop_flag: callable = None) -> bool:
     :param stop_flag: 可调用对象，返回 True 表示需要停止播放
     :return: True 表示正常播放完成，False 表示被中断
     """
+    ensure_tts_dependencies()
+    if not TTS_AVAILABLE:
+        return False
     decoded = miniaudio.decode(data)
     duration = decoded.num_frames / decoded.sample_rate
     stream = miniaudio.stream_memory(data)
@@ -547,6 +586,10 @@ class TTSEngine:
 
         tmp_path: Optional[str] = None
 
+        if not TTS_AVAILABLE:
+            return
+
+        ensure_tts_dependencies()
         if not TTS_AVAILABLE:
             return
 

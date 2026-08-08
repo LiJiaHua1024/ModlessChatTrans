@@ -13,33 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import re
-import sys
 import webbrowser
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Tuple
-
-# ────────────────────────────────────────
-# 可选依赖：markdown / netifaces
-# 导入失败时降级，不影响程序启动
-# ────────────────────────────────────────
-try:
-    import markdown
-    MARKDOWN_AVAILABLE = True
-except ImportError as _md_exc:
-    markdown = None  # type: ignore[assignment]
-    MARKDOWN_AVAILABLE = False
-    import logging as _logging
-    _logging.getLogger(__name__).warning(f"[UI] 'markdown' not available, release notes will be plain text: {_md_exc}")
-
-try:
-    import netifaces
-    NETIFACES_AVAILABLE = True
-except ImportError as _nif_exc:
-    netifaces = None  # type: ignore[assignment]
-    NETIFACES_AVAILABLE = False
-    import logging as _logging
-    _logging.getLogger(__name__).warning(f"[UI] 'netifaces' not available, IP detection will use fallback: {_nif_exc}")
 
 from PySide6.QtCore import QObject, QSize, Qt, QThread, QTimer, QUrl, Signal
 from PySide6.QtGui import QIcon, QFont, QColor, QDesktopServices
@@ -73,6 +50,24 @@ from modless_chat_trans.translator import (
     TRADITIONAL_SERVICES,
     LLM_PROVIDERS
 )
+
+
+def _get_markdown():
+    """首次渲染 Release Notes 时才真正导入 markdown"""
+    try:
+        import markdown as _md
+        return _md
+    except ImportError:
+        return None
+
+
+def _get_netifaces():
+    """首次探测局域网地址时才真正导入 netifaces"""
+    try:
+        import netifaces as _nif
+        return _nif
+    except ImportError:
+        return None
 
 
 def set_tool_tip(widget, tip, duration=400, position=ToolTipPosition.TOP_LEFT):
@@ -3145,7 +3140,8 @@ class StartInterface(QFrame):
         """获取所有IP地址并按优先级排序"""
         ips = []
 
-        if not NETIFACES_AVAILABLE:
+        netifaces = _get_netifaces()
+        if not netifaces:
             # netifaces 不可用，直接走本地地址
             ips = [('127.0.0.1', 2)]
         else:
@@ -3851,9 +3847,10 @@ class UpdateDialog(MessageBoxBase):
         release_body = self.latest_release.get('body', _('暂无更新说明'))
 
         # 尝试将 Markdown 转换为 HTML
-        if MARKDOWN_AVAILABLE:
+        _md = _get_markdown()
+        if _md:
             try:
-                html_content = markdown.markdown(
+                html_content = _md.markdown(
                     release_body,
                     extensions=['extra', 'nl2br']
                 )
