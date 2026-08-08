@@ -1020,25 +1020,71 @@ class TranslationServiceInterface(QFrame):
         layout.addWidget(traditional_api_key_label, 1, 0, Qt.AlignmentFlag.AlignRight)
         layout.addWidget(traditional_api_key_edit, 1, 1)
 
+        # Yandex Cloud and Azure regional resources need one additional value.
+        traditional_folder_id_label = BodyLabel(_('Yandex Folder ID：'), widget)
+        traditional_folder_id_edit = LineEdit(widget)
+        traditional_folder_id_edit.setPlaceholderText(_('仅 Yandex Cloud 需要'))
+        traditional_folder_id_edit.setFixedWidth(300)
+
+        traditional_region_label = BodyLabel(_('Azure 区域（可选）：'), widget)
+        traditional_region_edit = LineEdit(widget)
+        traditional_region_edit.setPlaceholderText(_('仅区域或多服务 Azure 资源需要'))
+        traditional_region_edit.setFixedWidth(300)
+
+        layout.addWidget(traditional_folder_id_label, 2, 0, Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(traditional_folder_id_edit, 2, 1)
+        layout.addWidget(traditional_region_label, 3, 0, Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(traditional_region_edit, 3, 1)
+
+        # 根据配置设置附加字段
+        traditional_config = None
+        if self.config:
+            if service_id == "player" and self.config.player_translation:
+                traditional_config = self.config.player_translation.traditional
+            elif service_id == "send" and self.config.send_translation:
+                traditional_config = self.config.send_translation.traditional
+        if traditional_config:
+            traditional_folder_id_edit.setText(traditional_config.folder_id or "")
+            traditional_region_edit.setText(traditional_config.region or "")
+
         # 添加弹性空间
         layout.setColumnStretch(2, 1)
-        layout.setRowStretch(3, 1)
+        layout.setRowStretch(4, 1)
 
         # 保存控件引用
         widget.traditional_service_combo = traditional_service_combo
         widget.loading_spinner = loading_spinner
         widget.traditional_api_key_label = traditional_api_key_label
         widget.traditional_api_key_edit = traditional_api_key_edit
+        widget.traditional_folder_id_label = traditional_folder_id_label
+        widget.traditional_folder_id_edit = traditional_folder_id_edit
+        widget.traditional_region_label = traditional_region_label
+        widget.traditional_region_edit = traditional_region_edit
         widget.service_id = service_id
+
+        self._update_traditional_extra_fields(widget, traditional_service_combo.currentText())
 
         # 连接信号
         # noinspection PyUnresolvedReferences
+        traditional_service_combo.currentTextChanged.connect(
+            lambda text, target=widget: self._update_traditional_extra_fields(target, text)
+        )
         traditional_service_combo.currentTextChanged.connect(
             lambda text: self.parent().on_traditional_service_changed(text, service_id)
             if hasattr(self.parent(), 'on_traditional_service_changed') else None
         )
 
         return widget
+
+    @staticmethod
+    def _update_traditional_extra_fields(widget, service_name):
+        service_lower = (service_name or "").strip().lower()
+        is_yandex = service_lower == "yandex"
+        is_bing = service_lower == "bing"
+        widget.traditional_folder_id_label.setVisible(is_yandex)
+        widget.traditional_folder_id_edit.setVisible(is_yandex)
+        widget.traditional_region_label.setVisible(is_bing)
+        widget.traditional_region_edit.setVisible(is_bing)
 
     def show_loading_spinner(self, show: bool, service_id: str = "player"):
         """显示或隐藏加载动画"""
@@ -3419,7 +3465,9 @@ class StartInterface(QFrame):
             trad = TraditionalServiceConfig(
                 provider=player_widget.traditional_service_combo.currentText(),
                 api_key=None if player_widget.traditional_api_key_edit.currentData()
-                else player_widget.traditional_api_key_edit.currentText()
+                else player_widget.traditional_api_key_edit.currentText(),
+                folder_id=player_widget.traditional_folder_id_edit.text().strip() or None,
+                region=player_widget.traditional_region_edit.text().strip() or None,
             )
             cfg.player_translation = TranslationServiceConfig(
                 service_type=ServiceType.TRADITIONAL,
@@ -3463,7 +3511,9 @@ class StartInterface(QFrame):
                 trad = TraditionalServiceConfig(
                     provider=send_widget.traditional_service_combo.currentText(),
                     api_key=None if send_widget.traditional_api_key_edit.currentData()
-                    else send_widget.traditional_api_key_edit.currentText()
+                    else send_widget.traditional_api_key_edit.currentText(),
+                    folder_id=send_widget.traditional_folder_id_edit.text().strip() or None,
+                    region=send_widget.traditional_region_edit.text().strip() or None,
                 )
                 cfg.send_translation = TranslationServiceConfig(
                     service_type=ServiceType.TRADITIONAL,

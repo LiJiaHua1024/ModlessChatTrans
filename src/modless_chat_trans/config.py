@@ -74,6 +74,9 @@ class LLMServiceConfig(BaseConfigModel):
 class TraditionalServiceConfig(BaseConfigModel):
     provider: str
     api_key: Optional[str] = None
+    # Yandex Cloud requires a folder ID; Azure regional resources require a region.
+    folder_id: Optional[str] = None
+    region: Optional[str] = None
 
 
 class TranslationServiceConfig(BaseConfigModel):

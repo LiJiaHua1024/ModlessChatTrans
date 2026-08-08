@@ -168,6 +168,8 @@ First, select the translation service type: AI Translation (recommended) or Trad
 - **Traditional Translation**:
     - **Select Service**: Choose the translation service provider
     - **API Key**: Enter the key if available; selecting "Do not use" will use web-based online services
+    - Alibaba, Youdao, and Sogou use the `id:secret` format; Iflyrec (iFLYTEK Machine Translation) uses `AppID:APIKey:APISecret` and requires an explicit source language for paid requests
+    - Yandex also requires a Folder ID; enter an Azure region for regional resources and leave it empty for global resources
 
 At the bottom of the page, there is an option for "Set a separate translation service for sending messages", explained
 after the "Send Message" menu.

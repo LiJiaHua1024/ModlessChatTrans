@@ -20,9 +20,10 @@ import uuid
 import hmac
 import base64
 import hashlib
+from email.utils import formatdate
 from enum import Enum
 from typing import Dict, Callable, Set
-from urllib.parse import urlencode
+from urllib.parse import quote
 import lazy_loader as lazy
 from modless_chat_trans.logger import logger
 from modless_chat_trans.config import ServiceType, FallbackStrategy
@@ -111,6 +112,52 @@ TRADITIONAL_SERVICES = [
 ]
 services = LLM_PROVIDERS + TRADITIONAL_SERVICES
 
+# `translators.get_languages()` obtains language lists from public web pages.
+# Keep a small provider-specific fallback so a temporary web rate limit does
+# not prevent the application from using a configured paid API.
+TRADITIONAL_LANGUAGE_FALLBACKS = {
+    "deepl": [
+        "ar", "bg", "cs", "da", "de", "el", "en", "en-GB", "en-US", "es", "et", "fi",
+        "fr", "hu", "id", "it", "ja", "ko", "lt", "lv", "nb", "nl", "pl", "pt",
+        "pt-BR", "pt-PT", "ro", "ru", "sk", "sl", "sv", "tr", "uk", "zh", "zh-Hans", "zh-Hant"
+    ],
+    "bing": [
+        "ar", "bg", "ca", "cs", "da", "de", "el", "en", "en-GB", "es", "fi", "fr",
+        "fr-CA", "he", "hi", "hu", "id", "it", "ja", "ko", "nb", "nl", "pl", "pt",
+        "pt-PT", "ro", "ru", "sk", "sr-Cyrl", "sr-Latn", "sv", "th", "tr", "uk", "vi",
+        "zh-Hans", "zh-Hant"
+    ],
+    "google": [
+        "ar", "bg", "ca", "cs", "da", "de", "el", "en", "es", "fi", "fr", "he",
+        "hi", "hu", "id", "it", "ja", "ko", "nl", "no", "pl", "pt", "pt-PT", "ro",
+        "ru", "sk", "sr", "sv", "th", "tr", "uk", "vi", "zh", "zh-CN", "zh-TW"
+    ],
+    "yandex": [
+        "az", "be", "bg", "ca", "cs", "da", "de", "el", "en", "es", "et", "fi",
+        "fr", "hu", "it", "ja", "kk", "ko", "lt", "lv", "mk", "nl", "no", "pl",
+        "pt", "ro", "ru", "sk", "sl", "sq", "sr", "sv", "tr", "uk", "zh"
+    ],
+    "alibaba": [
+        "ar", "de", "en", "es", "fr", "it", "ja", "ko", "pt", "ru", "th", "tr",
+        "vi", "zh", "zh-tw"
+    ],
+    "caiyun": [
+        "ar", "de", "el", "en", "es", "fr", "id", "it", "ja", "ko", "nn", "pl",
+        "pt", "ru", "sw", "th", "tr", "vi", "zh", "zh-Hant"
+    ],
+    "youdao": [
+        "ar", "de", "en", "es", "fr", "hi", "id", "it", "ja", "ko", "nl", "pt",
+        "ru", "sr-Cyrl", "sr-Latn", "th", "tr", "uk", "vi", "zh-CHS", "zh-CHT", "yue"
+    ],
+    "sogou": [
+        "ar", "de", "en", "es", "fi", "fr", "hu", "it", "ja", "ko", "nl", "pl",
+        "pt", "ru", "sv", "th", "vi", "zh-CHS", "zh-CHT"
+    ],
+    "iflyrec": [
+        "ar", "de", "en", "es", "fr", "it", "ja", "ko", "ru", "vi", "yue", "zh"
+    ],
+}
+
 import threading
 
 ts = lazy.load("translators")
@@ -135,7 +182,28 @@ def ensure_litellm_loaded():
 
 
 def get_supported_languages(service):
-    return sorted(ts.get_languages(service.lower()).keys())
+    service_lower = service.lower()
+    try:
+        languages = ts.get_languages(service_lower)
+        language_codes = sorted(
+            code for code in languages.keys() if str(code).lower() != "auto"
+        )
+        if language_codes:
+            return language_codes
+    except Exception as error:
+        fallback = TRADITIONAL_LANGUAGE_FALLBACKS.get(service_lower)
+        if fallback:
+            logger.warning(
+                f"Failed to load online language list for {service}; using built-in fallback: {error}"
+            )
+            return sorted(fallback)
+        raise
+
+    fallback = TRADITIONAL_LANGUAGE_FALLBACKS.get(service_lower)
+    if fallback:
+        logger.warning(f"Online language list for {service} was empty; using built-in fallback.")
+        return sorted(fallback)
+    raise ValueError(f"No supported languages found for traditional service '{service}'")
 
 
 class _LazyLanguageDict(dict):
@@ -1233,8 +1301,9 @@ class Translator:
         Acts as a dispatcher to specific provider implementations (e.g., DeepL, Google).
         """
 
-        traditional_api_key: str = self.translation_service_config.traditional.api_key
-        service_lower = service.lower()
+        traditional_config = self.translation_service_config.traditional
+        traditional_api_key = (getattr(traditional_config, "api_key", None) or "").strip()
+        service_lower = (service or "").strip().lower()
 
         dispatch_map: Dict[str, Callable[[str, str, str, str], str]] = {
             "deepl": self._translate_deepl,
@@ -1243,7 +1312,9 @@ class Translator:
             "alibaba": self._translate_alibaba,
             "caiyun": self._translate_caiyun,
             "youdao": self._translate_youdao,
-            "bing": self._translate_bing
+            "bing": self._translate_bing,
+            "sogou": self._translate_sogou,
+            "iflyrec": self._translate_iflyrec,
         }
 
         if traditional_api_key and service_lower in dispatch_map:
@@ -1256,6 +1327,40 @@ class Translator:
             else:
                 raise Exception(f"Traditional translation failed (no result returned from '{service}')")
 
+    @staticmethod
+    def _clean_language_code(language: str) -> str:
+        return (language or "").strip()
+
+    @classmethod
+    def _is_auto_language(cls, language: str) -> bool:
+        cleaned = cls._clean_language_code(language)
+        return not cleaned or cleaned.lower() == "auto"
+
+    @classmethod
+    def _source_language_or_auto(cls, language: str) -> str:
+        return "auto" if cls._is_auto_language(language) else cls._clean_language_code(language)
+
+    @staticmethod
+    def _parse_json_response(response, service: str):
+        if response.status_code != 200:
+            raise RuntimeError(
+                f"{service} API translation failed: {response.status_code} {response.text}"
+            )
+        try:
+            return response.json()
+        except ValueError as error:
+            raise RuntimeError(f"{service} API returned invalid JSON: {response.text}") from error
+
+    @staticmethod
+    def _split_api_key(api_key: str, parts: int, service: str) -> list[str]:
+        values = api_key.split(":", parts - 1)
+        if len(values) != parts or any(not value.strip() for value in values):
+            raise ValueError(
+                f"{service} API key must contain {parts} colon-separated fields. "
+                "Please check your configuration."
+            )
+        return [value.strip() for value in values]
+
     def _translate_deepl(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
         timeout = self.timeout
         if api_key.endswith(":fx"):
@@ -1266,90 +1371,123 @@ class Translator:
         headers = {
             "Authorization": f"DeepL-Auth-Key {api_key}"
         }
+        target_language = self._clean_language_code(target_language)
+        if not target_language:
+            raise ValueError("DeepL target language cannot be empty")
         data = {
             "text": [text],
-            "target_lang": target_language.split("-")[0].upper(),
+            "target_lang": target_language.upper(),
         }
-        if source_language and source_language.lower() != "auto":
-            data["source_lang"] = source_language.split("-")[0].upper()
+        if not self._is_auto_language(source_language):
+            data["source_lang"] = self._clean_language_code(source_language).upper()
 
         response = _http().post(url, headers=headers, data=data, timeout=timeout)
-        if response.status_code == 200:
-            return response.json()["translations"][0]["text"]
-        else:
-            raise Exception(f"DeepL API translation failed: {response.status_code} {response.text}")
+        body = self._parse_json_response(response, "DeepL")
+        translations = body.get("translations") if isinstance(body, dict) else None
+        if not translations or not translations[0].get("text"):
+            raise RuntimeError(f"DeepL API returned no translation: {body}")
+        return translations[0]["text"]
 
     def _translate_google(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
         timeout = self.timeout
         url = "https://translation.googleapis.com/language/translate/v2"
+        target_language = self._clean_language_code(target_language)
+        if not target_language:
+            raise ValueError("Google target language cannot be empty")
         params = {
             "key": api_key,
             "q": text,
-            "target": target_language.split("-")[0],
+            "target": target_language,
+            "format": "text",
         }
-        if source_language:
-            params["source"] = source_language.split("-")[0]
+        if not self._is_auto_language(source_language):
+            params["source"] = self._clean_language_code(source_language)
 
         response = _http().post(url, params=params, timeout=timeout)
-        if response.status_code == 200:
-            return response.json()["data"]["translations"][0]["translatedText"]
-        else:
-            raise Exception(f"Google API translation failed: {response.status_code} {response.text}")
+        body = self._parse_json_response(response, "Google")
+        if isinstance(body, dict) and body.get("error"):
+            raise RuntimeError(f"Google API returned an error: {body['error']}")
+        try:
+            translated = body["data"]["translations"][0]["translatedText"]
+        except (KeyError, IndexError, TypeError) as error:
+            raise RuntimeError(f"Google API returned no translation: {body}") from error
+        if not translated:
+            raise RuntimeError("Google API returned an empty translation")
+        return translated
 
     def _translate_yandex(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
         timeout = self.timeout
         url = "https://translate.api.cloud.yandex.net/translate/v2/translate"
+        folder_id = (
+            getattr(self.translation_service_config.traditional, "folder_id", None) or ""
+        ).strip()
+        if not folder_id:
+            raise ValueError(
+                "Yandex Cloud folder ID is required for the paid API. "
+                "Please configure it together with the API key."
+            )
+        target_language = self._clean_language_code(target_language)
+        if not target_language:
+            raise ValueError("Yandex target language cannot be empty")
         headers = {
             "Authorization": f"Api-Key {api_key}",
             "Content-Type": "application/json"
         }
         data = {
+            "folderId": folder_id,
             "texts": [text],
-            "targetLanguageCode": target_language.split("-")[0],
+            "targetLanguageCode": target_language,
         }
-        if source_language:
-            data["sourceLanguageCode"] = source_language.split("-")[0]
+        if not self._is_auto_language(source_language):
+            data["sourceLanguageCode"] = self._clean_language_code(source_language)
 
         response = _http().post(url, headers=headers, json=data, timeout=timeout)
-        if response.status_code == 200:
-            return response.json()["translations"][0]["text"]
-        else:
-            raise Exception(f"Yandex API translation failed: {response.status_code} {response.text}")
+        body = self._parse_json_response(response, "Yandex")
+        if isinstance(body, dict) and body.get("error"):
+            raise RuntimeError(f"Yandex API returned an error: {body['error']}")
+        try:
+            translated = body["translations"][0]["text"]
+        except (KeyError, IndexError, TypeError) as error:
+            raise RuntimeError(f"Yandex API returned no translation: {body}") from error
+        if not translated:
+            raise RuntimeError("Yandex API returned an empty translation")
+        return translated
 
     def _translate_alibaba(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
         timeout = self.timeout
-        if ":" not in api_key:
-            raise ValueError(
-                "Alibaba API key must be in 'access_key_id:access_key_secret' format. "
-                "Please check your configuration."
-            )
-        access_key_id, access_key_secret = api_key.split(":", 1)
+        access_key_id, access_key_secret = self._split_api_key(api_key, 2, "Alibaba")
 
         url = "https://mt.cn-hangzhou.aliyuncs.com/"
+        source_language = self._source_language_or_auto(source_language)
+        target_language = self._clean_language_code(target_language)
+        if not target_language:
+            raise ValueError("Alibaba target language cannot be empty")
 
         # 准备请求参数
         parameters = {
             'AccessKeyId': access_key_id,
             'Action': 'TranslateGeneral',
             'Format': 'JSON',
+            'FormatType': 'text',
+            'Scene': 'general',
             'SignatureMethod': 'HMAC-SHA1',
             'SignatureNonce': str(uuid.uuid4()),
             'SignatureVersion': '1.0',
-            'SourceLanguage': source_language.split("-")[0] if source_language else "auto",
+            'SourceLanguage': source_language,
             'SourceText': text,
-            'TargetLanguage': target_language.split("-")[0],
+            'TargetLanguage': target_language,
             'Timestamp': time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             'Version': '2018-10-12'
         }
 
-        # 按照参数名称的字典顺序排序
-        sorted_parameters = sorted(parameters.items(), key=lambda x: x[0])
-
-        # 构造规范化请求字符串
-        canonicalized_query_string = urlencode(sorted_parameters)
-
-        # 构造待签名字符串
-        string_to_sign = 'GET&%2F&' + urlencode(sorted_parameters).replace('&', '%26').replace('=', '%3D')
+        # RPC V2 requires RFC3986 encoding for each pair and then encoding the
+        # complete canonical query string once more in the string to sign.
+        sorted_parameters = sorted(parameters.items(), key=lambda item: item[0])
+        canonicalized_query_string = "&".join(
+            f"{quote(str(key), safe='-_.~')}={quote(str(value), safe='-_.~')}"
+            for key, value in sorted_parameters
+        )
+        string_to_sign = "GET&%2F&" + quote(canonicalized_query_string, safe="-_.~")
 
         # 计算签名
         h = hmac.new((access_key_secret + '&').encode('utf-8'), string_to_sign.encode('utf-8'), hashlib.sha1)
@@ -1360,39 +1498,52 @@ class Translator:
 
         # 发送请求
         response = _http().get(url, params=parameters, timeout=timeout)
-
-        if response.status_code == 200:
-            return response.json().get("Data", {}).get("Translated")
-        else:
-            raise Exception(f"Alibaba API translation failed: {response.status_code} {response.text}")
+        body = self._parse_json_response(response, "Alibaba")
+        if str(body.get("Code", "200")) != "200":
+            raise RuntimeError(f"Alibaba API returned an error: {body}")
+        translated = body.get("Data", {}).get("Translated")
+        if not translated:
+            raise RuntimeError(f"Alibaba API returned no translation: {body}")
+        return translated
 
     def _translate_caiyun(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
         timeout = self.timeout
-        url = "http://api.interpreter.caiyunai.com/v1/translator"
+        url = "https://api.interpreter.caiyunai.com/v1/translator"
+        source_language = self._source_language_or_auto(source_language)
+        target_language = self._clean_language_code(target_language)
+        if not target_language:
+            raise ValueError("Caiyun target language cannot be empty")
         headers = {
             "Content-Type": "application/json",
             "X-Authorization": f"token {api_key}"
         }
         payload = {
             "source": [text],
-            "trans_type": f"{source_language.split('-')[0] if source_language else 'auto'}2{target_language.split('-')[0]}"
+            "trans_type": f"{source_language}2{target_language}",
         }
+        if source_language == "auto":
+            payload["detect"] = True
 
         response = _http().post(url, headers=headers, json=payload, timeout=timeout)
-        if response.status_code == 200:
-            return response.json()["target"][0]
-        else:
-            raise Exception(f"Caiyun API translation failed: {response.status_code} {response.text}")
+        body = self._parse_json_response(response, "Caiyun")
+        if isinstance(body, dict) and body.get("code") not in (None, 0, "0"):
+            raise RuntimeError(f"Caiyun API returned an error: {body}")
+        try:
+            translated = body["target"][0]
+        except (KeyError, IndexError, TypeError) as error:
+            raise RuntimeError(f"Caiyun API returned no translation: {body}") from error
+        if not translated:
+            raise RuntimeError("Caiyun API returned an empty translation")
+        return translated
 
     def _translate_youdao(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
         timeout = self.timeout
         url = "https://openapi.youdao.com/api"
-        if ":" not in api_key:
-            raise ValueError(
-                "Youdao API key must be in 'app_key:app_secret' format. "
-                "Please check your configuration."
-            )
-        app_key, app_secret = api_key.split(":", 1)
+        app_key, app_secret = self._split_api_key(api_key, 2, "Youdao")
+        source_language = self._source_language_or_auto(source_language)
+        target_language = self._clean_language_code(target_language)
+        if not target_language:
+            raise ValueError("Youdao target language cannot be empty")
 
         def encrypt(sign_str):
             hash_algorithm = hashlib.sha256()
@@ -1405,14 +1556,14 @@ class Translator:
             size = len(q)
             return q if size <= 20 else q[0:10] + str(size) + q[size - 10:size]
 
-        salt = str(uuid.uuid1())
+        salt = str(uuid.uuid4())
         curtime = str(int(time.time()))
         sign = encrypt(app_key + truncate(text) + salt + curtime + app_secret)
 
         data = {
             'q': text,
-            'from': source_language.split("-")[0] if source_language else "auto",
-            'to': target_language.split("-")[0],
+            'from': source_language,
+            'to': target_language,
             'appKey': app_key,
             'salt': salt,
             'sign': sign,
@@ -1421,29 +1572,165 @@ class Translator:
         }
 
         response = _http().post(url, data=data, timeout=timeout)
-        if response.status_code == 200:
-            return response.json()["translation"][0]
-        else:
-            raise Exception(f"Youdao API translation failed: {response.status_code} {response.text}")
+        body = self._parse_json_response(response, "Youdao")
+        if str(body.get("errorCode", "0")) != "0":
+            raise RuntimeError(f"Youdao API returned an error: {body}")
+        try:
+            translated = body["translation"][0]
+        except (KeyError, IndexError, TypeError) as error:
+            raise RuntimeError(f"Youdao API returned no translation: {body}") from error
+        if not translated:
+            raise RuntimeError("Youdao API returned an empty translation")
+        return translated
 
     def _translate_bing(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
         timeout = self.timeout
         endpoint = "https://api.cognitive.microsofttranslator.com/translate"
         headers = {
             'Ocp-Apim-Subscription-Key': api_key,
-            'Ocp-Apim-Subscription-Region': 'global',
             'Content-type': 'application/json'
         }
+        region = (getattr(self.translation_service_config.traditional, "region", None) or "").strip()
+        if region:
+            headers['Ocp-Apim-Subscription-Region'] = region
+        target_language = self._clean_language_code(target_language)
+        if not target_language:
+            raise ValueError("Bing target language cannot be empty")
         params = {
             'api-version': '3.0',
-            'to': target_language.split("-")[0]
+            'to': target_language,
         }
-        if source_language:
-            params['from'] = source_language.split("-")[0]
+        if not self._is_auto_language(source_language):
+            params['from'] = self._clean_language_code(source_language)
 
         body = [{'text': text}]
         response = _http().post(endpoint, headers=headers, params=params, json=body, timeout=timeout)
-        if response.status_code == 200:
-            return response.json()[0]["translations"][0]["text"]
-        else:
-            raise Exception(f"Bing API translation failed: {response.status_code} {response.text}")
+        response_body = self._parse_json_response(response, "Bing")
+        try:
+            translated = response_body[0]["translations"][0]["text"]
+        except (KeyError, IndexError, TypeError) as error:
+            raise RuntimeError(f"Bing API returned no translation: {response_body}") from error
+        if not translated:
+            raise RuntimeError("Bing API returned an empty translation")
+        return translated
+
+    def _translate_sogou(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
+        """Call the Sogou DeepI paid text translation API."""
+        pid, secret_key = self._split_api_key(api_key, 2, "Sogou")
+        salt = str(uuid.uuid4())
+        source_language = self._source_language_or_auto(source_language)
+        target_language = self._clean_language_code(target_language)
+        if not target_language:
+            raise ValueError("Sogou target language cannot be empty")
+        sign = hashlib.md5(f"{pid}{text}{salt}{secret_key}".encode("utf-8")).hexdigest()
+        response = _http().post(
+            "https://fanyi.sogou.com/reventondc/api/sogouTranslate",
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Accept": "application/json",
+            },
+            data={
+                "q": text,
+                "from": source_language,
+                "to": target_language,
+                "pid": pid,
+                "salt": salt,
+                "sign": sign,
+            },
+            timeout=self.timeout,
+        )
+        body = self._parse_json_response(response, "Sogou")
+        if str(body.get("errorCode", "0")) != "0":
+            raise RuntimeError(f"Sogou API returned an error: {body}")
+        translated = body.get("translation")
+        if isinstance(translated, list):
+            translated = "".join(str(item) for item in translated)
+        if not translated:
+            raise RuntimeError(f"Sogou API returned no translation: {body}")
+        return str(translated)
+
+    def _translate_iflyrec(self, text: str, api_key: str, source_language: str, target_language: str) -> str:
+        """Call the iFLYTEK Machine Translation v1 paid HTTP API.
+
+        The traditional service field uses ``app_id:api_key:api_secret`` as
+        its compact credential format because the UI has one API key field.
+        """
+        app_id, api_key_value, api_secret = self._split_api_key(api_key, 3, "Iflyrec")
+        if len(text) > 5000:
+            raise ValueError("Iflyrec API accepts at most 5000 characters per request")
+
+        def convert_language(language: str) -> str:
+            language = self._clean_language_code(language)
+            if not language:
+                raise ValueError("Iflyrec language cannot be empty")
+            if language.lower() == "auto":
+                raise ValueError("Iflyrec paid API requires an explicit source language")
+            return "cn" if language.lower() in {"zh", "zh-cn", "zh-hans"} else language
+
+        source_language = convert_language(source_language)
+        target_language = convert_language(target_language)
+        body = {
+            "header": {
+                "app_id": app_id,
+                "status": 3,
+            },
+            "parameter": {
+                "its": {
+                    "from": source_language,
+                    "to": target_language,
+                    "result": {},
+                }
+            },
+            "payload": {
+                "input_data": {
+                    "encoding": "utf8",
+                    "status": 3,
+                    "text": base64.b64encode(text.encode("utf-8")).decode("ascii"),
+                }
+            },
+        }
+
+        host = "itrans.xf-yun.com"
+        path = "/v1/its"
+        date = formatdate(usegmt=True)
+        request_line = "POST /v1/its HTTP/1.1"
+        signature_origin = f"host: {host}\ndate: {date}\n{request_line}"
+        signature = base64.b64encode(
+            hmac.new(
+                api_secret.encode("utf-8"),
+                signature_origin.encode("utf-8"),
+                hashlib.sha256,
+            ).digest()
+        ).decode("ascii")
+        authorization_origin = (
+            f'api_key="{api_key_value}",algorithm="hmac-sha256",'
+            f'headers="host date request-line",signature="{signature}"'
+        )
+        params = {
+            "authorization": base64.b64encode(authorization_origin.encode("utf-8")).decode("ascii"),
+            "host": host,
+            "date": date,
+        }
+        response = _http().post(
+            f"https://{host}{path}",
+            params=params,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json,version=1.0",
+            },
+            json=body,
+            timeout=self.timeout,
+        )
+        response_body = self._parse_json_response(response, "Iflyrec")
+        response_header = response_body.get("header", {})
+        if str(response_header.get("code", "0")) != "0":
+            raise RuntimeError(f"Iflyrec API returned an error: {response_body}")
+        try:
+            encoded_result = response_body["payload"]["result"]["text"]
+            result = json.loads(base64.b64decode(encoded_result).decode("utf-8"))
+            translated = result["trans_result"]["dst"]
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+            raise RuntimeError(f"Iflyrec API returned no translation: {response_body}") from error
+        if not translated:
+            raise RuntimeError("Iflyrec API returned an empty translation")
+        return translated
