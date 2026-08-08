@@ -223,6 +223,7 @@ jobs:
           '--clang'
           '--noinclude-pytest-mode=nofollow'
           '--windows-icon-from-ico=src/icon.ico'
+          '--onefile-windows-splash-screen-image=src/splash.png'
           '--enable-plugin=dill-compat'
           '--enable-plugin=pyside6'
           '--include-package=urllib3'
