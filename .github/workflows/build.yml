@@ -220,6 +220,8 @@ jobs:
 
         $commonArgs = @(
           '--onefile'
+          '--onefile-cache-mode=cached'
+          '--onefile-tempdir-spec={CACHE_DIR}/ModlessChatTrans/{VERSION}'
           '--clang'
           '--noinclude-pytest-mode=nofollow'
           '--windows-icon-from-ico=src/icon.ico'
