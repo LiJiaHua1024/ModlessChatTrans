@@ -100,6 +100,24 @@ jobs:
           exit 1
         }
 
+    - name: Determine LTO mode
+      id: determine_lto
+      shell: pwsh
+      run: |
+        # LTO 策略：Tag 触发（Release）始终开启 LTO；
+        # 手动触发时，Fast Mode 默认开启 → 关闭 LTO 以加速编译
+        # 该步骤在 clcache restore 之前执行，让 cache key 能区分 LTO 模式
+        if ("${{ github.event_name }}" -eq "push") {
+          echo "lto_mode=yes" >> $env:GITHUB_OUTPUT
+          Write-Host "LTO: enabled (release build)"
+        } elseif ("${{ github.event.inputs.fast_mode }}" -eq "true") {
+          echo "lto_mode=no" >> $env:GITHUB_OUTPUT
+          Write-Host "LTO: disabled (fast mode)"
+        } else {
+          echo "lto_mode=yes" >> $env:GITHUB_OUTPUT
+          Write-Host "LTO: enabled (manual, fast mode off)"
+        }
+
     - name: Configure clcache directory
       shell: pwsh
       run: |
@@ -118,11 +136,14 @@ jobs:
       uses: actions/cache@v5
       with:
         path: ${{ github.workspace }}/.clcache
-        # Key includes dependency hashes so cache is invalidated when deps change.
-        # clcache itself does content hashing, so stale entries auto-miss safely.
-        key: clcache-windows-clang-py3.12-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+        # LTO=yes 与 LTO=no 的编译产物不兼容，key 必须区分 LTO 模式；
+        # GitHub Actions 缓存 key 不可覆盖更新，所以 key 中加入 commit SHA，
+        # 每次提交都会得到全新 key（新缓存一定能保存），
+        # 再靠 restore-keys 前缀回退到最近一次同 LTO 模式的缓存。
+        # clcache 本身会做内容哈希，旧条目即使被恢复也会自动 miss，无副作用。
+        key: clcache-windows-clang-py3.12-lto-${{ steps.determine_lto.outputs.lto_mode }}-${{ github.sha }}
         restore-keys: |
-          clcache-windows-clang-py3.12-
+          clcache-windows-clang-py3.12-lto-${{ steps.determine_lto.outputs.lto_mode }}-
 
     - name: Restore Nuitka download cache
       uses: actions/cache@v5
@@ -216,7 +237,6 @@ jobs:
         $fileVersion = "${{ steps.determine_version.outputs.file_version }}"
         $productVersion = "${{ steps.determine_version.outputs.product_version }}"
         $keepConsole = "${{ github.event.inputs.keep_console }}"
-        $fastMode = "${{ github.event.inputs.fast_mode }}"
 
         $commonArgs = @(
           '--onefile'
@@ -253,18 +273,10 @@ jobs:
           $commonArgs += '--windows-console-mode=disable'
         }
 
-        # LTO 策略：Tag 触发（Release）始终开启 LTO；
-        # 手动触发时，Fast Mode 默认开启 → 关闭 LTO 以加速编译
-        if ("${{ github.event_name }}" -eq "push") {
-          $commonArgs += '--lto=yes'
-          Write-Host "LTO: enabled (release build)"
-        } elseif ($fastMode -eq "true") {
-          $commonArgs += '--lto=no'
-          Write-Host "LTO: disabled (fast mode)"
-        } else {
-          $commonArgs += '--lto=yes'
-          Write-Host "LTO: enabled (manual, fast mode off)"
-        }
+        # LTO 模式统一由 determine_lto 步骤判定（与 clcache key 保持一致）
+        $ltoMode = "${{ steps.determine_lto.outputs.lto_mode }}"
+        $commonArgs += "--lto=$ltoMode"
+        Write-Host "LTO: $ltoMode"
 
         # ---- Nuitka build with retry ----
         # Nuitka may fail spuriously when downloading toolchain / dependency
