@@ -141,18 +141,21 @@ jobs:
         # 每次提交都会得到全新 key（新缓存一定能保存），
         # 再靠 restore-keys 前缀回退到最近一次同 LTO 模式的缓存。
         # clcache 本身会做内容哈希，旧条目即使被恢复也会自动 miss，无副作用。
-        key: clcache-windows-clang-py3.12-lto-${{ steps.determine_lto.outputs.lto_mode }}-${{ github.sha }}
+        # 本文件仅用于 lite 分支，key 硬编码 lite 前缀与其他分支（如 canary）
+        # 的缓存条目完全隔离，互不读取、互不挤占。
+        key: clcache-windows-clang-py3.12-lto-${{ steps.determine_lto.outputs.lto_mode }}-lite-${{ github.sha }}
         restore-keys: |
-          clcache-windows-clang-py3.12-lto-${{ steps.determine_lto.outputs.lto_mode }}-
+          clcache-windows-clang-py3.12-lto-${{ steps.determine_lto.outputs.lto_mode }}-lite-
 
     - name: Restore Nuitka download cache
       uses: actions/cache@v5
       with:
         path: |
           C:\Users\runneradmin\AppData\Local\Nuitka\Nuitka\Cache\downloads
-        key: nuitka-downloads-windows-clang-${{ hashFiles('uv.lock') }}
+        # 同样硬编码 lite 前缀，与其他分支的下载缓存隔离。
+        key: nuitka-downloads-windows-clang-lite-${{ hashFiles('uv.lock') }}
         restore-keys: |
-          nuitka-downloads-windows-clang-
+          nuitka-downloads-windows-clang-lite-
 
     - name: Determine version and generate build info
       id: determine_version
