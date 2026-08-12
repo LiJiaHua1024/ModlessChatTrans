@@ -141,21 +141,21 @@ jobs:
         # 每次提交都会得到全新 key（新缓存一定能保存），
         # 再靠 restore-keys 前缀回退到最近一次同 LTO 模式的缓存。
         # clcache 本身会做内容哈希，旧条目即使被恢复也会自动 miss，无副作用。
-        # 本文件仅用于 lite 分支，key 硬编码 lite 前缀与其他分支（如 canary）
-        # 的缓存条目完全隔离，互不读取、互不挤占。
-        key: clcache-windows-clang-py3.12-lto-${{ steps.determine_lto.outputs.lto_mode }}-lite-${{ github.sha }}
+        # key 中加入分支名（ref_name）按分支隔离：lite/canary 等分支各自拥有
+        # 独立的缓存条目，restore 只回退到本分支的缓存，互不读取、互不挤占。
+        key: clcache-windows-clang-py3.12-lto-${{ steps.determine_lto.outputs.lto_mode }}-${{ github.ref_name }}-${{ github.sha }}
         restore-keys: |
-          clcache-windows-clang-py3.12-lto-${{ steps.determine_lto.outputs.lto_mode }}-lite-
+          clcache-windows-clang-py3.12-lto-${{ steps.determine_lto.outputs.lto_mode }}-${{ github.ref_name }}-
 
     - name: Restore Nuitka download cache
       uses: actions/cache@v5
       with:
         path: |
           C:\Users\runneradmin\AppData\Local\Nuitka\Nuitka\Cache\downloads
-        # 同样硬编码 lite 前缀，与其他分支的下载缓存隔离。
-        key: nuitka-downloads-windows-clang-lite-${{ hashFiles('uv.lock') }}
+        # 同样按分支隔离（key 中加入 ref_name），lite/canary 各自独立缓存。
+        key: nuitka-downloads-windows-clang-${{ github.ref_name }}-${{ hashFiles('uv.lock') }}
         restore-keys: |
-          nuitka-downloads-windows-clang-lite-
+          nuitka-downloads-windows-clang-${{ github.ref_name }}-
 
     - name: Determine version and generate build info
       id: determine_version
@@ -170,7 +170,7 @@ jobs:
             $version = $branchName -replace "^v", ""
             $fileVersion = $version
             $productVersion = $version
-            $outputFileName = "ModlessChatTrans_lite_v$version"
+            $outputFileName = "ModlessChatTrans_v$version"
             $buildChannel = "stable"
         }
         elseif ("${{ github.event_name }}" -eq "workflow_dispatch") {
@@ -191,7 +191,7 @@ jobs:
                 $version = $inputVersion -replace "^v", ""
                 $fileVersion = $version
                 $productVersion = $version
-                $outputFileName = "ModlessChatTrans_lite_v$version"
+                $outputFileName = "ModlessChatTrans_v$version"
                 $buildChannel = "stable"
             }
             else {
@@ -199,7 +199,7 @@ jobs:
                 $fileVersion = "0.0.0.0"
                 $productVersion = "0.0.0.0"
                 $safeBranch = $branch -replace "[/\\]", "-"
-                $outputFileName = "ModlessChatTrans_lite_${safeBranch}_${commitSha}"
+                $outputFileName = "ModlessChatTrans_${safeBranch}_${commitSha}"
             }
         }
         else {
@@ -207,7 +207,7 @@ jobs:
             $version = $baseVersion
             $fileVersion = $version
             $productVersion = $version
-            $outputFileName = "ModlessChatTrans_lite_v$version"
+            $outputFileName = "ModlessChatTrans_v$version"
             $buildChannel = "unknown"
         }
 
@@ -260,9 +260,9 @@ jobs:
           '--include-data-file=src/icon.ico=icon.ico'
           '--include-data-file=src/modless-chat-trans.default.json=modless-chat-trans.default.json'
           '--include-data-file=src/modless-chat-trans.default.toml=modless-chat-trans.default.toml'
-          '--output-filename=ModlessChatTrans_lite'
-          '--file-description=ModlessChatTrans_lite'
-          '--product-name=ModlessChatTrans_lite'
+          '--output-filename=ModlessChatTrans'
+          '--file-description=ModlessChatTrans'
+          '--product-name=ModlessChatTrans'
           '--copyright=Copyright © 2024-2026 LiJiaHua1024'
           '--assume-yes-for-downloads'
           "--file-version=$fileVersion"
@@ -306,14 +306,14 @@ jobs:
         }
 
         # ---- Post-build sanity checks ----
-        if (-not (Test-Path "ModlessChatTrans_lite.exe")) {
-          Write-Host "::error::ModlessChatTrans_lite.exe not found after successful Nuitka exit — build may have silently failed"
+        if (-not (Test-Path "ModlessChatTrans.exe")) {
+          Write-Host "::error::ModlessChatTrans.exe not found after successful Nuitka exit — build may have silently failed"
           exit 1
         }
-        $exeSize = (Get-Item "ModlessChatTrans_lite.exe").Length
-        Write-Host "ModlessChatTrans_lite.exe size: $([math]::Round($exeSize / 1MB, 1)) MB"
+        $exeSize = (Get-Item "ModlessChatTrans.exe").Length
+        Write-Host "ModlessChatTrans.exe size: $([math]::Round($exeSize / 1MB, 1)) MB"
         if ($exeSize -lt 1048576) {
-          Write-Host "::error::ModlessChatTrans_lite.exe is smaller than 1 MB ($exeSize bytes) — likely a corrupted / stub binary"
+          Write-Host "::error::ModlessChatTrans.exe is smaller than 1 MB ($exeSize bytes) — likely a corrupted / stub binary"
           exit 1
         }
 
@@ -334,11 +334,11 @@ jobs:
       shell: pwsh
       run: |
         $outputName = "${{ steps.determine_version.outputs.output_file_name }}"
-        if (-not (Test-Path "ModlessChatTrans_lite.exe")) {
-          Write-Host "::error::ModlessChatTrans_lite.exe missing before rename — previous steps may have reported false success"
+        if (-not (Test-Path "ModlessChatTrans.exe")) {
+          Write-Host "::error::ModlessChatTrans.exe missing before rename — previous steps may have reported false success"
           exit 1
         }
-        ren ModlessChatTrans_lite.exe "${outputName}.exe"
+        ren ModlessChatTrans.exe "${outputName}.exe"
         if (-not (Test-Path "${outputName}.exe")) {
           Write-Host "::error::Rename to ${outputName}.exe failed"
           exit 1
@@ -348,7 +348,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v7
       with:
-        name: ModlessChatTrans_lite
+        name: ModlessChatTrans
         path: |
           ./${{ steps.determine_version.outputs.output_file_name }}.exe
         archive: false
