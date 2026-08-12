@@ -20,6 +20,9 @@ dist/
 main.build/
 main.dist/
 main.onefile-build/
+main.dist.baseline/
+main.onefile-build.baseline/
+ModlessChatTrans.exe
 main.spec
 *.spec
 

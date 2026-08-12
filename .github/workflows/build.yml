@@ -167,7 +167,7 @@ jobs:
             $version = $branchName -replace "^v", ""
             $fileVersion = $version
             $productVersion = $version
-            $outputFileName = "ModlessChatTrans_v$version"
+            $outputFileName = "ModlessChatTrans_lite_v$version"
             $buildChannel = "stable"
         }
         elseif ("${{ github.event_name }}" -eq "workflow_dispatch") {
@@ -188,7 +188,7 @@ jobs:
                 $version = $inputVersion -replace "^v", ""
                 $fileVersion = $version
                 $productVersion = $version
-                $outputFileName = "ModlessChatTrans_v$version"
+                $outputFileName = "ModlessChatTrans_lite_v$version"
                 $buildChannel = "stable"
             }
             else {
@@ -196,7 +196,7 @@ jobs:
                 $fileVersion = "0.0.0.0"
                 $productVersion = "0.0.0.0"
                 $safeBranch = $branch -replace "[/\\]", "-"
-                $outputFileName = "ModlessChatTrans_${safeBranch}_${commitSha}"
+                $outputFileName = "ModlessChatTrans_lite_${safeBranch}_${commitSha}"
             }
         }
         else {
@@ -204,7 +204,7 @@ jobs:
             $version = $baseVersion
             $fileVersion = $version
             $productVersion = $version
-            $outputFileName = "ModlessChatTrans_v$version"
+            $outputFileName = "ModlessChatTrans_lite_v$version"
             $buildChannel = "unknown"
         }
 
@@ -241,7 +241,7 @@ jobs:
         $commonArgs = @(
           '--onefile'
           '--onefile-cache-mode=cached'
-          '--onefile-tempdir-spec={CACHE_DIR}/ModlessChatTrans/{VERSION}'
+          '--onefile-tempdir-spec={CACHE_DIR}/ModlessChatTrans_lite/{VERSION}'
           '--clang'
           '--noinclude-pytest-mode=nofollow'
           '--windows-icon-from-ico=src/icon.ico'
@@ -249,19 +249,17 @@ jobs:
           '--enable-plugin=dill-compat'
           '--enable-plugin=pyside6'
           '--include-package=urllib3'
-          '--include-package=litellm'
           '--include-package=translators'
           '--include-package-data=certifi'
-          '--include-package-data=litellm'
           '--include-data-dir=src/locales=locales'
           '--include-data-dir=src/templates=templates'
           '--include-data-dir=src/static=static'
           '--include-data-file=src/icon.ico=icon.ico'
           '--include-data-file=src/modless-chat-trans.default.json=modless-chat-trans.default.json'
           '--include-data-file=src/modless-chat-trans.default.toml=modless-chat-trans.default.toml'
-          '--output-filename=ModlessChatTrans'
-          '--file-description=ModlessChatTrans'
-          '--product-name=ModlessChatTrans'
+          '--output-filename=ModlessChatTrans_lite'
+          '--file-description=ModlessChatTrans_lite'
+          '--product-name=ModlessChatTrans_lite'
           '--copyright=Copyright © 2024-2026 LiJiaHua1024'
           '--assume-yes-for-downloads'
           "--file-version=$fileVersion"
@@ -305,14 +303,14 @@ jobs:
         }
 
         # ---- Post-build sanity checks ----
-        if (-not (Test-Path "ModlessChatTrans.exe")) {
-          Write-Host "::error::ModlessChatTrans.exe not found after successful Nuitka exit — build may have silently failed"
+        if (-not (Test-Path "ModlessChatTrans_lite.exe")) {
+          Write-Host "::error::ModlessChatTrans_lite.exe not found after successful Nuitka exit — build may have silently failed"
           exit 1
         }
-        $exeSize = (Get-Item "ModlessChatTrans.exe").Length
-        Write-Host "ModlessChatTrans.exe size: $([math]::Round($exeSize / 1MB, 1)) MB"
+        $exeSize = (Get-Item "ModlessChatTrans_lite.exe").Length
+        Write-Host "ModlessChatTrans_lite.exe size: $([math]::Round($exeSize / 1MB, 1)) MB"
         if ($exeSize -lt 1048576) {
-          Write-Host "::error::ModlessChatTrans.exe is smaller than 1 MB ($exeSize bytes) — likely a corrupted / stub binary"
+          Write-Host "::error::ModlessChatTrans_lite.exe is smaller than 1 MB ($exeSize bytes) — likely a corrupted / stub binary"
           exit 1
         }
 
@@ -333,11 +331,11 @@ jobs:
       shell: pwsh
       run: |
         $outputName = "${{ steps.determine_version.outputs.output_file_name }}"
-        if (-not (Test-Path "ModlessChatTrans.exe")) {
-          Write-Host "::error::ModlessChatTrans.exe missing before rename — previous steps may have reported false success"
+        if (-not (Test-Path "ModlessChatTrans_lite.exe")) {
+          Write-Host "::error::ModlessChatTrans_lite.exe missing before rename — previous steps may have reported false success"
           exit 1
         }
-        ren ModlessChatTrans.exe "${outputName}.exe"
+        ren ModlessChatTrans_lite.exe "${outputName}.exe"
         if (-not (Test-Path "${outputName}.exe")) {
           Write-Host "::error::Rename to ${outputName}.exe failed"
           exit 1
@@ -347,7 +345,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v7
       with:
-        name: ModlessChatTrans
+        name: ModlessChatTrans_lite
         path: |
           ./${{ steps.determine_version.outputs.output_file_name }}.exe
         archive: false

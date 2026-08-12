@@ -536,7 +536,7 @@ def _start_background_preload(cfg):
             if cfg.send_translation_independent:
                 services_to_load.add(cfg.send_translation.service_type)
 
-            # litellm 与 translators 使用独立锁，可并行预加载
+            # llm_gateway 与 translators 使用独立锁，可并行预加载
             if ServiceType.LLM in services_to_load:
                 ensure_litellm_loaded()
             if ServiceType.TRADITIONAL in services_to_load:

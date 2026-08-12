@@ -27,6 +27,8 @@ from urllib.parse import quote
 import lazy_loader as lazy
 from modless_chat_trans.logger import logger
 from modless_chat_trans.config import ServiceType, FallbackStrategy
+# 内置轻量 LLM 网关（litellm.completion 兼容子集，模块本身很轻，直接导入）
+from modless_chat_trans import llm_gateway as litellm
 
 
 def _http():
@@ -161,9 +163,8 @@ TRADITIONAL_LANGUAGE_FALLBACKS = {
 import threading
 
 ts = lazy.load("translators")
-litellm = lazy.load("litellm")
 
-# 独立锁：litellm 与 translators 可并行预加载，互不阻塞
+# 独立锁：llm_gateway 与 translators 可并行预加载，互不阻塞
 _llm_import_lock = threading.Lock()
 _ts_import_lock = threading.Lock()
 
@@ -176,9 +177,9 @@ def ensure_ts_loaded():
 
 
 def ensure_litellm_loaded():
-    """确保 LLM 翻译服务依赖已加载（litellm）"""
+    """确保 LLM 翻译服务依赖已加载（内置轻量 LLM 网关，导入即就绪）"""
     with _llm_import_lock:
-        _ = litellm.__name__
+        pass
 
 
 def get_supported_languages(service):
@@ -311,7 +312,7 @@ class Translator:
         :param source_language: 源语言
         :param target_language: 目标语言
         :param message_type: 消息类型
-        :param context_messages: 历史上下文 messages 列表（可直接拼入 litellm），为 None/[] 则退化为无上下文
+        :param context_messages: 历史上下文 messages 列表（可直接拼入 LLM 请求），为 None/[] 则退化为无上下文
         """
         context_messages = context_messages or []
         return self._dispatch_translation(
@@ -530,7 +531,7 @@ class Translator:
 
         message = history_block + base_prompt + self._terminology_block(matched_terms, self._is_anthropic)
 
-        # 使用 litellm 统一调用各类大模型
+        # 使用内置 LLM 网关统一调用各类大模型（litellm.completion 兼容子集）
         try:
             # 针对部分 provider 做模型名前缀映射，保持与旧版调用兼容
             provider = provider or "OpenAI"
@@ -610,13 +611,13 @@ class Translator:
 
             response = litellm.completion(**llm_params)
 
-            # litellm 的返回对象与 OpenAI SDK 高度兼容
+            # 网关返回对象与 OpenAI SDK 高度兼容
             content_str = response.choices[0].message.content or ""
 
             usage_info = response.model_dump().get("usage", {})
 
         except Exception as e:
-            logger.error(f"LLM translation failed ({provider}) via litellm: {e}")
+            logger.error(f"LLM translation failed ({provider}) via gateway: {e}")
             raise
 
         if expect_json:

@@ -454,7 +454,7 @@ def process_decorator(function):
         :param source_language: 源语言
         :param target_language: 目标语言
         :param rage_mode: 是否启用红温模式
-        :param context_messages: 历史上下文 messages 列表（可直接拼入 litellm）
+        :param context_messages: 历史上下文 messages 列表（可直接拼入 LLM 请求）
         :return:
             - None：应被丢弃的数据（可能是不包含[CHAT]的日志行，也可能是系统消息且filter_server_messages为True）
             - 长度为3的元组：
