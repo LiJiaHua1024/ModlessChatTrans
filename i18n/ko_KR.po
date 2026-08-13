@@ -1247,3 +1247,113 @@ msgstr "복사"
 msgid "朗读"
 msgstr "소리 내어 읽기"
 
+#: main.py:275 main.py:295
+msgid "翻译失败，未生成翻译结果。"
+msgstr "번역 실패, 번역 결과가 생성되지 않았습니다."
+
+#: modless_chat_trans/interface.py:1024
+msgid "Yandex Folder ID："
+msgstr "Yandex Folder ID："
+
+#: modless_chat_trans/interface.py:1026
+msgid "仅 Yandex Cloud 需要"
+msgstr "Yandex Cloud 에만 필요합니다"
+
+#: modless_chat_trans/interface.py:1029
+msgid "Azure 区域（可选）："
+msgstr "Azure 지역(선택 사항):"
+
+#: modless_chat_trans/interface.py:1031
+msgid "仅区域或多服务 Azure 资源需要"
+msgstr "지역 또는 다중 서비스 Azure 리소스에만 필요합니다"
+
+#: modless_chat_trans/interface.py:1428
+msgid "Pre-TTS："
+msgstr "Pre-TTS："
+
+#: modless_chat_trans/interface.py:1433
+msgid "预合成热词音频"
+msgstr "핫워드 오디오 사전 합성"
+
+#: modless_chat_trans/interface.py:1445
+msgid "停止"
+msgstr "정지"
+
+#: modless_chat_trans/interface.py:1450
+msgid "清除音频"
+msgstr "오디오 지우기"
+
+#: modless_chat_trans/interface.py:1458
+msgid ""
+"扫描翻译缓存中的热门译文并预合成音频，避免重复合成以减少加载时间。\n"
+"朗读时自动使用已预合成的音频，未命中则正常合成。\n"
+"开启\"朗读玩家名\"时不可用。"
+msgstr "번역 캐시에서 인기 있는 번역을 스캔하고 오디오를 사전 합성하여 중복 합성을 피하고 로드 시간을 줄입니다。\n읽을 때 사전 합성된 오디오를 자동으로 사용하며, 없으면 정상적으로 합성합니다。\n\"플레이어 이름 읽기\"를 활성화하면 사용할 수 없습니다。"
+
+#: modless_chat_trans/interface.py:1470 modless_chat_trans/interface.py:1719
+msgid "手动预合成热门音频，朗读时自动命中"
+msgstr "인기 있는 오디오를 수동으로 사전 합성합니다. 읽을 때 자동으로 일치합니다."
+
+#: modless_chat_trans/interface.py:1676 modless_chat_trans/interface.py:1704
+msgid "开启\"朗读玩家名\"后，Pre-TTS 不可用"
+msgstr "\"플레이어 이름 읽기\"를 활성화하면 Pre-TTS를 사용할 수 없습니다"
+
+#: modless_chat_trans/interface.py:1697
+#, python-brace-format
+msgid "正在预合成 {}/{}..."
+msgstr "사전 합성 중 {}/{}..."
+
+#: modless_chat_trans/interface.py:1714
+#, python-brace-format
+msgid "本次预合成 {} 条，跳过 {} 条；共 {} 条音频（{:.1f} MB）"
+msgstr "이번에 {}개를 사전 합성하고 {}개를 건너뛰었습니다. 총 {}개의 오디오({:.1f} MB)"
+
+#: modless_chat_trans/interface.py:1728 modless_chat_trans/interface.py:1739
+msgid "Pre-TTS 不可用"
+msgstr "Pre-TTS 사용 불가"
+
+#: modless_chat_trans/interface.py:1729
+msgid "Pre-TTS 引擎加载失败"
+msgstr "Pre-TTS 엔진을 로드하지 못했습니다"
+
+#: modless_chat_trans/interface.py:1740
+msgid "配置尚未初始化"
+msgstr "구성이 아직 초기화되지 않았습니다"
+
+#: modless_chat_trans/interface.py:1752
+msgid "Pre-TTS 失败"
+msgstr "Pre-TTS 실패"
+
+#: modless_chat_trans/interface.py:1753
+msgid "启动预合成失败（TTS 依赖不可用或已在运行）"
+msgstr "사전 합성 시작 실패 (TTS 종속성을 사용할 수 없거나 이미 실행 중임)"
+
+#: modless_chat_trans/interface.py:1766
+msgid "正在扫描翻译缓存..."
+msgstr "번역 캐시 스캔 중..."
+
+#: modless_chat_trans/interface.py:1775
+msgid "正在停止..."
+msgstr "정지 중..."
+
+#: modless_chat_trans/interface.py:1796
+msgid "将清除所有已预合成的 Pre-TTS 音频。此操作不可恢复。"
+msgstr "사전 합성된 모든 Pre-TTS 오디오가 지워집니다. 이 작업은 취소할 수 없습니다."
+
+#: modless_chat_trans/interface.py:1806
+msgid "清除 Pre-TTS 音频时出错"
+msgstr "Pre-TTS 오디오 지우기 오류"
+
+#: modless_chat_trans/interface.py:1816
+msgid "尚未预合成任何 Pre-TTS 音频"
+msgstr "아직 사전 합성된 Pre-TTS 오디오가 없습니다"
+
+#: modless_chat_trans/interface.py:1826
+#, python-brace-format
+msgid "已清除 {} 条 Pre-TTS 音频"
+msgstr "{}개의 Pre-TTS 오디오를 지웠습니다"
+
+#: modless_chat_trans/web_display.py:209
+msgid "翻译超时，请稍后重试。"
+msgstr "번역 시간이 초과되었습니다. 나중에 다시 시도해 주세요."
+

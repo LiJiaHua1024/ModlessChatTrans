@@ -1261,3 +1261,113 @@ msgstr "コピー"
 msgid "朗读"
 msgstr "読み上げ"
 
+#: main.py:275 main.py:295
+msgid "翻译失败，未生成翻译结果。"
+msgstr "翻訳に失敗しました。翻訳結果は生成されませんでした。"
+
+#: modless_chat_trans/interface.py:1024
+msgid "Yandex Folder ID："
+msgstr "Yandex Folder ID："
+
+#: modless_chat_trans/interface.py:1026
+msgid "仅 Yandex Cloud 需要"
+msgstr "Yandex Cloud でのみ必要です"
+
+#: modless_chat_trans/interface.py:1029
+msgid "Azure 区域（可选）："
+msgstr "Azure リージョン（オプション）："
+
+#: modless_chat_trans/interface.py:1031
+msgid "仅区域或多服务 Azure 资源需要"
+msgstr "リージョンまたはマルチサービスの Azure リソースでのみ必要です"
+
+#: modless_chat_trans/interface.py:1428
+msgid "Pre-TTS："
+msgstr "Pre-TTS："
+
+#: modless_chat_trans/interface.py:1433
+msgid "预合成热词音频"
+msgstr "ホットワードの音声を事前合成"
+
+#: modless_chat_trans/interface.py:1445
+msgid "停止"
+msgstr "停止"
+
+#: modless_chat_trans/interface.py:1450
+msgid "清除音频"
+msgstr "音声をクリア"
+
+#: modless_chat_trans/interface.py:1458
+msgid ""
+"扫描翻译缓存中的热门译文并预合成音频，避免重复合成以减少加载时间。\n"
+"朗读时自动使用已预合成的音频，未命中则正常合成。\n"
+"开启\"朗读玩家名\"时不可用。"
+msgstr "翻訳キャッシュ内の人気の翻訳をスキャンし、音声を事前合成することで、繰り返しの合成を避け、読み込み時間を短縮します。\n読み上げ時に事前合成された音声を自動的に使用し、見つからない場合は通常の合成を行います。\n「プレイヤー名を読み上げる」がオンの場合は利用できません。"
+
+#: modless_chat_trans/interface.py:1470 modless_chat_trans/interface.py:1719
+msgid "手动预合成热门音频，朗读时自动命中"
+msgstr "人気の音声を手動で事前合成します。読み上げ時に自動的にヒットします"
+
+#: modless_chat_trans/interface.py:1676 modless_chat_trans/interface.py:1704
+msgid "开启\"朗读玩家名\"后，Pre-TTS 不可用"
+msgstr "「プレイヤー名を読み上げる」がオンの場合、Pre-TTSは利用できません"
+
+#: modless_chat_trans/interface.py:1697
+#, python-brace-format
+msgid "正在预合成 {}/{}..."
+msgstr "事前合成中 {}/{}..."
+
+#: modless_chat_trans/interface.py:1714
+#, python-brace-format
+msgid "本次预合成 {} 条，跳过 {} 条；共 {} 条音频（{:.1f} MB）"
+msgstr "今回 {} 件を事前合成し、{} 件をスキップしました。合計 {} 件の音声（{:.1f} MB）"
+
+#: modless_chat_trans/interface.py:1728 modless_chat_trans/interface.py:1739
+msgid "Pre-TTS 不可用"
+msgstr "Pre-TTS 利用不可"
+
+#: modless_chat_trans/interface.py:1729
+msgid "Pre-TTS 引擎加载失败"
+msgstr "Pre-TTSエンジンの読み込みに失敗しました"
+
+#: modless_chat_trans/interface.py:1740
+msgid "配置尚未初始化"
+msgstr "設定がまだ初期化されていません"
+
+#: modless_chat_trans/interface.py:1752
+msgid "Pre-TTS 失败"
+msgstr "Pre-TTS 失敗"
+
+#: modless_chat_trans/interface.py:1753
+msgid "启动预合成失败（TTS 依赖不可用或已在运行）"
+msgstr "事前合成の開始に失敗しました（TTS依存関係が利用できないか、既に実行中です）"
+
+#: modless_chat_trans/interface.py:1766
+msgid "正在扫描翻译缓存..."
+msgstr "翻訳キャッシュをスキャン中..."
+
+#: modless_chat_trans/interface.py:1775
+msgid "正在停止..."
+msgstr "停止中..."
+
+#: modless_chat_trans/interface.py:1796
+msgid "将清除所有已预合成的 Pre-TTS 音频。此操作不可恢复。"
+msgstr "事前合成されたすべての Pre-TTS 音声が消去されます。この操作は元に戻せません。"
+
+#: modless_chat_trans/interface.py:1806
+msgid "清除 Pre-TTS 音频时出错"
+msgstr "Pre-TTS 音声の消去中にエラーが発生しました"
+
+#: modless_chat_trans/interface.py:1816
+msgid "尚未预合成任何 Pre-TTS 音频"
+msgstr "Pre-TTS 音声はまだ事前合成されていません"
+
+#: modless_chat_trans/interface.py:1826
+#, python-brace-format
+msgid "已清除 {} 条 Pre-TTS 音频"
+msgstr "{} 件の Pre-TTS 音声を消去しました"
+
+#: modless_chat_trans/web_display.py:209
+msgid "翻译超时，请稍后重试。"
+msgstr "翻訳がタイムアウトしました。後でもう一度お試しください。"
+
