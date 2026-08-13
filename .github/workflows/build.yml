@@ -244,6 +244,13 @@ jobs:
         $commonArgs = @(
           '--onefile'
           '--onefile-cache-mode=cached'
+          # pywebview 6.2.1 新增 platforms/win32.py，但 Nuitka 4.1.3 的
+          # PywebViewPlugin 硬编码白名单未包含它，会主动排除导致运行时
+          # ImportError（详见 Nuitka PR #3979，修复未随 4.1.3 发布）。
+          # 禁用该插件并显式包含 win32 作为 workaround；Nuitka 发布
+          # 含修复的版本后即可移除这两行。
+          '--disable-plugin=pywebview'
+          '--include-module=webview.platforms.win32'
           '--onefile-tempdir-spec={CACHE_DIR}/ModlessChatTrans_nano/{VERSION}'
           '--clang'
           '--noinclude-pytest-mode=nofollow'
