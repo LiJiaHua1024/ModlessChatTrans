@@ -1374,3 +1374,7 @@ msgstr "{} áudios Pre-TTS apagados"
 msgid "翻译超时，请稍后重试。"
 msgstr "Tempo limite de tradução esgotado, tente novamente mais tarde."
 
+#: modless_chat_trans/webui/server.py:77
+msgid "确定"
+msgstr "OK"
+

@@ -1357,3 +1357,7 @@ msgstr "{}개의 Pre-TTS 오디오를 지웠습니다"
 msgid "翻译超时，请稍后重试。"
 msgstr "번역 시간이 초과되었습니다. 나중에 다시 시도해 주세요."
 
+#: modless_chat_trans/webui/server.py:77
+msgid "确定"
+msgstr "확인"
+

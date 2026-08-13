@@ -1365,3 +1365,7 @@ msgstr "Cleared {} Pre-TTS audios"
 msgid "翻译超时，请稍后重试。"
 msgstr "Translation timed out, please try again later."
 
+#: modless_chat_trans/webui/server.py:77
+msgid "确定"
+msgstr "OK"
+

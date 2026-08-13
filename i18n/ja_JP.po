@@ -1371,3 +1371,7 @@ msgstr "{} 件の Pre-TTS 音声を消去しました"
 msgid "翻译超时，请稍后重试。"
 msgstr "翻訳がタイムアウトしました。後でもう一度お試しください。"
 
+#: modless_chat_trans/webui/server.py:77
+msgid "确定"
+msgstr "OK"
+

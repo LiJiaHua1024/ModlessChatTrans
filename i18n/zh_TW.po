@@ -1344,3 +1344,7 @@ msgstr "已清除 {} 條 Pre-TTS 音頻"
 msgid "翻译超时，请稍后重试。"
 msgstr "翻譯超時，請稍後重試。"
 
+#: modless_chat_trans/webui/server.py:77
+msgid "确定"
+msgstr "確定"
+

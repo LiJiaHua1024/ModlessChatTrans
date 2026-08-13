@@ -1373,3 +1373,7 @@ msgstr "{} audios Pre-TTS effacés"
 msgid "翻译超时，请稍后重试。"
 msgstr "Délai de traduction dépassé, veuillez réessayer plus tard."
 
+#: modless_chat_trans/webui/server.py:77
+msgid "确定"
+msgstr "OK"
+

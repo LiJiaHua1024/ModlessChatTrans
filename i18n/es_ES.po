@@ -1378,3 +1378,7 @@ msgstr "Se borraron {} audios de Pre-TTS"
 msgid "翻译超时，请稍后重试。"
 msgstr "Tiempo de espera de traducción agotado, inténtelo de nuevo más tarde."
 
+#: modless_chat_trans/webui/server.py:77
+msgid "确定"
+msgstr "Aceptar"
+

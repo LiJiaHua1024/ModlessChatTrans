@@ -1365,3 +1365,7 @@ msgstr "Очищено {} аудио Pre-TTS"
 msgid "翻译超时，请稍后重试。"
 msgstr "Время ожидания перевода истекло, повторите попытку позже."
 
+#: modless_chat_trans/webui/server.py:77
+msgid "确定"
+msgstr "ОК"
+
