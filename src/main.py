@@ -24,19 +24,18 @@ from datetime import datetime
 # 核心依赖预检（Pre-flight Check）
 # 必须在任何第三方模块导入之前运行，使用纯 stdlib 完成探测。
 # 使用 importlib.util.find_spec 做轻量探测（不真正导入模块），
-# 避免预检阶段就触发 PySide6 / qfluentwidgets 等重模块的加载。
+# 避免预检阶段就触发 webview 等重模块的加载。
 # 若任何核心依赖缺失，显示友好错误提示并退出，而不是以崩溃方式终止。
 # ═══════════════════════════════════════════════════════════════════════
 
 # 核心依赖表：(包名, 用途说明)
 _CORE_DEPS = [
     ("loguru",           "日志系统"),
-    ("PySide6",          "GUI 框架（图形界面）"),
-    ("qfluentwidgets",   "GUI 组件库（Fluent 风格控件）"),
+    ("webview",          "WebView2 窗口宿主（图形界面）"),
     ("pydantic",         "配置验证与解析"),
     ("pydantic_settings","配置文件加载"),
     ("tomli_w",          "TOML 配置文件写入"),
-    ("flask",            "WebUI 服务器（翻译结果展示）"),
+    ("flask",            "WebUI 服务器（设置界面与翻译结果展示）"),
     ("diskcache",        "翻译结果缓存"),
     ("lazy_loader",      "模块懒加载（翻译服务）"),
     ("requests",         "HTTP 客户端（翻译 API 请求）"),
@@ -62,7 +61,7 @@ def _preflight_check() -> list[tuple[str, str, str]]:
 
 def _show_fatal_error_and_exit(missing: list[tuple[str, str, str]]) -> None:
     """
-    以友好方式展示致命错误，按 Qt → tkinter → 控制台 顺序降级。
+    以友好方式展示致命错误，按 Windows 原生消息框 → tkinter → 控制台 顺序降级。
     展示后调用 sys.exit(1) 终止进程。
     """
     title = "ModlessChatTrans — 启动失败"
@@ -74,16 +73,15 @@ def _show_fatal_error_and_exit(missing: list[tuple[str, str, str]]) -> None:
     footer = "\n请检查安装是否完整，或重新安装程序。\n如使用可执行文件，请尝试重新下载。"
     full_msg = f"{brief}\n\n{detail}\n{footer}"
 
-    # ── 尝试 Qt 对话框 ──────────────────────────────────────────────────
+    # ── 尝试 Windows 原生消息框（ctypes，无第三方依赖）─────────────────
     try:
-        from PySide6.QtWidgets import QApplication, QMessageBox
-        _app = QApplication.instance() or QApplication(sys.argv)
-        box = QMessageBox()
-        box.setWindowTitle(title)
-        box.setIcon(QMessageBox.Icon.Critical)
-        box.setText(brief)
-        box.setDetailedText(detail + footer)
-        box.exec()
+        import ctypes
+        ctypes.windll.user32.MessageBoxW(
+            0,
+            full_msg,
+            title,
+            0x10 | 0x0,  # MB_ICONERROR | MB_OK
+        )
         sys.exit(1)
     except Exception:
         pass
@@ -117,27 +115,41 @@ if _missing_core:
 # ═══════════════════════════════════════════════════════════════════════
 # 启动流程
 # 所有第三方模块的导入都被推迟到 main() / start_translation() 内部，
-# 让启动画面（纯 PySide6）能第一时间显示，再在幕后加载重模块。
+# 配置/日志/i18n 先就绪，随后启动 Flask GUI 服务并打开 WebView2 窗口。
 # ═══════════════════════════════════════════════════════════════════════
 
 
 def start_translation(config):
     # 重模块延迟到「开始翻译」时才导入，避免拖慢窗口出现时间
-    from modless_chat_trans.logger import logger
-    from modless_chat_trans.i18n import _
-    from modless_chat_trans.config import ServiceType
-    from modless_chat_trans.context_buffer import ContextBuffer, ContextEntry, extract_log_time
-    from modless_chat_trans.web_display import start_httpserver_thread, display_message, allocate_slot, fill_slot
-    from modless_chat_trans.log_monitor import start_log_monitor
     from modless_chat_trans import message_processor
-    from modless_chat_trans.message_processor import (
-        init_processor, init_blacklist, process_message, parse_message,
-        is_user_in_blacklist, is_message_blocked, sanitize_hypixel_name,
+    from modless_chat_trans.clipboard_monitor import modify_clipboard, monitor_clipboard
+    from modless_chat_trans.config import ServiceType
+    from modless_chat_trans.context_buffer import (
+        ContextBuffer,
+        ContextEntry,
+        extract_log_time,
     )
-    from modless_chat_trans.translator import Translator, MessageType
-    from modless_chat_trans.clipboard_monitor import monitor_clipboard, modify_clipboard
+    from modless_chat_trans.i18n import _
+    from modless_chat_trans.log_monitor import start_log_monitor
+    from modless_chat_trans.logger import logger
+    from modless_chat_trans.message_processor import (
+        init_blacklist,
+        init_processor,
+        is_message_blocked,
+        is_user_in_blacklist,
+        parse_message,
+        process_message,
+        sanitize_hypixel_name,
+    )
+    from modless_chat_trans.translator import MessageType, Translator
+    from modless_chat_trans.web_display import (
+        allocate_slot,
+        display_message,
+        fill_slot,
+        start_httpserver_thread,
+    )
     try:
-        from modless_chat_trans.tts_engine import TTSEngine, TTS_AVAILABLE
+        from modless_chat_trans.tts_engine import TTS_AVAILABLE, TTSEngine
     except Exception as _tts_exc:
         TTSEngine = None  # type: ignore[assignment,misc]
         TTS_AVAILABLE = False
@@ -506,7 +518,7 @@ def run_scheduled_update_check(update_check_func, cfg):
 
 
 def _dismiss_nuitka_splash():
-    """关闭 Nuitka onefile 原生启动画面（删除反馈文件，由 qfw 启动画面接力）"""
+    """关闭 Nuitka onefile 原生启动画面（删除反馈文件）"""
     if "NUITKA_ONEFILE_PARENT" not in os.environ:
         return
     try:
@@ -530,7 +542,10 @@ def _start_background_preload(cfg):
         try:
             from modless_chat_trans.config import ServiceType
             from modless_chat_trans.logger import logger
-            from modless_chat_trans.translator import ensure_litellm_loaded, ensure_ts_loaded
+            from modless_chat_trans.translator import (
+                ensure_litellm_loaded,
+                ensure_ts_loaded,
+            )
 
             services_to_load = {cfg.player_translation.service_type}
             if cfg.send_translation_independent:
@@ -560,11 +575,7 @@ def _start_background_preload(cfg):
 
 
 def main():
-    # ══ 1. QApplication（qfw 启动画面随主窗口显示，见 MainWindow.showEvent）══
-    from PySide6.QtWidgets import QApplication
-    app = QApplication([])
-
-    # ══ 2. 配置 / 日志 / i18n（pydantic 等重依赖在启动画面背后加载）══
+    # ══ 1. 配置 / 日志 / i18n ══
     from modless_chat_trans.config import read_config
     from modless_chat_trans.file_utils import get_platform
     from modless_chat_trans.i18n import set_language
@@ -574,10 +585,10 @@ def main():
     init_logger(cfg.settings.debug)
     set_language(cfg.settings.interface_language)
 
-    # ══ 3. GUI 主窗口（qfluentwidgets 最重，splash 期间加载）══
-    from modless_chat_trans.interface import ProgramInfo, MainWindow
-    from modless_chat_trans.updater import Updater
+    # ══ 2. GUI（Flask WebUI + WebView2）══
     from modless_chat_trans._version import get_version_string
+    from modless_chat_trans.updater import Updater
+    from modless_chat_trans.webui import MainWindow, ProgramInfo
 
     program_info = ProgramInfo(
         version=get_version_string(),
@@ -599,13 +610,13 @@ def main():
                 f"Debug mode: {cfg.settings.debug}")
 
     main_window = MainWindow(program_info, updater, cfg, start_translation)
-    run_scheduled_update_check(main_window.setting_interface.check_for_updates, cfg)
-    main_window.show()
-    # Nuitka onefile 原生 splash 保持到主窗口就位，由 qfw 启动画面接力
+    run_scheduled_update_check(main_window.check_for_updates, cfg)
+    # Nuitka onefile 原生 splash 保持到 WebView2 窗口就位
     _dismiss_nuitka_splash()
     # 窗口已就绪，后台预热翻译服务/TTS，避免第一条消息现场加载
     _start_background_preload(cfg)
-    app.exec()
+    # 阻塞式启动 WebView2 窗口
+    main_window.run()
 
 
 if __name__ == "__main__":

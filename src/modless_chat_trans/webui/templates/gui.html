@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Modless Chat Trans</title>
+  <link rel="stylesheet" href="/static/css/win11.css">
+  <script type="module" src="/static/vendor/web-components.min.js"></script>
+  <script src="/static/js/app.js" defer></script>
+</head>
+<body>
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+    <symbol id="icon-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="icon-language" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
+    <symbol id="icon-view" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="icon-send" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+    <symbol id="icon-history" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></symbol>
+    <symbol id="icon-dictionary" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></symbol>
+    <symbol id="icon-filter" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
+    <symbol id="icon-power" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></symbol>
+    <symbol id="icon-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+    <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="icon-folder" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="icon-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="icon-github" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.75 2.69 1.25 3.35.95.1-.74.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.59.23 2.76.11 3.05.73.81 1.18 1.83 1.18 3.09 0 4.41-2.69 5.38-5.26 5.66.41.35.77 1.04.77 2.1 0 1.52-.01 2.74-.01 3.11 0 .31.21.68.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></symbol>
+    <symbol id="icon-mail" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22 6 12 13 2 6"/></symbol>
+    <symbol id="icon-people" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="icon-tag" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></symbol>
+    <symbol id="icon-certificate" viewBox="0 0 24 24"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></symbol>
+    <symbol id="icon-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <symbol id="icon-play" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></symbol>
+    <symbol id="icon-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></symbol>
+    <symbol id="icon-update" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></symbol>
+    <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v12"/><polyline points="6 11 12 17 18 11"/><line x1="4" y1="21" x2="20" y2="21"/></symbol>
+    <symbol id="icon-chevron-down" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="icon-chevron-up" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="icon-close" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="icon-menu" viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></symbol>
+  </svg>
+
+  <div class="app-root" id="appRoot">
+    <aside class="nav-pane" id="navPane">
+      <div class="nav-brand">
+        <div class="nav-brand-icon">
+          <img src="/static/img/icon.png" alt="">
+        </div>
+        <div class="nav-brand-title">Modless Chat Trans</div>
+      </div>
+      <div class="nav-scroll">
+        <nav class="nav-list" id="navList">
+          <a class="nav-item active" data-page="capture" href="#">
+            <svg class="icon nav-icon"><use href="#icon-message"/></svg>
+            <span class="nav-label" data-i18n="navCapture">消息捕获</span>
+          </a>
+          <a class="nav-item" data-page="translation" href="#">
+            <svg class="icon nav-icon"><use href="#icon-language"/></svg>
+            <span class="nav-label" data-i18n="navTranslation">翻译服务</span>
+          </a>
+          <a class="nav-item" data-page="presentation" href="#">
+            <svg class="icon nav-icon"><use href="#icon-view"/></svg>
+            <span class="nav-label" data-i18n="navPresentation">翻译结果显示</span>
+          </a>
+          <a class="nav-item" data-page="send" href="#">
+            <svg class="icon nav-icon"><use href="#icon-send"/></svg>
+            <span class="nav-label" data-i18n="navSend">发送消息</span>
+          </a>
+          <a class="nav-item" data-page="context" href="#">
+            <svg class="icon nav-icon"><use href="#icon-history"/></svg>
+            <span class="nav-label" data-i18n="navContext">上下文翻译</span>
+          </a>
+          <a class="nav-item" data-page="glossary" href="#">
+            <svg class="icon nav-icon"><use href="#icon-dictionary"/></svg>
+            <span class="nav-label" data-i18n="navGlossary">术语表</span>
+          </a>
+          <a class="nav-item" data-page="blacklist" href="#">
+            <svg class="icon nav-icon"><use href="#icon-filter"/></svg>
+            <span class="nav-label" data-i18n="navBlacklist">黑名单</span>
+          </a>
+          <a class="nav-item" data-page="start" href="#">
+            <svg class="icon nav-icon"><use href="#icon-power"/></svg>
+            <span class="nav-label" data-i18n="navStart">启动</span>
+          </a>
+        </nav>
+      </div>
+      <div class="nav-footer" id="navFooter">
+        <a class="nav-item" data-page="about" href="#">
+          <svg class="icon nav-icon"><use href="#icon-info"/></svg>
+          <span class="nav-label" data-i18n="navAbout">关于</span>
+        </a>
+        <a class="nav-item" data-page="settings" href="#">
+          <svg class="icon nav-icon"><use href="#icon-settings"/></svg>
+          <span class="nav-label" data-i18n="navSettings">设置</span>
+        </a>
+      </div>
+      <button type="button" class="nav-toggle" id="navToggle" aria-label="toggle navigation">
+        <svg class="icon"><use href="#icon-menu"/></svg>
+      </button>
+    </aside>
+
+    <main class="content-pane">
+
+      <section class="page active" id="page-capture">
+        <h2 class="page-title" data-i18n="captureTitle">消息捕获设置</h2>
+        <div class="form-grid">
+          <label class="form-label" data-i18n="logLocation">Minecraft 日志位置：</label>
+          <div class="form-control">
+            <div class="control-row">
+              <div class="win-input grow" id="capLogPath">
+                <input type="text" data-i18n-placeholder="logLocationPlaceholder" placeholder="请选择Minecraft日志文件夹路径">
+                <button type="button" class="input-clear" tabindex="-1" aria-label="clear">
+                  <svg class="icon"><use href="#icon-close"/></svg>
+                </button>
+              </div>
+              <button type="button" class="win-button win-button-secondary icon-only" id="capBrowseBtn" aria-label="browse">
+                <svg class="icon"><use href="#icon-folder"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <label class="form-label" data-i18n="srcLanguage">源语言：</label>
+          <div class="form-control">
+            <div class="win-input grow" id="capSrcInput">
+              <input type="text" data-i18n-placeholder="srcLangPlaceholder" placeholder="请输入源语言（格式不限，AI可智能识别；留空则自动检测）">
+              <button type="button" class="input-clear" tabindex="-1" aria-label="clear">
+                <svg class="icon"><use href="#icon-close"/></svg>
+              </button>
+            </div>
+            <select class="win-select grow" id="capSrcSelect" hidden>
+              <option value="" disabled data-i18n="srcLangSelectPlaceholder">请选择源语言</option>
+            </select>
+          </div>
+
+          <label class="form-label" data-i18n="tgtLanguage">目标语言：</label>
+          <div class="form-control">
+            <div class="win-input grow" id="capTgtInput">
+              <input type="text" data-i18n-placeholder="tgtLangPlaceholder" placeholder="请输入目标语言（格式不限，AI可智能识别）">
+              <button type="button" class="input-clear" tabindex="-1" aria-label="clear">
+                <svg class="icon"><use href="#icon-close"/></svg>
+              </button>
+            </div>
+            <select class="win-select grow" id="capTgtSelect" hidden>
+              <option value="" disabled data-i18n="tgtLangSelectPlaceholder">请选择目标语言</option>
+            </select>
+          </div>
+
+          <label class="form-label" data-i18n="logEncoding">日志编码：</label>
+          <div class="form-control">
+            <div class="control-row">
+              <div class="win-combobox" id="capEncoding" data-items='["auto","UTF-8","GBK","GB2312","GB18030","ISO-8859-1"]'>
+                <div class="combobox-field">
+                  <input type="text" class="combobox-input" autocomplete="off" value="auto">
+                  <button type="button" class="combobox-chevron" tabindex="-1" aria-label="expand">
+                    <svg class="icon"><use href="#icon-chevron-down"/></svg>
+                  </button>
+                </div>
+                <div class="combobox-popup" hidden></div>
+              </div>
+              <button type="button" class="help-button" data-tip="logEncodingHelp">
+                <svg class="icon"><use href="#icon-help"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <label class="form-label" data-i18n="monitorMode">监控模式：</label>
+          <div class="form-control">
+            <div class="control-row">
+              <label class="win-radio">
+                <input type="radio" name="capMode" value="efficient" checked>
+                <span class="radio-visual"><span class="radio-dot"></span></span>
+                <span class="radio-text" data-i18n="efficientMode">高效模式</span>
+              </label>
+              <label class="win-radio">
+                <input type="radio" name="capMode" value="compatible">
+                <span class="radio-visual"><span class="radio-dot"></span></span>
+                <span class="radio-text" data-i18n="compatibleMode">兼容模式</span>
+              </label>
+              <button type="button" class="help-button" data-tip="monitorModeHelp">
+                <svg class="icon"><use href="#icon-help"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-span">
+            <div class="control-row">
+              <label class="win-checkbox">
+                <input type="checkbox" id="capFilterServer">
+                <span class="checkbox-visual"><svg class="icon checkbox-check"><use href="#icon-check"/></svg></span>
+                <span class="checkbox-text" data-i18n="filterServerMessages">过滤服务器消息</span>
+              </label>
+              <button type="button" class="help-button" data-tip="filterServerHelp">
+                <svg class="icon"><use href="#icon-help"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-span">
+            <div class="control-row">
+              <label class="win-checkbox">
+                <input type="checkbox" id="capReplaceGarbled">
+                <span class="checkbox-visual"><svg class="icon checkbox-check"><use href="#icon-check"/></svg></span>
+                <span class="checkbox-text" data-i18n="replaceGarbled">替换乱码字符</span>
+              </label>
+              <button type="button" class="help-button" data-tip="replaceGarbledHelp">
+                <svg class="icon"><use href="#icon-help"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-translation">
+        <h2 class="page-title" data-i18n="translationTitle">翻译服务设置</h2>
+        <div class="translation-content">
+          <div class="win-tabbar" id="trTabBar" hidden>
+            <button type="button" class="tab-item active" id="trTabPlayer" data-i18n="playerServiceTab">玩家消息翻译服务</button>
+            <button type="button" class="tab-item" id="trTabSend" data-i18n="sendServiceTab">消息发送翻译服务</button>
+          </div>
+
+          <div class="service-panel" id="trPlayerPanel"></div>
+          <div class="service-panel" id="trSendPanel" hidden></div>
+
+          <div class="translation-bottom">
+            <label class="win-checkbox">
+              <input type="checkbox" id="trIndependent">
+              <span class="checkbox-visual"><svg class="icon checkbox-check"><use href="#icon-check"/></svg></span>
+              <span class="checkbox-text" data-i18n="independentService">独立设置消息发送翻译服务</span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-presentation">
+        <h2 class="page-title" data-i18n="presentationTitle">翻译结果显示</h2>
+        <div class="win-card" id="ttsCard">
+          <div class="card-title" data-i18n="ttsCardTitle">TTS 朗读设置</div>
+          <div class="tts-error" id="presTtsError" hidden></div>
+          <div class="form-grid">
+            <label class="form-label" data-i18n="ttsEnable">启用朗读：</label>
+            <div class="form-control">
+              <label class="win-switch">
+                <input type="checkbox" class="switch-input" id="presTtsEnable">
+                <span class="switch-visual"><span class="switch-thumb"></span></span>
+                <span class="switch-text" data-i18n="off">关闭</span>
+              </label>
+            </div>
+
+            <label class="form-label" data-i18n="ttsVoice">朗读语音：</label>
+            <div class="form-control">
+              <select class="win-select" id="presTtsVoice" style="width:280px">
+                <option value="" disabled selected data-i18n="ttsVoiceLoading">加载中...</option>
+              </select>
+            </div>
+
+            <label class="form-label" data-i18n="ttsSpeed">朗读语速：</label>
+            <div class="form-control">
+              <select class="win-select" id="presTtsSpeed" style="width:200px"></select>
+            </div>
+
+            <label class="form-label" data-i18n="ttsReadName">朗读玩家名：</label>
+            <div class="form-control">
+              <div class="control-row">
+                <label class="win-switch">
+                  <input type="checkbox" class="switch-input" id="presTtsReadName">
+                  <span class="switch-visual"><span class="switch-thumb"></span></span>
+                  <span class="switch-text" data-i18n="off">关闭</span>
+                </label>
+                <button type="button" class="help-button" data-tip="ttsReadNameHelp">
+                  <svg class="icon"><use href="#icon-help"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <label class="form-label"></label>
+            <div class="form-control">
+              <div class="control-row">
+                <button type="button" class="win-button win-button-accent" id="presTtsTestBtn" data-i18n="ttsTest">测试朗读</button>
+                <div class="win-spinner" id="presTtsTestSpinner" hidden></div>
+              </div>
+            </div>
+
+            <label class="form-label"></label>
+            <div class="form-control">
+              <span class="caption" id="presTtsStatus"></span>
+            </div>
+
+            <label class="form-label" data-i18n="preTts">Pre-TTS：</label>
+            <div class="form-control">
+              <div class="control-row">
+                <button type="button" class="win-button win-button-accent" id="presPreTtsBtn" data-i18n="preTtsTrigger">预合成热词音频</button>
+                <div class="win-progress" id="presPreTtsProgress" hidden>
+                  <div class="progress-fill" style="width:0%"></div>
+                </div>
+                <button type="button" class="win-button win-button-secondary" id="presPreTtsStopBtn" data-i18n="preTtsStop" hidden>停止</button>
+                <button type="button" class="win-button win-button-secondary" id="presPreTtsClearBtn" data-i18n="preTtsClear">清除音频</button>
+                <button type="button" class="help-button" data-tip="preTtsHelp">
+                  <svg class="icon"><use href="#icon-help"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <label class="form-label"></label>
+            <div class="form-control">
+              <span class="caption" id="presPreTtsStatus" data-i18n="preTtsIdle">手动预合成热门音频，朗读时自动命中</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid port-grid">
+          <label class="form-label" data-i18n="webPort">网页端口：</label>
+          <div class="form-control">
+            <div class="win-spinbox" id="presWebPort" data-min="1024" data-max="65535" data-step="1">
+              <input type="number" class="spinbox-input" value="8080">
+              <div class="spinbox-buttons">
+                <button type="button" class="spin-up" tabindex="-1"><svg class="icon"><use href="#icon-chevron-up"/></svg></button>
+                <button type="button" class="spin-down" tabindex="-1"><svg class="icon"><use href="#icon-chevron-down"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-send">
+        <h2 class="page-title" data-i18n="sendTitle">消息发送设置</h2>
+        <div class="form-grid">
+          <div class="form-span">
+            <div class="control-row">
+              <label class="win-checkbox">
+                <input type="checkbox" id="sendClipboard">
+                <span class="checkbox-visual"><svg class="icon checkbox-check"><use href="#icon-check"/></svg></span>
+                <span class="checkbox-text" data-i18n="monitorClipboard">监控剪切板</span>
+              </label>
+              <button type="button" class="help-button" data-tip="monitorClipboardHelp">
+                <svg class="icon"><use href="#icon-help"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <label class="form-label" data-i18n="srcLanguage">源语言：</label>
+          <div class="form-control">
+            <div class="win-input grow" id="sendSrcInput">
+              <input type="text" data-i18n-placeholder="srcLangPlaceholder" placeholder="请输入源语言（格式不限，AI可智能识别；留空则自动检测）">
+              <button type="button" class="input-clear" tabindex="-1" aria-label="clear">
+                <svg class="icon"><use href="#icon-close"/></svg>
+              </button>
+            </div>
+            <select class="win-select grow" id="sendSrcSelect" hidden>
+              <option value="" disabled data-i18n="srcLangSelectPlaceholder">请选择源语言</option>
+            </select>
+          </div>
+
+          <label class="form-label" data-i18n="tgtLanguage">目标语言：</label>
+          <div class="form-control">
+            <div class="win-input grow" id="sendTgtInput">
+              <input type="text" data-i18n-placeholder="tgtLangPlaceholder" placeholder="请输入目标语言（格式不限，AI可智能识别）">
+              <button type="button" class="input-clear" tabindex="-1" aria-label="clear">
+                <svg class="icon"><use href="#icon-close"/></svg>
+              </button>
+            </div>
+            <select class="win-select grow" id="sendTgtSelect" hidden>
+              <option value="" disabled data-i18n="tgtLangSelectPlaceholder">请选择目标语言</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-context">
+        <h2 class="page-title" data-i18n="contextTitle">上下文翻译设置</h2>
+        <div class="form-grid">
+          <label class="form-label" data-i18n="contextStrategy">上下文分割策略：</label>
+          <div class="form-control">
+            <div class="control-row">
+              <select class="win-select" id="ctxStrategy" style="width:200px"></select>
+              <button type="button" class="help-button" data-tip="contextStrategyHelp">
+                <svg class="icon"><use href="#icon-help"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <label class="form-label" data-i18n="contextLength">最大保留历史条数：</label>
+          <div class="form-control">
+            <div class="control-row">
+              <div class="win-spinbox" id="ctxLength" data-min="0" data-max="999" data-step="1">
+                <input type="number" class="spinbox-input" value="10">
+                <div class="spinbox-buttons">
+                  <button type="button" class="spin-up" tabindex="-1"><svg class="icon"><use href="#icon-chevron-up"/></svg></button>
+                  <button type="button" class="spin-down" tabindex="-1"><svg class="icon"><use href="#icon-chevron-down"/></svg></button>
+                </div>
+              </div>
+              <button type="button" class="help-button" data-tip="contextLengthHelp">
+                <svg class="icon"><use href="#icon-help"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <label class="form-label" data-i18n="contextTimeout">时间跨度阈值(秒)：</label>
+          <div class="form-control">
+            <div class="control-row">
+              <div class="win-spinbox" id="ctxTimeout" data-min="0" data-max="9999" data-step="0.1">
+                <input type="number" class="spinbox-input" value="120">
+                <div class="spinbox-buttons">
+                  <button type="button" class="spin-up" tabindex="-1"><svg class="icon"><use href="#icon-chevron-up"/></svg></button>
+                  <button type="button" class="spin-down" tabindex="-1"><svg class="icon"><use href="#icon-chevron-down"/></svg></button>
+                </div>
+              </div>
+              <button type="button" class="help-button" data-tip="contextTimeoutHelp">
+                <svg class="icon"><use href="#icon-help"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <label class="form-label" data-i18n="contextTruncation">分块截断大小：</label>
+          <div class="form-control">
+            <div class="control-row">
+              <select class="win-select" id="ctxTruncMode" style="width:120px"></select>
+              <div class="win-spinbox" id="ctxTruncValue" data-min="1" data-max="999" data-step="1" hidden>
+                <input type="number" class="spinbox-input" value="1">
+                <div class="spinbox-buttons">
+                  <button type="button" class="spin-up" tabindex="-1"><svg class="icon"><use href="#icon-chevron-up"/></svg></button>
+                  <button type="button" class="spin-down" tabindex="-1"><svg class="icon"><use href="#icon-chevron-down"/></svg></button>
+                </div>
+              </div>
+              <button type="button" class="help-button" data-tip="contextTruncHelp">
+                <svg class="icon"><use href="#icon-help"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-glossary">
+        <h2 class="page-title" data-i18n="glossaryTitle">术语表管理</h2>
+        <div class="glossary-inputs">
+          <label class="form-label" data-i18n="glossarySrc">源术语：</label>
+          <div class="win-input grow" id="glossSrc">
+            <input type="text" data-i18n-placeholder="glossarySrcPlaceholder" placeholder="请输入源术语">
+            <button type="button" class="input-clear" tabindex="-1" aria-label="clear">
+              <svg class="icon"><use href="#icon-close"/></svg>
+            </button>
+          </div>
+          <button type="button" class="win-button win-button-accent" id="glossAddBtn" data-i18n="glossaryAddUpdate">添加/更新术语</button>
+
+          <label class="form-label" data-i18n="glossaryTgt">目标术语：</label>
+          <div class="win-input grow" id="glossTgt">
+            <input type="text" data-i18n-placeholder="glossaryTgtPlaceholder" placeholder="请输入目标术语">
+            <button type="button" class="input-clear" tabindex="-1" aria-label="clear">
+              <svg class="icon"><use href="#icon-close"/></svg>
+            </button>
+          </div>
+          <button type="button" class="win-button win-button-secondary" id="glossClearInputBtn" data-i18n="clearInput">清空输入</button>
+        </div>
+
+        <div class="win-table grow" id="glossTable">
+          <div class="win-table-header">
+            <div class="win-table-row head-row">
+              <span class="col col-a" data-i18n="glossarySrcHeader">源术语</span>
+              <span class="col col-a" data-i18n="glossaryTgtHeader">目标术语</span>
+            </div>
+          </div>
+          <div class="win-table-body" id="glossTableBody"></div>
+        </div>
+
+        <div class="table-footer">
+          <button type="button" class="win-button win-button-secondary" id="glossDeleteBtn" data-i18n="glossaryDelete" disabled>删除选中术语</button>
+          <span class="spacer"></span>
+          <button type="button" class="win-button win-button-secondary" id="glossClearAllBtn" data-i18n="glossaryClearAll">清空术语</button>
+        </div>
+      </section>
+
+      <section class="page" id="page-blacklist">
+        <h2 class="page-title" data-i18n="blacklistTitle">黑名单设置</h2>
+        <div class="win-tabbar" id="blTabBar">
+          <button type="button" class="tab-item active" id="blTabUsers" data-i18n="userBlacklistTab">用户黑名单</button>
+          <button type="button" class="tab-item" id="blTabMessages" data-i18n="messageBlacklistTab">消息内容黑名单</button>
+        </div>
+
+        <div class="blacklist-panel" id="blUsersPanel">
+          <p class="desc-text" data-i18n="userBlacklistDesc">用户黑名单中的玩家发送的消息将不会被翻译。支持批量添加，每行一个玩家名称。黑名单使用净化后的玩家名称进行完全匹配（区分大小写）。</p>
+          <div class="blacklist-input-area">
+            <textarea class="win-textarea" id="blUsersInput" data-i18n-placeholder="userInputPlaceholder" placeholder="请输入玩家名称，每行一个&#10;例如：&#10;Notch&#10;Herobrine&#10;Steve" rows="5"></textarea>
+            <div class="button-row">
+              <button type="button" class="win-button win-button-accent" id="blAddUsersBtn" data-i18n="addUsers">添加用户</button>
+              <button type="button" class="win-button win-button-secondary" id="blClearUsersInputBtn" data-i18n="clearInput">清空输入</button>
+            </div>
+          </div>
+          <div class="win-table grow" id="blUsersTable">
+            <div class="win-table-header">
+              <div class="win-table-row head-row">
+                <span class="col" data-i18n="playerNameHeader">玩家名称</span>
+              </div>
+            </div>
+            <div class="win-table-body" id="blUsersTableBody"></div>
+          </div>
+          <div class="table-footer">
+            <button type="button" class="win-button win-button-secondary" id="blDeleteUserBtn" data-i18n="deleteSelectedUser" disabled>删除选中用户</button>
+            <span class="spacer"></span>
+            <button type="button" class="win-button win-button-secondary" id="blClearAllUsersBtn" data-i18n="clearAllUsers">清空所有用户</button>
+          </div>
+        </div>
+
+        <div class="blacklist-panel" id="blMessagesPanel" hidden>
+          <p class="desc-text" data-i18n="messageBlacklistDesc">消息内容黑名单用于过滤特定内容的消息。如果选择"使用正则表达式"，则按正则表达式匹配；否则按关键词匹配（消息包含任意关键词即命中）。</p>
+          <div class="blacklist-input-area message-area">
+            <label class="form-label" data-i18n="rule">规则：</label>
+            <div class="win-input grow" id="blPattern">
+              <input type="text" data-i18n-placeholder="rulePlaceholder" placeholder="请输入正则表达式或关键词">
+              <button type="button" class="input-clear" tabindex="-1" aria-label="clear">
+                <svg class="icon"><use href="#icon-close"/></svg>
+              </button>
+            </div>
+            <label class="win-checkbox">
+              <input type="checkbox" id="blRegex">
+              <span class="checkbox-visual"><svg class="icon checkbox-check"><use href="#icon-check"/></svg></span>
+              <span class="checkbox-text" data-i18n="useRegex">使用正则表达式</span>
+            </label>
+            <button type="button" class="win-button win-button-accent" id="blAddRuleBtn" data-i18n="addRule">添加规则</button>
+            <button type="button" class="win-button win-button-secondary" id="blClearPatternBtn" data-i18n="clearInput">清空输入</button>
+          </div>
+          <div class="win-table grow" id="blMsgTable">
+            <div class="win-table-header">
+              <div class="win-table-row head-row">
+                <span class="col col-b" data-i18n="ruleHeader">规则</span>
+                <span class="col col-c" data-i18n="typeHeader">类型</span>
+              </div>
+            </div>
+            <div class="win-table-body" id="blMsgTableBody"></div>
+          </div>
+          <div class="table-footer">
+            <button type="button" class="win-button win-button-secondary" id="blDeleteRuleBtn" data-i18n="deleteSelectedRule" disabled>删除选中规则</button>
+            <span class="spacer"></span>
+            <button type="button" class="win-button win-button-secondary" id="blClearAllRulesBtn" data-i18n="clearAllRules">清空所有规则</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-start">
+        <h2 class="page-title" data-i18n="startTitle">启动</h2>
+        <div class="win-card" id="startControlCard">
+          <div class="start-row">
+            <button type="button" class="win-button win-button-accent" id="stStartBtn">
+              <svg class="icon"><use href="#icon-play"/></svg>
+              <span data-i18n="startTitle">启动</span>
+              <svg class="icon btn-chevron"><use href="#icon-chevron-down"/></svg>
+            </button>
+            <button type="button" class="win-button win-button-secondary" id="stSaveBtn">
+              <svg class="icon"><use href="#icon-save"/></svg>
+              <span data-i18n="saveConfig">保存配置</span>
+            </button>
+            <span class="spacer"></span>
+            <span class="status-pill" id="stStatusPill"></span>
+          </div>
+        </div>
+
+        <div class="win-card" id="stAccessCard" hidden>
+          <div class="card-title-row">
+            <svg class="icon card-title-icon"><use href="#icon-link"/></svg>
+            <div class="card-title" data-i18n="webAccessTitle">Web访问链接</div>
+          </div>
+          <p class="desc-text" data-i18n="webAccessDesc">请通过以下任一链接打开网页界面，查看翻译并即时发送消息</p>
+          <div class="link-list" id="stAccessLinks"></div>
+        </div>
+
+        <div class="start-menu" id="stStartMenu" hidden>
+          <button type="button" class="menu-item" id="stDirectStart">
+            <svg class="icon"><use href="#icon-play"/></svg>
+            <span data-i18n="startDirect">直接启动</span>
+          </button>
+          <button type="button" class="menu-item" id="stSaveAndStart">
+            <svg class="icon"><use href="#icon-save"/></svg>
+            <span data-i18n="saveAndStart">保存配置并启动</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="page" id="page-about">
+        <h2 class="page-title" data-i18n="navAbout">关于</h2>
+        <div class="about-stack">
+          <div class="win-card elevated about-title-card">
+            <div class="about-title-row">
+              <div class="about-icon">
+                <img src="/static/img/icon.png" alt="">
+              </div>
+              <div class="about-title-text">Modless Chat Trans</div>
+            </div>
+            <div class="about-subtitle">ModlessChatTransは、高性能ですから！</div>
+          </div>
+
+          <div class="win-card">
+            <div class="card-title" data-i18n="appInfo">应用信息</div>
+            <div class="about-info-row">
+              <svg class="icon about-info-icon"><use href="#icon-tag"/></svg>
+              <span class="about-info-label" data-i18n="versionLabel">版本</span>
+              <span class="about-info-value" id="aboutVersion"></span>
+            </div>
+            <div class="about-info-row">
+              <svg class="icon about-info-icon"><use href="#icon-people"/></svg>
+              <span class="about-info-label" data-i18n="authorLabel">作者</span>
+              <span class="about-info-value" id="aboutAuthor"></span>
+            </div>
+            <div class="about-info-row">
+              <svg class="icon about-info-icon"><use href="#icon-mail"/></svg>
+              <span class="about-info-label" data-i18n="emailLabel">邮箱</span>
+              <span class="about-info-value" id="aboutEmail"></span>
+            </div>
+          </div>
+
+          <div class="win-card">
+            <div class="card-title" data-i18n="relatedLinks">相关链接</div>
+            <div class="about-info-row">
+              <svg class="icon about-info-icon"><use href="#icon-github"/></svg>
+              <span class="about-info-label">GitHub</span>
+              <a class="hyperlink" id="aboutGithub" href="#" data-external></a>
+            </div>
+          </div>
+
+          <div class="win-card">
+            <div class="card-title" data-i18n="licenseTitle">许可证</div>
+            <div class="about-info-row">
+              <svg class="icon about-info-icon"><use href="#icon-certificate"/></svg>
+              <a class="hyperlink" id="aboutLicense" href="#" data-external></a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-settings">
+        <h2 class="page-title" data-i18n="settingsTitle">设置</h2>
+        <div class="settings-stack">
+          <div class="win-card">
+            <div class="card-title" data-i18n="languageSettings">语言设置</div>
+            <div class="form-grid settings-grid">
+              <label class="form-label" data-i18n="interfaceLanguage">界面语言：</label>
+              <div class="form-control">
+                <div class="control-row">
+                  <select class="win-select" id="seLangSelect" style="width:200px"></select>
+                  <button type="button" class="win-button win-button-accent" id="seLangSaveBtn" data-i18n="save">保存</button>
+                </div>
+              </div>
+              <span class="form-span caption" data-i18n="languageRestartTip">* 语言更改将在重启后生效</span>
+            </div>
+          </div>
+
+          <div class="win-card">
+            <div class="card-title" data-i18n="updateSettings">更新设置</div>
+            <div class="form-grid settings-grid">
+              <label class="form-label" data-i18n="autoCheck">自动检查：</label>
+              <div class="form-control">
+                <select class="win-select" id="seFreqSelect" style="width:200px"></select>
+              </div>
+
+              <label class="form-label" data-i18n="prerelease">预发布版本：</label>
+              <div class="form-control">
+                <label class="win-checkbox">
+                  <input type="checkbox" id="seIncludePrerelease">
+                  <span class="checkbox-visual"><svg class="icon checkbox-check"><use href="#icon-check"/></svg></span>
+                  <span class="checkbox-text" data-i18n="includePrerelease">包含预发布版本</span>
+                </label>
+              </div>
+
+              <label class="form-label" data-i18n="manualCheck">手动检查：</label>
+              <div class="form-control">
+                <div class="control-row">
+                  <button type="button" class="win-button win-button-secondary" id="seCheckUpdateBtn">
+                    <svg class="icon"><use href="#icon-update"/></svg>
+                    <span data-i18n="checkUpdate">检查更新</span>
+                  </button>
+                  <div class="win-spinner" id="seUpdateSpinner" hidden></div>
+                  <span class="caption error-text" id="seUpdaterWarn" data-i18n="updaterUnavailable" hidden>⚠ 更新依赖不可用</span>
+                </div>
+              </div>
+
+              <label class="form-label" data-i18n="currentVersion">当前版本：</label>
+              <div class="form-control">
+                <span class="body-text" id="seCurrentVersion"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="win-card">
+            <div class="card-title" data-i18n="cacheManagement">缓存管理</div>
+            <div class="form-grid settings-grid">
+              <label class="form-label" data-i18n="clearCache">清除缓存：</label>
+              <div class="form-control">
+                <button type="button" class="win-button win-button-secondary" id="seClearCacheBtn" data-i18n="clearUnusedCache">清理不常用缓存</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+
+  <div class="teaching-tip" id="teachingTip" hidden>
+    <div class="teaching-tip-tail"></div>
+    <div class="teaching-tip-content">
+      <div class="teaching-tip-body">
+        <div class="teaching-tip-icon">
+          <svg class="icon"><use href="#icon-info"/></svg>
+        </div>
+        <div class="teaching-tip-text" id="teachingTipText"></div>
+      </div>
+      <button type="button" class="teaching-tip-close" id="teachingTipClose" aria-label="close">
+        <svg class="icon"><use href="#icon-close"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <dialog class="win-dialog" id="confirmDialog">
+    <div class="dialog-body">
+      <div class="dialog-title" id="confirmTitle"></div>
+      <div class="dialog-content" id="confirmContent"></div>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="win-button win-button-secondary" id="confirmSecondary"></button>
+      <button type="button" class="win-button win-button-accent" id="confirmPrimary"></button>
+    </div>
+  </dialog>
+
+  <dialog class="win-dialog" id="infoDialog">
+    <div class="dialog-body">
+      <div class="dialog-title" id="infoTitle"></div>
+      <div class="dialog-content" id="infoContent"></div>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="win-button win-button-accent" id="infoOk"></button>
+    </div>
+  </dialog>
+
+  <dialog class="win-dialog win-dialog-lg" id="updateDialog">
+    <div class="dialog-body">
+      <div class="dialog-title" data-i18n="updateAvailable">发现新版本</div>
+      <div class="win-card update-version-card">
+        <div class="card-title" data-i18n="versionInfo">版本信息</div>
+        <div class="update-info-grid">
+          <span class="update-info-label" data-i18n="currentVersion">当前版本：</span>
+          <span class="update-info-value" id="updCurrentVersion"></span>
+          <span class="update-info-label" data-i18n="latestVersion">最新版本：</span>
+          <span class="update-info-value accent-text" id="updLatestVersion"></span>
+          <span class="update-info-label" data-i18n="publishTime">发布时间：</span>
+          <span class="update-info-value" id="updPublishTime"></span>
+          <span class="update-info-label" data-i18n="publisher">发布者：</span>
+          <span class="update-info-value" id="updPublisher"></span>
+          <span class="update-info-label" data-i18n="versionType">版本类型：</span>
+          <span class="update-info-value error-text" id="updPrerelease" hidden data-i18n="prereleaseTag">预发布版本</span>
+        </div>
+      </div>
+      <div class="win-card update-notes-card">
+        <div class="card-title" data-i18n="releaseNotes">更新说明</div>
+        <div class="release-notes" id="updNotes"></div>
+        <div class="notes-link-row">
+          <a class="hyperlink" id="updFullNotes" href="#" data-external data-i18n="viewFullNotes">在 GitHub 上查看完整说明</a>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="win-button win-button-secondary" id="updSkipBtn" data-i18n="skipUpdate">暂不更新</button>
+      <button type="button" class="win-button win-button-accent" id="updDownloadBtn" data-i18n="downloadUpdate">下载更新</button>
+    </div>
+  </dialog>
+
+  <dialog class="win-dialog" id="downloadDialog">
+    <div class="dialog-body">
+      <div class="dialog-title" id="dlTitle" data-i18n="downloadingUpdate">正在下载更新</div>
+      <div class="body-text" id="dlVersion"></div>
+      <div class="win-progress dl-progress" id="dlProgress">
+        <div class="progress-fill" style="width:0%"></div>
+      </div>
+      <div class="download-info">
+        <div class="dl-percent" id="dlPercent">0%</div>
+        <div class="dl-details">
+          <div class="dl-row">
+            <span class="dl-label" data-i18n="downloadProgress">下载进度：</span>
+            <span class="dl-value" id="dlSize"></span>
+          </div>
+          <div class="dl-row">
+            <span class="dl-label" data-i18n="downloadSpeed">下载速度：</span>
+            <span class="dl-value" id="dlSpeed"></span>
+          </div>
+          <div class="dl-row">
+            <span class="dl-label" data-i18n="remainingTime">剩余时间：</span>
+            <span class="dl-value" id="dlTime" data-i18n="calculating">计算中...</span>
+          </div>
+          <div class="dl-row">
+            <span class="dl-label" data-i18n="downloadMethod">下载方式：</span>
+            <span class="dl-value" id="dlThreads" data-i18n="detecting">检测中...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="win-button win-button-secondary" id="dlCancelBtn" data-i18n="cancel">取消</button>
+    </div>
+  </dialog>
+
+</body>
+</html>
