@@ -20,7 +20,7 @@ import uuid
 import hmac
 import base64
 import hashlib
-from email.utils import formatdate
+import time
 from enum import Enum
 from typing import Dict, Callable, Set
 from urllib.parse import quote
@@ -35,6 +35,26 @@ def _http():
     """懒加载 requests，避免拖慢程序启动"""
     import requests
     return requests
+
+
+_WEEKDAY_NAMES = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+_MONTH_NAMES = ("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+
+def _format_http_date() -> str:
+    """RFC 1123 GMT 日期（等价于 email.utils.formatdate(usegmt=True)），
+    用固定英文名称避免 locale 影响。"""
+    now = time.gmtime()
+    return "%s, %02d %s %04d %02d:%02d:%02d GMT" % (
+        _WEEKDAY_NAMES[now.tm_wday],
+        now.tm_mday,
+        _MONTH_NAMES[now.tm_mon - 1],
+        now.tm_year,
+        now.tm_hour,
+        now.tm_min,
+        now.tm_sec,
+    )
 
 
 class MessageType(Enum):
@@ -1693,7 +1713,7 @@ class Translator:
 
         host = "itrans.xf-yun.com"
         path = "/v1/its"
-        date = formatdate(usegmt=True)
+        date = _format_http_date()
         request_line = "POST /v1/its HTTP/1.1"
         signature_origin = f"host: {host}\ndate: {date}\n{request_line}"
         signature = base64.b64encode(

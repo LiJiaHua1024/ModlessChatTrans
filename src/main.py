@@ -61,7 +61,7 @@ def _preflight_check() -> list[tuple[str, str, str]]:
 
 def _show_fatal_error_and_exit(missing: list[tuple[str, str, str]]) -> None:
     """
-    以友好方式展示致命错误，按 Windows 原生消息框 → tkinter → 控制台 顺序降级。
+    以友好方式展示致命错误，按 Windows 原生消息框 → 控制台 顺序降级。
     展示后调用 sys.exit(1) 终止进程。
     """
     title = "ModlessChatTrans — 启动失败"
@@ -82,18 +82,6 @@ def _show_fatal_error_and_exit(missing: list[tuple[str, str, str]]) -> None:
             title,
             0x10 | 0x0,  # MB_ICONERROR | MB_OK
         )
-        sys.exit(1)
-    except Exception:
-        pass
-
-    # ── 尝试 tkinter 对话框（stdlib，通常随 Python 安装）──────────────
-    try:
-        import tkinter as _tk
-        from tkinter import messagebox as _mb
-        _root = _tk.Tk()
-        _root.withdraw()
-        _mb.showerror(title, full_msg)
-        _root.destroy()
         sys.exit(1)
     except Exception:
         pass
