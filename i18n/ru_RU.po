@@ -1255,3 +1255,113 @@ msgstr "Копировать"
 msgid "朗读"
 msgstr "Читать вслух"
 
+#: main.py:275 main.py:295
+msgid "翻译失败，未生成翻译结果。"
+msgstr "Ошибка перевода, результат не сгенерирован."
+
+#: modless_chat_trans/interface.py:1024
+msgid "Yandex Folder ID："
+msgstr "ID каталога Yandex:"
+
+#: modless_chat_trans/interface.py:1026
+msgid "仅 Yandex Cloud 需要"
+msgstr "Требуется только для Yandex Cloud"
+
+#: modless_chat_trans/interface.py:1029
+msgid "Azure 区域（可选）："
+msgstr "Регион Azure (необязательно):"
+
+#: modless_chat_trans/interface.py:1031
+msgid "仅区域或多服务 Azure 资源需要"
+msgstr "Требуется только для региональных или мультисервисных ресурсов Azure"
+
+#: modless_chat_trans/interface.py:1428
+msgid "Pre-TTS："
+msgstr "Pre-TTS:"
+
+#: modless_chat_trans/interface.py:1433
+msgid "预合成热词音频"
+msgstr "Предварительный синтез аудио для популярных слов"
+
+#: modless_chat_trans/interface.py:1445
+msgid "停止"
+msgstr "Стоп"
+
+#: modless_chat_trans/interface.py:1450
+msgid "清除音频"
+msgstr "Очистить аудио"
+
+#: modless_chat_trans/interface.py:1458
+msgid ""
+"扫描翻译缓存中的热门译文并预合成音频，避免重复合成以减少加载时间。\n"
+"朗读时自动使用已预合成的音频，未命中则正常合成。\n"
+"开启\"朗读玩家名\"时不可用。"
+msgstr "Сканирует популярные переводы в кэше и предварительно синтезирует аудио, чтобы избежать повторного синтеза и сократить время загрузки.\nАвтоматически использует предварительно синтезированное аудио при чтении; при промахе выполняется обычный синтез.\nНедоступно, если включена опция «Читать имя игрока»."
+
+#: modless_chat_trans/interface.py:1470 modless_chat_trans/interface.py:1719
+msgid "手动预合成热门音频，朗读时自动命中"
+msgstr "Вручную предварительно синтезировать популярное аудио; автоматически используется при чтении"
+
+#: modless_chat_trans/interface.py:1676 modless_chat_trans/interface.py:1704
+msgid "开启\"朗读玩家名\"后，Pre-TTS 不可用"
+msgstr "Pre-TTS недоступно, если включена опция «Читать имя игрока»"
+
+#: modless_chat_trans/interface.py:1697
+#, python-brace-format
+msgid "正在预合成 {}/{}..."
+msgstr "Предварительный синтез {}/{}..."
+
+#: modless_chat_trans/interface.py:1714
+#, python-brace-format
+msgid "本次预合成 {} 条，跳过 {} 条；共 {} 条音频（{:.1f} MB）"
+msgstr "В этот раз предварительно синтезировано {}, пропущено {}; всего аудио: {} ({:.1f} МБ)"
+
+#: modless_chat_trans/interface.py:1728 modless_chat_trans/interface.py:1739
+msgid "Pre-TTS 不可用"
+msgstr "Pre-TTS недоступно"
+
+#: modless_chat_trans/interface.py:1729
+msgid "Pre-TTS 引擎加载失败"
+msgstr "Не удалось загрузить движок Pre-TTS"
+
+#: modless_chat_trans/interface.py:1740
+msgid "配置尚未初始化"
+msgstr "Конфигурация еще не инициализирована"
+
+#: modless_chat_trans/interface.py:1752
+msgid "Pre-TTS 失败"
+msgstr "Ошибка Pre-TTS"
+
+#: modless_chat_trans/interface.py:1753
+msgid "启动预合成失败（TTS 依赖不可用或已在运行）"
+msgstr "Не удалось запустить предварительный синтез (зависимости TTS недоступны или уже запущены)"
+
+#: modless_chat_trans/interface.py:1766
+msgid "正在扫描翻译缓存..."
+msgstr "Сканирование кэша переводов..."
+
+#: modless_chat_trans/interface.py:1775
+msgid "正在停止..."
+msgstr "Остановка..."
+
+#: modless_chat_trans/interface.py:1796
+msgid "将清除所有已预合成的 Pre-TTS 音频。此操作不可恢复。"
+msgstr "Все предварительно синтезированные аудио Pre-TTS будут очищены. Это действие нельзя отменить."
+
+#: modless_chat_trans/interface.py:1806
+msgid "清除 Pre-TTS 音频时出错"
+msgstr "Ошибка при очистке аудио Pre-TTS"
+
+#: modless_chat_trans/interface.py:1816
+msgid "尚未预合成任何 Pre-TTS 音频"
+msgstr "Аудио Pre-TTS еще не было предварительно синтезировано"
+
+#: modless_chat_trans/interface.py:1826
+#, python-brace-format
+msgid "已清除 {} 条 Pre-TTS 音频"
+msgstr "Очищено {} аудио Pre-TTS"
+
+#: modless_chat_trans/web_display.py:209
+msgid "翻译超时，请稍后重试。"
+msgstr "Время ожидания перевода истекло, повторите попытку позже."
+

@@ -1268,3 +1268,113 @@ msgstr "Copiar"
 msgid "朗读"
 msgstr "Leer en voz alta"
 
+#: main.py:275 main.py:295
+msgid "翻译失败，未生成翻译结果。"
+msgstr "Error de traducción, no se generó ningún resultado."
+
+#: modless_chat_trans/interface.py:1024
+msgid "Yandex Folder ID："
+msgstr "Yandex Folder ID:"
+
+#: modless_chat_trans/interface.py:1026
+msgid "仅 Yandex Cloud 需要"
+msgstr "Solo requerido para Yandex Cloud"
+
+#: modless_chat_trans/interface.py:1029
+msgid "Azure 区域（可选）："
+msgstr "Región de Azure (Opcional):"
+
+#: modless_chat_trans/interface.py:1031
+msgid "仅区域或多服务 Azure 资源需要"
+msgstr "Solo requerido para recursos de Azure regionales o multiservicio"
+
+#: modless_chat_trans/interface.py:1428
+msgid "Pre-TTS："
+msgstr "Pre-TTS:"
+
+#: modless_chat_trans/interface.py:1433
+msgid "预合成热词音频"
+msgstr "Presintetizar audio de palabras frecuentes"
+
+#: modless_chat_trans/interface.py:1445
+msgid "停止"
+msgstr "Detener"
+
+#: modless_chat_trans/interface.py:1450
+msgid "清除音频"
+msgstr "Borrar audio"
+
+#: modless_chat_trans/interface.py:1458
+msgid ""
+"扫描翻译缓存中的热门译文并预合成音频，避免重复合成以减少加载时间。\n"
+"朗读时自动使用已预合成的音频，未命中则正常合成。\n"
+"开启\"朗读玩家名\"时不可用。"
+msgstr "Escanea las traducciones populares en el caché y presintetiza el audio para evitar la síntesis repetida y reducir el tiempo de carga.\nUsa automáticamente el audio presintetizado al leer; recurre a la síntesis normal si no se encuentra.\nNo disponible cuando \"Leer nombre del jugador\" está activado."
+
+#: modless_chat_trans/interface.py:1470 modless_chat_trans/interface.py:1719
+msgid "手动预合成热门音频，朗读时自动命中"
+msgstr "Presintetizar manualmente audio popular; se usa automáticamente al leer"
+
+#: modless_chat_trans/interface.py:1676 modless_chat_trans/interface.py:1704
+msgid "开启\"朗读玩家名\"后，Pre-TTS 不可用"
+msgstr "Pre-TTS no está disponible cuando \"Leer nombre del jugador\" está activado"
+
+#: modless_chat_trans/interface.py:1697
+#, python-brace-format
+msgid "正在预合成 {}/{}..."
+msgstr "Presintetizando {}/{}..."
+
+#: modless_chat_trans/interface.py:1714
+#, python-brace-format
+msgid "本次预合成 {} 条，跳过 {} 条；共 {} 条音频（{:.1f} MB）"
+msgstr "Presintetizados {}, omitidos {}; total {} audios ({:.1f} MB)"
+
+#: modless_chat_trans/interface.py:1728 modless_chat_trans/interface.py:1739
+msgid "Pre-TTS 不可用"
+msgstr "Pre-TTS No disponible"
+
+#: modless_chat_trans/interface.py:1729
+msgid "Pre-TTS 引擎加载失败"
+msgstr "Error al cargar el motor Pre-TTS"
+
+#: modless_chat_trans/interface.py:1740
+msgid "配置尚未初始化"
+msgstr "Configuración aún no inicializada"
+
+#: modless_chat_trans/interface.py:1752
+msgid "Pre-TTS 失败"
+msgstr "Error en Pre-TTS"
+
+#: modless_chat_trans/interface.py:1753
+msgid "启动预合成失败（TTS 依赖不可用或已在运行）"
+msgstr "Error al iniciar la presíntesis (dependencias de TTS no disponibles o ya en ejecución)"
+
+#: modless_chat_trans/interface.py:1766
+msgid "正在扫描翻译缓存..."
+msgstr "Escaneando caché de traducción..."
+
+#: modless_chat_trans/interface.py:1775
+msgid "正在停止..."
+msgstr "Deteniendo..."
+
+#: modless_chat_trans/interface.py:1796
+msgid "将清除所有已预合成的 Pre-TTS 音频。此操作不可恢复。"
+msgstr "Se borrarán todos los audios presintetizados de Pre-TTS. Esta operación no se puede deshacer."
+
+#: modless_chat_trans/interface.py:1806
+msgid "清除 Pre-TTS 音频时出错"
+msgstr "Error al borrar el audio de Pre-TTS"
+
+#: modless_chat_trans/interface.py:1816
+msgid "尚未预合成任何 Pre-TTS 音频"
+msgstr "Aún no se ha presintetizado ningún audio de Pre-TTS"
+
+#: modless_chat_trans/interface.py:1826
+#, python-brace-format
+msgid "已清除 {} 条 Pre-TTS 音频"
+msgstr "Se borraron {} audios de Pre-TTS"
+
+#: modless_chat_trans/web_display.py:209
+msgid "翻译超时，请稍后重试。"
+msgstr "Tiempo de espera de traducción agotado, inténtelo de nuevo más tarde."
+
