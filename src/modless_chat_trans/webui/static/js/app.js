@@ -897,14 +897,14 @@ function buildServicePanel(kind, section) {
       </div>
     </div>
     <label class="form-label" id="tr${P}TradFolderLabel">${t("yandexFolderId")}</label>
-    <div class="form-control">
+    <div class="form-control" id="tr${P}TradFolderRow">
       <div class="win-input" id="tr${P}TradFolderId" style="width:300px">
         <input type="text" placeholder="${t("yandexFolderIdPlaceholder")}">
         <button type="button" class="input-clear" tabindex="-1"><svg class="icon"><use href="#icon-close"/></svg></button>
       </div>
     </div>
     <label class="form-label" id="tr${P}TradRegionLabel">${t("azureRegion")}</label>
-    <div class="form-control">
+    <div class="form-control" id="tr${P}TradRegionRow">
       <div class="win-input" id="tr${P}TradRegion" style="width:300px">
         <input type="text" placeholder="${t("azureRegionPlaceholder")}">
         <button type="button" class="input-clear" tabindex="-1"><svg class="icon"><use href="#icon-close"/></svg></button>
@@ -1024,9 +1024,9 @@ function updateTradExtraFields(kind, serviceName) {
   const isYandex = lower === "yandex";
   const isBing = lower === "bing";
   $("#tr" + P + "TradFolderLabel").hidden = !isYandex;
-  $("#tr" + P + "TradFolderId").hidden = !isYandex;
+  $("#tr" + P + "TradFolderRow").hidden = !isYandex;
   $("#tr" + P + "TradRegionLabel").hidden = !isBing;
-  $("#tr" + P + "TradRegion").hidden = !isBing;
+  $("#tr" + P + "TradRegionRow").hidden = !isBing;
 }
 
 function rebuildServicePanels() {
