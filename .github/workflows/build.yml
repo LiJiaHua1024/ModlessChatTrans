@@ -254,14 +254,13 @@ jobs:
           '--onefile-tempdir-spec={CACHE_DIR}/ModlessChatTrans_nano/{VERSION}'
           '--clang'
           '--noinclude-pytest-mode=nofollow'
-          # 排除运行时用不到的 stdlib / 打包工具链模块以减小产物体积
+          # 排除运行时用不到的 stdlib / 打包工具链模块以减小产物体积。
+          # 注意：email / unittest / pydoc 不能排除——werkzeug、urllib3、
+          # pyparsing 等运行时依赖链顶层 import 它们，排除会导致启动闪退。
           '--noinclude-setuptools-mode=nofollow'
           '--nofollow-import-to=pkg_resources'
           '--nofollow-import-to=distutils'
           '--nofollow-import-to=tkinter'
-          '--nofollow-import-to=unittest'
-          '--nofollow-import-to=pydoc'
-          '--nofollow-import-to=email'
           '--windows-icon-from-ico=src/icon.ico'
           '--onefile-windows-splash-screen-image=src/splash.png'
           '--enable-plugin=dill-compat'
