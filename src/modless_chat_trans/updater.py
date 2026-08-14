@@ -149,7 +149,8 @@ class Updater:
                 logger.debug("Looking for Windows executable (.exe)")
                 exes = [asset for asset in assets if asset.get("name", "").endswith(".exe")]
                 if self.edition != "standard":
-                    # 优先选择文件名带 edition 后缀的资产（如 ModlessChatTrans_v3.3.0-lite.exe）
+                    # 只下载文件名带 edition 后缀的资产（如 ModlessChatTrans_v3.3.0-lite.exe），
+                    # 找不到宁可失败也不兜底，避免把用户换成错误 edition
                     asset = next(
                         (a for a in exes if a["name"].lower().endswith(f"-{self.edition}.exe")),
                         None,
@@ -162,8 +163,6 @@ class Updater:
                          and not a["name"].lower().endswith("-nano.exe")),
                         None,
                     )
-                if asset is None and exes and self.edition != "standard":
-                    asset = exes[0]
             elif platform == 1:
                 logger.debug("Looking for Linux archive (.tar.gz)")
                 asset = next((asset for asset in assets if asset.get("name").endswith(".tar.gz")), None)
