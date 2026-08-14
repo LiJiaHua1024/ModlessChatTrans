@@ -156,61 +156,109 @@ jobs:
 
     - name: Determine version and generate build info
       id: determine_version
+      shell: pwsh
       run: |
+        # ═══ Edition（变体）判定 ═══
+        # standard / lite / nano 三种变体，识别优先级：
+        #   1. 版本号后缀（tag 名或手动输入的 -lite/-nano）
+        #   2. 分支名（lite / nano 分支）
+        #   3. 默认 standard
+        # Windows 版本号第 4 位映射：0=standard, 1=lite, 2=nano
+        $edition = "standard"
+        $editionNum = 0
+
+        function Set-Edition {
+          param([string]$Name)
+          switch ($Name) {
+            "lite" { $script:edition = "lite"; $script:editionNum = 1 }
+            "nano" { $script:edition = "nano"; $script:editionNum = 2 }
+            default { $script:edition = "standard"; $script:editionNum = 0 }
+          }
+        }
+
         # 从 pyproject.toml 读取基础版本号（用于文件命名）
         $baseVersion = (Select-String -Path "pyproject.toml" -Pattern '^version\s*=\s*"(.+)"' | ForEach-Object { $_.Matches.Groups[1].Value })
         $commitSha = "${{ github.sha }}".Substring(0, 8)
         $branchName = "${{ github.ref_name }}"
 
+        # 分支名提供 edition 默认值（可被版本号后缀覆盖）
+        if ($branchName -match "^(lite|nano)$") { Set-Edition $Matches[1] }
+
+        # ═══ 解析触发来源，得到正式版本号（如有）═══
+        $semverBase = $null
+        $isFormal = $false
+
         if ("${{ github.event_name }}" -eq "push" -and "${{ github.ref_type }}" -eq "tag") {
-            # ═══ Tag 触发：正式版本 ═══
-            $version = $branchName -replace "^v", ""
-            $fileVersion = $version
-            $productVersion = $version
-            $outputFileName = "ModlessChatTrans_v$version"
-            $buildChannel = "stable"
+            # ═══ Tag 触发：v3.3.0 / v3.3.0-lite / v3.3.0-nano ═══
+            $tagVersion = $branchName -replace "^v", ""
+            if ($tagVersion -match "^(\d+\.\d+\.\d+)(?:-(lite|nano))?$") {
+                $semverBase = $Matches[1]
+                if ($Matches[2]) { Set-Edition $Matches[2] }
+                $isFormal = $true
+            }
         }
         elseif ("${{ github.event_name }}" -eq "workflow_dispatch") {
             $inputVersion = "${{ github.event.inputs.version }}"
-            $branch = $branchName
-
-            # 从分支名推断构建通道
-            if ($branch -match "^canary-exp") {
-                $buildChannel = "canary-exp"
-            } elseif ($branch -match "^canary") {
-                $buildChannel = "canary"
-            } else {
-                $buildChannel = $branch -replace "[/\\]", "-"
+            # 手动输入带 -lite/-nano 后缀的合法版本号同样视为正式版本
+            if (-not [string]::IsNullOrWhiteSpace($inputVersion) -and
+                ($inputVersion -replace "^v", "") -match "^(\d+\.\d+\.\d+)(?:-(lite|nano))?$") {
+                $semverBase = $Matches[1]
+                if ($Matches[2]) { Set-Edition $Matches[2] }
+                $isFormal = $true
             }
+        }
 
-            if (-not [string]::IsNullOrWhiteSpace($inputVersion) -and $inputVersion -match "^v?\d+\.\d+\.\d+$") {
-                # 用户手动指定了正式版本号
-                $version = $inputVersion -replace "^v", ""
-                $fileVersion = $version
-                $productVersion = $version
-                $outputFileName = "ModlessChatTrans_v$version"
-                $buildChannel = "stable"
+        # ═══ 依据是否为正式版本生成各字段 ═══
+        $editionSuffix = ""
+        if ($edition -ne "standard") { $editionSuffix = "-$edition" }
+
+        if ($isFormal) {
+            # ═══ 正式版本 ═══
+            $fileVersion = "$semverBase.$editionNum"
+            $productVersion = "$semverBase$editionSuffix"
+            $outputFileName = "ModlessChatTrans_v$semverBase$editionSuffix"
+            $buildChannel = "stable"
+            $tempdirVersion = $semverBase
+        }
+        else {
+            # ═══ 非正式版本（CI build）═══
+            $fileVersion = "0.0.0.0"
+            $productVersion = "0.0.0.0"
+            # 非正式版本用 commit hash 作为缓存目录版本，避免缓存污染
+            $tempdirVersion = $commitSha
+            $safeBranch = $branchName -replace "[/\\]", "-"
+
+            if ($branchName -match "^canary-exp") {
+                $buildChannel = "canary-exp"
+                $outputFileName = "ModlessChatTrans_${safeBranch}_${commitSha}"
+            }
+            elseif ($branchName -match "^canary") {
+                $buildChannel = "canary"
+                $outputFileName = "ModlessChatTrans_${safeBranch}_${commitSha}"
+            }
+            elseif ($branchName -eq "main") {
+                # main 分支不带分支名
+                $buildChannel = "main"
+                $outputFileName = "ModlessChatTrans_${commitSha}"
             }
             else {
-                # 非正式版本
-                $fileVersion = "0.0.0.0"
-                $productVersion = "0.0.0.0"
-                $safeBranch = $branch -replace "[/\\]", "-"
+                # lite / nano 等特化分支：带上分支名
+                $buildChannel = $safeBranch
                 $outputFileName = "ModlessChatTrans_${safeBranch}_${commitSha}"
             }
         }
-        else {
-            # 后备处理
-            $version = $baseVersion
-            $fileVersion = $version
-            $productVersion = $version
-            $outputFileName = "ModlessChatTrans_v$version"
-            $buildChannel = "unknown"
-        }
+
+        # ═══ onefile-tempdir-spec ═══
+        # {CACHE_DIR}/ModlessChatTrans[_lite/_nano]/{VERSION}
+        # standard 无后缀；lite/nano 加 _lite/_nano；{VERSION} 为合法版本号或 commit hash
+        $editionDirSuffix = ""
+        if ($edition -ne "standard") { $editionDirSuffix = "_$edition" }
+        $onefileTempdirSpec = "{CACHE_DIR}/ModlessChatTrans$editionDirSuffix/$tempdirVersion"
 
         # 生成 _build_info.py（仅包含 CI 构建元数据）
         @"
         BUILD_CHANNEL = "$buildChannel"
+        EDITION = "$edition"
         BRANCH = "$branchName"
         COMMIT_SHA = "$commitSha"
         "@ -split "`n" | ForEach-Object { $_.TrimStart() } | Set-Content -Path "src/modless_chat_trans/_build_info.py" -Encoding utf8
@@ -218,14 +266,18 @@ jobs:
         echo "file_version=$fileVersion" >> $env:GITHUB_OUTPUT
         echo "product_version=$productVersion" >> $env:GITHUB_OUTPUT
         echo "output_file_name=$outputFileName" >> $env:GITHUB_OUTPUT
+        echo "edition=$edition" >> $env:GITHUB_OUTPUT
+        echo "onefile_tempdir_spec=$onefileTempdirSpec" >> $env:GITHUB_OUTPUT
 
         Write-Host "Build info:"
         Write-Host "  Base version:  $baseVersion"
         Write-Host "  Build channel: $buildChannel"
+        Write-Host "  Edition:       $edition (windows 4th digit: $editionNum)"
         Write-Host "  Branch:        $branchName"
         Write-Host "  Commit:        $commitSha"
+        Write-Host "  File version:  $fileVersion"
+        Write-Host "  Tempdir spec:  $onefileTempdirSpec"
         Write-Host "  Output file:   $outputFileName"
-      shell: pwsh
 
     - name: Build with Nuitka
       shell: pwsh
@@ -236,12 +288,13 @@ jobs:
 
         $fileVersion = "${{ steps.determine_version.outputs.file_version }}"
         $productVersion = "${{ steps.determine_version.outputs.product_version }}"
+        $tempdirSpec = "${{ steps.determine_version.outputs.onefile_tempdir_spec }}"
         $keepConsole = "${{ github.event.inputs.keep_console }}"
 
         $commonArgs = @(
           '--onefile'
           '--onefile-cache-mode=cached'
-          '--onefile-tempdir-spec={CACHE_DIR}/ModlessChatTrans/{VERSION}'
+          "--onefile-tempdir-spec=$tempdirSpec"
           '--clang'
           '--noinclude-pytest-mode=nofollow'
           '--windows-icon-from-ico=src/icon.ico'
