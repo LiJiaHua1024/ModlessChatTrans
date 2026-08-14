@@ -331,6 +331,8 @@ h1:after {
     position: relative;
     transition: all var(--transition-speed), background 0.3s ease; /* 添加背景过渡 */
     animation: fadeIn 0.3s ease-in-out;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .message-bubble:hover {
@@ -1221,4 +1223,94 @@ h1:after {
 
 :root[data-theme="dark"] .theme-selector select {
     background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23e0e0e0%22%20d%3D%22M287%2069.4a17.6%2017.6%0A0%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.4-5.4-13z%22%2F%3E%3C%2Fsvg%3E');
+}
+
+
+/* --------------------
+   Context Menu (Long-Press)
+-------------------- */
+#context-menu {
+    position: fixed;
+    z-index: 9999;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background: var(--context-menu-bg, rgba(255, 255, 255, 0.88));
+    border: 1px solid var(--context-menu-border, rgba(0, 0, 0, 0.08));
+    border-radius: 14px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+    padding: 6px;
+    min-width: 180px;
+    transform-origin: top left;
+    animation: contextMenuIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+    pointer-events: auto;
+}
+
+@keyframes contextMenuIn {
+    0% { opacity: 0; transform: scale(0.85); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+#context-menu.dismissing {
+    animation: contextMenuOut 0.15s ease-in forwards;
+}
+
+@keyframes contextMenuOut {
+    0% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(0.9); }
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    transition: background 0.15s ease;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.context-menu-item:hover {
+    background: var(--context-menu-hover, rgba(128, 128, 128, 0.1));
+}
+
+.context-menu-item:active {
+    background: var(--context-menu-active, rgba(128, 128, 128, 0.15));
+    transform: scale(0.97);
+}
+
+.context-menu-item svg {
+    flex-shrink: 0;
+    opacity: 0.7;
+    color: var(--text-primary);
+}
+
+/* Long-press visual feedback */
+.message-bubble.long-pressing {
+    transform: scale(0.97) !important;
+    filter: brightness(0.95);
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+/* Text swap animation */
+.message-text.swapping {
+    animation: textSwapIn 0.25s ease-out;
+}
+
+@keyframes textSwapIn {
+    0% { opacity: 0; transform: translateY(-4px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Dark mode context menu */
+:root[data-theme="dark"] #context-menu {
+    --context-menu-bg: rgba(30, 30, 30, 0.9);
+    --context-menu-border: rgba(255, 255, 255, 0.08);
+    --context-menu-hover: rgba(255, 255, 255, 0.08);
+    --context-menu-active: rgba(255, 255, 255, 0.12);
 }

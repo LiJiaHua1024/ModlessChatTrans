@@ -13,21 +13,78 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import requests
 import shutil
 import os
 import time
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from packaging.version import Version, InvalidVersion
 from modless_chat_trans.file_utils import get_path, get_platform
 from modless_chat_trans.logger import logger
+from modless_chat_trans._version import get_edition
+
+# ──────────────────────────────
+# 可选依赖：requests / packaging
+# 任一导入失败则禁用自动更新功能
+# ──────────────────────────────
+try:
+    import requests
+    from packaging.version import Version, InvalidVersion
+    UPDATER_AVAILABLE = True
+    UPDATER_IMPORT_ERROR = None
+except ImportError as _upd_exc:
+    requests = None  # type: ignore[assignment]
+    Version = None  # type: ignore[assignment,misc]
+    InvalidVersion = Exception  # type: ignore[assignment,misc]
+    UPDATER_AVAILABLE = False
+    UPDATER_IMPORT_ERROR = str(_upd_exc)
+    logger.warning(f"[Updater] Dependencies not available, auto-update disabled: {_upd_exc}")
+
+# edition 后缀（变体标识）：v3.3.0-lite / v3.3.0-nano
+_EDITION_SUFFIXES = ("lite", "nano")
+
+
+def parse_version_with_edition(version_str):
+    """
+    拆分带变体后缀的版本号。
+
+    去除 'v' 前缀与 '+build' 元数据后，识别结尾的 -lite/-nano 后缀。
+
+    Returns:
+        (base, edition) 元组，例如：
+        - "v3.3.0"          -> ("3.3.0", "standard")
+        - "v3.3.0-lite"     -> ("3.3.0", "lite")
+        - "v3.3.0-nano+sha" -> ("3.3.0", "nano")
+        - "v3.3.0-canary+sha" -> ("3.3.0-canary", "standard")
+    """
+    core = version_str.lstrip("v").split("+", 1)[0]
+    for suffix in _EDITION_SUFFIXES:
+        if core.endswith("-" + suffix) or core.endswith("_" + suffix):
+            return core[: -(len(suffix) + 1)], suffix
+    return core, "standard"
 
 
 class Updater:
     def __init__(self, current_version, owner, repo, include_prerelease=False):
         logger.info(f"Initializing updater: version={current_version}, repo={owner}/{repo}")
-        self.current_version = Version(current_version.lstrip("v"))
+        # 当前变体：lite 只更新 lite，nano 只更新 nano，standard 只更新 standard
+        self.edition = get_edition()
+        logger.debug(f"Updater edition: {self.edition}")
+        if UPDATER_AVAILABLE:
+            # 去掉 edition 后缀，只用基础语义化版本号参与比较
+            core, edition = parse_version_with_edition(current_version)
+            try:
+                self.current_version = Version(core)
+            except InvalidVersion:
+                # 非正式版本（如 3.2.1-canary+abc12345），提取基础版本号
+                import re
+                base = re.split(r"[-+]", core, maxsplit=1)[0]
+                logger.debug(f"Non-PEP 440 version '{core}', using base '{base}' for comparison")
+                try:
+                    self.current_version = Version(base)
+                except InvalidVersion:
+                    self.current_version = core
+        else:
+            self.current_version = current_version.lstrip("v")
         self.owner = owner
         self.repo = repo
         self.include_prerelease = include_prerelease
@@ -35,14 +92,18 @@ class Updater:
         logger.debug(f"API URL set to: {self.api_url}")
 
     def check_update(self):
-        logger.info("Checking for updates")
+        if not UPDATER_AVAILABLE:
+            logger.debug("[Updater] Skipping update check: dependencies not available")
+            return None
+        logger.info(f"Checking for updates (edition: {self.edition})")
         try:
             latest_release = self._get_latest_release()
             if latest_release:
                 latest_version_str = latest_release.get("tag_name").lstrip("v")
                 logger.debug(f"Latest version found: {latest_version_str}")
                 try:
-                    latest_version = Version(latest_version_str)
+                    latest_core, _ = parse_version_with_edition(latest_version_str)
+                    latest_version = Version(latest_core)
                     if latest_version > self.current_version:
                         logger.info(f"New version available: {latest_version_str}")
                         return latest_release
@@ -70,6 +131,9 @@ class Updater:
         Returns:
             下载文件的路径，如果失败或取消返回 None
         """
+        if not UPDATER_AVAILABLE:
+            logger.debug("[Updater] Skipping download: dependencies not available")
+            return None
         logger.info(f"Downloading update: {latest_release.get('tag_name')}")
 
         try:
@@ -83,7 +147,23 @@ class Updater:
 
             if platform == 0:
                 logger.debug("Looking for Windows executable (.exe)")
-                asset = next((asset for asset in assets if asset.get("name").endswith(".exe")), None)
+                exes = [asset for asset in assets if asset.get("name", "").endswith(".exe")]
+                if self.edition != "standard":
+                    # 优先选择文件名带 edition 后缀的资产（如 ModlessChatTrans_v3.3.0-lite.exe）
+                    asset = next(
+                        (a for a in exes if a["name"].lower().endswith(f"-{self.edition}.exe")),
+                        None,
+                    )
+                else:
+                    # standard 排除带 lite/nano 后缀的资产
+                    asset = next(
+                        (a for a in exes
+                         if not a["name"].lower().endswith("-lite.exe")
+                         and not a["name"].lower().endswith("-nano.exe")),
+                        None,
+                    )
+                if asset is None and exes and self.edition != "standard":
+                    asset = exes[0]
             elif platform == 1:
                 logger.debug("Looking for Linux archive (.tar.gz)")
                 asset = next((asset for asset in assets if asset.get("name").endswith(".tar.gz")), None)
@@ -115,10 +195,30 @@ class Updater:
                 logger.warning("No releases found")
                 return None
 
+            # 只考虑与当前 edition 匹配的 release（lite 更新 lite，nano 更新 nano，
+            # standard 更新不带后缀的），并在其中选取基础版本号最高的一个
+            best_release = None
+            best_version = None
             for release in releases:
-                if release.get("tag_name") and (self.include_prerelease or not release.get("prerelease")):
-                    logger.debug(f"Found suitable release: {release.get('tag_name')}")
-                    return release
+                if not release.get("tag_name"):
+                    continue
+                if not (self.include_prerelease or not release.get("prerelease")):
+                    continue
+                core, edition = parse_version_with_edition(release.get("tag_name"))
+                if edition != self.edition:
+                    logger.debug(f"Skipping release {release.get('tag_name')} (edition mismatch)")
+                    continue
+                try:
+                    version = Version(core)
+                except InvalidVersion:
+                    logger.debug(f"Skipping release {release.get('tag_name')} (invalid version)")
+                    continue
+                if best_version is None or version > best_version:
+                    best_release, best_version = release, version
+
+            if best_release:
+                logger.debug(f"Found suitable release: {best_release.get('tag_name')}")
+                return best_release
 
             logger.warning("No suitable release found")
             return None
@@ -166,7 +266,7 @@ class MultiThreadDownloader:
         try:
             # 首先检查服务器是否支持断点续传
             headers = {'Range': 'bytes=0-0'}
-            test_response = requests.head(self.url, headers=headers, allow_redirects=True)
+            test_response = requests.head(self.url, headers=headers, allow_redirects=True, timeout=30)
 
             # 获取文件总大小
             if 'content-range' in test_response.headers:
@@ -237,7 +337,7 @@ class MultiThreadDownloader:
                 # 等待所有下载完成
                 for future in as_completed(futures):
                     if self.cancelled:
-                        executor.shutdown(wait=False)
+                        executor.shutdown(wait=True, cancel_futures=True)
                         break
 
                     try:
@@ -245,22 +345,22 @@ class MultiThreadDownloader:
                         if not result:
                             logger.error(f"Thread {futures[future]} failed")
                             self.cancelled = True
-                            executor.shutdown(wait=False)
+                            executor.shutdown(wait=True, cancel_futures=True)
                             break
                     except Exception as e:
                         logger.error(f"Thread {futures[future]} error: {str(e)}")
                         self.cancelled = True
-                        executor.shutdown(wait=False)
+                        executor.shutdown(wait=True, cancel_futures=True)
                         break
 
             if self.cancelled:
-                # 清理临时文件
+                # 清理临时文件（此时线程池已 wait=True 等待全部线程退出，文件句柄已释放）
                 for temp_file in temp_files:
                     try:
                         if os.path.exists(temp_file):
                             os.remove(temp_file)
-                    except:
-                        pass
+                    except OSError as e:
+                        logger.warning(f"Failed to remove temp file {temp_file}: {e}")
                 return None
 
             # 合并文件
@@ -286,8 +386,8 @@ class MultiThreadDownloader:
                 try:
                     if os.path.exists(temp_file):
                         os.remove(temp_file)
-                except:
-                    pass
+                except OSError as e:
+                    logger.warning(f"Failed to remove temp file {temp_file}: {e}")
             return None
 
     def _download_chunk(self, url, start, end, temp_file, part_num, download_stats):
@@ -295,7 +395,7 @@ class MultiThreadDownloader:
         headers = {'Range': f'bytes={start}-{end}'}
 
         try:
-            response = requests.get(url, headers=headers, stream=True)
+            response = requests.get(url, headers=headers, stream=True, timeout=30)
             response.raise_for_status()
 
             with open(temp_file, 'wb') as f:
@@ -358,7 +458,7 @@ class MultiThreadDownloader:
         final_path = get_path(self.filename, temp_path=False)
 
         try:
-            response = requests.get(self.url, stream=True)
+            response = requests.get(self.url, stream=True, timeout=30)
             response.raise_for_status()
 
             self.total_size = int(response.headers.get('content-length', 0))

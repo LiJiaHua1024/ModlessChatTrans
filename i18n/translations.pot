@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-02-12 16:33+0800\n"
+"POT-Creation-Date: 2026-06-08 12:42+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,7 +16,6 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
-"X-Generator: Poedit 3.8\n"
 
 #: templates/index.html:8
 msgid "消息翻译结果"
@@ -26,656 +25,665 @@ msgstr ""
 msgid "消息"
 msgstr ""
 
-#: templates/index.html:63
+#: templates/index.html:93
 msgid "输入消息..."
 msgstr ""
 
-#: main.py:100
+#: main.py:284 main.py:288
 msgid "要发送的消息翻译完成，翻译结果已复制到剪切板"
 msgstr ""
 
-#: modless_chat_trans/interface.py:126 modless_chat_trans/interface.py:2374
+#: modless_chat_trans/interface.py:218 modless_chat_trans/interface.py:4149
 msgid "下载失败"
 msgstr ""
 
-#: modless_chat_trans/interface.py:166
+#: modless_chat_trans/interface.py:282
 msgid "消息捕获设置"
 msgstr ""
 
-#: modless_chat_trans/interface.py:177
+#: modless_chat_trans/interface.py:293
 msgid "Minecraft 日志位置："
 msgstr ""
 
-#: modless_chat_trans/interface.py:179
+#: modless_chat_trans/interface.py:295
 msgid "请选择Minecraft日志文件夹路径"
 msgstr ""
 
-#: modless_chat_trans/interface.py:190 modless_chat_trans/interface.py:976
+#: modless_chat_trans/interface.py:306 modless_chat_trans/interface.py:1889
 msgid "源语言："
 msgstr ""
 
-#: modless_chat_trans/interface.py:191 modless_chat_trans/interface.py:977
+#: modless_chat_trans/interface.py:307 modless_chat_trans/interface.py:1890
 msgid "目标语言："
 msgstr ""
 
-#: modless_chat_trans/interface.py:199
+#: modless_chat_trans/interface.py:315
 msgid "日志编码："
 msgstr ""
 
-#: modless_chat_trans/interface.py:200
+#: modless_chat_trans/interface.py:331
 msgid "建议选择自动检测（auto），如果无效可以尝试手动指定GBK等编码"
 msgstr ""
 
-#: modless_chat_trans/interface.py:210
+#: modless_chat_trans/interface.py:339
 msgid "监控模式："
 msgstr ""
 
-#: modless_chat_trans/interface.py:211
+#: modless_chat_trans/interface.py:366
 msgid "建议优先尝试高效模式，若无法正常获取消息，再切换至兼容模式"
 msgstr ""
 
-#: modless_chat_trans/interface.py:212
+#: modless_chat_trans/interface.py:341
 msgid "高效模式"
 msgstr ""
 
-#: modless_chat_trans/interface.py:213
+#: modless_chat_trans/interface.py:342
 msgid "低版本 Minecraft 推荐使用"
 msgstr ""
 
-#: modless_chat_trans/interface.py:214
+#: modless_chat_trans/interface.py:343
 msgid "兼容模式"
 msgstr ""
 
-#: modless_chat_trans/interface.py:215
+#: modless_chat_trans/interface.py:344
 msgid "高版本 Minecraft 使用"
 msgstr ""
 
-#: modless_chat_trans/interface.py:236
+#: modless_chat_trans/interface.py:375
 msgid "过滤服务器消息"
 msgstr ""
 
-#: modless_chat_trans/interface.py:237
+#: modless_chat_trans/interface.py:378
 msgid "不翻译不带玩家名称的服务器消息（系统消息）"
 msgstr ""
 
-#: modless_chat_trans/interface.py:242
+#: modless_chat_trans/interface.py:394
 msgid "替换乱码字符"
 msgstr ""
 
-#: modless_chat_trans/interface.py:244
+#: modless_chat_trans/interface.py:397
 msgid "将乱码字符（\\ufffd\\ufffd）替换为用于Minecraft格式化代码的分节符§（\\u00A7）"
 msgstr ""
 
-#: modless_chat_trans/interface.py:263 modless_chat_trans/interface.py:991
+#: modless_chat_trans/interface.py:423 modless_chat_trans/interface.py:1904
 msgid "请输入源语言（格式不限，AI可智能识别；留空则自动检测）"
 msgstr ""
 
-#: modless_chat_trans/interface.py:270 modless_chat_trans/interface.py:998
+#: modless_chat_trans/interface.py:430 modless_chat_trans/interface.py:1911
 msgid "请输入目标语言（格式不限，AI可智能识别）"
 msgstr ""
 
-#: modless_chat_trans/interface.py:284 modless_chat_trans/interface.py:1012
+#: modless_chat_trans/interface.py:444 modless_chat_trans/interface.py:1925
 msgid "请选择源语言"
 msgstr ""
 
-#: modless_chat_trans/interface.py:288 modless_chat_trans/interface.py:1016
+#: modless_chat_trans/interface.py:448 modless_chat_trans/interface.py:1929
 msgid "请选择目标语言"
 msgstr ""
 
-#: modless_chat_trans/interface.py:353
+#: modless_chat_trans/interface.py:518
 msgid "翻译服务设置"
 msgstr ""
 
-#: modless_chat_trans/interface.py:394
+#: modless_chat_trans/interface.py:559
 msgid "玩家消息翻译服务"
 msgstr ""
 
-#: modless_chat_trans/interface.py:414
+#: modless_chat_trans/interface.py:579
 msgid "独立设置消息发送翻译服务"
 msgstr ""
 
-#: modless_chat_trans/interface.py:443
+#: modless_chat_trans/interface.py:608
 msgid "消息发送翻译服务"
 msgstr ""
 
-#: modless_chat_trans/interface.py:475
+#: modless_chat_trans/interface.py:640
 msgid "                AI翻译                "
 msgstr ""
 
-#: modless_chat_trans/interface.py:480
+#: modless_chat_trans/interface.py:645
 msgid "                传统翻译                "
 msgstr ""
 
-#: modless_chat_trans/interface.py:564 modless_chat_trans/interface.py:688
+#: modless_chat_trans/interface.py:729 modless_chat_trans/interface.py:960
 msgid "选择服务："
 msgstr ""
 
-#: modless_chat_trans/interface.py:567 modless_chat_trans/interface.py:698
+#: modless_chat_trans/interface.py:732 modless_chat_trans/interface.py:970
 msgid "请选择翻译服务"
 msgstr ""
 
-#: modless_chat_trans/interface.py:588 modless_chat_trans/interface.py:729
+#: modless_chat_trans/interface.py:745 modless_chat_trans/interface.py:1001
 msgid "API Key："
 msgstr ""
 
-#: modless_chat_trans/interface.py:590
+#: modless_chat_trans/interface.py:747
 msgid "请输入您的API Key"
 msgstr ""
 
-#: modless_chat_trans/interface.py:604
+#: modless_chat_trans/interface.py:757
 msgid "API地址："
 msgstr ""
 
-#: modless_chat_trans/interface.py:606 modless_chat_trans/interface.py:607
+#: modless_chat_trans/interface.py:759 modless_chat_trans/interface.py:760
 msgid "默认端点"
 msgstr ""
 
-#: modless_chat_trans/interface.py:625
+#: modless_chat_trans/interface.py:771
 msgid "模型代号："
 msgstr ""
 
-#: modless_chat_trans/interface.py:627
+#: modless_chat_trans/interface.py:773
 msgid "请输入模型代号，如：gpt-3.5-turbo"
 msgstr ""
 
-#: modless_chat_trans/interface.py:642
+#: modless_chat_trans/interface.py:784
 msgid "深度翻译模式："
 msgstr ""
 
-#: modless_chat_trans/interface.py:644
+#: modless_chat_trans/interface.py:795
 msgid ""
 "启用显式思维链（Chain of Thought）翻译策略\n"
 "优点：提供更高质量的翻译\n"
 "缺点：一定程度增加token消耗，响应延迟提高"
 msgstr ""
 
-#: modless_chat_trans/interface.py:649 modless_chat_trans/interface.py:2377
+#: modless_chat_trans/interface.py:790 modless_chat_trans/interface.py:1301
+#: modless_chat_trans/interface.py:1368 modless_chat_trans/interface.py:2066
+#: modless_chat_trans/interface.py:4152
 msgid "关闭"
 msgstr ""
 
-#: modless_chat_trans/interface.py:650
+#: modless_chat_trans/interface.py:791 modless_chat_trans/interface.py:1302
+#: modless_chat_trans/interface.py:1369
 msgid "开启"
 msgstr ""
 
-#: modless_chat_trans/interface.py:731 modless_chat_trans/interface.py:732
+#: modless_chat_trans/interface.py:1003 modless_chat_trans/interface.py:1004
 msgid "不使用"
 msgstr ""
 
-#: modless_chat_trans/interface.py:912 modless_chat_trans/interface.py:2981
+#: modless_chat_trans/interface.py:1232 modless_chat_trans/interface.py:4886
 msgid "翻译结果显示"
 msgstr ""
 
-#: modless_chat_trans/interface.py:922
+#: modless_chat_trans/interface.py:1246
 msgid "网页端口："
 msgstr ""
 
-#: modless_chat_trans/interface.py:956
+#: modless_chat_trans/interface.py:1858
 msgid "消息发送设置"
 msgstr ""
 
-#: modless_chat_trans/interface.py:967
+#: modless_chat_trans/interface.py:1871
 msgid "监控剪切板"
 msgstr ""
 
-#: modless_chat_trans/interface.py:968
+#: modless_chat_trans/interface.py:1874
 msgid "从剪切板获取要发送的消息"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1078
+#: modless_chat_trans/interface.py:2158
 msgid "术语表管理"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1089
+#: modless_chat_trans/interface.py:2169
 msgid "源术语："
 msgstr ""
 
-#: modless_chat_trans/interface.py:1091
+#: modless_chat_trans/interface.py:2171
 msgid "请输入源术语"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1098
+#: modless_chat_trans/interface.py:2178
 msgid "目标术语："
 msgstr ""
 
-#: modless_chat_trans/interface.py:1100
+#: modless_chat_trans/interface.py:2180
 msgid "请输入目标术语"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1107
+#: modless_chat_trans/interface.py:2187
 msgid "添加/更新术语"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1112
+#: modless_chat_trans/interface.py:2192 modless_chat_trans/interface.py:2613
+#: modless_chat_trans/interface.py:2698
 msgid "清空输入"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1125
+#: modless_chat_trans/interface.py:2205
 msgid "源术语"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1125
+#: modless_chat_trans/interface.py:2205
 msgid "目标术语"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1139
+#: modless_chat_trans/interface.py:2219
 msgid "删除选中术语"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1143
+#: modless_chat_trans/interface.py:2223
 msgid "清空术语"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1269
+#: modless_chat_trans/interface.py:2349
 msgid "输入错误"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1270
+#: modless_chat_trans/interface.py:2350
 msgid "源术语不能为空"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1289
+#: modless_chat_trans/interface.py:2369
 msgid "确认覆盖"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1290
+#: modless_chat_trans/interface.py:2370
 #, python-brace-format
 msgid "源术语 \"{}\" 已存在，是否覆盖？"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1303
+#: modless_chat_trans/interface.py:2383
 msgid "更新"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1303
+#: modless_chat_trans/interface.py:2383
 msgid "添加"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1308
+#: modless_chat_trans/interface.py:2388
 #, python-brace-format
 msgid "术语{}成功"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1338 modless_chat_trans/interface.py:1985
-#: modless_chat_trans/interface.py:2122
+#: modless_chat_trans/interface.py:2418 modless_chat_trans/interface.py:2901
+#: modless_chat_trans/interface.py:3038
 msgid "删除成功"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1339
+#: modless_chat_trans/interface.py:2419
 #, python-brace-format
 msgid "术语 \"{}\" 已删除"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1362
+#: modless_chat_trans/interface.py:2442 modless_chat_trans/interface.py:2844
+#: modless_chat_trans/interface.py:2882 modless_chat_trans/interface.py:2914
+#: modless_chat_trans/interface.py:2952 modless_chat_trans/interface.py:2998
+#: modless_chat_trans/interface.py:3051
 msgid "提示"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1363
+#: modless_chat_trans/interface.py:2443
 msgid "术语表为空，无需清空"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1373 modless_chat_trans/interface.py:2009
+#: modless_chat_trans/interface.py:2453 modless_chat_trans/interface.py:2925
+#: modless_chat_trans/interface.py:3062
 msgid "确认清空"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1374
+#: modless_chat_trans/interface.py:2454
 msgid "确定要清空所有术语吗？此操作不可恢复。"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1385 modless_chat_trans/interface.py:2020
+#: modless_chat_trans/interface.py:2465 modless_chat_trans/interface.py:2936
+#: modless_chat_trans/interface.py:3073
 msgid "清空成功"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1386
+#: modless_chat_trans/interface.py:2466
 #, python-brace-format
 msgid "已清空 {} 个术语"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1431 modless_chat_trans/interface.py:1447
-#: modless_chat_trans/interface.py:2984
+#: modless_chat_trans/interface.py:3120 modless_chat_trans/interface.py:3136
+#: modless_chat_trans/interface.py:4891
 msgid "启动"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1451
+#: modless_chat_trans/interface.py:3140
 msgid "直接启动"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1452
+#: modless_chat_trans/interface.py:3141
 msgid "保存配置并启动"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1456
+#: modless_chat_trans/interface.py:3145
 msgid "保存配置"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1482
+#: modless_chat_trans/interface.py:3171
 msgid "工作中"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1489
+#: modless_chat_trans/interface.py:3178
 msgid "已停止"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1558
+#: modless_chat_trans/interface.py:3252
 msgid "Web访问链接"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1565
+#: modless_chat_trans/interface.py:3259
 msgid "请通过以下任一链接打开网页界面，查看翻译并即时发送消息"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1619
+#: modless_chat_trans/interface.py:3314
 msgid "已启动"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1619
+#: modless_chat_trans/interface.py:3314
 msgid "已根据当前界面配置启动"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1627
+#: modless_chat_trans/interface.py:3328 modless_chat_trans/interface.py:3347
 msgid "启动失败"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1636
+#: modless_chat_trans/interface.py:3356
 msgid "保存配置失败"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1639
+#: modless_chat_trans/interface.py:3359
 msgid "已保存"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1639
+#: modless_chat_trans/interface.py:3359
 msgid "配置已保存，但未设置启动回调"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1651
+#: modless_chat_trans/interface.py:3310
 msgid "已保存并启动"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1651
+#: modless_chat_trans/interface.py:3310
 msgid "配置已保存并启动"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1659
+#: modless_chat_trans/interface.py:3325 modless_chat_trans/interface.py:3372
 msgid "操作失败"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1668
+#: modless_chat_trans/interface.py:3381
 msgid "保存成功"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1668
+#: modless_chat_trans/interface.py:3381
 msgid "配置已保存至文件"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1672 modless_chat_trans/interface.py:1677
+#: modless_chat_trans/interface.py:3385 modless_chat_trans/interface.py:3390
 msgid "保存失败"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1672
+#: modless_chat_trans/interface.py:3385
 msgid "写入配置文件失败"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1880
+#: modless_chat_trans/interface.py:3650
 msgid "应用信息"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1887
+#: modless_chat_trans/interface.py:3657
 msgid "版本"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1888
+#: modless_chat_trans/interface.py:3658
 msgid "作者"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1889
+#: modless_chat_trans/interface.py:3659
 msgid "邮箱"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1931
+#: modless_chat_trans/interface.py:3701
 msgid "相关链接"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1970
+#: modless_chat_trans/interface.py:3740
 msgid "许可证"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2005 modless_chat_trans/interface.py:2685
+#: modless_chat_trans/interface.py:3775 modless_chat_trans/interface.py:4559
 msgid "发现新版本"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2031
+#: modless_chat_trans/interface.py:3801
 #, python-brace-format
 msgid "创建更新对话框时出错: {}"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2034
+#: modless_chat_trans/interface.py:3804
 msgid "下载更新"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2035
+#: modless_chat_trans/interface.py:3805
 msgid "暂不更新"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2049
+#: modless_chat_trans/interface.py:3819
 msgid "版本信息"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2058 modless_chat_trans/interface.py:2559
+#: modless_chat_trans/interface.py:3828 modless_chat_trans/interface.py:4349
 msgid "当前版本："
 msgstr ""
 
-#: modless_chat_trans/interface.py:2063
+#: modless_chat_trans/interface.py:3833
 msgid "最新版本："
 msgstr ""
 
-#: modless_chat_trans/interface.py:2064 modless_chat_trans/interface.py:2070
-#: modless_chat_trans/interface.py:2071 modless_chat_trans/interface.py:2083
-#: modless_chat_trans/interface.py:2225 modless_chat_trans/interface.py:2561
+#: modless_chat_trans/interface.py:3834 modless_chat_trans/interface.py:3840
+#: modless_chat_trans/interface.py:3841 modless_chat_trans/interface.py:3853
+#: modless_chat_trans/interface.py:4000 modless_chat_trans/interface.py:4351
 msgid "未知"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2069
+#: modless_chat_trans/interface.py:3839
 msgid "发布时间："
 msgstr ""
 
-#: modless_chat_trans/interface.py:2081
+#: modless_chat_trans/interface.py:3851
 msgid "发布者："
 msgstr ""
 
-#: modless_chat_trans/interface.py:2098
+#: modless_chat_trans/interface.py:3868
 msgid "版本类型："
 msgstr ""
 
-#: modless_chat_trans/interface.py:2099
+#: modless_chat_trans/interface.py:3869
 msgid "预发布版本"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2117
+#: modless_chat_trans/interface.py:3887
 msgid "更新说明"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2127
+#: modless_chat_trans/interface.py:3897
 msgid "暂无更新说明"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2195
+#: modless_chat_trans/interface.py:3970
 msgid "在 GitHub 上查看完整说明"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2213
+#: modless_chat_trans/interface.py:3988
 msgid "正在下载更新"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2220
+#: modless_chat_trans/interface.py:3995
 msgid "取消"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2225
+#: modless_chat_trans/interface.py:4000
 #, python-brace-format
 msgid "正在下载版本 {}..."
 msgstr ""
 
-#: modless_chat_trans/interface.py:2250
+#: modless_chat_trans/interface.py:4025
 msgid "下载进度："
 msgstr ""
 
-#: modless_chat_trans/interface.py:2256
+#: modless_chat_trans/interface.py:4031
 msgid "下载速度："
 msgstr ""
 
-#: modless_chat_trans/interface.py:2262
+#: modless_chat_trans/interface.py:4037
 msgid "剩余时间："
 msgstr ""
 
-#: modless_chat_trans/interface.py:2263 modless_chat_trans/interface.py:2360
+#: modless_chat_trans/interface.py:4038 modless_chat_trans/interface.py:4135
 msgid "计算中..."
 msgstr ""
 
-#: modless_chat_trans/interface.py:2268
+#: modless_chat_trans/interface.py:4043
 msgid "下载方式："
 msgstr ""
 
-#: modless_chat_trans/interface.py:2269
+#: modless_chat_trans/interface.py:4044
 msgid "检测中..."
 msgstr ""
 
-#: modless_chat_trans/interface.py:2289
+#: modless_chat_trans/interface.py:4064
 #, python-brace-format
 msgid "{} 线程下载"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2291
+#: modless_chat_trans/interface.py:4066
 msgid "单线程下载"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2340
+#: modless_chat_trans/interface.py:4115
 #, python-brace-format
 msgid "{} 秒"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2345
+#: modless_chat_trans/interface.py:4120
 #, python-brace-format
 msgid "{} 分 {} 秒"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2347
+#: modless_chat_trans/interface.py:4122
 #, python-brace-format
 msgid "{} 分钟"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2352
+#: modless_chat_trans/interface.py:4127
 #, python-brace-format
 msgid "{} 小时 {} 分"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2354
+#: modless_chat_trans/interface.py:4129
 #, python-brace-format
 msgid "{} 小时"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2358
+#: modless_chat_trans/interface.py:4133
 msgid "完成"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2367
+#: modless_chat_trans/interface.py:4142
 msgid "正在取消..."
 msgstr ""
 
-#: modless_chat_trans/interface.py:2375 modless_chat_trans/interface.py:2602
+#: modless_chat_trans/interface.py:4150 modless_chat_trans/interface.py:4476
 msgid "错误"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2401 modless_chat_trans/interface.py:2988
+#: modless_chat_trans/interface.py:4176 modless_chat_trans/interface.py:4895
 msgid "设置"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2431
+#: modless_chat_trans/interface.py:4210
 msgid "语言设置"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2443
+#: modless_chat_trans/interface.py:4222
 msgid "界面语言："
 msgstr ""
 
-#: modless_chat_trans/interface.py:2464
+#: modless_chat_trans/interface.py:4243
 msgid "保存"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2469
+#: modless_chat_trans/interface.py:4248
 msgid "* 语言更改将在重启后生效"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2487
+#: modless_chat_trans/interface.py:4266
 msgid "更新设置"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2499
+#: modless_chat_trans/interface.py:4278
 msgid "自动检查："
 msgstr ""
 
-#: modless_chat_trans/interface.py:2501
+#: modless_chat_trans/interface.py:4280
 msgid "启动时"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2502
+#: modless_chat_trans/interface.py:4281
 msgid "每天"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2503
+#: modless_chat_trans/interface.py:4282
 msgid "每周"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2504
+#: modless_chat_trans/interface.py:4283
 msgid "每月"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2505
+#: modless_chat_trans/interface.py:4284
 msgid "从不"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2523
+#: modless_chat_trans/interface.py:4302
 msgid "预发布版本："
 msgstr ""
 
-#: modless_chat_trans/interface.py:2524
+#: modless_chat_trans/interface.py:4303
 msgid "包含预发布版本"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2534
+#: modless_chat_trans/interface.py:4313
 msgid "手动检查："
 msgstr ""
 
-#: modless_chat_trans/interface.py:2542
+#: modless_chat_trans/interface.py:4321
 msgid "检查更新"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2584
+#: modless_chat_trans/interface.py:4458
 msgid "设置已保存"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2585
+#: modless_chat_trans/interface.py:4459
 #, python-brace-format
 msgid "界面语言已设置为 {}，重启后生效。"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2603
+#: modless_chat_trans/interface.py:4477
 msgid "更新器未初始化"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2655
+#: modless_chat_trans/interface.py:4529
 msgid "检查更新失败"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2656
+#: modless_chat_trans/interface.py:4530
 #, python-brace-format
 msgid "错误: {}"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2683
+#: modless_chat_trans/interface.py:4557
 msgid "未知版本"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2686
+#: modless_chat_trans/interface.py:4560
 #, python-brace-format
 msgid ""
 "最新版本: {}\n"
@@ -684,20 +692,20 @@ msgid ""
 "是否在浏览器中查看？"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2699
+#: modless_chat_trans/interface.py:4573
 msgid "您是最新的"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2700
+#: modless_chat_trans/interface.py:4574
 #, python-brace-format
 msgid "当前版本 v{} 已是最新版本"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2759
+#: modless_chat_trans/interface.py:4637
 msgid "下载完成"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2760
+#: modless_chat_trans/interface.py:4638
 #, python-brace-format
 msgid ""
 "更新文件已下载到:\n"
@@ -706,87 +714,100 @@ msgid ""
 "请手动安装更新。"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2766
+#: modless_chat_trans/interface.py:4644
 msgid "下载已取消"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2767
+#: modless_chat_trans/interface.py:4645
 msgid "更新下载已取消"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2979
+#: modless_chat_trans/interface.py:4884
 msgid "消息捕获"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2980
+#: modless_chat_trans/interface.py:4885
 msgid "翻译服务"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2982
+#: modless_chat_trans/interface.py:4887
 msgid "发送消息"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2983
+#: modless_chat_trans/interface.py:4889
 msgid "术语表"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2987
+#: modless_chat_trans/interface.py:4894
 msgid "关于"
 msgstr ""
 
-#: modless_chat_trans/interface.py:3097
+#: modless_chat_trans/interface.py:5004
 msgid "语言加载错误"
 msgstr ""
 
-#: modless_chat_trans/interface.py:3098
+#: modless_chat_trans/interface.py:5005
 #, python-brace-format
 msgid "获取支持语言失败 ({service_id}): {error_msg}"
 msgstr ""
 
-#: modless_chat_trans/message_processor.py:249
+#: modless_chat_trans/message_processor.py:413
+#: modless_chat_trans/message_processor.py:523
 msgid "翻译失败：请求次数过多，请稍后重试。"
 msgstr ""
 
-#: modless_chat_trans/message_processor.py:252
+#: modless_chat_trans/message_processor.py:415
+#: modless_chat_trans/message_processor.py:526
 msgid "翻译失败：服务器错误，请稍后重试。"
 msgstr ""
 
-#: modless_chat_trans/message_processor.py:255
+#: modless_chat_trans/message_processor.py:417
+#: modless_chat_trans/message_processor.py:529
 msgid "翻译失败：发生HTTP错误。"
 msgstr ""
 
-#: modless_chat_trans/message_processor.py:258
+#: modless_chat_trans/message_processor.py:419
+#: modless_chat_trans/message_processor.py:532
 msgid "翻译失败：网络问题或发生HTTP错误。"
 msgstr ""
 
-#: modless_chat_trans/message_processor.py:261
+#: modless_chat_trans/message_processor.py:405
+#: modless_chat_trans/message_processor.py:408
+#: modless_chat_trans/message_processor.py:421
+#: modless_chat_trans/message_processor.py:500
+#: modless_chat_trans/message_processor.py:503
+#: modless_chat_trans/message_processor.py:514
+#: modless_chat_trans/message_processor.py:517
+#: modless_chat_trans/message_processor.py:535
 msgid "翻译失败：服务器响应无效，请检查网络连接。"
 msgstr ""
 
-#: modless_chat_trans/message_processor.py:264
+#: main.py:200 main.py:222 main.py:272
+#: modless_chat_trans/message_processor.py:423
+#: modless_chat_trans/message_processor.py:538
 msgid "翻译失败，错误："
 msgstr ""
 
-#: modless_chat_trans/interface.py:1602
+#: modless_chat_trans/interface.py:2518
 msgid "黑名单设置"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1634
+#: modless_chat_trans/interface.py:2550
 msgid "用户黑名单"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1639
+#: modless_chat_trans/interface.py:2555
 msgid "消息内容黑名单"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1668
+#: modless_chat_trans/interface.py:2584
 msgid ""
 "用户黑名单中的玩家发送的消息将不会被翻译。\n"
 "支持批量添加，每行一个玩家名称。\n"
 "黑名单使用净化后的玩家名称进行完全匹配（区分大小写）。"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1683
+#: modless_chat_trans/interface.py:2599
 msgid ""
 "请输入玩家名称，每行一个\n"
 "例如：\n"
@@ -795,145 +816,533 @@ msgid ""
 "Steve"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1693
+#: modless_chat_trans/interface.py:2609
 msgid "添加用户"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1712
+#: modless_chat_trans/interface.py:2628
 msgid "玩家名称"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1724
+#: modless_chat_trans/interface.py:2640
 msgid "删除选中用户"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1728
+#: modless_chat_trans/interface.py:2644
 msgid "清空所有用户"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1751
+#: modless_chat_trans/interface.py:2667
 msgid ""
 "消息内容黑名单用于过滤特定内容的消息。\n"
 "如果选择\"使用正则表达式\"，则按正则表达式匹配；\n"
 "否则按关键词匹配（消息包含任意关键词即命中）。"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1765
+#: modless_chat_trans/interface.py:2681
 msgid "规则："
 msgstr ""
 
-#: modless_chat_trans/interface.py:1767
+#: modless_chat_trans/interface.py:2683
 msgid "请输入正则表达式或关键词"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1774
+#: modless_chat_trans/interface.py:2690
 msgid "使用正则表达式"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1778
+#: modless_chat_trans/interface.py:2694
 msgid "添加规则"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1795
+#: modless_chat_trans/interface.py:2711
 msgid "规则"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1795
+#: modless_chat_trans/interface.py:2711
 msgid "类型"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1807
+#: modless_chat_trans/interface.py:2723
 msgid "删除选中规则"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1811
+#: modless_chat_trans/interface.py:2727
 msgid "清空所有规则"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1877 modless_chat_trans/interface.py:2120
+#: modless_chat_trans/interface.py:2793 modless_chat_trans/interface.py:3036
 msgid "正则表达式"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1877 modless_chat_trans/interface.py:2120
+#: modless_chat_trans/interface.py:2793 modless_chat_trans/interface.py:3036
 msgid "关键词"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1929
+#: modless_chat_trans/interface.py:2845
 msgid "请输入玩家名称"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1956 modless_chat_trans/interface.py:2097
+#: modless_chat_trans/interface.py:2872 modless_chat_trans/interface.py:3013
 msgid "添加成功"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1957
+#: modless_chat_trans/interface.py:2873
 #, python-brace-format
 msgid "已添加 {} 个用户到黑名单"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1967
+#: modless_chat_trans/interface.py:2883
 #, python-brace-format
 msgid "{} 个用户已在黑名单中"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1986
+#: modless_chat_trans/interface.py:2902
 #, python-brace-format
 msgid "已将 \"{}\" 从黑名单移除"
 msgstr ""
 
-#: modless_chat_trans/interface.py:1999
+#: modless_chat_trans/interface.py:2915
 msgid "用户黑名单为空，无需清空"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2010
+#: modless_chat_trans/interface.py:2926
 msgid "确定要清空所有用户黑名单吗？此操作不可恢复。"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2021
+#: modless_chat_trans/interface.py:2937
 #, python-brace-format
 msgid "已清空 {} 个用户"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2037
+#: modless_chat_trans/interface.py:2953
 msgid "请输入规则"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2054
+#: modless_chat_trans/interface.py:2970
 msgid "正则表达式错误"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2055
+#: modless_chat_trans/interface.py:2971
 #, python-brace-format
 msgid "无效的正则表达式：{}"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2083
+#: modless_chat_trans/interface.py:2999
 msgid "该规则已存在"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2098
+#: modless_chat_trans/interface.py:3014
 #, python-brace-format
 msgid "已添加规则：{}"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2123
+#: modless_chat_trans/interface.py:3039
 #, python-brace-format
 msgid "已删除规则：{}（{}）"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2136
+#: modless_chat_trans/interface.py:3052
 msgid "消息黑名单为空，无需清空"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2147
+#: modless_chat_trans/interface.py:3063
 msgid "确定要清空所有消息黑名单规则吗？此操作不可恢复。"
 msgstr ""
 
-#: modless_chat_trans/interface.py:2158
+#: modless_chat_trans/interface.py:3074
 #, python-brace-format
 msgid "已清空 {} 个规则"
 msgstr ""
 
-#: modless_chat_trans/interface.py:3778
+#: modless_chat_trans/interface.py:4890
 msgid "黑名单"
+msgstr ""
+
+#: modless_chat_trans/interface.py:855
+msgid "主力模型"
+msgstr ""
+
+#: modless_chat_trans/interface.py:860
+msgid "备用模型"
+msgstr ""
+
+#: modless_chat_trans/interface.py:877
+msgid "备用模型策略："
+msgstr ""
+
+#: modless_chat_trans/interface.py:880
+msgid "直接切换（主模型失败立即使用备用）"
+msgstr ""
+
+#: modless_chat_trans/interface.py:881
+msgid "重试耗尽后切换（主模型重试全部失败后使用备用）"
+msgstr ""
+
+#: modless_chat_trans/interface.py:882
+msgid "首次失败竞速（主模型首次失败后并发竞速）"
+msgstr ""
+
+#: modless_chat_trans/interface.py:883
+msgid "始终竞速（始终并发请求两者取最快）"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1270
+msgid "TTS 朗读设置"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1283
+#, python-brace-format
+msgid "⚠️ TTS 模块导入失败，TTS 功能已禁用。错误信息：{}"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1283 modless_chat_trans/interface.py:1562
+msgid "unknown"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1298
+msgid "启用朗读："
+msgstr ""
+
+#: modless_chat_trans/interface.py:1320
+msgid "朗读语音："
+msgstr ""
+
+#: modless_chat_trans/interface.py:1322
+msgid "加载中..."
+msgstr ""
+
+#: modless_chat_trans/interface.py:1327
+msgid "不可用"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1338
+msgid "朗读语速："
+msgstr ""
+
+#: modless_chat_trans/interface.py:1341
+msgid "很慢"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1342
+msgid "较慢"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1343
+msgid "正常"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1344
+msgid "较快"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1345
+msgid "很快"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1365
+msgid "朗读玩家名："
+msgstr ""
+
+#: modless_chat_trans/interface.py:1385
+msgid "开启后朗读格式为\"玩家名 说：消息内容\"，关闭后只朗读消息内容"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1400
+msgid "测试朗读"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1422
+msgid "依赖库导入失败，TTS 功能不可用"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1518 modless_chat_trans/interface.py:1519
+msgid "自动（根据目标语言）"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1522
+msgid "⚠ 语音列表加载失败，将使用默认语音"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1547
+#, python-brace-format
+msgid "已加载 {} 种语音，保存设置后启动翻译生效"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1561
+msgid "TTS 不可用"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1562
+#, python-brace-format
+msgid "TTS 依赖库未安装或导入失败：{}"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1581
+msgid "你好，这是一条来自ModlessChatTrans的TTS朗读测试消息。"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1639
+msgid "测试完成"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1640
+msgid "TTS 朗读测试已完成，请检查声音输出"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1649
+msgid "测试失败"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1650
+#, python-brace-format
+msgid "TTS 朗读测试失败：{}"
+msgstr ""
+
+#: modless_chat_trans/interface.py:4332
+msgid "⚠ 更新依赖不可用"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1989
+msgid "上下文翻译设置"
+msgstr ""
+
+#: modless_chat_trans/interface.py:2000
+msgid "上下文分割策略："
+msgstr ""
+
+#: modless_chat_trans/interface.py:2002
+msgid "不启用"
+msgstr ""
+
+#: modless_chat_trans/interface.py:2003
+msgid "固定长度"
+msgstr ""
+
+#: modless_chat_trans/interface.py:2004
+msgid "基于时间跨度"
+msgstr ""
+
+#: modless_chat_trans/interface.py:2008
+msgid ""
+"配置如何管理上下文对话。\n"
+"- 不启用：不保存任何上下文\n"
+"- 固定长度：保留固定条数的历史记录\n"
+"- 基于时间跨度：在设定的时间跨度内视为同一对话"
+msgstr ""
+
+#: modless_chat_trans/interface.py:2022
+msgid "最大保留历史条数："
+msgstr ""
+
+#: modless_chat_trans/interface.py:2028
+msgid "最多保留的历史对话条数（0 表示无限制）"
+msgstr ""
+
+#: modless_chat_trans/interface.py:2042
+msgid "时间跨度阈值(秒)："
+msgstr ""
+
+#: modless_chat_trans/interface.py:2048
+msgid ""
+"超过此时长（秒）没有新消息，则视为新对话。\n"
+"仅在“基于时间跨度”策略下生效。"
+msgstr ""
+
+#: modless_chat_trans/interface.py:2062
+msgid "分块截断大小："
+msgstr ""
+
+#: modless_chat_trans/interface.py:2065
+msgid "自动"
+msgstr ""
+
+#: modless_chat_trans/interface.py:2067
+msgid "自定义"
+msgstr ""
+
+#: modless_chat_trans/interface.py:2077
+msgid ""
+"分块截断大小：\n"
+"- 自动：自动计算为最大保留历史条数的一半\n"
+"- 关闭：传统逐条滑动窗口\n"
+"- 自定义：设置具体的截断大小"
+msgstr ""
+
+#: modless_chat_trans/interface.py:4372
+msgid "缓存管理"
+msgstr ""
+
+#: modless_chat_trans/interface.py:4384
+msgid "清除缓存："
+msgstr ""
+
+#: modless_chat_trans/interface.py:4385
+msgid "清理不常用缓存"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1784 modless_chat_trans/interface.py:1805
+#: modless_chat_trans/interface.py:4404
+msgid "清理失败"
+msgstr ""
+
+#: modless_chat_trans/interface.py:4405
+#, python-brace-format
+msgid "查询缓存时出错：{}"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1815 modless_chat_trans/interface.py:4416
+msgid "无需清理"
+msgstr ""
+
+#: modless_chat_trans/interface.py:4417
+msgid "没有不常用的缓存条目，所有缓存都曾被使用过。"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1795 modless_chat_trans/interface.py:4429
+msgid "确认清理"
+msgstr ""
+
+#: modless_chat_trans/interface.py:4430
+#, python-brace-format
+msgid "将清理 {} 条不常用缓存条目（从未被读取），总计 {} 条中保留 {} 条。此操作不可恢复。"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1825 modless_chat_trans/interface.py:4439
+msgid "清理成功"
+msgstr ""
+
+#: modless_chat_trans/interface.py:4440
+#, python-brace-format
+msgid "已清理 {} 条不常用缓存条目"
+msgstr ""
+
+#: modless_chat_trans/interface.py:4888
+msgid "上下文翻译"
+msgstr ""
+
+#: templates/index.html:104
+msgid "显示原文"
+msgstr ""
+
+#: templates/index.html:105
+msgid "显示翻译"
+msgstr ""
+
+#: templates/index.html:106
+msgid "复制"
+msgstr ""
+
+#: templates/index.html:107
+msgid "朗读"
+msgstr ""
+
+#: main.py:275 main.py:295
+msgid "翻译失败，未生成翻译结果。"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1024
+msgid "Yandex Folder ID："
+msgstr ""
+
+#: modless_chat_trans/interface.py:1026
+msgid "仅 Yandex Cloud 需要"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1029
+msgid "Azure 区域（可选）："
+msgstr ""
+
+#: modless_chat_trans/interface.py:1031
+msgid "仅区域或多服务 Azure 资源需要"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1428
+msgid "Pre-TTS："
+msgstr ""
+
+#: modless_chat_trans/interface.py:1433
+msgid "预合成热词音频"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1445
+msgid "停止"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1450
+msgid "清除音频"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1458
+msgid ""
+"扫描翻译缓存中的热门译文并预合成音频，避免重复合成以减少加载时间。\n"
+"朗读时自动使用已预合成的音频，未命中则正常合成。\n"
+"开启\"朗读玩家名\"时不可用。"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1470 modless_chat_trans/interface.py:1719
+msgid "手动预合成热门音频，朗读时自动命中"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1676 modless_chat_trans/interface.py:1704
+msgid "开启\"朗读玩家名\"后，Pre-TTS 不可用"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1697
+#, python-brace-format
+msgid "正在预合成 {}/{}..."
+msgstr ""
+
+#: modless_chat_trans/interface.py:1714
+#, python-brace-format
+msgid "本次预合成 {} 条，跳过 {} 条；共 {} 条音频（{:.1f} MB）"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1728 modless_chat_trans/interface.py:1739
+msgid "Pre-TTS 不可用"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1729
+msgid "Pre-TTS 引擎加载失败"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1740
+msgid "配置尚未初始化"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1752
+msgid "Pre-TTS 失败"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1753
+msgid "启动预合成失败（TTS 依赖不可用或已在运行）"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1766
+msgid "正在扫描翻译缓存..."
+msgstr ""
+
+#: modless_chat_trans/interface.py:1775
+msgid "正在停止..."
+msgstr ""
+
+#: modless_chat_trans/interface.py:1796
+msgid "将清除所有已预合成的 Pre-TTS 音频。此操作不可恢复。"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1806
+msgid "清除 Pre-TTS 音频时出错"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1816
+msgid "尚未预合成任何 Pre-TTS 音频"
+msgstr ""
+
+#: modless_chat_trans/interface.py:1826
+#, python-brace-format
+msgid "已清除 {} 条 Pre-TTS 音频"
+msgstr ""
+
+#: modless_chat_trans/web_display.py:209
+msgid "翻译超时，请稍后重试。"
 msgstr ""

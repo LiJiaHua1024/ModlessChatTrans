@@ -29,6 +29,7 @@ messages_by_id = {}
 message_condition = threading.Condition()
 message_id_counter = count(1)
 MAX_HTTP_MESSAGES = 2000
+PENDING_SLOT_TIMEOUT = 10.0
 clear_revision = 0
 sse_clients = []
 
@@ -38,7 +39,7 @@ def start_httpserver_thread(**kwargs):
     try:
         server_thread = threading.Thread(
             target=start_httpserver,
-            args=(kwargs["http_port"], kwargs["callback"])
+            args=(kwargs["http_port"], kwargs["callback"], kwargs.get("tts_engine"))
         )
         server_thread.daemon = True
         server_thread.start()
@@ -48,7 +49,7 @@ def start_httpserver_thread(**kwargs):
         raise e
 
 
-def start_httpserver(port, callback):
+def start_httpserver(port, callback, tts_engine=None):
     global http_messages, messages_by_id, message_id_counter, clear_revision, sse_clients
     logger.info(f"Starting HTTP server on port {port}")
 
@@ -93,6 +94,9 @@ def start_httpserver(port, callback):
                     f"{preview[:30]}..." if len(preview) > 30 else preview
                 )
                 translated = callback(data['message'], data_type="webui", rage_mode=rage_mode)
+                if isinstance(translated, dict) and translated.get("error"):
+                    logger.warning(f"WebUI translation failed: {translated['error']}")
+                    return jsonify(translated), 502
                 logger.debug("Message translated successfully")
                 return jsonify({'translated': translated})
             except Exception as e:
@@ -113,6 +117,23 @@ def start_httpserver(port, callback):
                 return jsonify({'success': True})
             except Exception as e:
                 logger.error(f"Error clearing messages: {str(e)}")
+                return jsonify({'success': False, 'error': str(e)}), 500
+
+        @flask_app.route('/read-aloud', methods=['POST'])
+        def read_aloud():
+            if tts_engine is None:
+                return jsonify({'success': False, 'error': 'TTS engine is not available'}), 503
+            try:
+                data = request.json
+                text = data.get('text', '')
+                if not text:
+                    return jsonify({'success': False, 'error': 'Empty text'}), 400
+                    
+                target_lang = getattr(tts_engine._config, 'target_language', '') # fallback if possible
+                tts_engine.interrupt_and_read(text, target_lang)
+                return jsonify({'success': True})
+            except Exception as e:
+                logger.error(f"Error in /read-aloud: {str(e)}")
                 return jsonify({'success': False, 'error': str(e)}), 500
 
         @flask_app.route('/stream')
@@ -161,10 +182,10 @@ def start_httpserver(port, callback):
                 try:
                     while True:
                         send_clear_signal = False
-                        pending_messages = []
+                        new_messages = []
+                        wait_timeout = heartbeat_interval
 
                         with message_condition:
-                            # 先检查是否需要清空并收集当前可用的待发消息；只有在确实没有任何内容需要发送时才等待
                             if clear_revision != current_clear_revision:
                                 current_clear_revision = clear_revision
                                 send_clear_signal = True
@@ -177,21 +198,46 @@ def start_httpserver(port, callback):
                                 message = messages_by_id.get(next_event_id)
                                 if not message:
                                     break
+                                if message.get('pending'):
+                                    pending_age = time.time() - message.get('created_at', time.time())
+                                    if pending_age >= PENDING_SLOT_TIMEOUT:
+                                        logger.error(
+                                            f"Pending message slot {next_event_id} exceeded "
+                                            f"{PENDING_SLOT_TIMEOUT:g}s; publishing timeout error."
+                                        )
+                                        message["name"] = "[ERROR]"
+                                        message["message"] = _("翻译超时，请稍后重试。")
+                                        message["duration"] = "timeout"
+                                        message["info"] = {
+                                            "send_translation_complete": True,
+                                            "translation_timeout": True,
+                                        }
+                                        message["original"] = None
+                                        message["pending"] = False
+                                        message["timed_out"] = True
+                                    else:
+                                        wait_timeout = min(
+                                            wait_timeout,
+                                            max(PENDING_SLOT_TIMEOUT - pending_age, 0.1),
+                                        )
+                                        break
 
-                                pending_messages.append(message)
                                 next_event_id = message['id'] + 1
+                                # 跳过被过滤的空消息（slot 已 fill 但无内容）
+                                if not message.get('message'):
+                                    continue
 
-                            # 若没有清空信号且没有可发送消息，则等待并在醒来后立刻重新检查
-                            if not send_clear_signal and not pending_messages:
-                                message_condition.wait(timeout=heartbeat_interval)
-                                continue
+                                new_messages.append(message)
+
+                            if not send_clear_signal and not new_messages:
+                                message_condition.wait(timeout=wait_timeout)
 
                         if send_clear_signal:
                             yield 'data: {"clear": true}\n\n'
                             last_heartbeat_sent = time.time()
 
-                        if pending_messages:
-                            for message in pending_messages:
+                        if new_messages:
+                            for message in new_messages:
                                 info_payload = message.get('info') or {}
                                 message_data = {
                                     "id": message['id'],
@@ -202,7 +248,9 @@ def start_httpserver(port, callback):
                                     "glossary_match": info_payload.get("glossary_match", False),
                                     "skip_src_lang": info_payload.get("skip_src_lang", False),
                                     "cache_hit": info_payload.get("cache_hit", False),
-                                    "usage": info_payload.get("usage")
+                                    "usage": info_payload.get("usage"),
+                                    "original": message.get("original"),
+                                    "send_translation_complete": info_payload.get("send_translation_complete", False)
                                 }
                                 json_message = json.dumps(message_data, ensure_ascii=False)
                                 yield f"id: {message['id']}\n"
@@ -232,14 +280,15 @@ def start_httpserver(port, callback):
         logger.error(f"Failed to start HTTP server: {str(e)}")
 
 
-def display_message(name, message, info, duration=None):
+def display_message(name, message, info, duration=None, original=None):
     """
-    呈现消息到Web页面
+    呼现消息到Web页面
 
     :param name: 名称
     :param message: 消息内容
     :param info: 相关信息（如是否命中缓存、消耗token等）
     :param duration: 消息处理耗时（秒）
+    :param original: 原文内容（可选）
     """
     global http_messages, messages_by_id, message_id_counter
 
@@ -261,7 +310,8 @@ def display_message(name, message, info, duration=None):
             "message": message,
             "time": current_time,
             "duration": duration,
-            "info": info_payload
+            "info": info_payload,
+            "original": original
         }
 
         with message_condition:
@@ -277,3 +327,92 @@ def display_message(name, message, info, duration=None):
         logger.debug(f"Adding message from {name if name else 'System'} to HTTP server queue")
     except Exception as e:
         logger.error(f"Error adding message to HTTP server: {str(e)}")
+
+
+def allocate_slot(name="", arrival_time=None):
+    """
+    预分配一个带固定序号的展示 slot，保证并发翻译时显示顺序正确。
+
+    :param name: 发送者名（可为空）
+    :param arrival_time: 行到达时刻（epoch）
+    :return: message_id (int)
+    """
+    global http_messages, messages_by_id, message_id_counter
+
+    current_time = datetime.now().strftime("%H:%M")
+    message_id = next(message_id_counter)
+
+    record = {
+        "id": message_id,
+        "name": name,
+        "message": None,
+        "time": current_time,
+        "duration": None,
+        "info": {},
+        "pending": True,
+        "created_at": time.time(),
+    }
+
+    with message_condition:
+        http_messages.append(record)
+        messages_by_id[message_id] = record
+
+        if len(http_messages) > MAX_HTTP_MESSAGES:
+            removed = http_messages.popleft()
+            messages_by_id.pop(removed['id'], None)
+
+        message_condition.notify_all()
+
+    logger.debug(f"Slot allocated: id={message_id} name={name or 'System'}")
+    return message_id
+
+
+def fill_slot(message_id: int, name: str, message: str, info: dict, duration=None, original=None):
+    """
+    填充已预分配的 slot。若 slot 已被淘汰则降级为 display_message。
+
+    :param message_id: allocate_slot() 返回的 id
+    :param name: 发送者名
+    :param message: 译文
+    :param info: 相关信息字典
+    :param duration: 处理耗时（秒）
+    :param original: 原文内容（可选）
+    """
+    global http_messages, messages_by_id
+
+    if duration is not None:
+        if duration < 0.001:
+            duration_str = "instant"
+        elif duration < 1:
+            duration_str = f"{round(duration * 1000)}ms"
+        else:
+            duration_str = f"{round(duration, 2)}s"
+    else:
+        duration_str = None
+
+    info_payload = dict(info) if isinstance(info, dict) else {}
+
+    late_result = False
+    with message_condition:
+        record = messages_by_id.get(message_id)
+        if record is None:
+            logger.warning(f"fill_slot: id={message_id} not found, falling back to display_message")
+            late_result = True
+        elif record.get("timed_out"):
+            # SSE 已经发布超时错误，迟到的真实结果另起一条消息，避免静默丢失。
+            logger.warning(f"fill_slot: id={message_id} completed after timeout, publishing late result")
+            late_result = True
+        else:
+            record["name"] = name
+            record["message"] = message
+            record["duration"] = duration_str
+            record["info"] = info_payload
+            record["pending"] = False
+            record["original"] = original
+            message_condition.notify_all()
+
+    if late_result:
+        display_message(name, message, info, duration, original)
+        return
+
+    logger.debug(f"Slot filled: id={message_id} name={name or 'System'} msg={message[:30] if message else ''}")

@@ -21,7 +21,7 @@ dependencies = [
     "loguru~=0.7.3",
     "packaging~=25.0",
     "setuptools>=61.0",
-    "urllib3>=1.26.0,<2.0.0",
+    "urllib3>=2.6.3",
     "litellm>=1.74.3",
     "markdown>=3.8.2",
     "pydantic>=2.11.7",
@@ -31,6 +31,9 @@ dependencies = [
     "diskcache>=5.6.3",
     "pyside6-fluent-widgets>=1.8.6",
     "lazy-loader>=0.4",
+    "edge-tts>=7.2.8",
+    "miniaudio>=1.71",
+    "google-auth>=2.20.0",
 ]
 
 # 如需滚动和高度限制的下拉菜单，请按以下步骤操作：
@@ -40,3 +43,8 @@ dependencies = [
 
 [project.scripts]
 modless-chat-trans = "main:main"
+
+[dependency-groups]
+tools = [
+    "babel==2.17.0",
+]

@@ -13,11 +13,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import re
+import threading
 from json import JSONDecodeError
 from requests.exceptions import HTTPError
 from modless_chat_trans.i18n import _
 from modless_chat_trans.file_utils import cache
-from modless_chat_trans.translator import services, MessageType
+from dataclasses import dataclass
+from modless_chat_trans.translator import MessageType
 from modless_chat_trans.logger import logger
 
 # 预编译的正则表达式常量
@@ -33,6 +35,7 @@ filter_server_messages = True
 glossary = {}
 _compiled_glossary_patterns = {}
 glossary_compiled = False
+_glossary_lock = threading.Lock()
 replace_garbled_character = False
 user_blacklist = []
 user_blacklist_set = set()  # 预构建的用户黑名单集合（用于O(1)查找）
@@ -228,8 +231,11 @@ def match_and_translate(original_chat_message: str) -> str | None:
     使用更新后的规则（包括重复变量检查）来匹配和翻译消息。
     """
 
+    global glossary_compiled
     if not glossary_compiled:
-        _compile_glossary_patterns()
+        with _glossary_lock:
+            if not glossary_compiled:
+                _compile_glossary_patterns()
 
     # 1. 尝试通过编译后的模式进行匹配
     for pattern_key, pattern_data in _compiled_glossary_patterns.items():
@@ -292,12 +298,153 @@ def match_and_translate(original_chat_message: str) -> str | None:
     return None
 
 
+def should_skip_message(name: str, original_chat_message: str, message_type: MessageType, data_type: str) -> bool:
+    """
+    检查消息是否应该被跳过（过滤逻辑）
+
+    :param name: 玩家名称（可能为空）
+    :param original_chat_message: 原始聊天消息
+    :param message_type: 消息类型
+    :param data_type: 数据类型 ("log", "clipboard", "webui")
+    :return: True 如果消息应该被跳过
+    """
+    # 黑名单检查（PLAYER 和 SYSTEM 消息生效，SEND 不生效）
+    if message_type != MessageType.SEND and original_chat_message:
+        # 用户黑名单检查（仅对玩家消息，因为需要用户名）
+        if name:
+            sanitized_name = sanitize_hypixel_name(name)
+            if is_user_in_blacklist(sanitized_name):
+                logger.info(f"User '{sanitized_name}' in blacklist, discarding message")
+                return True
+
+        # 消息内容黑名单检查（对所有非 SEND 消息生效）
+        if is_message_blocked(original_chat_message):
+            logger.info(f"Message blocked by content blacklist: {original_chat_message[:50]}...")
+            return True
+
+    # 系统消息过滤
+    if data_type == "log" and filter_server_messages and not name:
+        return True
+
+    return False
+
+
+@dataclass
+class PreparedMessage:
+    """已解析+过滤、等待翻译的消息"""
+    name: str                    # 玩家名（可为空）
+    original: str                # 原文
+    message_type: MessageType    # 消息类型
+
+
+def prepare(data: str, data_type: str, replace_garbled: bool = False) -> PreparedMessage | None:
+    """
+    解析 + 过滤，返回 PreparedMessage 或 None（应被丢弃）。
+    此函数极快（纯 CPU，无 I/O），可在单线程中顺序调用。
+    """
+    name, original, msg_type = parse_message(data, data_type, replace_garbled)
+
+    if not original:
+        return None
+
+    if should_skip_message(name, original, msg_type, data_type):
+        return None
+
+    return PreparedMessage(name=name, original=original, message_type=msg_type)
+
+
+def translate_prepared(
+    prepared: PreparedMessage,
+    translator,
+    source_language: str,
+    target_language: str,
+    context_messages: list[dict] | None = None,
+    rage_mode: bool = False,
+) -> tuple[str, str, dict]:
+    """
+    纯翻译，返回 (name, translated, info)。
+    调用前应已通过 prepare() 过滤。
+    """
+    name = prepared.name
+    original = prepared.original
+    msg_type = prepared.message_type
+    context_messages = context_messages or []
+
+    translated: str = ""
+    info: dict = {}
+
+    # 术语表匹配
+    if matched := match_and_translate(original):
+        logger.debug(f"Using custom glossary: {original} -> {matched}")
+        translated = matched
+        info["glossary_match"] = True
+    elif not rage_mode and original in cache:
+        logger.debug(f"Translation cache hit: {original}")
+        translated = cache[original]
+        info["cache_hit"] = True
+    else:
+        try:
+            if rage_mode:
+                result = translator.translate_with_profanity(
+                    original,
+                    source_language=source_language,
+                    target_language=target_language,
+                    message_type=msg_type,
+                )
+            else:
+                result = translator.translate_with_context(
+                    original,
+                    source_language=source_language,
+                    target_language=target_language,
+                    message_type=msg_type,
+                    context_messages=context_messages,
+                )
+            if result:
+                translated = result.get("result") or ""
+                if not translated:
+                    return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
+                info["usage"] = result.get("usage")
+            else:
+                return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
+        except HTTPError as http_err:
+            response = getattr(http_err, "response", None)
+            if response is not None:
+                if response.status_code == 429:
+                    return "[ERROR]", _("翻译失败：请求次数过多，请稍后重试。"), info
+                elif 500 <= response.status_code < 600:
+                    return "[ERROR]", _("翻译失败：服务器错误，请稍后重试。"), info
+                else:
+                    return "[ERROR]", _("翻译失败：发生HTTP错误。"), info
+            else:
+                return "[ERROR]", _("翻译失败：网络问题或发生HTTP错误。"), info
+        except JSONDecodeError:
+            return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
+        except Exception as e:
+            return "[ERROR]", f"{_('翻译失败，错误：')} {e}", info
+
+        if translated:
+            if rage_mode:
+                logger.debug(
+                    f"Rage translation generated (skipping cache): "
+                    f"'{original}' -> '{translated}'"
+                )
+            else:
+                logger.debug(
+                    f"Translation successful, caching result:"
+                    f" {original} -> {translated}"
+                )
+                cache[original] = translated
+
+    return name or "", translated, info
+
+
 def process_decorator(function):
     """
     为process_message添加翻译步骤
     """
 
-    def wrapper(data, data_type, translator, source_language, target_language, rage_mode=False):
+    def wrapper(data, data_type, translator, source_language, target_language,
+                rage_mode=False, context_messages=None):
         """
         处理日志文件中的一行（包括翻译）
 
@@ -307,6 +454,7 @@ def process_decorator(function):
         :param source_language: 源语言
         :param target_language: 目标语言
         :param rage_mode: 是否启用红温模式
+        :param context_messages: 历史上下文 messages 列表（可直接拼入 litellm）
         :return:
             - None：应被丢弃的数据（可能是不包含[CHAT]的日志行，也可能是系统消息且filter_server_messages为True）
             - 长度为3的元组：
@@ -320,26 +468,14 @@ def process_decorator(function):
                     - [2]: 相关信息（如是否命中缓存、消耗token等）
         """
 
-        name, original_chat_message, message_type = function(data, data_type)
+        name, original_chat_message, message_type = function(data, data_type, replace_garbled_character)
         translated_chat_message: str = ""
         info: dict = {}
+        context_messages = context_messages or []
 
-        # 黑名单检查（PLAYER 和 SYSTEM 消息生效，SEND 不生效）
-        if message_type != MessageType.SEND and original_chat_message:
-            # 用户黑名单检查（仅对玩家消息，因为需要用户名）
-            if name:
-                sanitized_name = sanitize_hypixel_name(name)
-                if is_user_in_blacklist(sanitized_name):
-                    logger.info(f"User '{sanitized_name}' in blacklist, discarding message")
-                    return None
-
-            # 消息内容黑名单检查（对所有非 SEND 消息生效）
-            if is_message_blocked(original_chat_message):
-                logger.info(f"Message blocked by content blacklist: {original_chat_message[:50]}...")
-                return None
-
-        if data_type == "log" and filter_server_messages and not name:
-            return "", "", MessageType.SYSTEM
+        # 使用过滤函数检查是否跳过消息
+        if should_skip_message(name, original_chat_message, message_type, data_type):
+            return None
         if original_chat_message:
             if matched_translated_message := match_and_translate(original_chat_message):
                 logger.debug(f"Using custom glossary: {original_chat_message} -> {matched_translated_message}")
@@ -351,15 +487,34 @@ def process_decorator(function):
                 info["cache_hit"] = True
             else:
                 try:
-                    translate = translator.translate_with_profanity if rage_mode else translator.translate
-                    if result := translate(
-                            original_chat_message,
-                            source_language=source_language,
-                            target_language=target_language,
-                            message_type=message_type
-                    ):
-                        translated_chat_message = result["result"]
-                        info["usage"] = result["usage"]
+                    if rage_mode:
+                        translate_fn = translator.translate_with_profanity
+                        if result := translate_fn(
+                                original_chat_message,
+                                source_language=source_language,
+                                target_language=target_language,
+                                message_type=message_type
+                        ):
+                            translated_chat_message = result.get("result") or ""
+                            if not translated_chat_message:
+                                return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
+                            info["usage"] = result.get("usage")
+                        else:
+                            return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
+                    else:
+                        if result := translator.translate_with_context(
+                                original_chat_message,
+                                source_language=source_language,
+                                target_language=target_language,
+                                message_type=message_type,
+                                context_messages=context_messages,
+                        ):
+                            translated_chat_message = result.get("result") or ""
+                            if not translated_chat_message:
+                                return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
+                            info["usage"] = result.get("usage")
+                        else:
+                            return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
                 except HTTPError as http_err:
                     response = getattr(http_err, "response", None)
                     if response is not None:
@@ -408,8 +563,15 @@ def process_decorator(function):
 @process_decorator
 def process_message(data, data_type, replace_garbled_character=False):
     """
-    处理日志文件中的一行
+    处理日志文件中的一行（包含翻译和过滤的入口）
+    """
+    return parse_message(data, data_type, replace_garbled_character)
 
+
+def parse_message(data, data_type, replace_garbled_character=False):
+    """
+    解析日志文件中的一行（仅解析，不含翻译和过滤）
+    
     :param data: 需要处理的数据
     :param data_type: 数据类型 ("log", "clipboard", "webui")
     :return: 元组 (玩家名称, 聊天内容, 消息类型)

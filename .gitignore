@@ -1,20 +1,31 @@
 __pycache__/
+*.py[cod]
 *.log
 .venv
 ModlessChatTrans.egg-info
 babel.cfg
 
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
 .idea/
 .trae/
 .antigravitycli/
 .claude/
+.commandcode/
 
 build/
 dist/
 main.build/
 main.dist/
 main.onefile-build/
+main.dist.baseline/
+main.onefile-build.baseline/
+ModlessChatTrans.exe
 main.spec
+*.spec
 
 ModlessChatTrans-config.json
 modless-chat-trans.toml
@@ -30,3 +41,10 @@ mct-cache/
 
 MoreSettingsDocs.md
 plan.md
+
+_build_info.py
+mct-pre-tts/
+
+.DS_Store
+Thumbs.db
+

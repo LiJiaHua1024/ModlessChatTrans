@@ -17,15 +17,214 @@ import os
 import time
 import threading
 import locale
+from queue import Queue, Empty
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Callable
 
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+
+
+# ──────────────────────────────
+# 可选依赖：watchdog
+# 导入失败时降级为兼容（轮询）模式
+# ──────────────────────────────
+try:
+    from watchdog.observers import Observer
+    from watchdog.events import FileSystemEventHandler
+    WATCHDOG_AVAILABLE = True
+except ImportError as _wd_exc:
+    Observer = None  # type: ignore[assignment,misc]
+    FileSystemEventHandler = object  # type: ignore[assignment,misc]
+    WATCHDOG_AVAILABLE = False
+    import logging as _logging
+    _logging.getLogger(__name__).warning(
+        f"[LogMonitor] 'watchdog' not available, efficient mode disabled: {_wd_exc}"
+    )
 
 from modless_chat_trans.file_utils import find_latest_log
 from modless_chat_trans.logger import logger
 from modless_chat_trans.config import MonitorMode, MessageCaptureConfig
+
+
+# ------------------------------
+# 有序处理器：并发翻译 + slot 预分配保序
+# ------------------------------
+
+class OrderedProcessor:
+    """
+    并发处理器：将日志行批量提交到线程池并发翻译。
+
+    工作原理（两阶段）：
+    1. 阻塞等待第一条消息（零额外延迟）
+    2. 非阻塞排空队列（零等待机会性打包）
+    3. 阶段1（单线程）：prepare → allocate_slot → context_buffer.push
+    4. 阶段2（多线程）：translate_prepared → fill_slot
+    """
+
+    MAX_BATCH_SIZE = 20
+    MAX_WORKERS = 8  # 翻译线程池大小
+
+    def __init__(
+        self,
+        line_queue: Queue,
+        callback: Callable,
+        batch_callback: Callable,
+        context_buffer=None,
+        translator=None,
+        source_language: str = "",
+        target_language: str = "",
+        replace_garbled_chars: bool = False,
+        tts_engine=None,
+    ):
+        """
+        :param line_queue:      生产者写入的队列，元素为 (line: str, arrival_time: float)
+        :param callback:        单条处理回调 callback(line, arrival_time, data_type='log')
+        :param batch_callback:  批量处理回调 batch_callback(items: list[(line, float)], data_type='log')
+        :param context_buffer:  上下文缓冲区（用于 prepare 阶段 push 原文）
+        :param translator:      翻译器实例
+        :param source_language: 源语言
+        :param target_language: 目标语言
+        :param replace_garbled_chars: 是否替换乱码
+        :param tts_engine:      TTS 引擎（可选）
+        """
+        self._queue = line_queue
+        self._callback = callback
+        self._batch_callback = batch_callback
+        self._context_buffer = context_buffer
+        self._translator = translator
+        self._source_language = source_language
+        self._target_language = target_language
+        self._replace_garbled_chars = replace_garbled_chars
+        self._tts_engine = tts_engine
+        self._stop = False
+        self._executor = ThreadPoolExecutor(
+            max_workers=self.MAX_WORKERS,
+            thread_name_prefix="trans-worker"
+        )
+        self._thread = threading.Thread(
+            target=self._run,
+            name="ordered-processor",
+            daemon=True
+        )
+
+    def start(self):
+        self._thread.start()
+
+    def stop(self):
+        self._stop = True
+
+    def join(self, timeout=None):
+        self._thread.join(timeout=timeout)
+        self._executor.shutdown(wait=False)
+
+    def _run(self):
+        from modless_chat_trans.web_display import allocate_slot, fill_slot
+        from modless_chat_trans.message_processor import prepare
+        from modless_chat_trans.context_buffer import ContextEntry, extract_log_time
+
+        while not self._stop:
+            # 1. 阻塞等待第一条
+            try:
+                first = self._queue.get(timeout=1.0)
+            except Empty:
+                continue
+
+            batch = [first]
+
+            # 2. 非阻塞排空（零等待）
+            while len(batch) < self.MAX_BATCH_SIZE:
+                try:
+                    batch.append(self._queue.get_nowait())
+                except Empty:
+                    break
+
+            # ========== 阶段1：单线程 prepare + allocate_slot + push ==========
+            # 顺序执行，保证 context_buffer 顺序更新
+            # 后面的消息必须等前面的消息 push 完才能动
+            items = []  # [(prepared, slot_id, log_time)]
+            for line, arrival_time in batch:
+                # 非 CHAT 行直接提交
+                if "[CHAT]" not in line:
+                    self._executor.submit(self._callback, line, arrival_time, None, data_type="log")
+                    continue
+
+                # prepare（解析+过滤，极快）
+                prepared = prepare(line, "log", self._replace_garbled_chars)
+                if prepared is None:
+                    # 被过滤掉，分配 slot 后立即清除
+                    slot_id = allocate_slot(arrival_time=arrival_time)
+                    fill_slot(slot_id, "", "", {})
+                    continue
+
+                # 分配 slot（保证顺序）
+                slot_id = allocate_slot(name=prepared.name, arrival_time=arrival_time)
+                try:
+                    log_time = extract_log_time(line, arrival_time)
+
+                    # 立即 push 原文到 context_buffer（翻译前）
+                    # 这样后续消息的 context_messages 就能看到这条原文
+                    if self._context_buffer:
+                        self._context_buffer.push(ContextEntry(
+                            original=prepared.original,
+                            timestamp=log_time,
+                            player_name=prepared.name or "",
+                        ))
+                except Exception as error:
+                    logger.exception(f"[Log] Failed to prepare message context: {error}")
+                    fill_slot(slot_id, "[ERROR]", f"翻译失败，错误： {error}", {}, original=prepared.original)
+                    continue
+
+                items.append((prepared, slot_id, log_time))
+
+            if not items:
+                continue
+
+            # ========== 阶段2：多线程 translate + fill_slot ==========
+            for prepared, slot_id, log_time in items:
+                self._executor.submit(
+                    self._translate_and_fill,
+                    prepared, slot_id, log_time,
+                )
+
+    def _translate_and_fill(self, prepared, slot_id, log_time):
+        """在线程池中执行：翻译 + fill_slot + TTS"""
+        from modless_chat_trans.web_display import fill_slot
+        from modless_chat_trans.message_processor import translate_prepared
+
+        start_time = time.time()
+
+        # 重试/备用模型策略由 Translator 统一处理，避免调用层重复放大请求次数。
+        try:
+            # 获取上下文（此时 context_buffer 已包含所有 prepare 阶段 push 的原文）
+            ctx_messages = []
+            if self._context_buffer:
+                ctx_messages = self._context_buffer.get_context_messages()
+
+            name, translated, info = translate_prepared(
+                prepared,
+                translator=self._translator,
+                source_language=self._source_language,
+                target_language=self._target_language,
+                context_messages=ctx_messages,
+            )
+        except Exception as error:
+            logger.exception(f"[Log] Unexpected translation failure: {error}")
+            name, translated, info = "[ERROR]", f"翻译失败，错误： {error}", {}
+
+        duration = time.time() - start_time
+        if name == "[ERROR]":
+            logger.error(translated)
+            fill_slot(slot_id, name, translated or "翻译失败", info, duration=duration)
+            return
+
+        fill_slot(slot_id, name or "", translated or "", info, duration=duration, original=prepared.original)
+
+        # TTS
+        if self._tts_engine and self._tts_engine.enabled and translated:
+            self._tts_engine.enqueue(
+                name or "", translated,
+                self._target_language,
+            )
+
 
 
 # ------------------------------
@@ -143,9 +342,9 @@ class EfficientLogMonitor(FileSystemEventHandler):
     事件驱动监控：适合能触发文件修改事件的环境
     """
 
-    def __init__(self, log_path: str, user_encoding: Optional[str], callback):
+    def __init__(self, log_path: str, user_encoding: Optional[str], line_queue: Queue):
         super().__init__()
-        self.callback = callback
+        self._queue = line_queue
 
         # 路径解析：目录 -> 跟随最新日志；文件 -> 固定该文件
         if os.path.isdir(log_path):
@@ -166,8 +365,6 @@ class EfficientLogMonitor(FileSystemEventHandler):
 
         self.fp = None
         self.line_count = 0
-
-        self.executor = ThreadPoolExecutor(max_workers=64, thread_name_prefix="log_worker")
 
         self._resolve_initial_file()
         self._open_file(start_at_end=True)
@@ -266,7 +463,8 @@ class EfficientLogMonitor(FileSystemEventHandler):
                 if "[CHAT]" not in line:
                     continue
                 self.line_count += 1
-                self.executor.submit(self.callback, line, data_type="log")
+                arrival_time = time.time()
+                self._queue.put((line, arrival_time))
         except UnicodeDecodeError:
             self._switch_encoding_after_error()
         except Exception as e:
@@ -295,16 +493,13 @@ class EfficientLogMonitor(FileSystemEventHandler):
             logger.debug(f"[Efficient] on_created exception: {e}")
 
     def close(self):
-        """关闭资源：文件句柄和线程池"""
+        """关闭资源：文件句柄"""
         if self.fp:
             try:
                 self.fp.close()
             except Exception:
                 pass
             self.fp = None
-        if self.executor:
-            self.executor.shutdown(wait=True)
-            self.executor = None
 
 
 # ------------------------------
@@ -316,8 +511,8 @@ class CompatiblePollingMonitor:
     简单轮询 tail，适用于高版本 MC 优化导致 watchdog 不触发行级事件的情况
     """
 
-    def __init__(self, log_path: str, user_encoding: Optional[str], callback, interval: float = 0.2):
-        self.callback = callback
+    def __init__(self, log_path: str, user_encoding: Optional[str], line_queue: Queue, interval: float = 0.2):
+        self._queue = line_queue
         self.interval = max(0.05, float(interval))
 
         # 路径策略：目录 -> 固定 latest.log；文件 -> 固定该文件
@@ -325,8 +520,6 @@ class CompatiblePollingMonitor:
             self.current_file = os.path.abspath(os.path.join(log_path, "latest.log"))
         else:
             self.current_file = os.path.abspath(log_path)
-
-        # 编码策略
         self.user_encoding_specified = bool(user_encoding and user_encoding.lower() != "auto")
         self.user_encoding = user_encoding if self.user_encoding_specified else None
         self.fallback_encoding = _fallback_encoding_by_locale()
@@ -338,8 +531,6 @@ class CompatiblePollingMonitor:
         self.current_inode = None
         self.last_size = 0
         self._stop = False
-
-        self.executor = ThreadPoolExecutor(max_workers=64, thread_name_prefix="log_worker")
 
         self._resolve_initial_file()
         self._open_file(start_at_end=True)
@@ -458,7 +649,8 @@ class CompatiblePollingMonitor:
                             break
                         if "[CHAT]" not in line:
                             continue
-                        self.executor.submit(self.callback, line, data_type="log")
+                        arrival_time = time.time()
+                        self._queue.put((line, arrival_time))
                 except UnicodeDecodeError:
                     self._switch_encoding_after_error()
                 except Exception as e:
@@ -477,16 +669,13 @@ class CompatiblePollingMonitor:
             self.close()
 
     def close(self):
-        """关闭资源：文件句柄和线程池"""
+        """关闭资源：文件句柄"""
         if self.fp:
             try:
                 self.fp.close()
             except Exception:
                 pass
             self.fp = None
-        if self.executor:
-            self.executor.shutdown(wait=True)
-            self.executor = None
 
     def stop(self):
         self._stop = True
@@ -496,13 +685,30 @@ class CompatiblePollingMonitor:
 # 入口函数
 # ------------------------------
 
-def start_log_monitor(config: MessageCaptureConfig, callback):
+def start_log_monitor(
+    config: MessageCaptureConfig,
+    callback,
+    batch_callback=None,
+    context_buffer=None,
+    translator=None,
+    source_language: str = "",
+    target_language: str = "",
+    replace_garbled_chars: bool = False,
+    tts_engine=None,
+):
     """
     启动日志监控。
     - config.minecraft_log_path: 日志目录或文件路径
     - config.log_encoding: 用户编码；为空或 "auto" 则自动判定
     - config.monitor_mode: MonitorMode.EFFICIENT / MonitorMode.COMPATIBLE
-    - callback: 回调函数(line: str, data_type='log')
+    - callback:       单条回调 callback(line, arrival_time, data_type='log')
+    - batch_callback: 批量回调 batch_callback(items, data_type='log')
+                      为 None 时单条批量均走 callback
+    - context_buffer: 上下文缓冲区
+    - translator:     翻译器实例
+    - source_language / target_language: 翻译语言
+    - replace_garbled_chars: 是否替换乱码
+    - tts_engine:     TTS 引擎
     """
 
     mode = config.monitor_mode
@@ -517,19 +723,93 @@ def start_log_monitor(config: MessageCaptureConfig, callback):
 
     logger.info(f"Starting log monitoring at: {log_path} with mode={mode.value}")
 
+    # 如果没有专属批量回调，用单条回调包装一下
+    if batch_callback is None:
+        def batch_callback(items, data_type="log"):
+            for line, arrival_time, slot_id in items:
+                callback(line, arrival_time, slot_id, data_type=data_type)
+
+    # 共享队列（生产者写入，OrderedProcessor 读取）
+    line_queue: Queue = Queue(maxsize=500)
+
+    # 启动有序处理器
+    processor = OrderedProcessor(
+        line_queue=line_queue,
+        callback=callback,
+        batch_callback=batch_callback,
+        context_buffer=context_buffer,
+        translator=translator,
+        source_language=source_language,
+        target_language=target_language,
+        replace_garbled_chars=replace_garbled_chars,
+        tts_engine=tts_engine,
+    )
+    processor.start()
+    logger.info("[OrderedProcessor] Started ordered consumer thread.")
+
     if mode == MonitorMode.COMPATIBLE:
         # 兼容模式：轮询 tail
-        poller = CompatiblePollingMonitor(log_path=log_path, user_encoding=user_encoding, callback=callback,
-                                          interval=0.2)
-        poller.run()
+        poller = CompatiblePollingMonitor(
+            log_path=log_path,
+            user_encoding=user_encoding,
+            line_queue=line_queue,
+            interval=0.2
+        )
+        try:
+            poller.run()
+        finally:
+            processor.stop()
+            processor.join(timeout=5)
         return
 
     # 高效模式：watchdog 事件驱动
-    handler = EfficientLogMonitor(log_path=log_path, user_encoding=user_encoding, callback=callback)
+    if not WATCHDOG_AVAILABLE:
+        logger.warning(
+            "[LogMonitor] watchdog not available; falling back to compatible (polling) mode automatically."
+        )
+        poller = CompatiblePollingMonitor(
+            log_path=log_path,
+            user_encoding=user_encoding,
+            line_queue=line_queue,
+            interval=0.2
+        )
+        import atexit
+        def poller_cleanup():
+            logger.info("[Compat] Performing atexit cleanup...")
+            poller.stop()
+            processor.stop()
+            processor.join(timeout=5)
+        atexit.register(poller_cleanup)
+        try:
+            poller.run()
+        finally:
+            atexit.unregister(poller_cleanup)
+            processor.stop()
+            processor.join(timeout=5)
+        return
+
+    handler = EfficientLogMonitor(
+        log_path=log_path,
+        user_encoding=user_encoding,
+        line_queue=line_queue
+    )
     observer = Observer()
     observer.schedule(handler, handler.base_dir, recursive=False)
     logger.info(f"[Efficient] Observer scheduled for directory: {handler.base_dir}. Starting observer.")
     observer.start()
+
+    import atexit
+    def observer_cleanup():
+        logger.info("[Efficient] Performing atexit cleanup...")
+        observer.stop()
+        observer.join()
+        try:
+            handler.close()
+        except Exception:
+            pass
+        processor.stop()
+        processor.join(timeout=5)
+    atexit.register(observer_cleanup)
 
     try:
         observer.join()
@@ -542,8 +822,11 @@ def start_log_monitor(config: MessageCaptureConfig, callback):
         logger.error("[Efficient] Observer stopped due to unexpected error.")
 
     observer.join()
+    atexit.unregister(observer_cleanup)
     logger.info("Log monitoring stopped.")
     try:
         handler.close()
     except Exception:
         pass
+    processor.stop()
+    processor.join(timeout=5)

@@ -18,7 +18,7 @@ import json
 import tomllib
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple, Type
+from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union
 
 import tomli_w
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError
@@ -55,6 +55,14 @@ class MonitorMode(Enum):
     COMPATIBLE = "compatible"
 
 
+class FallbackStrategy(str, Enum):
+    """备用模型切换策略"""
+    DIRECT = "direct"                     # 主模型失败 → 立即用备用
+    RETRY_EXHAUSTED = "retry_exhausted"   # 主模型重试全部失败 → 再用备用
+    RACE_ON_FAILURE = "race_on_failure"   # 主模型首次失败 → 并发竞速两者
+    ALWAYS_RACE = "always_race"           # 始终并发竞速，取最快结果
+
+
 class LLMServiceConfig(BaseConfigModel):
     provider: str
     api_key: str
@@ -66,12 +74,17 @@ class LLMServiceConfig(BaseConfigModel):
 class TraditionalServiceConfig(BaseConfigModel):
     provider: str
     api_key: Optional[str] = None
+    # Yandex Cloud requires a folder ID; Azure regional resources require a region.
+    folder_id: Optional[str] = None
+    region: Optional[str] = None
 
 
 class TranslationServiceConfig(BaseConfigModel):
     service_type: ServiceType
     llm: Optional[LLMServiceConfig] = None
     traditional: Optional[TraditionalServiceConfig] = None
+    fallback_llm: Optional[LLMServiceConfig] = None
+    fallback_strategy: FallbackStrategy = FallbackStrategy.DIRECT
 
 
 class MessageCaptureConfig(BaseConfigModel):
@@ -114,6 +127,35 @@ class BlacklistConfig(BaseConfigModel):
     message_blacklist: List[MessageBlacklistRule] = []  # 消息内容黑名单
 
 
+class ContextConfig(BaseConfigModel):
+    """上下文翻译配置"""
+    model_config = ConfigDict(
+        alias_generator=snake_to_kebab,
+        populate_by_name=True,
+        extra="ignore",
+    )
+    # 上下文分割策略：disabled（不启用）, fixed（固定长度）或 time_based（基于时间跨度）
+    strategy: Literal["disabled", "fixed", "time_based"] = "time_based"
+    # 最多保留的历史条数（0 = 无限制）
+    context_length: int = 10
+    # 时间跨度阈值（秒），超过则视为新对话，仅 time_based 生效
+    context_timeout: float = 120.0
+    # 分块截断大小: "disabled"（传统逐条滑动窗口）, "auto"（自动计算为 context-length 的一半）,
+    # 或正整数字符串（如 "5"）。仅在 context-length > 0 且 strategy != "disabled" 时生效
+    block_truncation_size: str = "disabled"
+
+
+class TTSConfig(BaseConfigModel):
+    """TTS 朗读配置"""
+    enabled: bool = False
+    voice: str = "auto"  # "auto" = 根据目标语言自动选择
+    speed: str = "+0%"   # 语速，范围 -100% ~ +100%
+    pitch: str = "+0Hz"  # 音调，范围 -50Hz ~ +50Hz
+    max_queue_size: int = 3        # 最大排队消息数
+    read_player_name: bool = True  # 是否朗读玩家名称
+    mute_users: List[str] = []     # 不朗读的用户列表
+
+
 class ConfigV3FromInit(BaseSettings):
     model_config = SettingsConfigDict(
         alias_generator=snake_to_kebab,
@@ -129,6 +171,8 @@ class ConfigV3FromInit(BaseSettings):
     settings: SettingConfig
     glossary: Dict[str, str]
     blacklist: BlacklistConfig = BlacklistConfig()
+    context: ContextConfig = ContextConfig()
+    tts: TTSConfig = TTSConfig()
 
 
 class ConfigV3(ConfigV3FromInit):
@@ -405,7 +449,7 @@ def save_config(config: ConfigV3 | ConfigV3FromInit) -> bool:
         with open("modless-chat-trans.toml", 'wb') as f:
             tomli_w.dump(config.model_dump(by_alias=True, mode='json', exclude_none=True), f)
         return True
-    except:
+    except Exception:
         return False
 
 

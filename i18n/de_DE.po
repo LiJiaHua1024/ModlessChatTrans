@@ -31,6 +31,14 @@ msgstr "Nachricht"
 msgid "输入消息..."
 msgstr "Nachricht eingeben..."
 
+#: templates/index.html
+msgid "显示原文"
+msgstr "Original anzeigen"
+
+#: templates/index.html
+msgid "显示翻译"
+msgstr "Übersetzung anzeigen"
+
 #: main.py:100
 msgid "要发送的消息翻译完成，翻译结果已复制到剪切板"
 msgstr ""
@@ -973,3 +981,393 @@ msgstr "{} Regeln gelöscht"
 #: modless_chat_trans/interface.py:3778
 msgid "黑名单"
 msgstr "Blacklist"
+
+#: modless_chat_trans/interface.py:860
+msgid "主力模型"
+msgstr "Hauptmodell"
+
+#: modless_chat_trans/interface.py:865
+msgid "备用模型"
+msgstr "Ausweichmodell"
+
+#: modless_chat_trans/interface.py:882
+msgid "备用模型策略："
+msgstr "Ausweichmodell-Strategie:"
+
+#: modless_chat_trans/interface.py:885
+msgid "直接切换（主模型失败立即使用备用）"
+msgstr "Direkter Wechsel (Ausweichmodell sofort bei Fehler des Hauptmodells nutzen)"
+
+#: modless_chat_trans/interface.py:886
+msgid "重试耗尽后切换（主模型重试全部失败后使用备用）"
+msgstr "Wechsel nach Neuversuchen (Ausweichmodell nutzen, wenn alle Neuversuche fehlschlagen)"
+
+#: modless_chat_trans/interface.py:887
+msgid "首次失败竞速（主模型首次失败后并发竞速）"
+msgstr "Rennen nach erstem Fehler (Gleichzeitiges Rennen nach dem ersten Fehler des Hauptmodells)"
+
+#: modless_chat_trans/interface.py:888
+msgid "始终竞速（始终并发请求两者取最快）"
+msgstr "Immer Rennen (Immer beide anfragen und das Schnellste nutzen)"
+
+#: modless_chat_trans/interface.py:1229
+msgid "TTS 朗读设置"
+msgstr "TTS-Vorlese-Einstellungen"
+
+#: modless_chat_trans/interface.py:1242
+#, python-brace-format
+msgid "⚠️ TTS 模块导入失败，TTS 功能已禁用。错误信息：{}"
+msgstr "⚠️ TTS-Modul-Import fehlgeschlagen, TTS-Funktion deaktiviert. Fehler: {}"
+
+#: modless_chat_trans/interface.py:1242 modless_chat_trans/interface.py:1461
+msgid "unknown"
+msgstr "unbekannt"
+
+#: modless_chat_trans/interface.py:1257
+msgid "启用朗读："
+msgstr "Vorlesen aktivieren:"
+
+#: modless_chat_trans/interface.py:1279
+msgid "朗读语音："
+msgstr "TTS-Stimme:"
+
+#: modless_chat_trans/interface.py:1281
+msgid "加载中..."
+msgstr "Wird geladen..."
+
+#: modless_chat_trans/interface.py:1286
+msgid "不可用"
+msgstr "Nicht verfügbar"
+
+#: modless_chat_trans/interface.py:1297
+msgid "朗读语速："
+msgstr "TTS-Geschwindigkeit:"
+
+#: modless_chat_trans/interface.py:1300
+msgid "很慢"
+msgstr "Sehr langsam"
+
+#: modless_chat_trans/interface.py:1301
+msgid "较慢"
+msgstr "Langsam"
+
+#: modless_chat_trans/interface.py:1302
+msgid "正常"
+msgstr "Normal"
+
+#: modless_chat_trans/interface.py:1303
+msgid "较快"
+msgstr "Schnell"
+
+#: modless_chat_trans/interface.py:1304
+msgid "很快"
+msgstr "Sehr schnell"
+
+#: modless_chat_trans/interface.py:1324
+msgid "朗读玩家名："
+msgstr "Spielernamen vorlesen:"
+
+#: modless_chat_trans/interface.py:1344
+msgid "开启后朗读格式为\"玩家名 说：消息内容\"，关闭后只朗读消息内容"
+msgstr "Wenn aktiviert: \"Spieler sagt: Nachricht\". Wenn deaktiviert: Nur die Nachricht."
+
+#: modless_chat_trans/interface.py:1359
+msgid "测试朗读"
+msgstr "TTS testen"
+
+#: modless_chat_trans/interface.py:1381
+msgid "依赖库导入失败，TTS 功能不可用"
+msgstr "Abhängigkeitsimport fehlgeschlagen, TTS ist nicht verfügbar."
+
+#: modless_chat_trans/interface.py:1417 modless_chat_trans/interface.py:1418
+msgid "自动（根据目标语言）"
+msgstr "Automatisch (nach Zielsprache)"
+
+#: modless_chat_trans/interface.py:1421
+msgid "⚠ 语音列表加载失败，将使用默认语音"
+msgstr "⚠ Stimmenliste konnte nicht geladen werden, Standardstimme wird verwendet."
+
+#: modless_chat_trans/interface.py:1446
+#, python-brace-format
+msgid "已加载 {} 种语音，保存设置后启动翻译生效"
+msgstr "{} Stimmen geladen. Wird nach Speichern und Starten der Übersetzung aktiv."
+
+#: modless_chat_trans/interface.py:1460
+msgid "TTS 不可用"
+msgstr "TTS nicht verfügbar"
+
+#: modless_chat_trans/interface.py:1461
+#, python-brace-format
+msgid "TTS 依赖库未安装或导入失败：{}"
+msgstr "TTS-Abhängigkeit fehlt oder Import fehlgeschlagen: {}"
+
+#: modless_chat_trans/interface.py:1480
+msgid "你好，这是一条来自ModlessChatTrans的TTS朗读测试消息。"
+msgstr "Hallo, dies ist eine TTS-Testnachricht von ModlessChatTrans."
+
+#: modless_chat_trans/interface.py:1538
+msgid "测试完成"
+msgstr "Test abgeschlossen"
+
+#: modless_chat_trans/interface.py:1539
+msgid "TTS 朗读测试已完成，请检查声音输出"
+msgstr "TTS-Test abgeschlossen, bitte Audioausgabe prüfen."
+
+#: modless_chat_trans/interface.py:1548
+msgid "测试失败"
+msgstr "Test fehlgeschlagen"
+
+#: modless_chat_trans/interface.py:1549
+#, python-brace-format
+msgid "TTS 朗读测试失败：{}"
+msgstr "TTS-Test fehlgeschlagen: {}"
+
+#: modless_chat_trans/interface.py:3864
+msgid "⚠ 更新依赖不可用"
+msgstr "⚠ Update-Abhängigkeit nicht verfügbar"
+
+#: modless_chat_trans/interface.py:1711
+msgid "上下文翻译设置"
+msgstr "Kontext-Übersetzungseinstellungen"
+
+#: modless_chat_trans/interface.py:1722
+msgid "上下文分割策略："
+msgstr "Kontext-Aufteilungsstrategie:"
+
+#: modless_chat_trans/interface.py:1724
+msgid "不启用"
+msgstr "Deaktiviert"
+
+#: modless_chat_trans/interface.py:1725
+msgid "固定长度"
+msgstr "Feste Länge"
+
+#: modless_chat_trans/interface.py:1726
+msgid "基于时间跨度"
+msgstr "Basierend auf Zeitspanne"
+
+#: modless_chat_trans/interface.py:1730
+msgid ""
+"配置如何管理上下文对话。\n"
+"- 不启用：不保存任何上下文\n"
+"- 固定长度：保留固定条数的历史记录\n"
+"- 基于时间跨度：在设定的时间跨度内视为同一对话"
+msgstr ""
+"Konfigurieren Sie, wie Kontext-Konversationen verwaltet werden.\n"
+"- Deaktiviert: Es wird kein Kontext gespeichert.\n"
+"- Feste Länge: Eine feste Anzahl von Verlaufsdatensätzen wird aufbewahrt.\n"
+"- Basierend auf Zeitspanne: Innerhalb einer bestimmten Zeitspanne als dieselbe Konversation betrachtet."
+
+#: modless_chat_trans/interface.py:1744
+msgid "最大保留历史条数："
+msgstr "Maximale Anzahl an Verlaufsdatensätzen:"
+
+#: modless_chat_trans/interface.py:1750
+msgid "最多保留的历史对话条数（0 表示无限制）"
+msgstr "Maximal zu behaltende Verlaufsdatensätze (0 für unbegrenzt)"
+
+#: modless_chat_trans/interface.py:1764
+msgid "时间跨度阈值(秒)："
+msgstr "Zeitspannen-Schwellenwert (Sekunden):"
+
+#: modless_chat_trans/interface.py:1770
+msgid ""
+"超过此时长（秒）没有新消息，则视为新对话。\n"
+"仅在“基于时间跨度”策略下生效。"
+msgstr ""
+"Wenn für diese Dauer (Sekunden) keine neue Nachricht gesendet wird, wird dies als neue Konversation betrachtet.\n"
+"Gilt nur für die Strategie \"Basierend auf Zeitspanne\"."
+
+#: modless_chat_trans/interface.py:1784
+msgid "分块截断大小："
+msgstr "Chunk-Kürzungsgröße:"
+
+#: modless_chat_trans/interface.py:1787
+msgid "自动"
+msgstr "Automatisch"
+
+#: modless_chat_trans/interface.py:1789
+msgid "自定义"
+msgstr "Benutzerdefiniert"
+
+#: modless_chat_trans/interface.py:1799
+msgid ""
+"分块截断大小：\n"
+"- 自动：自动计算为最大保留历史条数的一半\n"
+"- 关闭：传统逐条滑动窗口\n"
+"- 自定义：设置具体的截断大小"
+msgstr ""
+"Chunk-Kürzungsgröße:\n"
+"- Automatisch: Wird automatisch als Hälfte der maximal beibehaltenen Verlaufsdatensätze berechnet.\n"
+"- Aus: Traditionelles Schiebefenster (einzeln).\n"
+"- Benutzerdefiniert: Stellen Sie eine bestimmte Kürzungsgröße ein."
+
+#: modless_chat_trans/interface.py:4086
+msgid "缓存管理"
+msgstr "Cache-Verwaltung"
+
+#: modless_chat_trans/interface.py:4098
+msgid "清除缓存："
+msgstr "Cache leeren:"
+
+#: modless_chat_trans/interface.py:4099
+msgid "清理不常用缓存"
+msgstr "Nicht verwendeten Cache bereinigen"
+
+#: modless_chat_trans/interface.py:4118
+msgid "清理失败"
+msgstr "Bereinigung fehlgeschlagen"
+
+#: modless_chat_trans/interface.py:4119
+#, python-brace-format
+msgid "查询缓存时出错：{}"
+msgstr "Fehler bei der Cache-Abfrage: {}"
+
+#: modless_chat_trans/interface.py:4130
+msgid "无需清理"
+msgstr "Keine Bereinigung erforderlich"
+
+#: modless_chat_trans/interface.py:4131
+msgid "没有不常用的缓存条目，所有缓存都曾被使用过。"
+msgstr "Keine ungenutzten Cache-Einträge, alle Caches wurden verwendet."
+
+#: modless_chat_trans/interface.py:4143
+msgid "确认清理"
+msgstr "Bereinigung bestätigen"
+
+#: modless_chat_trans/interface.py:4144
+#, python-brace-format
+msgid "将清理 {} 条不常用缓存条目（从未被读取），总计 {} 条中保留 {} 条。此操作不可恢复。"
+msgstr "Es werden {} nicht verwendete Cache-Einträge (nie gelesen) bereinigt, wobei {} von insgesamt {} erhalten bleiben. Dieser Vorgang kann nicht rückgängig gemacht werden."
+
+#: modless_chat_trans/interface.py:4153
+msgid "清理成功"
+msgstr "Erfolgreich bereinigt"
+
+#: modless_chat_trans/interface.py:4154
+#, python-brace-format
+msgid "已清理 {} 条不常用缓存条目"
+msgstr "{} nicht verwendete Cache-Einträge bereinigt."
+
+#: modless_chat_trans/interface.py:4589
+msgid "上下文翻译"
+msgstr "Kontext-Übersetzung"
+
+#: templates/index.html:106
+msgid "复制"
+msgstr "Kopieren"
+
+#: templates/index.html:107
+msgid "朗读"
+msgstr "Vorlesen"
+
+#: main.py:275 main.py:295
+msgid "翻译失败，未生成翻译结果。"
+msgstr "Übersetzung fehlgeschlagen, kein Übersetzungsergebnis generiert."
+
+#: modless_chat_trans/interface.py:1024
+msgid "Yandex Folder ID："
+msgstr "Yandex Folder ID:"
+
+#: modless_chat_trans/interface.py:1026
+msgid "仅 Yandex Cloud 需要"
+msgstr "Nur für Yandex Cloud erforderlich"
+
+#: modless_chat_trans/interface.py:1029
+msgid "Azure 区域（可选）："
+msgstr "Azure-Region (Optional):"
+
+#: modless_chat_trans/interface.py:1031
+msgid "仅区域或多服务 Azure 资源需要"
+msgstr "Nur für regionale oder Multi-Service-Azure-Ressourcen erforderlich"
+
+#: modless_chat_trans/interface.py:1428
+msgid "Pre-TTS："
+msgstr "Pre-TTS:"
+
+#: modless_chat_trans/interface.py:1433
+msgid "预合成热词音频"
+msgstr "Audio für häufige Wörter vorab synthetisieren"
+
+#: modless_chat_trans/interface.py:1445
+msgid "停止"
+msgstr "Stopp"
+
+#: modless_chat_trans/interface.py:1450
+msgid "清除音频"
+msgstr "Audio löschen"
+
+#: modless_chat_trans/interface.py:1458
+msgid ""
+"扫描翻译缓存中的热门译文并预合成音频，避免重复合成以减少加载时间。\n"
+"朗读时自动使用已预合成的音频，未命中则正常合成。\n"
+"开启\"朗读玩家名\"时不可用。"
+msgstr "Scannt beliebte Übersetzungen im Cache und synthetisiert Audio vorab, um wiederholte Synthesen zu vermeiden und die Ladezeit zu verkürzen.\nVerwendet beim Vorlesen automatisch vorab synthetisiertes Audio; bei einem Fehlschlag wird die normale Synthese verwendet.\nNicht verfügbar, wenn „Spielernamen vorlesen“ aktiviert ist."
+
+#: modless_chat_trans/interface.py:1470 modless_chat_trans/interface.py:1719
+msgid "手动预合成热门音频，朗读时自动命中"
+msgstr "Beliebtes Audio manuell vorab synthetisieren; wird beim Vorlesen automatisch verwendet"
+
+#: modless_chat_trans/interface.py:1676 modless_chat_trans/interface.py:1704
+msgid "开启\"朗读玩家名\"后，Pre-TTS 不可用"
+msgstr "Pre-TTS ist nicht verfügbar, wenn „Spielernamen vorlesen“ aktiviert ist"
+
+#: modless_chat_trans/interface.py:1697
+#, python-brace-format
+msgid "正在预合成 {}/{}..."
+msgstr "Vorab-Synthese {}/{}..."
+
+#: modless_chat_trans/interface.py:1714
+#, python-brace-format
+msgid "本次预合成 {} 条，跳过 {} 条；共 {} 条音频（{:.1f} MB）"
+msgstr "Diesmal {} vorab synthetisiert, {} übersprungen; insgesamt {} Audios ({:.1f} MB)"
+
+#: modless_chat_trans/interface.py:1728 modless_chat_trans/interface.py:1739
+msgid "Pre-TTS 不可用"
+msgstr "Pre-TTS Nicht verfügbar"
+
+#: modless_chat_trans/interface.py:1729
+msgid "Pre-TTS 引擎加载失败"
+msgstr "Fehler beim Laden der Pre-TTS-Engine"
+
+#: modless_chat_trans/interface.py:1740
+msgid "配置尚未初始化"
+msgstr "Konfiguration noch nicht initialisiert"
+
+#: modless_chat_trans/interface.py:1752
+msgid "Pre-TTS 失败"
+msgstr "Pre-TTS Fehlgeschlagen"
+
+#: modless_chat_trans/interface.py:1753
+msgid "启动预合成失败（TTS 依赖不可用或已在运行）"
+msgstr "Starten der Vorab-Synthese fehlgeschlagen (TTS-Abhängigkeiten nicht verfügbar oder wird bereits ausgeführt)"
+
+#: modless_chat_trans/interface.py:1766
+msgid "正在扫描翻译缓存..."
+msgstr "Übersetzungs-Cache wird gescannt..."
+
+#: modless_chat_trans/interface.py:1775
+msgid "正在停止..."
+msgstr "Stoppen..."
+
+#: modless_chat_trans/interface.py:1796
+msgid "将清除所有已预合成的 Pre-TTS 音频。此操作不可恢复。"
+msgstr "Alle vorab synthetisierten Pre-TTS-Audios werden gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden."
+
+#: modless_chat_trans/interface.py:1806
+msgid "清除 Pre-TTS 音频时出错"
+msgstr "Fehler beim Löschen des Pre-TTS-Audios"
+
+#: modless_chat_trans/interface.py:1816
+msgid "尚未预合成任何 Pre-TTS 音频"
+msgstr "Es wurde noch kein Pre-TTS-Audio vorab synthetisiert"
+
+#: modless_chat_trans/interface.py:1826
+#, python-brace-format
+msgid "已清除 {} 条 Pre-TTS 音频"
+msgstr "{} Pre-TTS-Audios gelöscht"
+
+#: modless_chat_trans/web_display.py:209
+msgid "翻译超时，请稍后重试。"
+msgstr "Zeitüberschreitung bei der Übersetzung, bitte versuchen Sie es später noch einmal."
+

@@ -31,6 +31,14 @@ msgstr "訊息"
 msgid "输入消息..."
 msgstr "輸入訊息..."
 
+#: templates/index.html
+msgid "显示原文"
+msgstr "顯示原文"
+
+#: templates/index.html
+msgid "显示翻译"
+msgstr "顯示翻譯"
+
 #: main.py:100
 msgid "要发送的消息翻译完成，翻译结果已复制到剪切板"
 msgstr "要傳送的訊息已翻譯完成，結果已複製到剪貼簿"
@@ -946,3 +954,393 @@ msgstr "已清空 {} 個規則"
 #: modless_chat_trans/interface.py:3778
 msgid "黑名单"
 msgstr "黑名單"
+
+#: modless_chat_trans/interface.py:860
+msgid "主力模型"
+msgstr "主力模型"
+
+#: modless_chat_trans/interface.py:865
+msgid "备用模型"
+msgstr "備用模型"
+
+#: modless_chat_trans/interface.py:882
+msgid "备用模型策略："
+msgstr "備用模型策略："
+
+#: modless_chat_trans/interface.py:885
+msgid "直接切换（主模型失败立即使用备用）"
+msgstr "直接切換（主模型失敗立即使用備用）"
+
+#: modless_chat_trans/interface.py:886
+msgid "重试耗尽后切换（主模型重试全部失败后使用备用）"
+msgstr "重試耗盡後切換（主模型重試全部失敗後使用備用）"
+
+#: modless_chat_trans/interface.py:887
+msgid "首次失败竞速（主模型首次失败后并发竞速）"
+msgstr "首次失敗競速（主模型首次失敗後併發競速）"
+
+#: modless_chat_trans/interface.py:888
+msgid "始终竞速（始终并发请求两者取最快）"
+msgstr "始終競速（始終併發請求兩者取最快）"
+
+#: modless_chat_trans/interface.py:1229
+msgid "TTS 朗读设置"
+msgstr "TTS 朗讀設定"
+
+#: modless_chat_trans/interface.py:1242
+#, python-brace-format
+msgid "⚠️ TTS 模块导入失败，TTS 功能已禁用。错误信息：{}"
+msgstr "⚠️ TTS 模組匯入失敗，TTS 功能已停用。錯誤資訊：{}"
+
+#: modless_chat_trans/interface.py:1242 modless_chat_trans/interface.py:1461
+msgid "unknown"
+msgstr "未知"
+
+#: modless_chat_trans/interface.py:1257
+msgid "启用朗读："
+msgstr "啟用朗讀："
+
+#: modless_chat_trans/interface.py:1279
+msgid "朗读语音："
+msgstr "朗讀語音："
+
+#: modless_chat_trans/interface.py:1281
+msgid "加载中..."
+msgstr "載入中..."
+
+#: modless_chat_trans/interface.py:1286
+msgid "不可用"
+msgstr "不可用"
+
+#: modless_chat_trans/interface.py:1297
+msgid "朗读语速："
+msgstr "朗讀語速："
+
+#: modless_chat_trans/interface.py:1300
+msgid "很慢"
+msgstr "很慢"
+
+#: modless_chat_trans/interface.py:1301
+msgid "较慢"
+msgstr "較慢"
+
+#: modless_chat_trans/interface.py:1302
+msgid "正常"
+msgstr "正常"
+
+#: modless_chat_trans/interface.py:1303
+msgid "较快"
+msgstr "較快"
+
+#: modless_chat_trans/interface.py:1304
+msgid "很快"
+msgstr "很快"
+
+#: modless_chat_trans/interface.py:1324
+msgid "朗读玩家名："
+msgstr "朗讀玩家名："
+
+#: modless_chat_trans/interface.py:1344
+msgid "开启后朗读格式为\"玩家名 说：消息内容\"，关闭后只朗读消息内容"
+msgstr "開啟後朗讀格式為\"玩家名 說：訊息內容\"，關閉後只朗讀訊息內容"
+
+#: modless_chat_trans/interface.py:1359
+msgid "测试朗读"
+msgstr "測試朗讀"
+
+#: modless_chat_trans/interface.py:1381
+msgid "依赖库导入失败，TTS 功能不可用"
+msgstr "依賴庫匯入失敗，TTS 功能不可用"
+
+#: modless_chat_trans/interface.py:1417 modless_chat_trans/interface.py:1418
+msgid "自动（根据目标语言）"
+msgstr "自動（根據目標語言）"
+
+#: modless_chat_trans/interface.py:1421
+msgid "⚠ 语音列表加载失败，将使用默认语音"
+msgstr "⚠ 語音列表載入失敗，將使用預設語音"
+
+#: modless_chat_trans/interface.py:1446
+#, python-brace-format
+msgid "已加载 {} 种语音，保存设置后启动翻译生效"
+msgstr "已載入 {} 種語音，儲存設定後啟動翻譯生效"
+
+#: modless_chat_trans/interface.py:1460
+msgid "TTS 不可用"
+msgstr "TTS 不可用"
+
+#: modless_chat_trans/interface.py:1461
+#, python-brace-format
+msgid "TTS 依赖库未安装或导入失败：{}"
+msgstr "TTS 依賴庫未安裝或匯入失敗：{}"
+
+#: modless_chat_trans/interface.py:1480
+msgid "你好，这是一条来自ModlessChatTrans的TTS朗读测试消息。"
+msgstr "你好，這是一條來自ModlessChatTrans的TTS朗讀測試訊息。"
+
+#: modless_chat_trans/interface.py:1538
+msgid "测试完成"
+msgstr "測試完成"
+
+#: modless_chat_trans/interface.py:1539
+msgid "TTS 朗读测试已完成，请检查声音输出"
+msgstr "TTS 朗讀測試已完成，請檢查聲音輸出"
+
+#: modless_chat_trans/interface.py:1548
+msgid "测试失败"
+msgstr "測試失敗"
+
+#: modless_chat_trans/interface.py:1549
+#, python-brace-format
+msgid "TTS 朗读测试失败：{}"
+msgstr "TTS 朗讀測試失敗：{}"
+
+#: modless_chat_trans/interface.py:3864
+msgid "⚠ 更新依赖不可用"
+msgstr "⚠ 更新依賴不可用"
+
+#: modless_chat_trans/interface.py:1711
+msgid "上下文翻译设置"
+msgstr "上下文翻譯設定"
+
+#: modless_chat_trans/interface.py:1722
+msgid "上下文分割策略："
+msgstr "上下文分割策略："
+
+#: modless_chat_trans/interface.py:1724
+msgid "不启用"
+msgstr "不啟用"
+
+#: modless_chat_trans/interface.py:1725
+msgid "固定长度"
+msgstr "固定長度"
+
+#: modless_chat_trans/interface.py:1726
+msgid "基于时间跨度"
+msgstr "基於時間跨度"
+
+#: modless_chat_trans/interface.py:1730
+msgid ""
+"配置如何管理上下文对话。\n"
+"- 不启用：不保存任何上下文\n"
+"- 固定长度：保留固定条数的历史记录\n"
+"- 基于时间跨度：在设定的时间跨度内视为同一对话"
+msgstr ""
+"配置如何管理上下文對話。\n"
+"- 不啟用：不保存任何上下文\n"
+"- 固定長度：保留固定條數的歷史記錄\n"
+"- 基於時間跨度：在設定的時間跨度內視為同一對話"
+
+#: modless_chat_trans/interface.py:1744
+msgid "最大保留历史条数："
+msgstr "最大保留歷史條數："
+
+#: modless_chat_trans/interface.py:1750
+msgid "最多保留的历史对话条数（0 表示无限制）"
+msgstr "最多保留的歷史對話條數（0 表示無限制）"
+
+#: modless_chat_trans/interface.py:1764
+msgid "时间跨度阈值(秒)："
+msgstr "時間跨度閾值(秒)："
+
+#: modless_chat_trans/interface.py:1770
+msgid ""
+"超过此时长（秒）没有新消息，则视为新对话。\n"
+"仅在“基于时间跨度”策略下生效。"
+msgstr ""
+"超過此時長（秒）沒有新訊息，則視為新對話。\n"
+"僅在“基於時間跨度”策略下生效。"
+
+#: modless_chat_trans/interface.py:1784
+msgid "分块截断大小："
+msgstr "分塊截斷大小："
+
+#: modless_chat_trans/interface.py:1787
+msgid "自动"
+msgstr "自動"
+
+#: modless_chat_trans/interface.py:1789
+msgid "自定义"
+msgstr "自定義"
+
+#: modless_chat_trans/interface.py:1799
+msgid ""
+"分块截断大小：\n"
+"- 自动：自动计算为最大保留历史条数的一半\n"
+"- 关闭：传统逐条滑动窗口\n"
+"- 自定义：设置具体的截断大小"
+msgstr ""
+"分塊截斷大小：\n"
+"- 自動：自動計算為最大保留歷史條數的一半\n"
+"- 關閉：傳統逐條滑動窗口\n"
+"- 自定義：設置具體的截斷大小"
+
+#: modless_chat_trans/interface.py:4086
+msgid "缓存管理"
+msgstr "快取管理"
+
+#: modless_chat_trans/interface.py:4098
+msgid "清除缓存："
+msgstr "清除快取："
+
+#: modless_chat_trans/interface.py:4099
+msgid "清理不常用缓存"
+msgstr "清理不常用快取"
+
+#: modless_chat_trans/interface.py:4118
+msgid "清理失败"
+msgstr "清理失敗"
+
+#: modless_chat_trans/interface.py:4119
+#, python-brace-format
+msgid "查询缓存时出错：{}"
+msgstr "查詢快取時出錯：{}"
+
+#: modless_chat_trans/interface.py:4130
+msgid "无需清理"
+msgstr "無需清理"
+
+#: modless_chat_trans/interface.py:4131
+msgid "没有不常用的缓存条目，所有缓存都曾被使用过。"
+msgstr "沒有不常用的快取條目，所有快取都曾被使用過。"
+
+#: modless_chat_trans/interface.py:4143
+msgid "确认清理"
+msgstr "確認清理"
+
+#: modless_chat_trans/interface.py:4144
+#, python-brace-format
+msgid "将清理 {} 条不常用缓存条目（从未被读取），总计 {} 条中保留 {} 条。此操作不可恢复。"
+msgstr "將清理 {} 條不常用快取條目（從未被讀取），總計 {} 條中保留 {} 條。此操作不可恢復。"
+
+#: modless_chat_trans/interface.py:4153
+msgid "清理成功"
+msgstr "清理成功"
+
+#: modless_chat_trans/interface.py:4154
+#, python-brace-format
+msgid "已清理 {} 条不常用缓存条目"
+msgstr "已清理 {} 條不常用快取條目"
+
+#: modless_chat_trans/interface.py:4589
+msgid "上下文翻译"
+msgstr "上下文翻譯"
+
+#: templates/index.html:106
+msgid "复制"
+msgstr "複製"
+
+#: templates/index.html:107
+msgid "朗读"
+msgstr "朗讀"
+
+#: main.py:275 main.py:295
+msgid "翻译失败，未生成翻译结果。"
+msgstr "翻譯失敗，未生成翻譯結果。"
+
+#: modless_chat_trans/interface.py:1024
+msgid "Yandex Folder ID："
+msgstr "Yandex Folder ID："
+
+#: modless_chat_trans/interface.py:1026
+msgid "仅 Yandex Cloud 需要"
+msgstr "僅 Yandex Cloud 需要"
+
+#: modless_chat_trans/interface.py:1029
+msgid "Azure 区域（可选）："
+msgstr "Azure 區域（可選）："
+
+#: modless_chat_trans/interface.py:1031
+msgid "仅区域或多服务 Azure 资源需要"
+msgstr "僅區域或多服務 Azure 資源需要"
+
+#: modless_chat_trans/interface.py:1428
+msgid "Pre-TTS："
+msgstr "Pre-TTS："
+
+#: modless_chat_trans/interface.py:1433
+msgid "预合成热词音频"
+msgstr "預合成熱詞音頻"
+
+#: modless_chat_trans/interface.py:1445
+msgid "停止"
+msgstr "停止"
+
+#: modless_chat_trans/interface.py:1450
+msgid "清除音频"
+msgstr "清除音頻"
+
+#: modless_chat_trans/interface.py:1458
+msgid ""
+"扫描翻译缓存中的热门译文并预合成音频，避免重复合成以减少加载时间。\n"
+"朗读时自动使用已预合成的音频，未命中则正常合成。\n"
+"开启\"朗读玩家名\"时不可用。"
+msgstr "掃描翻譯緩存中的熱門譯文並預合成音頻，避免重複合成以減少加載時間。\n朗讀時自動使用已預合成的音頻，未命中則正常合成。\n開啟\"朗讀玩家名\"時不可用。"
+
+#: modless_chat_trans/interface.py:1470 modless_chat_trans/interface.py:1719
+msgid "手动预合成热门音频，朗读时自动命中"
+msgstr "手動預合成熱門音頻，朗讀時自動命中"
+
+#: modless_chat_trans/interface.py:1676 modless_chat_trans/interface.py:1704
+msgid "开启\"朗读玩家名\"后，Pre-TTS 不可用"
+msgstr "開啟\"朗讀玩家名\"後，Pre-TTS 不可用"
+
+#: modless_chat_trans/interface.py:1697
+#, python-brace-format
+msgid "正在预合成 {}/{}..."
+msgstr "正在預合成 {}/{}..."
+
+#: modless_chat_trans/interface.py:1714
+#, python-brace-format
+msgid "本次预合成 {} 条，跳过 {} 条；共 {} 条音频（{:.1f} MB）"
+msgstr "本次預合成 {} 條，跳過 {} 條；共 {} 條音頻（{:.1f} MB）"
+
+#: modless_chat_trans/interface.py:1728 modless_chat_trans/interface.py:1739
+msgid "Pre-TTS 不可用"
+msgstr "Pre-TTS 不可用"
+
+#: modless_chat_trans/interface.py:1729
+msgid "Pre-TTS 引擎加载失败"
+msgstr "Pre-TTS 引擎加載失敗"
+
+#: modless_chat_trans/interface.py:1740
+msgid "配置尚未初始化"
+msgstr "配置尚未初始化"
+
+#: modless_chat_trans/interface.py:1752
+msgid "Pre-TTS 失败"
+msgstr "Pre-TTS 失敗"
+
+#: modless_chat_trans/interface.py:1753
+msgid "启动预合成失败（TTS 依赖不可用或已在运行）"
+msgstr "啟動預合成失敗（TTS 依賴不可用或已在運行）"
+
+#: modless_chat_trans/interface.py:1766
+msgid "正在扫描翻译缓存..."
+msgstr "正在掃描翻譯緩存..."
+
+#: modless_chat_trans/interface.py:1775
+msgid "正在停止..."
+msgstr "正在停止..."
+
+#: modless_chat_trans/interface.py:1796
+msgid "将清除所有已预合成的 Pre-TTS 音频。此操作不可恢复。"
+msgstr "將清除所有已預合成的 Pre-TTS 音頻。此操作不可恢復。"
+
+#: modless_chat_trans/interface.py:1806
+msgid "清除 Pre-TTS 音频时出错"
+msgstr "清除 Pre-TTS 音頻時出錯"
+
+#: modless_chat_trans/interface.py:1816
+msgid "尚未预合成任何 Pre-TTS 音频"
+msgstr "尚未預合成任何 Pre-TTS 音頻"
+
+#: modless_chat_trans/interface.py:1826
+#, python-brace-format
+msgid "已清除 {} 条 Pre-TTS 音频"
+msgstr "已清除 {} 條 Pre-TTS 音頻"
+
+#: modless_chat_trans/web_display.py:209
+msgid "翻译超时，请稍后重试。"
+msgstr "翻譯超時，請稍後重試。"
+
