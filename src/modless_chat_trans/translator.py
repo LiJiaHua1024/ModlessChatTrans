@@ -89,7 +89,6 @@ LLM_PROVIDERS_PREFIXES = {
     "Azure": "azure/",
     "Amazon SageMaker": "sagemaker/",
     "Amazon Bedrock": "bedrock/",
-    "Google Vertex AI": "vertex_ai/",
     "Gemini": "gemini/",
     "Hugging Face": "huggingface/",
     "Mistral AI": "mistral/",

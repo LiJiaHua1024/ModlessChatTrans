@@ -443,69 +443,6 @@ class GeminiTests(unittest.TestCase):
                                [{"role": "user", "content": "hi"}], api_key="", timeout=5)
 
 
-class VertexAITests(unittest.TestCase):
-    def setUp(self):
-        self.server = MockServer()
-        self.original_credentials = gateway._vertex_credentials
-        self.original_token = gateway._google_access_token
-
-    def tearDown(self):
-        gateway._vertex_credentials = self.original_credentials
-        gateway._google_access_token = self.original_token
-        self.server.close()
-
-    def test_vertex_request_shape(self):
-        self.server.queue({"candidates": [{"content": {"parts": [{"text": "ok"}]}}],
-                           "usageMetadata": {}})
-        gateway._vertex_credentials = lambda: {
-            "type": "service_account", "client_email": "sa@proj.iam.gserviceaccount.com",
-            "project_id": "my-project", "private_key": "x",
-        }
-        gateway._google_access_token = lambda creds: "fake-token"
-        result = gateway.completion(
-            "vertex_ai/gemini-2.5-flash",
-            [{"role": "user", "content": "hi"}], api_key="",
-            api_base=self.server.base_url, timeout=5,
-        )
-        record = self.server.recorded[-1]
-        self.assertEqual(record["path"], "/models/gemini-2.5-flash:generateContent")
-        self.assertEqual(record["headers_lower"]["authorization"], "Bearer fake-token")
-        self.assertEqual(record["body_json"]["contents"][0]["role"], "user")
-        self.assertEqual(result.choices[0].message.content, "ok")
-
-    def test_vertex_region_from_env(self):
-        captured = {}
-
-        def fake_post(url, **kwargs):
-            captured["url"] = url
-            return {"candidates": [{"content": {"parts": [{"text": "ok"}]}}], "usageMetadata": {}}
-
-        original_post = gateway._http_post
-        gateway._http_post = fake_post
-        try:
-            gateway._vertex_credentials = lambda: {
-                "type": "service_account", "client_email": "sa@proj.iam.gserviceaccount.com",
-                "project_id": "my-project", "private_key": "x",
-            }
-            gateway._google_access_token = lambda creds: "fake-token"
-            with unittest.mock.patch.dict("os.environ", {"VERTEXAI_LOCATION": "europe-west4"}, clear=False):
-                gateway.completion("vertex_ai/gemini-2.5-flash",
-                                   [{"role": "user", "content": "hi"}], api_key="", timeout=5)
-        finally:
-            gateway._http_post = original_post
-        self.assertEqual(
-            captured["url"],
-            "https://europe-west4-aiplatform.googleapis.com/v1/projects/my-project/"
-            "locations/europe-west4/publishers/google/models/gemini-2.5-flash:generateContent",
-        )
-
-    def test_vertex_requires_credentials(self):
-        gateway._vertex_credentials = lambda: None
-        with self.assertRaises(gateway.GatewayAuthenticationError):
-            gateway.completion("vertex_ai/gemini-2.5-flash",
-                               [{"role": "user", "content": "hi"}], api_key="", timeout=5)
-
-
 class SigV4Tests(unittest.TestCase):
     def test_aws_get_vanilla_test_vector(self):
         """AWS 文档公开测试向量（get-vanilla）交叉验证。"""

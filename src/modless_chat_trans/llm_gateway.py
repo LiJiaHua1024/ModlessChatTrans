@@ -32,7 +32,6 @@ litellm 兼容的对象（``choices[0].message.content`` 与
   非流式 chat 路径移植（见各 handler 注释中的对应源码位置）。
 """
 
-import base64
 import hashlib
 import hmac
 import json
@@ -444,8 +443,8 @@ def _azure_complete(model: str, messages: list, *, temperature, max_tokens,
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# Gemini（AI Studio）与 Vertex AI
-# （litellm/llms/gemini/ + llms/vertex_ai/，payload 转换同源）
+# Gemini（AI Studio）
+# （litellm/llms/gemini/ 的 payload 转换）
 # ═══════════════════════════════════════════════════════════════════════
 
 # 常量对齐 litellm constants.py
@@ -586,139 +585,6 @@ def _parse_gemini_response(body: dict, model: str) -> ModelResponse:
     except (KeyError, IndexError, TypeError):
         pass
     return ModelResponse(content=content, usage=usage, model=model, finish_reason=finish_reason)
-
-
-# ── Vertex AI ──────────────────────────────────────────────────────────
-# 凭证：google-auth（若已安装）或 cryptography（可选依赖）签署服务账号 JWT；
-# 两者都不可用时给出明确错误（与旧 litellm 依赖 google-auth 的行为一致）。
-
-
-def _vertex_credentials() -> Optional[dict]:
-    """从 VERTEXAI_CREDENTIALS / GOOGLE_APPLICATION_CREDENTIALS 读取凭证 JSON。"""
-    raw = os.getenv("VERTEXAI_CREDENTIALS")
-    if raw:
-        raw = raw.strip()
-        if raw.startswith("{"):
-            return json.loads(raw)
-        if os.path.isfile(raw):
-            with open(raw, "r", encoding="utf-8") as fh:
-                return json.load(fh)
-    path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-    if path and os.path.isfile(path):
-        with open(path, "r", encoding="utf-8") as fh:
-            return json.load(fh)
-    return None
-
-
-def _google_access_token(credentials: dict) -> str:
-    """通过 google-auth（优先）或 cryptography（回退）获取访问令牌。"""
-    try:
-        import google.auth
-        import google.oauth2.service_account
-
-        scopes = ["https://www.googleapis.com/auth/cloud-platform"]
-        if credentials.get("type") == "service_account":
-            creds = google.oauth2.service_account.Credentials.from_service_account_info(
-                credentials, scopes=scopes
-            )
-        else:
-            creds, _ = google.auth.default(scopes=scopes)
-        from google.auth.transport.requests import Request
-
-        creds.refresh(Request())
-        return creds.token
-    except ImportError:
-        pass
-
-    try:
-        from cryptography.hazmat.primitives import hashes, serialization
-        from cryptography.hazmat.primitives.asymmetric import padding
-    except ImportError as exc:
-        raise GatewayAuthenticationError(
-            "Vertex AI requires 'google-auth' or 'cryptography'. Install one of them "
-            "(e.g. `uv sync --extra vertex`) to use the Google Vertex AI provider."
-        ) from exc
-
-    if credentials.get("type") != "service_account":
-        raise GatewayAuthenticationError(
-            "Vertex AI only supports 'service_account' credentials without google-auth. "
-            "Install google-auth for other credential types."
-        )
-
-    now = int(time.time())
-    header = {"alg": "RS256", "typ": "JWT"}
-    claims = {
-        "iss": credentials["client_email"],
-        "scope": "https://www.googleapis.com/auth/cloud-platform",
-        "aud": "https://oauth2.googleapis.com/token",
-        "iat": now,
-        "exp": now + 3600,
-    }
-    signing_input = (
-        base64.urlsafe_b64encode(json.dumps(header, separators=(",", ":")).encode()).rstrip(b"=")
-        + b"."
-        + base64.urlsafe_b64encode(json.dumps(claims, separators=(",", ":")).encode()).rstrip(b"=")
-    )
-    key = serialization.load_pem_private_key(
-        credentials["private_key"].encode(), password=None
-    )
-    signature = key.sign(signing_input, padding.PKCS1v15(), hashes.SHA256())
-    jwt = (signing_input + b"." +
-           base64.urlsafe_b64encode(signature).rstrip(b"=")).decode("ascii")
-
-    try:
-        response = requests.post(
-            "https://oauth2.googleapis.com/token",
-            data={
-                "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
-                "assertion": jwt,
-            },
-            timeout=30,
-        )
-    except requests.exceptions.RequestException as exc:
-        raise GatewayError(f"Failed to exchange Vertex AI service account token: {exc}") from exc
-    if response.status_code >= 400:
-        raise GatewayError(
-            f"Failed to exchange Vertex AI service account token "
-            f"(HTTP {response.status_code}): {response.text[:300]}"
-        )
-    try:
-        return response.json()["access_token"]
-    except (KeyError, ValueError) as exc:
-        raise GatewayError("Vertex AI token exchange returned no access_token") from exc
-
-
-def _vertex_complete(model: str, messages: list, *, temperature, max_tokens,
-                     api_key: Optional[str], api_base: Optional[str], timeout: float,
-                     reasoning_effort: Optional[str] = None, **kwargs) -> ModelResponse:
-    credentials = _vertex_credentials()
-    if credentials is None:
-        raise GatewayAuthenticationError(
-            "Vertex AI credentials not found. Set VERTEXAI_CREDENTIALS or "
-            "GOOGLE_APPLICATION_CREDENTIALS (or pass vertex_ai_credentials)."
-        )
-    token = _google_access_token(credentials)
-
-    project = (kwargs.get("vertex_project") or kwargs.get("vertex_ai_project")
-               or _env("VERTEXAI_PROJECT") or credentials.get("project_id"))
-    if not project:
-        raise GatewayError("Could not resolve Vertex AI project_id.")
-    region = (kwargs.get("vertex_location") or _env("VERTEXAI_LOCATION", "VERTEX_LOCATION")
-              or "us-central1")
-    model_name = _strip_model_prefix(model, "vertex_ai/")
-    base = (api_base or "").strip()
-    if base:
-        url = f"{base.rstrip('/')}/models/{urllib.parse.quote(model_name, safe='-_.')}:generateContent"
-    else:
-        host = f"https://{region}-aiplatform.googleapis.com"
-        url = (f"{host}/v1/projects/{urllib.parse.quote(project, safe='')}/locations/"
-               f"{urllib.parse.quote(region, safe='')}/publishers/google/models/"
-               f"{urllib.parse.quote(model_name, safe='-_.')}:generateContent")
-    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
-    payload = _gemini_payload(model_name, messages, temperature=temperature,
-                              max_tokens=max_tokens, reasoning_effort=reasoning_effort)
-    body = _http_post(url, headers=headers, payload=payload, timeout=timeout)
-    return _parse_gemini_response(body, model)
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1342,7 +1208,6 @@ _SPECIAL = {
     "anthropic": _anthropic_complete,
     "azure": _azure_complete,
     "gemini": _gemini_complete,
-    "vertex_ai": _vertex_complete,
     "bedrock": _bedrock_complete,
     "sagemaker": _sagemaker_complete,
     "watson": _watson_complete,
