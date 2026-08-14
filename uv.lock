@@ -1302,7 +1302,7 @@ wheels = [
 
 [[package]]
 name = "modlesschattrans"
-version = "3.2.1"
+version = "3.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "cryptography", version = "47.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version <= '3.9'" },
