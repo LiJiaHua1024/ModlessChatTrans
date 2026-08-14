@@ -1800,6 +1800,8 @@ name = "modlesschattrans"
 version = "3.2.1"
 source = { editable = "." }
 dependencies = [
+    { name = "cryptography", version = "47.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version <= '3.9'" },
+    { name = "cryptography", version = "50.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version > '3.9'" },
     { name = "diskcache" },
     { name = "edge-tts" },
     { name = "flask" },
@@ -1827,12 +1829,6 @@ dependencies = [
     { name = "watchdog" },
 ]
 
-[package.optional-dependencies]
-vertex = [
-    { name = "cryptography", version = "47.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version <= '3.9'" },
-    { name = "cryptography", version = "50.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version > '3.9'" },
-]
-
 [package.dev-dependencies]
 tools = [
     { name = "babel" },
@@ -1840,7 +1836,7 @@ tools = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cryptography", marker = "extra == 'vertex'", specifier = ">=42.0.0" },
+    { name = "cryptography", specifier = ">=42.0.0" },
     { name = "diskcache", specifier = ">=5.6.3" },
     { name = "edge-tts", specifier = ">=7.2.8" },
     { name = "flask", specifier = ">=3.0.0,<3.2.0" },
@@ -1861,7 +1857,6 @@ requires-dist = [
     { name = "urllib3", specifier = ">=2.6.3" },
     { name = "watchdog", specifier = ">=6.0.0,<7.0.0" },
 ]
-provides-extras = ["vertex"]
 
 [package.metadata.requires-dev]
 tools = [{ name = "babel", specifier = "==2.17.0" }]
