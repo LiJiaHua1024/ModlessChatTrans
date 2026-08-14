@@ -24,7 +24,6 @@ import time
 from enum import Enum
 from typing import Dict, Callable, Set
 from urllib.parse import quote
-import lazy_loader as lazy
 from modless_chat_trans.logger import logger
 from modless_chat_trans.config import ServiceType, FallbackStrategy
 # 内置轻量 LLM 网关（litellm.completion 兼容子集，模块本身很轻，直接导入）
@@ -182,17 +181,17 @@ TRADITIONAL_LANGUAGE_FALLBACKS = {
 
 import threading
 
-ts = lazy.load("translators")
+# 免费翻译走内置精简引擎（free_translators），不再依赖第三方 translators 库
+from modless_chat_trans import free_translators as ts
 
-# 独立锁：llm_gateway 与 translators 可并行预加载，互不阻塞
+# 独立锁：llm_gateway 与 free_translators 可并行预加载，互不阻塞
 _llm_import_lock = threading.Lock()
 _ts_import_lock = threading.Lock()
 
 
 def ensure_ts_loaded():
-    """确保传统翻译服务依赖已加载（translators 及其使用的 requests）"""
+    """确保传统翻译服务依赖已加载（内置免费翻译引擎及其使用的 requests）"""
     with _ts_import_lock:
-        _ = ts.__name__
         _http()
 
 
@@ -1342,7 +1341,8 @@ class Translator:
             return dispatch_map[service_lower](text, traditional_api_key, source_language, target_language)
         else:
             translated_message = ts.translate_text(text, translator=service_lower,
-                                                   from_language=source_language, to_language=target_language)
+                                                   from_language=source_language, to_language=target_language,
+                                                   timeout=self.timeout)
             if translated_message:
                 return translated_message
             else:

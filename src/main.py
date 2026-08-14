@@ -37,7 +37,6 @@ _CORE_DEPS = [
     ("tomli_w",          "TOML 配置文件写入"),
     ("flask",            "WebUI 服务器（设置界面与翻译结果展示）"),
     ("diskcache",        "翻译结果缓存"),
-    ("lazy_loader",      "模块懒加载（翻译服务）"),
     ("requests",         "HTTP 客户端（翻译 API 请求）"),
 ]
 
