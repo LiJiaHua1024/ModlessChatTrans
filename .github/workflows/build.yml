@@ -251,6 +251,7 @@ jobs:
           '--include-package=urllib3'
           '--include-package=litellm'
           '--include-package=translators'
+          '--include-package=google.auth'
           '--include-package-data=certifi'
           '--include-package-data=litellm'
           '--include-data-dir=src/locales=locales'
