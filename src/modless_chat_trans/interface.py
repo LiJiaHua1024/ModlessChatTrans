@@ -4348,7 +4348,7 @@ class SettingInterface(QFrame):
         # 当前版本信息
         version_label = BodyLabel(_('当前版本：'), content_frame)
         current_version_label = BodyLabel(
-            f'v{self.parent_window.updater.current_version if hasattr(self.parent_window, "updater") and self.parent_window.updater else _("未知")}',
+            f'{self.parent_window.info.version if hasattr(self.parent_window, "info") and self.parent_window.info else _("未知")}',
             content_frame)
         # current_version_label.setStyleSheet("color: #666666;")
 

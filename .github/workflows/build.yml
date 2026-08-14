@@ -214,8 +214,10 @@ jobs:
 
         if ($isFormal) {
             # ═══ 正式版本 ═══
+            # Nuitka 的 --file-version/--product-version 只接受纯数字（≤4 段），
+            # edition 由第 4 位编码（0=standard, 1=lite, 2=nano）
             $fileVersion = "$semverBase.$editionNum"
-            $productVersion = "$semverBase$editionSuffix"
+            $productVersion = "$semverBase.$editionNum"
             $outputFileName = "ModlessChatTrans_v$semverBase$editionSuffix"
             $buildChannel = "stable"
             $tempdirVersion = $semverBase
