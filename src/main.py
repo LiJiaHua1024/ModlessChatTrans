@@ -38,7 +38,6 @@ _CORE_DEPS = [
     ("tomli_w",          "TOML 配置文件写入"),
     ("flask",            "WebUI 服务器（翻译结果展示）"),
     ("diskcache",        "翻译结果缓存"),
-    ("lazy_loader",      "模块懒加载（翻译服务）"),
     ("requests",         "HTTP 客户端（翻译 API 请求）"),
 ]
 
@@ -536,7 +535,7 @@ def _start_background_preload(cfg):
             if cfg.send_translation_independent:
                 services_to_load.add(cfg.send_translation.service_type)
 
-            # llm_gateway 与 translators 使用独立锁，可并行预加载
+            # llm_gateway 与 free_translators 使用独立锁，可并行预加载
             if ServiceType.LLM in services_to_load:
                 ensure_litellm_loaded()
             if ServiceType.TRADITIONAL in services_to_load:
