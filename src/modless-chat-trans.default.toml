@@ -17,13 +17,18 @@ fallback-strategy = "direct"
 [player-translation.llm]
 provider = "OpenAI"
 api-key = ""
-api-base = ""
 model = "gpt-5.6-luna"
 deep-translate = false
 max-tokens = 4096
 
 # 备用 LLM 模型（可选，仅 service-type="llm" 时生效）。
-# 在界面中填写模型代号后才会写入配置；本地端点可以不填 API Key。
+# provider 与 model 留空表示未启用；旧配置升级时依赖本段补齐缺失的 max-tokens。
+[player-translation.fallback-llm]
+provider = ""
+api-key = ""
+model = ""
+deep-translate = false
+max-tokens = 4096
 
 [message-presentation]
 web-port = 56552
@@ -32,6 +37,25 @@ web-port = 56552
 monitor-clipboard = true
 source-language = "Simplified Chinese"
 target-language = "English"
+
+# 独立发送翻译（可选，仅 send-translation-independent = true 时生效）。
+[send-translation]
+service-type = "llm"
+fallback-strategy = "direct"
+
+[send-translation.llm]
+provider = "OpenAI"
+api-key = ""
+model = "gpt-5.6-luna"
+deep-translate = false
+max-tokens = 4096
+
+[send-translation.fallback-llm]
+provider = ""
+api-key = ""
+model = ""
+deep-translate = false
+max-tokens = 4096
 
 [settings]
 debug = false
