@@ -799,6 +799,16 @@ function buildLlmFields(P, model, data) {
         </label>
         <button type="button" class="help-button" data-tip="deepTranslateHelp"><svg class="icon"><use href="#icon-help"/></svg></button>
       </div>
+    </div>
+    <label class="form-label">${t("maxTokens")}</label>
+    <div class="form-control">
+      <div class="win-spinbox" id="tr${p}MaxTokens" data-min="1" data-max="100000" data-step="1">
+        <input type="number" class="spinbox-input" value="4096">
+        <div class="spinbox-buttons">
+          <button type="button" class="spin-up" tabindex="-1"><svg class="icon"><use href="#icon-chevron-up"/></svg></button>
+          <button type="button" class="spin-down" tabindex="-1"><svg class="icon"><use href="#icon-chevron-down"/></svg></button>
+        </div>
+      </div>
     </div>`;
 }
 
@@ -806,8 +816,8 @@ function buildServicePanel(kind, section) {
   const panel = $("#tr" + kind.charAt(0).toUpperCase() + kind.slice(1) + "Panel");
   panel.innerHTML = "";
   const isLlm = section.service_type === "llm";
-  const llm = section.llm || { provider: "", api_key: "", api_base: "", model: "", deep_translate: false };
-  const fallback = section.fallback_llm || { provider: "", api_key: "", api_base: "", model: "", deep_translate: false };
+  const llm = section.llm || { provider: "", api_key: "", api_base: "", model: "", deep_translate: false, max_tokens: 4096 };
+  const fallback = section.fallback_llm || { provider: "", api_key: "", api_base: "", model: "", deep_translate: false, max_tokens: 4096 };
   const trad = section.traditional || { provider: "", api_key: "", folder_id: "", region: "" };
   const strategy = section.fallback_strategy || "direct";
 
@@ -925,6 +935,7 @@ function buildServicePanel(kind, section) {
   initClearButtons(panel);
   initSwitches(panel);
   initComboboxes(panel);
+  initSpinboxes(panel);
 
   const providerSelect = $("#tr" + P + "MainProvider");
   setSelectOptions(providerSelect, STATE.llmProviders.map((v) => ({ label: v, value: v })), llm.provider, "selectServicePlaceholder");
@@ -941,6 +952,8 @@ function buildServicePanel(kind, section) {
   $("#tr" + P + "FallbackModel input").value = fallback.model || "";
   $("#tr" + P + "MainDeep").checked = !!llm.deep_translate;
   $("#tr" + P + "FallbackDeep").checked = !!fallback.deep_translate;
+  $("#tr" + P + "MainMaxTokens").setValue(llm.max_tokens ?? 4096);
+  $("#tr" + P + "FallbackMaxTokens").setValue(fallback.max_tokens ?? 4096);
 
   const tradProviderSelect = $("#tr" + P + "TradProvider");
   setSelectOptions(tradProviderSelect, STATE.traditionalServices.map((v) => ({ label: v, value: v })), trad.provider, "selectServicePlaceholder");
@@ -1080,7 +1093,7 @@ $("#trIndependent").addEventListener("change", () => {
     if (!STATE.translation.send) {
       STATE.translation.send = {
         service_type: playerServiceType(),
-        llm: { provider: "", api_key: "", api_base: "", model: "", deep_translate: false },
+        llm: { provider: "", api_key: "", api_base: "", model: "", deep_translate: false, max_tokens: 4096 },
         fallback_llm: null,
         fallback_strategy: "direct",
         traditional: { provider: "", api_key: "", folder_id: "", region: "" },
@@ -1608,6 +1621,7 @@ function gatherService(kind) {
         api_base: $("#tr" + P + "MainUrl").getComboValue(),
         model: $("#tr" + P + "MainModel input").value || "",
         deep_translate: $("#tr" + P + "MainDeep").checked,
+        max_tokens: $("#tr" + P + "MainMaxTokens").getValue(),
       },
       fallback_llm: {
         provider: $("#tr" + P + "FallbackProvider").value || "",
@@ -1615,6 +1629,7 @@ function gatherService(kind) {
         api_base: $("#tr" + P + "FallbackUrl").getComboValue(),
         model: $("#tr" + P + "FallbackModel input").value || "",
         deep_translate: $("#tr" + P + "FallbackDeep").checked,
+        max_tokens: $("#tr" + P + "FallbackMaxTokens").getValue(),
       },
       fallback_strategy: $("#tr" + P + "Strategy").value || "direct",
       traditional: null,

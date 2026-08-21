@@ -134,6 +134,7 @@ def build_i18n():
         "deepTranslateHelp": _("启用显式思维链（Chain of Thought）翻译策略\n"
                                "优点：提供更高质量的翻译\n"
                                "缺点：一定程度增加token消耗，响应延迟提高"),
+        "maxTokens": _("最大输出Token数："),
         "fallbackStrategy": _("备用模型策略："),
         "strategyDirect": _("直接切换（主模型失败立即使用备用）"),
         "strategyRetry": _("重试耗尽后切换（主模型重试全部失败后使用备用）"),
@@ -534,6 +535,7 @@ def _snapshot_translation_section(state, service_config):
             "api_base": llm.api_base or "",
             "model": llm.model or "",
             "deep_translate": llm.deep_translate,
+            "max_tokens": llm.max_tokens,
         }
         fb = service_config.fallback_llm
         if fb:
@@ -543,6 +545,7 @@ def _snapshot_translation_section(state, service_config):
                 "api_base": fb.api_base or "",
                 "model": fb.model or "",
                 "deep_translate": fb.deep_translate,
+                "max_tokens": fb.max_tokens,
             }
         else:
             section["fallback_llm"] = None
@@ -750,6 +753,7 @@ def _parse_llm_section(data):
         api_base=api_base,
         model=data.get("model") or "",
         deep_translate=bool(data.get("deep_translate", False)),
+        max_tokens=int(data.get("max_tokens") or 4096),
     )
 
 
