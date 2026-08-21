@@ -69,6 +69,7 @@ class LLMServiceConfig(BaseConfigModel):
     api_base: Optional[str] = None
     model: str
     deep_translate: bool
+    max_tokens: int
 
 
 class TraditionalServiceConfig(BaseConfigModel):

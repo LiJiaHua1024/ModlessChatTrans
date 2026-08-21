@@ -20,6 +20,7 @@ api-key = ""
 api-base = ""
 model = "gpt-5.6-luna"
 deep-translate = false
+max-tokens = 4096
 
 # 备用 LLM 模型（可选，仅 service-type="llm" 时生效）。
 # 在界面中填写模型代号后才会写入配置；本地端点可以不填 API Key。

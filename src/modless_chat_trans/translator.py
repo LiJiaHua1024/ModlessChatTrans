@@ -586,7 +586,7 @@ class Translator:
                     {"role": "user", "content": message}
                 ],
                 "temperature": temperature,
-                "max_tokens": 512 if expect_json else 256,
+                "max_tokens": llm_cfg.max_tokens * (2 if expect_json else 1),
                 "api_key": llm_cfg.api_key,
                 "num_retries": 0,
             }
@@ -1225,7 +1225,7 @@ class Translator:
                 {"role": "user", "content": user_message},
             ],
             "temperature": temperature,
-            "max_tokens": max(2048, 128 * n + 512),
+            "max_tokens": self.translation_service_config.llm.max_tokens * n,
             "api_key": self.translation_service_config.llm.api_key,
             "num_retries": 0,
             "timeout": self.timeout,
