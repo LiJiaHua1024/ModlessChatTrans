@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import re
 import shutil
 import os
 import time
@@ -20,7 +21,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from modless_chat_trans.file_utils import get_path, get_platform
 from modless_chat_trans.logger import logger
-from modless_chat_trans._version import get_edition
+from modless_chat_trans._version import get_edition, is_dev_build
 
 # ──────────────────────────────
 # 可选依赖：requests / packaging
@@ -63,6 +64,21 @@ def parse_version_with_edition(version_str):
     return core, "standard"
 
 
+def _base_version_str(core):
+    """
+    剥离预发布/构建后缀，返回基础版本号（如 '3.3.0-canary' -> '3.3.0'）。
+
+    优先用 packaging 的 base_version 规范化（可处理 '3.3.0.dev0' 等点分隔写法），
+    非法版本（如 '3.3.0-canary'）回退到按 '-'/'+ 截断。
+    """
+    if UPDATER_AVAILABLE:
+        try:
+            return Version(core).base_version
+        except InvalidVersion:
+            pass
+    return re.split(r"[-+]", core, maxsplit=1)[0]
+
+
 class Updater:
     def __init__(self, current_version, owner, repo, include_prerelease=False):
         logger.info(f"Initializing updater: version={current_version}, repo={owner}/{repo}")
@@ -72,19 +88,21 @@ class Updater:
         if UPDATER_AVAILABLE:
             # 去掉 edition 后缀，只用基础语义化版本号参与比较
             core, edition = parse_version_with_edition(current_version)
+            base = _base_version_str(core)
             try:
+                # 完整版本（含 dev/canary 等预发布标识）仅用于日志展示
                 self.current_version = Version(core)
             except InvalidVersion:
-                # 非正式版本（如 3.2.1-canary+abc12345），提取基础版本号
-                import re
-                base = re.split(r"[-+]", core, maxsplit=1)[0]
-                logger.debug(f"Non-PEP 440 version '{core}', using base '{base}' for comparison")
-                try:
-                    self.current_version = Version(base)
-                except InvalidVersion:
-                    self.current_version = core
+                # 非正式版本（如 3.2.1-canary+abc12345），保留原字符串用于展示
+                self.current_version = core
+            # 比较只用基础版本号：剥离预发布/构建后缀后，相等版本不算更新
+            try:
+                self.current_base_version = Version(base)
+            except InvalidVersion:
+                self.current_base_version = base
         else:
             self.current_version = current_version.lstrip("v")
+            self.current_base_version = self.current_version
         self.owner = owner
         self.repo = repo
         self.include_prerelease = include_prerelease
@@ -95,28 +113,47 @@ class Updater:
         if not UPDATER_AVAILABLE:
             logger.debug("[Updater] Skipping update check: dependencies not available")
             return None
+        if is_dev_build():
+            # 本地开发构建（v3.3.0-dev）不执行任何更新检查
+            logger.info("[Updater] Skipping update check: development build")
+            return None
         logger.info(f"Checking for updates (edition: {self.edition})")
         try:
             latest_release = self._get_latest_release()
             if latest_release:
                 latest_version_str = latest_release.get("tag_name").lstrip("v")
                 logger.debug(f"Latest version found: {latest_version_str}")
-                try:
-                    latest_core, _ = parse_version_with_edition(latest_version_str)
-                    latest_version = Version(latest_core)
-                    if latest_version > self.current_version:
-                        logger.info(f"New version available: {latest_version_str}")
-                        return latest_release
-                    else:
-                        logger.info(f"Current version {self.current_version} is up to date")
-                except InvalidVersion:
-                    logger.error(f"Invalid version format: {latest_version_str}")
+                if self._is_newer(latest_version_str):
+                    logger.info(f"New version available: {latest_version_str}")
+                    return latest_release
+                logger.info(f"Current version {self.current_version} is up to date")
             else:
                 logger.warning("No release information found")
             return None
         except Exception as e:
             logger.error(f"Error checking for updates: {str(e)}")
             return None
+
+    def _is_newer(self, latest_version_str):
+        """
+        判断远端版本是否比当前版本新。
+
+        双方均剥离预发布/构建后缀后比较基础版本号：
+        相等（如 3.3.0-dev / 3.3.0-canary+sha 对 3.3.0）不算更新，
+        避免同版本的开发/预发布构建被误报为有更新。
+        """
+        latest_core, _ = parse_version_with_edition(latest_version_str)
+        try:
+            latest_version = Version(_base_version_str(latest_core))
+        except InvalidVersion:
+            logger.error(f"Invalid version format: {latest_version_str}")
+            return False
+        try:
+            return latest_version > self.current_base_version
+        except TypeError:
+            # current_base_version 解析失败时保持字符串，无法比较则视为无更新
+            logger.error(f"Cannot compare versions: {latest_version} vs {self.current_base_version}")
+            return False
 
     @staticmethod
     def download_update(latest_release, progress_callback=None, thread_count_callback=None):
@@ -208,7 +245,7 @@ class Updater:
                     logger.debug(f"Skipping release {release.get('tag_name')} (edition mismatch)")
                     continue
                 try:
-                    version = Version(core)
+                    version = Version(_base_version_str(core))
                 except InvalidVersion:
                     logger.debug(f"Skipping release {release.get('tag_name')} (invalid version)")
                     continue
