@@ -810,14 +810,29 @@ class TranslationServiceInterface(QFrame):
         grid.addWidget(optimization_label, 4, 0, Qt.AlignmentFlag.AlignRight)
         grid.addLayout(switch_container, 4, 1)
 
+        # 最大输出 Token 数
+        max_tokens_label = BodyLabel(_('最大输出Token数：'), parent)
+        max_tokens_spin = SpinBox(parent)
+        max_tokens_spin.setRange(1, 100000)
+        max_tokens_spin.setFixedWidth(300)
+
+        if config_section:
+            max_tokens_spin.setValue(config_section.max_tokens)
+        else:
+            max_tokens_spin.setValue(4096)
+
+        grid.addWidget(max_tokens_label, 5, 0, Qt.AlignmentFlag.AlignRight)
+        grid.addWidget(max_tokens_spin, 5, 1)
+
         grid.setColumnStretch(2, 1)
-        grid.setRowStretch(5, 1)
+        grid.setRowStretch(6, 1)
 
         fields['service_combo'] = service_combo
         fields['api_key_edit'] = api_key_edit
         fields['api_url_edit'] = api_url_edit
         fields['model_edit'] = model_edit
         fields['optimization_switch'] = optimization_switch
+        fields['max_tokens_spin'] = max_tokens_spin
         fields['grid'] = grid
 
         return fields
@@ -3440,7 +3455,8 @@ class StartInterface(QFrame):
                 api_base=None if player_widget.main_fields['api_url_edit'].currentData()
                 else player_widget.main_fields['api_url_edit'].currentText(),
                 model=player_widget.main_fields['model_edit'].text(),
-                deep_translate=player_widget.main_fields['optimization_switch'].isChecked()
+                deep_translate=player_widget.main_fields['optimization_switch'].isChecked(),
+                max_tokens=player_widget.main_fields['max_tokens_spin'].value()
             )
             # 备用模型只要求模型代号；本地/OpenAI 兼容端点可能不需要 API Key。
             fallback_llm = None
@@ -3452,7 +3468,8 @@ class StartInterface(QFrame):
                     api_base=None if fb_fields['api_url_edit'].currentData()
                     else fb_fields['api_url_edit'].currentText(),
                     model=fb_fields['model_edit'].text(),
-                    deep_translate=fb_fields['optimization_switch'].isChecked()
+                    deep_translate=fb_fields['optimization_switch'].isChecked(),
+                    max_tokens=fb_fields['max_tokens_spin'].value()
                 )
             cfg.player_translation = TranslationServiceConfig(
                 service_type=ServiceType.LLM,
@@ -3486,7 +3503,8 @@ class StartInterface(QFrame):
                     api_base=None if send_widget.main_fields['api_url_edit'].currentData()
                     else send_widget.main_fields['api_url_edit'].currentText(),
                     model=send_widget.main_fields['model_edit'].text(),
-                    deep_translate=send_widget.main_fields['optimization_switch'].isChecked()
+                    deep_translate=send_widget.main_fields['optimization_switch'].isChecked(),
+                    max_tokens=send_widget.main_fields['max_tokens_spin'].value()
                 )
                 # 备用模型只要求模型代号；本地/OpenAI 兼容端点可能不需要 API Key。
                 fallback_llm = None
@@ -3498,7 +3516,8 @@ class StartInterface(QFrame):
                         api_base=None if fb_fields['api_url_edit'].currentData()
                         else fb_fields['api_url_edit'].currentText(),
                         model=fb_fields['model_edit'].text(),
-                        deep_translate=fb_fields['optimization_switch'].isChecked()
+                        deep_translate=fb_fields['optimization_switch'].isChecked(),
+                        max_tokens=fb_fields['max_tokens_spin'].value()
                     )
                 cfg.send_translation = TranslationServiceConfig(
                     service_type=ServiceType.LLM,
