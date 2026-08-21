@@ -38,6 +38,15 @@ except ImportError:
         IS_CI_BUILD = False
 
 
+def is_dev_build() -> bool:
+    """
+    是否为本地开发构建（非 CI 产物，版本形如 v3.3.0-dev）。
+
+    开发构建不执行任何更新检查（自动或手动）。
+    """
+    return not IS_CI_BUILD
+
+
 def get_edition() -> str:
     """
     返回当前构建的变体（edition）。
