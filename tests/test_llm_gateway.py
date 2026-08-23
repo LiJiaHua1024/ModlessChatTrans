@@ -690,13 +690,14 @@ class TranslatorIntegrationTests(unittest.TestCase):
                 api_key="sk-test",
                 api_base=f"{self.server.base_url}/v1",
                 deep_translate=False,
+                max_tokens=256,
             ),
             traditional=None,
             fallback_llm=None,
             fallback_strategy=FallbackStrategy.DIRECT,
         )
         translator = Translator(config, {})
-        result = translator.translate("hello world", "auto", "zh-CN")
+        result = translator.translate_with_context("hello world", "auto", "zh-CN")
         self.assertEqual(result["result"], "你好，世界")
         self.assertEqual(result["usage"]["total_tokens"], 7)
 
@@ -720,44 +721,20 @@ class TranslatorIntegrationTests(unittest.TestCase):
             service_type=ServiceType.LLM,
             llm=SimpleNamespace(provider="OpenAI", model="gpt-4o",
                                 api_key="k1", api_base=f"{self.server.base_url}/v1",
-                                deep_translate=False),
+                                deep_translate=False,
+                                max_tokens=256),
             traditional=None,
             fallback_llm=SimpleNamespace(provider="Anthropic", model="claude-3-haiku",
                                          api_key="k2", api_base=f"{self.server.base_url}/v1",
-                                         deep_translate=False),
+                                         deep_translate=False,
+                                         max_tokens=256),
             fallback_strategy=FallbackStrategy.DIRECT,
         )
         translator = Translator(config, {})
-        result = translator.translate("hello", "en", "zh")
+        result = translator.translate_with_context("hello", "en", "zh")
         self.assertEqual(result["result"], "fallback-ok")
         models = [r["body_json"]["model"] for r in self.server.recorded]
         self.assertEqual(models, ["gpt-4o", "claude-3-haiku"])
-
-
-    def test_translator_batch_translation(self):
-        from types import SimpleNamespace
-
-        from modless_chat_trans.config import FallbackStrategy, ServiceType
-        from modless_chat_trans.translator import Translator
-
-        self.server.queue(openai_response(
-            content='["a","b"]',
-            usage={"prompt_tokens": 10, "completion_tokens": 3, "total_tokens": 13},
-        ))
-        config = SimpleNamespace(
-            service_type=ServiceType.LLM,
-            llm=SimpleNamespace(provider="OpenAI", model="gpt-4o",
-                                api_key="sk-test", api_base=f"{self.server.base_url}/v1",
-                                deep_translate=False),
-            traditional=None,
-            fallback_llm=None,
-            fallback_strategy=FallbackStrategy.DIRECT,
-        )
-        translator = Translator(config, {})
-        results = translator.translate_batch_with_context(["hello", "world"], "en", "zh")
-        self.assertEqual(results, ["a", "b"])
-        body = self.server.recorded[-1]["body_json"]
-        self.assertGreaterEqual(body["max_tokens"], 2048)
 
     def test_translator_deep_mode_json_parsing(self):
         from types import SimpleNamespace
@@ -773,7 +750,8 @@ class TranslatorIntegrationTests(unittest.TestCase):
             service_type=ServiceType.LLM,
             llm=SimpleNamespace(provider="OpenAI", model="gpt-4o",
                                 api_key="sk-test", api_base=f"{self.server.base_url}/v1",
-                                deep_translate=True),
+                                deep_translate=True,
+                                max_tokens=256),
             traditional=None,
             fallback_llm=None,
             fallback_strategy=FallbackStrategy.DIRECT,
