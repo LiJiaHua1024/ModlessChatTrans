@@ -506,12 +506,13 @@ class Translator:
                     extra_body = {"provider": {"order": provider_order}}
 
             # Gemini 3 系列是原生思考模型，思考无法关闭且默认消耗大量输出 token
-            # 显式降级 reasoning 到 minimal effort，避免译文被思考 token 截断
+            # 显式降级 reasoning 到 low effort，避免译文被思考 token 截断。
+            # 注意：部分型号（如 gemini-3.7-flash）不支持 minimal 档，low 是全系可用的最低档
             if self._is_gemini3 and provider == "OpenRouter":
                 # OpenRouter 通过 extra_body 透传 reasoning 参数
-                extra_body = {**{"reasoning": {"effort": "minimal"}}, **(extra_body or {})}
+                extra_body = {**{"reasoning": {"effort": "low"}}, **(extra_body or {})}
                 logger.debug(
-                    f"Gemini 3 model ({model}) detected: capping reasoning to minimal effort"
+                    f"Gemini 3 model ({model}) detected: capping reasoning to low effort"
                 )
 
             # 为模型名添加提供商前缀（如果尚未添加）
@@ -537,10 +538,10 @@ class Translator:
             }
 
             if self._is_gemini3 and provider != "OpenRouter":
-                llm_params["reasoning_effort"] = "minimal"
+                llm_params["reasoning_effort"] = "low"
                 llm_params["drop_params"] = True
                 logger.debug(
-                    f"Gemini 3 model ({model}) detected: sending reasoning_effort=minimal"
+                    f"Gemini 3 model ({model}) detected: sending reasoning_effort=low"
                 )
 
             # API URL 留空自动
