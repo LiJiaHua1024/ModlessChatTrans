@@ -405,7 +405,7 @@ class GeminiTests(unittest.TestCase):
         self.assertEqual(usage["completion_tokens"], 4)
         self.assertEqual(usage["total_tokens"], 14)
 
-    def test_gemini3_uses_v1alpha_and_thinking_level(self):
+    def test_gemini3_uses_v1alpha_and_maps_minimal_to_low(self):
         self.response = {"candidates": [{"content": {"parts": [{"text": "ok"}]}}],
                          "usageMetadata": {}}
         gateway.completion(
@@ -417,7 +417,7 @@ class GeminiTests(unittest.TestCase):
                          "https://generativelanguage.googleapis.com/v1alpha/models/"
                          "gemini-3-flash-preview:generateContent")
         self.assertEqual(self.captured["payload"]["generationConfig"]["thinkingConfig"],
-                         {"thinkingLevel": "minimal", "includeThoughts": True})
+                         {"thinkingLevel": "low", "includeThoughts": True})
 
     def test_gemini3_pro_uses_low_thinking_level(self):
         self.response = {"candidates": [{"content": {"parts": [{"text": "ok"}]}}],

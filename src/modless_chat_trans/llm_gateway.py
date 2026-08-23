@@ -495,7 +495,8 @@ def _gemini_thinking_config(model: str, reasoning_effort: str) -> Optional[dict]
     if _is_gemini_3(model):
         is_flash = "flash" in model.lower() and "gemini-3" in model.lower()
         if effort == "minimal":
-            level = "minimal" if is_flash else "low"
+            # 部分 Gemini 3 型号（如 gemini-3.7-flash）不支持 MINIMAL 思考档，统一映射为全系可用的 low
+            level = "low"
         elif effort == "medium":
             level = "medium" if (is_flash or "gemini-3.1-pro-preview" in model.lower()) else "high"
         else:
