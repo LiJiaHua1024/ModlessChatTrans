@@ -446,26 +446,21 @@ def process_decorator(function):
     def wrapper(data, data_type, translator, source_language, target_language,
                 rage_mode=False, context_messages=None):
         """
-        处理日志文件中的一行（包括翻译）
+        处理一条待发送消息（剪贴板 / WebUI 输入，含翻译）
 
         :param data: 需要处理的数据
-        :param data_type: 数据类型
+        :param data_type: 数据类型（"clipboard" 或 "webui"）
         :param translator: Translator类的实例
         :param source_language: 源语言
         :param target_language: 目标语言
         :param rage_mode: 是否启用红温模式
         :param context_messages: 历史上下文（单条汇总消息，将嵌入 user prompt）
         :return:
-            - None：应被丢弃的数据（可能是不包含[CHAT]的日志行，也可能是系统消息且filter_server_messages为True）
+            - None：应被丢弃的数据
             - 长度为3的元组：
-                - data_type == "log":
-                    - [0]: 名称（如果有）, if [0] == "[ERROR]": 翻译失败，此时[1]为错误信息
-                    - [1]: 翻译后的消息
-                    - [2]: 相关信息（如是否命中缓存、消耗token等）
-                - data_type in ("clipboard", "webui"):
-                    - [0]: 是否翻译失败，if [0]: 翻译失败，此时[1]为错误信息
-                    - [1]: 翻译后的消息
-                    - [2]: 相关信息（如是否命中缓存、消耗token等）
+                - [0]: 是否翻译失败，if [0]: 翻译失败，此时[1]为错误信息
+                - [1]: 翻译后的消息
+                - [2]: 相关信息（如是否命中缓存、消耗token等）
         """
 
         name, original_chat_message, message_type = function(data, data_type, replace_garbled_character)
@@ -550,10 +545,7 @@ def process_decorator(function):
                         )
                         cache[original_chat_message] = translated_chat_message
 
-            if data_type == "log":
-                return name or "", translated_chat_message, info
-            elif data_type in ("clipboard", "webui"):
-                return False, translated_chat_message, info
+            return False, translated_chat_message, info
 
         return None
 

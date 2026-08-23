@@ -281,21 +281,6 @@ class Translator:
         logger.info(f"Initialized Translator")
         logger.debug(f"Literal glossary terms loaded: {len(self._literal_glossary)}")
 
-    def translate(self, text, source_language, target_language, message_type: MessageType = MessageType.PLAYER):
-        """
-        Public API: Standard translation (or Deep Translate if configured).
-
-        :param text: 待翻译文本
-        :param source_language: 源语言
-        :param target_language: 目标语言
-        :param message_type: 消息类型，决定可用的翻译模式
-        """
-        return self._dispatch_translation(
-            text, source_language, target_language,
-            mode=TranslationMode.NORMAL,
-            message_type=message_type
-        )
-
     def translate_with_context(
             self,
             text: str,
