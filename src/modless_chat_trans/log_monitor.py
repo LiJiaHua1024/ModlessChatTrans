@@ -19,7 +19,7 @@ import threading
 import locale
 from queue import Queue, Empty
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional, Tuple, Callable
+from typing import Optional, Tuple
 
 
 
@@ -66,8 +66,6 @@ class OrderedProcessor:
     def __init__(
         self,
         line_queue: Queue,
-        callback: Callable,
-        batch_callback: Callable,
         context_buffer=None,
         translator=None,
         source_language: str = "",
@@ -77,8 +75,6 @@ class OrderedProcessor:
     ):
         """
         :param line_queue:      生产者写入的队列，元素为 (line: str, arrival_time: float)
-        :param callback:        单条处理回调 callback(line, arrival_time, data_type='log')
-        :param batch_callback:  批量处理回调 batch_callback(items: list[(line, float)], data_type='log')
         :param context_buffer:  上下文缓冲区（用于 prepare 阶段 push 原文）
         :param translator:      翻译器实例
         :param source_language: 源语言
@@ -87,8 +83,6 @@ class OrderedProcessor:
         :param tts_engine:      TTS 引擎（可选）
         """
         self._queue = line_queue
-        self._callback = callback
-        self._batch_callback = batch_callback
         self._context_buffer = context_buffer
         self._translator = translator
         self._source_language = source_language
@@ -142,9 +136,8 @@ class OrderedProcessor:
             # 后面的消息必须等前面的消息 push 完才能动
             items = []  # [(prepared, slot_id, log_time)]
             for line, arrival_time in batch:
-                # 非 CHAT 行直接提交
+                # 非 CHAT 行（join/leave 等）不参与翻译，直接丢弃
                 if "[CHAT]" not in line:
-                    self._executor.submit(self._callback, line, arrival_time, None, data_type="log")
                     continue
 
                 # prepare（解析+过滤，极快）
@@ -687,8 +680,6 @@ class CompatiblePollingMonitor:
 
 def start_log_monitor(
     config: MessageCaptureConfig,
-    callback,
-    batch_callback=None,
     context_buffer=None,
     translator=None,
     source_language: str = "",
@@ -701,9 +692,6 @@ def start_log_monitor(
     - config.minecraft_log_path: 日志目录或文件路径
     - config.log_encoding: 用户编码；为空或 "auto" 则自动判定
     - config.monitor_mode: MonitorMode.EFFICIENT / MonitorMode.COMPATIBLE
-    - callback:       单条回调 callback(line, arrival_time, data_type='log')
-    - batch_callback: 批量回调 batch_callback(items, data_type='log')
-                      为 None 时单条批量均走 callback
     - context_buffer: 上下文缓冲区
     - translator:     翻译器实例
     - source_language / target_language: 翻译语言
@@ -723,20 +711,12 @@ def start_log_monitor(
 
     logger.info(f"Starting log monitoring at: {log_path} with mode={mode.value}")
 
-    # 如果没有专属批量回调，用单条回调包装一下
-    if batch_callback is None:
-        def batch_callback(items, data_type="log"):
-            for line, arrival_time, slot_id in items:
-                callback(line, arrival_time, slot_id, data_type=data_type)
-
     # 共享队列（生产者写入，OrderedProcessor 读取）
     line_queue: Queue = Queue(maxsize=500)
 
     # 启动有序处理器
     processor = OrderedProcessor(
         line_queue=line_queue,
-        callback=callback,
-        batch_callback=batch_callback,
         context_buffer=context_buffer,
         translator=translator,
         source_language=source_language,
