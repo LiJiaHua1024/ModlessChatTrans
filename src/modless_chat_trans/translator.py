@@ -281,21 +281,6 @@ class Translator:
         logger.info(f"Initialized Translator")
         logger.debug(f"Literal glossary terms loaded: {len(self._literal_glossary)}")
 
-    def translate(self, text, source_language, target_language, message_type: MessageType = MessageType.PLAYER):
-        """
-        Public API: Standard translation (or Deep Translate if configured).
-
-        :param text: 待翻译文本
-        :param source_language: 源语言
-        :param target_language: 目标语言
-        :param message_type: 消息类型，决定可用的翻译模式
-        """
-        return self._dispatch_translation(
-            text, source_language, target_language,
-            mode=TranslationMode.NORMAL,
-            message_type=message_type
-        )
-
     def translate_with_context(
             self,
             text: str,
@@ -311,7 +296,7 @@ class Translator:
         :param source_language: 源语言
         :param target_language: 目标语言
         :param message_type: 消息类型
-        :param context_messages: 历史上下文 messages 列表（可直接拼入 LLM 请求），为 None/[] 则退化为无上下文
+        :param context_messages: 历史上下文（单条汇总 user 消息，将嵌入 user prompt），为 None/[] 则退化为无上下文
         """
         context_messages = context_messages or []
         return self._dispatch_translation(
@@ -320,46 +305,6 @@ class Translator:
             message_type=message_type,
             context_messages=context_messages,
         )
-
-    def translate_batch_with_context(
-            self,
-            texts: list[str],
-            source_language: str,
-            target_language: str,
-            message_type: MessageType = MessageType.PLAYER,
-            context_messages: list = None,
-    ) -> list[str] | None:
-        """
-        Public API: 将多条消息打包为一个 request，返回按顺序对应的译文列表。
-
-        :param texts: 待翻译文本列表
-        :param source_language: 源语言
-        :param target_language: 目标语言
-        :param message_type: 消息类型
-        :param context_messages: 历史上下文 messages 列表
-        :return: 与 texts 等长的译文列表，或 None（失败，调用方应降级处理）
-        """
-        if not texts:
-            return []
-        context_messages = context_messages or []
-
-        # 仅 LLM 服务支持批量翻译；传统服务返回 None→降级
-        if self.translation_service_config.service_type != ServiceType.LLM:
-            return None
-
-        # Deep 模式输出结构与批量数组冲突，不参与打包
-        effective_mode = self._get_effective_mode(TranslationMode.NORMAL, message_type)
-        if effective_mode == TranslationMode.DEEP:
-            return None
-
-        try:
-            return self._execute_llm_batch_translation(
-                texts, source_language, target_language,
-                message_type, context_messages
-            )
-        except Exception as e:
-            logger.warning(f"Batch translation failed, will fallback to single: {e}")
-            return None
 
     def translate_with_profanity(self, text, source_language, target_language,
                                  message_type: MessageType = MessageType.SEND):
@@ -561,12 +506,13 @@ class Translator:
                     extra_body = {"provider": {"order": provider_order}}
 
             # Gemini 3 系列是原生思考模型，思考无法关闭且默认消耗大量输出 token
-            # 显式降级 reasoning 到 minimal effort，避免译文被思考 token 截断
+            # 显式降级 reasoning 到 low effort，避免译文被思考 token 截断。
+            # 注意：部分型号（如 gemini-3.7-flash）不支持 minimal 档，low 是全系可用的最低档
             if self._is_gemini3 and provider == "OpenRouter":
                 # OpenRouter 通过 extra_body 透传 reasoning 参数
-                extra_body = {**{"reasoning": {"effort": "minimal"}}, **(extra_body or {})}
+                extra_body = {**{"reasoning": {"effort": "low"}}, **(extra_body or {})}
                 logger.debug(
-                    f"Gemini 3 model ({model}) detected: capping reasoning to minimal effort"
+                    f"Gemini 3 model ({model}) detected: capping reasoning to low effort"
                 )
 
             # 为模型名添加提供商前缀（如果尚未添加）
@@ -592,10 +538,10 @@ class Translator:
             }
 
             if self._is_gemini3 and provider != "OpenRouter":
-                llm_params["reasoning_effort"] = "minimal"
+                llm_params["reasoning_effort"] = "low"
                 llm_params["drop_params"] = True
                 logger.debug(
-                    f"Gemini 3 model ({model}) detected: sending reasoning_effort=minimal"
+                    f"Gemini 3 model ({model}) detected: sending reasoning_effort=low"
                 )
 
             # API URL 留空自动
@@ -1141,158 +1087,6 @@ class Translator:
                 "Custom Terms:\n"
                 f"{entries_str}"
             )
-
-    def _execute_llm_batch_translation(
-            self,
-            texts: list[str],
-            source_language: str,
-            target_language: str,
-            message_type: MessageType,
-            context_messages: list,
-    ) -> list[str]:
-        """
-        将多条消息打包成一个 LLM request。
-
-        :param texts: 待翻译文本列表（已过滤空值）
-        :param source_language: 源语言
-        :param target_language: 目标语言
-        :param message_type: 消息类型
-        :param context_messages: 历史上下文 messages
-        :return: 与 texts 等长的译文列表
-        :raises: 任何异常（调用方捕获后降级为单条翻译）
-        """
-        if source_language.lower() == "auto":
-            source_language = ""
-
-        n = len(texts)
-        if source_language:
-            intro = f"Translate the following {n} messages from {source_language} to {target_language}."
-        else:
-            intro = f"Translate the following {n} messages to {target_language}."
-
-        numbered = "\n".join(f"[{i + 1}] {t}" for i, t in enumerate(texts))
-        user_message = (
-            f"{intro}\n"
-            f"Return ONLY a JSON array with exactly {n} translated strings in the same order. "
-            f"No explanations, no extra keys.\n\n"
-            f"{numbered}"
-        )
-
-        # 如果有历史上下文，拼接到 user message 前面
-        if context_messages:
-            history_content = context_messages[0].get("content", "")
-            if self._is_anthropic:
-                user_message = f"<recent_chat_history>\n{history_content}\n</recent_chat_history>\n\n{user_message}"
-            else:
-                user_message = f"=== Recent Chat History ===\n{history_content}\n=== End of History ===\n\n---\n\n{user_message}"
-
-        provider = self.translation_service_config.llm.provider or "OpenAI"
-        model = self.translation_service_config.llm.model
-
-        extra_body = None
-        if provider == "OpenRouter" and ":" in model:
-            base_model, suffix = model.split(":", 1)
-            suffix_stripped = suffix.strip()
-            suffix_lower = suffix_stripped.lower()
-            if suffix_lower in _OPENROUTER_NATIVE_SUFFIXES:
-                pass
-            elif suffix_lower in _OPENROUTER_SORT_KEYWORDS:
-                model = base_model
-                extra_body = {"provider": {"sort": suffix_lower}}
-            else:
-                model = base_model
-                provider_order = [s for p in suffix_stripped.split(",") if (s := p.strip())]
-                extra_body = {"provider": {"order": provider_order}}
-
-        # Gemini 3 系列是原生思考模型，显式降级 reasoning 到 minimal effort，避免思考 token 挤占批量译文输出
-        if self._is_gemini3 and provider == "OpenRouter":
-            extra_body = {**{"reasoning": {"effort": "minimal"}}, **(extra_body or {})}
-            logger.debug(
-                f"Gemini 3 model ({model}) detected: capping reasoning to minimal effort"
-            )
-
-        prefix = LLM_PROVIDERS_PREFIXES[provider]
-        mapped_model = model if model.startswith(prefix) else prefix + model
-
-        # 构建 system prompt（含上下文指导）
-        system_prompt = self._build_batch_system_prompt(has_context=bool(context_messages))
-
-        temperature = 1 if re.match(r"^(?:openai/)?gpt-5(?:[-.]|$)", model.lower()) else 0
-        llm_params = {
-            "model": mapped_model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message},
-            ],
-            "temperature": temperature,
-            "max_tokens": self.translation_service_config.llm.max_tokens * n,
-            "api_key": self.translation_service_config.llm.api_key,
-            "num_retries": 0,
-            "timeout": self.timeout,
-        }
-        if api_base := self.translation_service_config.llm.api_base:
-            llm_params["api_base"] = api_base
-
-        if self._is_gemini3 and provider != "OpenRouter":
-            llm_params["reasoning_effort"] = "minimal"
-            llm_params["drop_params"] = True
-            logger.debug(
-                f"Gemini 3 model ({model}) detected: sending reasoning_effort=minimal"
-            )
-
-        if extra_body:
-            llm_params["extra_body"] = extra_body
-
-        response = litellm.completion(**llm_params)
-        content_str = (response.choices[0].message.content or "").strip()
-
-        # 尝试解析 JSON 数组
-        try:
-            result = json.loads(content_str)
-        except json.JSONDecodeError:
-            # 清理可能的 markdown 代码块
-            m = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", content_str)
-            cleaned = m.group(1) if m else content_str
-            result = json.loads(cleaned)
-
-        if not isinstance(result, list) or len(result) != n:
-            raise ValueError(
-                f"Batch translation returned {type(result)} with length "
-                f"{len(result) if isinstance(result, list) else 'N/A'}, expected list of {n}"
-            )
-
-        return [str(item) for item in result]
-
-    def _build_batch_system_prompt(self, has_context: bool = False) -> str:
-        """
-        批量翻译专用 system prompt：要求模型返回严格的 JSON 数组。
-        """
-        prompt = (
-            "You are a Minecraft-specific intelligent translation engine. "
-            "You will receive a numbered list of chat messages. "
-            "Translate each message naturally, preserving gaming slang, cultural nuances, "
-            "and Minecraft formatting codes (e.g., §a, §l) exactly.\n"
-        )
-
-        if has_context:
-            prompt += (
-                "\n## Context Awareness\n\n"
-                "A recent chat history is provided in the user message. "
-                "Use it to understand ongoing conversations and maintain translation consistency.\n"
-                "Note: Messages closer to the end are more likely to be relevant. "
-                "Earlier messages may be unrelated — use your judgment.\n"
-            )
-
-        prompt += (
-            "\nOutput Rules:\n"
-            "1. Return ONLY a valid JSON array of strings.\n"
-            "2. The array must contain exactly the same number of elements as the input messages, "
-            "in the same order.\n"
-            "3. Do NOT add explanations, keys, or any text outside the JSON array.\n"
-            "4. Do NOT translate player names, server names, or Minecraft commands.\n"
-            "5. For untranslatable content (e.g., keyboard mashing), keep the original text."
-        )
-        return prompt
 
     def _execute_traditional_translation(self, text, service, source_language, target_language):
         """

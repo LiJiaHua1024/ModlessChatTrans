@@ -65,7 +65,7 @@ class ContextEntry:
 
 class ContextBuffer:
     """
-    维护有序的翻译上下文历史，供后续消息的 messages 列表使用。
+    维护有序的翻译上下文历史，以单条汇总消息的形式注入后续翻译请求。
 
     支持三种策略：
     - "disabled"  : 不启用上下文翻译（所有操作无实际效果）
@@ -180,34 +180,6 @@ class ContextBuffer:
         self._last_timestamp = entry.timestamp
 
         # 分块截断：达到阈值时一次性剔除开头 block_size 条
-        if self._use_block_truncation and len(self._history) >= self.context_length:
-            del self._history[:self._block_size]
-
-    def push_batch(self, entries: list[ContextEntry]) -> None:
-        """
-        批量添加（打包翻译完成后调用），按顺序逐条 push。
-        只用第一条做时间跨度判断（避免批次内部误清空）。
-        分块截断在整批添加后统一检查一次。
-        """
-        # 禁用策略：不维护任何历史
-        if self.strategy == "disabled":
-            return
-
-        if not entries:
-            return
-        # 仅对批次第一条做时间重置判断
-        first = entries[0]
-        if self.strategy == "time_based" and self.should_reset(first.timestamp):
-            logger.debug(
-                "[ContextBuffer] Time gap detected at batch start, resetting context."
-            )
-            self.clear()
-
-        for entry in entries:
-            self._history.append(entry)
-        self._last_timestamp = entries[-1].timestamp
-
-        # 分块截断：整批添加后统一检查
         if self._use_block_truncation and len(self._history) >= self.context_length:
             del self._history[:self._block_size]
 

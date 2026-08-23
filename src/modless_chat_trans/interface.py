@@ -1538,15 +1538,17 @@ class MessagePresentationInterface(QFrame):
             self._tts_voices_loaded = True
             return
 
-        # 按语言分组
-        seen_locales = set()
-        for v in voices:
-            locale = v.get("Locale", "")
-            if locale not in seen_locales:
-                seen_locales.add(locale)
-                name = v.get("ShortName") or v.get("Name", "")
-                display = f"{name}  ({locale})"
-                self.tts_voice_combo.addItem(display, userData=name)
+        # 全量列出所有语音（按 ShortName 排序，同语言自然相邻）
+        # 注意：qfluentwidgets 的 ComboBox 基于 QPushButton，没有 insertSeparator，
+        # 不能插入分组分隔符，否则会抛 AttributeError 导致列表加载中断
+        sorted_voices = sorted(
+            voices,
+            key=lambda v: (v.get("ShortName") or v.get("Name", "")),
+        )
+        for v in sorted_voices:
+            name = v.get("ShortName") or v.get("Name", "")
+            display = f"{name}  ({v.get('Locale', '')})"
+            self.tts_voice_combo.addItem(display, userData=name)
 
         # 选择当前配置的语音
         if self.config and hasattr(self.config, 'tts') and self.config.tts.voice:
@@ -1559,7 +1561,7 @@ class MessagePresentationInterface(QFrame):
 
         self._tts_voices_loaded = True
         self.tts_status_label.setText(
-            _("已加载 {} 种语音，保存设置后启动翻译生效").format(len(seen_locales))
+            _("已加载 {} 种语音，保存设置后启动翻译生效").format(len(voices))
         )
 
     def on_tts_test(self):
