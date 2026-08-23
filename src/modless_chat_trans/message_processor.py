@@ -438,126 +438,41 @@ def translate_prepared(
     return name or "", translated, info
 
 
-def process_decorator(function):
+def process_message(data, data_type, translator, source_language, target_language,
+                    rage_mode=False, context_messages=None):
     """
-    为process_message添加翻译步骤
+    处理一条待发送消息（剪贴板 / WebUI 输入，含解析、过滤和翻译）
+
+    :param data: 需要处理的数据
+    :param data_type: 数据类型（"clipboard" 或 "webui"）
+    :param translator: Translator类的实例
+    :param source_language: 源语言
+    :param target_language: 目标语言
+    :param rage_mode: 是否启用红温模式
+    :param context_messages: 历史上下文（单条汇总消息，将嵌入 user prompt）
+    :return:
+        - None：应被丢弃的数据
+        - 长度为3的元组：
+            - [0]: 是否翻译失败，if [0]: 翻译失败，此时[1]为错误信息
+            - [1]: 翻译后的消息
+            - [2]: 相关信息（如是否命中缓存、消耗token等）
     """
-
-    def wrapper(data, data_type, translator, source_language, target_language,
-                rage_mode=False, context_messages=None):
-        """
-        处理一条待发送消息（剪贴板 / WebUI 输入，含翻译）
-
-        :param data: 需要处理的数据
-        :param data_type: 数据类型（"clipboard" 或 "webui"）
-        :param translator: Translator类的实例
-        :param source_language: 源语言
-        :param target_language: 目标语言
-        :param rage_mode: 是否启用红温模式
-        :param context_messages: 历史上下文（单条汇总消息，将嵌入 user prompt）
-        :return:
-            - None：应被丢弃的数据
-            - 长度为3的元组：
-                - [0]: 是否翻译失败，if [0]: 翻译失败，此时[1]为错误信息
-                - [1]: 翻译后的消息
-                - [2]: 相关信息（如是否命中缓存、消耗token等）
-        """
-
-        name, original_chat_message, message_type = function(data, data_type, replace_garbled_character)
-        translated_chat_message: str = ""
-        info: dict = {}
-        context_messages = context_messages or []
-
-        # 使用过滤函数检查是否跳过消息
-        if should_skip_message(name, original_chat_message, message_type, data_type):
-            return None
-        if original_chat_message:
-            if matched_translated_message := match_and_translate(original_chat_message):
-                logger.debug(f"Using custom glossary: {original_chat_message} -> {matched_translated_message}")
-                translated_chat_message = matched_translated_message
-                info["glossary_match"] = True
-            elif not rage_mode and original_chat_message in cache:
-                logger.debug(f"Translation cache hit: {original_chat_message}")
-                translated_chat_message = cache[original_chat_message]
-                info["cache_hit"] = True
-            else:
-                try:
-                    if rage_mode:
-                        translate_fn = translator.translate_with_profanity
-                        if result := translate_fn(
-                                original_chat_message,
-                                source_language=source_language,
-                                target_language=target_language,
-                                message_type=message_type
-                        ):
-                            translated_chat_message = result.get("result") or ""
-                            if not translated_chat_message:
-                                return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
-                            info["usage"] = result.get("usage")
-                        else:
-                            return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
-                    else:
-                        if result := translator.translate_with_context(
-                                original_chat_message,
-                                source_language=source_language,
-                                target_language=target_language,
-                                message_type=message_type,
-                                context_messages=context_messages,
-                        ):
-                            translated_chat_message = result.get("result") or ""
-                            if not translated_chat_message:
-                                return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
-                            info["usage"] = result.get("usage")
-                        else:
-                            return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
-                except HTTPError as http_err:
-                    response = getattr(http_err, "response", None)
-                    if response is not None:
-                        if response.status_code == 429:
-                            # 请求过多
-                            return "[ERROR]", _("翻译失败：请求次数过多，请稍后重试。"), info
-                        elif 500 <= response.status_code < 600:
-                            # 服务器错误
-                            return "[ERROR]", _("翻译失败：服务器错误，请稍后重试。"), info
-                        else:
-                            # 其他 HTTP 错误
-                            return "[ERROR]", _("翻译失败：发生HTTP错误。"), info
-                    else:
-                        # 无法获取响应对象，可能是网络问题
-                        return "[ERROR]", _("翻译失败：网络问题或发生HTTP错误。"), info
-                except JSONDecodeError:
-                    # JSON 解码错误，可能是网络问题或服务器返回了非 JSON 数据
-                    return "[ERROR]", _("翻译失败：服务器响应无效，请检查网络连接。"), info
-                except Exception as e:
-                    # 捕获其他未知错误
-                    return "[ERROR]", f"{_('翻译失败，错误：')} {e}", info
-
-                if translated_chat_message:
-                    if rage_mode:
-                        logger.debug(
-                            f"Rage translation generated (skipping cache): "
-                            f"'{original_chat_message}' -> '{translated_chat_message}'"
-                        )
-                    else:
-                        logger.debug(
-                            f"Translation successful, caching result:"
-                            f" {original_chat_message} -> {translated_chat_message}"
-                        )
-                        cache[original_chat_message] = translated_chat_message
-
-            return False, translated_chat_message, info
-
+    prepared = prepare(data, data_type, replace_garbled_character)
+    if prepared is None:
         return None
 
-    return wrapper
+    name, translated, info = translate_prepared(
+        prepared,
+        translator=translator,
+        source_language=source_language,
+        target_language=target_language,
+        context_messages=context_messages,
+        rage_mode=rage_mode,
+    )
 
-
-@process_decorator
-def process_message(data, data_type, replace_garbled_character=False):
-    """
-    处理日志文件中的一行（包含翻译和过滤的入口）
-    """
-    return parse_message(data, data_type, replace_garbled_character)
+    if name == "[ERROR]":
+        return True, translated, info
+    return False, translated, info
 
 
 def parse_message(data, data_type, replace_garbled_character=False):
