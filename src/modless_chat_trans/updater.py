@@ -155,8 +155,49 @@ class Updater:
             logger.error(f"Cannot compare versions: {latest_version} vs {self.current_base_version}")
             return False
 
-    @staticmethod
-    def download_update(latest_release, progress_callback=None, thread_count_callback=None):
+    def get_release_asset(self, release):
+        """
+        根据当前平台与变体（edition），从 release 的 assets 中查找最匹配的更新包。
+        找不到则返回 None。
+        """
+        assets = release.get("assets", [])
+        if not assets:
+            return None
+
+        platform = get_platform()
+        if platform == 0:
+            exes = [asset for asset in assets if asset.get("name", "").endswith(".exe")]
+            if self.edition != "standard":
+                # 只下载文件名带对应 edition 后缀的资产（如 ModlessChatTrans_v3.3.0-lite.exe）
+                return next(
+                    (a for a in exes if a["name"].lower().endswith(f"-{self.edition}.exe")),
+                    None,
+                )
+            else:
+                # standard 排除带 lite/nano 后缀的资产
+                return next(
+                    (a for a in exes
+                     if not a["name"].lower().endswith("-lite.exe")
+                     and not a["name"].lower().endswith("-nano.exe")),
+                    None,
+                )
+        elif platform == 1:
+            archives = [asset for asset in assets if asset.get("name", "").endswith(".tar.gz")]
+            if self.edition != "standard":
+                return next(
+                    (a for a in archives if a["name"].lower().endswith(f"-{self.edition}.tar.gz")),
+                    None,
+                )
+            else:
+                return next(
+                    (a for a in archives
+                     if not a["name"].lower().endswith("-lite.tar.gz")
+                     and not a["name"].lower().endswith("-nano.tar.gz")),
+                    None,
+                )
+        return None
+
+    def download_update(self, latest_release, progress_callback=None, thread_count_callback=None):
         """
         下载更新文件（支持多线程下载）
 
@@ -174,41 +215,9 @@ class Updater:
         logger.info(f"Downloading update: {latest_release.get('tag_name')}")
 
         try:
-            assets = latest_release.get("assets", [])
-            if not assets:
-                logger.warning("No assets found in the release")
-                return None
-
-            platform = get_platform()
-            logger.debug(f"Detected platform: {platform}")
-
-            if platform == 0:
-                logger.debug("Looking for Windows executable (.exe)")
-                exes = [asset for asset in assets if asset.get("name", "").endswith(".exe")]
-                if self.edition != "standard":
-                    # 只下载文件名带 edition 后缀的资产（如 ModlessChatTrans_v3.3.0-lite.exe），
-                    # 找不到宁可失败也不兜底，避免把用户换成错误 edition
-                    asset = next(
-                        (a for a in exes if a["name"].lower().endswith(f"-{self.edition}.exe")),
-                        None,
-                    )
-                else:
-                    # standard 排除带 lite/nano 后缀的资产
-                    asset = next(
-                        (a for a in exes
-                         if not a["name"].lower().endswith("-lite.exe")
-                         and not a["name"].lower().endswith("-nano.exe")),
-                        None,
-                    )
-            elif platform == 1:
-                logger.debug("Looking for Linux archive (.tar.gz)")
-                asset = next((asset for asset in assets if asset.get("name").endswith(".tar.gz")), None)
-            else:
-                logger.error(f"Unsupported platform: {platform}")
-                return None
-
+            asset = self.get_release_asset(latest_release)
             if not asset:
-                logger.warning(f"No suitable asset found for platform {platform}")
+                logger.warning(f"No suitable asset found for platform {get_platform()} and edition '{self.edition}'")
                 return None
 
             download_url = asset.get("browser_download_url")
@@ -231,8 +240,7 @@ class Updater:
                 logger.warning("No releases found")
                 return None
 
-            # 只考虑与当前 edition 匹配的 release（lite 更新 lite，nano 更新 nano，
-            # standard 更新不带后缀的），并在其中选取基础版本号最高的一个
+            # 选取包含当前变体可用安装包、且基础版本号最高的一个 release
             best_release = None
             best_version = None
             for release in releases:
@@ -240,10 +248,21 @@ class Updater:
                     continue
                 if not (self.include_prerelease or not release.get("prerelease")):
                     continue
-                core, edition = parse_version_with_edition(release.get("tag_name"))
-                if edition != self.edition:
-                    logger.debug(f"Skipping release {release.get('tag_name')} (edition mismatch)")
+                core, tag_edition = parse_version_with_edition(release.get("tag_name"))
+
+                # 变体匹配规则：
+                # 1. 若 Tag 显式指定了其他变体（如 tag 为 v3.3.0-nano，而当前是 lite），直接跳过
+                if tag_edition != "standard" and tag_edition != self.edition:
+                    logger.debug(f"Skipping release {release.get('tag_name')} (tag edition mismatch)")
                     continue
+
+                # 2. 该 Release 必须包含与当前平台及变体相匹配的安装包
+                if not self.get_release_asset(release):
+                    logger.debug(
+                        f"Skipping release {release.get('tag_name')} (no suitable asset for edition '{self.edition}')"
+                    )
+                    continue
+
                 try:
                     version = Version(_base_version_str(core))
                 except InvalidVersion:
