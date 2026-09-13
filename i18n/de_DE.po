@@ -1371,3 +1371,7 @@ msgstr "{} Pre-TTS-Audios gelöscht"
 msgid "翻译超时，请稍后重试。"
 msgstr "Zeitüberschreitung bei der Übersetzung, bitte versuchen Sie es später noch einmal."
 
+#: modless_chat_trans/interface.py:814
+msgid "最大输出Token数："
+msgstr "Maximale Ausgabe-Tokens:"
+

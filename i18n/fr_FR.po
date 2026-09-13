@@ -1373,3 +1373,7 @@ msgstr "{} audios Pre-TTS effacés"
 msgid "翻译超时，请稍后重试。"
 msgstr "Délai de traduction dépassé, veuillez réessayer plus tard."
 
+#: modless_chat_trans/interface.py:814
+msgid "最大输出Token数："
+msgstr "Nombre max de jetons de sortie :"
+
