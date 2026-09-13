@@ -1377,3 +1377,7 @@ msgstr "Délai de traduction dépassé, veuillez réessayer plus tard."
 msgid "确定"
 msgstr "OK"
 
+#: modless_chat_trans/webui/server.py:137
+msgid "最大输出Token数："
+msgstr "Nombre max de jetons de sortie :"
+

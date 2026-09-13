@@ -1375,3 +1375,7 @@ msgstr "Zeitüberschreitung bei der Übersetzung, bitte versuchen Sie es später
 msgid "确定"
 msgstr "OK"
 
+#: modless_chat_trans/webui/server.py:137
+msgid "最大输出Token数："
+msgstr "Maximale Ausgabe-Tokens:"
+

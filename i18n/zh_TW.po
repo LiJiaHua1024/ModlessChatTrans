@@ -1348,3 +1348,7 @@ msgstr "翻譯超時，請稍後重試。"
 msgid "确定"
 msgstr "確定"
 
+#: modless_chat_trans/webui/server.py:137
+msgid "最大输出Token数："
+msgstr "最大輸出Token數："
+

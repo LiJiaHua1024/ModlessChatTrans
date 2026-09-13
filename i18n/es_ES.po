@@ -1382,3 +1382,7 @@ msgstr "Tiempo de espera de traducción agotado, inténtelo de nuevo más tarde.
 msgid "确定"
 msgstr "Aceptar"
 
+#: modless_chat_trans/webui/server.py:137
+msgid "最大输出Token数："
+msgstr "Máximo de tokens de salida:"
+

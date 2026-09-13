@@ -1369,3 +1369,7 @@ msgstr "Время ожидания перевода истекло, повто�
 msgid "确定"
 msgstr "ОК"
 
+#: modless_chat_trans/webui/server.py:137
+msgid "最大输出Token数："
+msgstr "Максимальное количество выходных токенов:"
+

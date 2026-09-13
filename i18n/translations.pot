@@ -29,12 +29,12 @@ msgstr ""
 msgid "输入消息..."
 msgstr ""
 
-#: main.py:296 main.py:300
+#: main.py:200 main.py:204
 msgid "要发送的消息翻译完成，翻译结果已复制到剪切板"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:372
-#: modless_chat_trans/webui/server.py:1090
+#: modless_chat_trans/webui/server.py:373
+#: modless_chat_trans/webui/server.py:1094
 msgid "下载失败"
 msgstr ""
 
@@ -190,7 +190,7 @@ msgid ""
 msgstr ""
 
 #: modless_chat_trans/webui/server.py:75 modless_chat_trans/webui/server.py:79
-#: modless_chat_trans/webui/server.py:224
+#: modless_chat_trans/webui/server.py:225
 msgid "关闭"
 msgstr ""
 
@@ -198,174 +198,174 @@ msgstr ""
 msgid "开启"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:142
+#: modless_chat_trans/webui/server.py:143
 msgid "不使用"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:86 modless_chat_trans/webui/server.py:150
+#: modless_chat_trans/webui/server.py:86 modless_chat_trans/webui/server.py:151
 msgid "翻译结果显示"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:202
+#: modless_chat_trans/webui/server.py:203
 msgid "网页端口："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:204
+#: modless_chat_trans/webui/server.py:205
 msgid "消息发送设置"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:205
+#: modless_chat_trans/webui/server.py:206
 msgid "监控剪切板"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:206
+#: modless_chat_trans/webui/server.py:207
 msgid "从剪切板获取要发送的消息"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:231
+#: modless_chat_trans/webui/server.py:232
 msgid "术语表管理"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:232
+#: modless_chat_trans/webui/server.py:233
 msgid "源术语："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:234
+#: modless_chat_trans/webui/server.py:235
 msgid "请输入源术语"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:233
+#: modless_chat_trans/webui/server.py:234
 msgid "目标术语："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:235
+#: modless_chat_trans/webui/server.py:236
 msgid "请输入目标术语"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:236
+#: modless_chat_trans/webui/server.py:237
 msgid "添加/更新术语"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:237
+#: modless_chat_trans/webui/server.py:238
 msgid "清空输入"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:244
+#: modless_chat_trans/webui/server.py:245
 msgid "源术语"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:245
+#: modless_chat_trans/webui/server.py:246
 msgid "目标术语"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:238
+#: modless_chat_trans/webui/server.py:239
 msgid "删除选中术语"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:239
+#: modless_chat_trans/webui/server.py:240
 msgid "清空术语"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:240
-#: modless_chat_trans/webui/server.py:1331
+#: modless_chat_trans/webui/server.py:241
+#: modless_chat_trans/webui/server.py:1335
 msgid "输入错误"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:241
-#: modless_chat_trans/webui/server.py:1331
+#: modless_chat_trans/webui/server.py:242
+#: modless_chat_trans/webui/server.py:1335
 msgid "源术语不能为空"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:242
+#: modless_chat_trans/webui/server.py:243
 msgid "确认覆盖"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:243
+#: modless_chat_trans/webui/server.py:244
 #, python-brace-format
 msgid "源术语 \"{}\" 已存在，是否覆盖？"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:1343
+#: modless_chat_trans/webui/server.py:1347
 msgid "更新"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:1343
+#: modless_chat_trans/webui/server.py:1347
 msgid "添加"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:1347
+#: modless_chat_trans/webui/server.py:1351
 #, python-brace-format
 msgid "术语{}成功"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:248
-#: modless_chat_trans/webui/server.py:1361
-#: modless_chat_trans/webui/server.py:1416
-#: modless_chat_trans/webui/server.py:1481
+#: modless_chat_trans/webui/server.py:249
+#: modless_chat_trans/webui/server.py:1365
+#: modless_chat_trans/webui/server.py:1420
+#: modless_chat_trans/webui/server.py:1485
 msgid "删除成功"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:249
-#: modless_chat_trans/webui/server.py:1361
+#: modless_chat_trans/webui/server.py:250
+#: modless_chat_trans/webui/server.py:1365
 #, python-brace-format
 msgid "术语 \"{}\" 已删除"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:254
-#: modless_chat_trans/webui/server.py:1209
-#: modless_chat_trans/webui/server.py:1369
-#: modless_chat_trans/webui/server.py:1384
-#: modless_chat_trans/webui/server.py:1403
-#: modless_chat_trans/webui/server.py:1424
-#: modless_chat_trans/webui/server.py:1439
-#: modless_chat_trans/webui/server.py:1460
-#: modless_chat_trans/webui/server.py:1489
+#: modless_chat_trans/webui/server.py:255
+#: modless_chat_trans/webui/server.py:1213
+#: modless_chat_trans/webui/server.py:1373
+#: modless_chat_trans/webui/server.py:1388
+#: modless_chat_trans/webui/server.py:1407
+#: modless_chat_trans/webui/server.py:1428
+#: modless_chat_trans/webui/server.py:1443
+#: modless_chat_trans/webui/server.py:1464
+#: modless_chat_trans/webui/server.py:1493
 msgid "提示"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:252
-#: modless_chat_trans/webui/server.py:1369
+#: modless_chat_trans/webui/server.py:253
+#: modless_chat_trans/webui/server.py:1373
 msgid "术语表为空，无需清空"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:250
+#: modless_chat_trans/webui/server.py:251
 msgid "确认清空"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:251
+#: modless_chat_trans/webui/server.py:252
 msgid "确定要清空所有术语吗？此操作不可恢复。"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:1374
-#: modless_chat_trans/webui/server.py:1429
-#: modless_chat_trans/webui/server.py:1494
+#: modless_chat_trans/webui/server.py:1378
+#: modless_chat_trans/webui/server.py:1433
+#: modless_chat_trans/webui/server.py:1498
 msgid "清空成功"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:253
-#: modless_chat_trans/webui/server.py:1374
+#: modless_chat_trans/webui/server.py:254
+#: modless_chat_trans/webui/server.py:1378
 #, python-brace-format
 msgid "已清空 {} 个术语"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:91 modless_chat_trans/webui/server.py:297
+#: modless_chat_trans/webui/server.py:91 modless_chat_trans/webui/server.py:298
 msgid "启动"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:298
+#: modless_chat_trans/webui/server.py:299
 msgid "直接启动"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:299
+#: modless_chat_trans/webui/server.py:300
 msgid "保存配置并启动"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:300
+#: modless_chat_trans/webui/server.py:301
 msgid "保存配置"
 msgstr ""
 
 #: modless_chat_trans/webui/server.py:80
-#: modless_chat_trans/webui/server.py:1209
+#: modless_chat_trans/webui/server.py:1213
 msgid "工作中"
 msgstr ""
 
@@ -373,120 +373,120 @@ msgstr ""
 msgid "已停止"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:312
+#: modless_chat_trans/webui/server.py:313
 msgid "Web访问链接"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:313
+#: modless_chat_trans/webui/server.py:314
 msgid "请通过以下任一链接打开网页界面，查看翻译并即时发送消息"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:301
-#: modless_chat_trans/webui/server.py:887
+#: modless_chat_trans/webui/server.py:302
+#: modless_chat_trans/webui/server.py:891
 msgid "已启动"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:302
-#: modless_chat_trans/webui/server.py:888
+#: modless_chat_trans/webui/server.py:303
+#: modless_chat_trans/webui/server.py:892
 msgid "已根据当前界面配置启动"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:305
-#: modless_chat_trans/webui/server.py:875
-#: modless_chat_trans/webui/server.py:1201
+#: modless_chat_trans/webui/server.py:306
+#: modless_chat_trans/webui/server.py:879
+#: modless_chat_trans/webui/server.py:1205
 msgid "启动失败"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:311
-#: modless_chat_trans/webui/server.py:1196
+#: modless_chat_trans/webui/server.py:312
+#: modless_chat_trans/webui/server.py:1200
 msgid "保存配置失败"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:303
-#: modless_chat_trans/webui/server.py:887
+#: modless_chat_trans/webui/server.py:304
+#: modless_chat_trans/webui/server.py:891
 msgid "已保存并启动"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:304
-#: modless_chat_trans/webui/server.py:888
+#: modless_chat_trans/webui/server.py:305
+#: modless_chat_trans/webui/server.py:892
 msgid "配置已保存并启动"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:306
-#: modless_chat_trans/webui/server.py:875
-#: modless_chat_trans/webui/server.py:1201
+#: modless_chat_trans/webui/server.py:307
+#: modless_chat_trans/webui/server.py:879
+#: modless_chat_trans/webui/server.py:1205
 msgid "操作失败"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:307
-#: modless_chat_trans/webui/server.py:1182
+#: modless_chat_trans/webui/server.py:308
+#: modless_chat_trans/webui/server.py:1186
 msgid "保存成功"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:308
-#: modless_chat_trans/webui/server.py:1182
+#: modless_chat_trans/webui/server.py:309
+#: modless_chat_trans/webui/server.py:1186
 msgid "配置已保存至文件"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:309
-#: modless_chat_trans/webui/server.py:1179
-#: modless_chat_trans/webui/server.py:1184
-#: modless_chat_trans/webui/server.py:1510
+#: modless_chat_trans/webui/server.py:310
+#: modless_chat_trans/webui/server.py:1183
+#: modless_chat_trans/webui/server.py:1188
+#: modless_chat_trans/webui/server.py:1514
 msgid "保存失败"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:310
-#: modless_chat_trans/webui/server.py:1184
-#: modless_chat_trans/webui/server.py:1185
-#: modless_chat_trans/webui/server.py:1510
+#: modless_chat_trans/webui/server.py:311
+#: modless_chat_trans/webui/server.py:1188
+#: modless_chat_trans/webui/server.py:1189
+#: modless_chat_trans/webui/server.py:1514
 msgid "写入配置文件失败"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:316
+#: modless_chat_trans/webui/server.py:317
 msgid "应用信息"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:317
+#: modless_chat_trans/webui/server.py:318
 msgid "版本"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:318
+#: modless_chat_trans/webui/server.py:319
 msgid "作者"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:319
+#: modless_chat_trans/webui/server.py:320
 msgid "邮箱"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:320
+#: modless_chat_trans/webui/server.py:321
 msgid "相关链接"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:321
+#: modless_chat_trans/webui/server.py:322
 msgid "许可证"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:347
+#: modless_chat_trans/webui/server.py:348
 msgid "发现新版本"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:357
+#: modless_chat_trans/webui/server.py:358
 msgid "下载更新"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:358
+#: modless_chat_trans/webui/server.py:359
 msgid "暂不更新"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:348
+#: modless_chat_trans/webui/server.py:349
 msgid "版本信息"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:342
+#: modless_chat_trans/webui/server.py:343
 msgid "当前版本："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:349
+#: modless_chat_trans/webui/server.py:350
 msgid "最新版本："
 msgstr ""
 
@@ -494,36 +494,36 @@ msgstr ""
 msgid "未知"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:350
+#: modless_chat_trans/webui/server.py:351
 msgid "发布时间："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:351
+#: modless_chat_trans/webui/server.py:352
 msgid "发布者："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:355
+#: modless_chat_trans/webui/server.py:356
 msgid "版本类型："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:354
+#: modless_chat_trans/webui/server.py:355
 msgid "预发布版本"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:352
+#: modless_chat_trans/webui/server.py:353
 msgid "更新说明"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:353
-#: modless_chat_trans/webui/server.py:1126
+#: modless_chat_trans/webui/server.py:354
+#: modless_chat_trans/webui/server.py:1130
 msgid "暂无更新说明"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:356
+#: modless_chat_trans/webui/server.py:357
 msgid "在 GitHub 上查看完整说明"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:359
+#: modless_chat_trans/webui/server.py:360
 msgid "正在下载更新"
 msgstr ""
 
@@ -531,189 +531,189 @@ msgstr ""
 msgid "取消"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:360
+#: modless_chat_trans/webui/server.py:361
 #, python-brace-format
 msgid "正在下载版本 {}..."
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:361
+#: modless_chat_trans/webui/server.py:362
 msgid "下载进度："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:362
+#: modless_chat_trans/webui/server.py:363
 msgid "下载速度："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:363
+#: modless_chat_trans/webui/server.py:364
 msgid "剩余时间："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:368
+#: modless_chat_trans/webui/server.py:369
 msgid "计算中..."
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:364
+#: modless_chat_trans/webui/server.py:365
 msgid "下载方式："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:365
+#: modless_chat_trans/webui/server.py:366
 msgid "检测中..."
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:366
+#: modless_chat_trans/webui/server.py:367
 #, python-brace-format
 msgid "{} 线程下载"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:367
+#: modless_chat_trans/webui/server.py:368
 msgid "单线程下载"
-msgstr ""
-
-#: modless_chat_trans/webui/server.py:383
-#, python-brace-format
-msgid "{} 秒"
 msgstr ""
 
 #: modless_chat_trans/webui/server.py:384
 #, python-brace-format
-msgid "{} 分 {} 秒"
+msgid "{} 秒"
 msgstr ""
 
 #: modless_chat_trans/webui/server.py:385
 #, python-brace-format
-msgid "{} 分钟"
+msgid "{} 分 {} 秒"
 msgstr ""
 
 #: modless_chat_trans/webui/server.py:386
 #, python-brace-format
-msgid "{} 小时 {} 分"
+msgid "{} 分钟"
 msgstr ""
 
 #: modless_chat_trans/webui/server.py:387
 #, python-brace-format
-msgid "{} 小时"
-msgstr ""
-
-#: modless_chat_trans/webui/server.py:369
-msgid "完成"
-msgstr ""
-
-#: modless_chat_trans/webui/server.py:247
-msgid "正在取消..."
+msgid "{} 小时 {} 分"
 msgstr ""
 
 #: modless_chat_trans/webui/server.py:388
-#: modless_chat_trans/webui/server.py:1518
+#, python-brace-format
+msgid "{} 小时"
+msgstr ""
+
+#: modless_chat_trans/webui/server.py:370
+msgid "完成"
+msgstr ""
+
+#: modless_chat_trans/webui/server.py:248
+msgid "正在取消..."
+msgstr ""
+
+#: modless_chat_trans/webui/server.py:389
+#: modless_chat_trans/webui/server.py:1522
 msgid "错误"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:93 modless_chat_trans/webui/server.py:323
+#: modless_chat_trans/webui/server.py:93 modless_chat_trans/webui/server.py:324
 msgid "设置"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:324
+#: modless_chat_trans/webui/server.py:325
 msgid "语言设置"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:325
+#: modless_chat_trans/webui/server.py:326
 msgid "界面语言："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:326
+#: modless_chat_trans/webui/server.py:327
 msgid "保存"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:327
+#: modless_chat_trans/webui/server.py:328
 msgid "* 语言更改将在重启后生效"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:330
+#: modless_chat_trans/webui/server.py:331
 msgid "更新设置"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:331
+#: modless_chat_trans/webui/server.py:332
 msgid "自动检查："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:332
+#: modless_chat_trans/webui/server.py:333
 msgid "启动时"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:333
+#: modless_chat_trans/webui/server.py:334
 msgid "每天"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:334
+#: modless_chat_trans/webui/server.py:335
 msgid "每周"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:335
+#: modless_chat_trans/webui/server.py:336
 msgid "每月"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:336
+#: modless_chat_trans/webui/server.py:337
 msgid "从不"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:337
+#: modless_chat_trans/webui/server.py:338
 msgid "预发布版本："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:338
+#: modless_chat_trans/webui/server.py:339
 msgid "包含预发布版本"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:339
+#: modless_chat_trans/webui/server.py:340
 msgid "手动检查："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:340
+#: modless_chat_trans/webui/server.py:341
 msgid "检查更新"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:328
-#: modless_chat_trans/webui/server.py:1508
+#: modless_chat_trans/webui/server.py:329
+#: modless_chat_trans/webui/server.py:1512
 msgid "设置已保存"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:329
-#: modless_chat_trans/webui/server.py:1508
+#: modless_chat_trans/webui/server.py:330
+#: modless_chat_trans/webui/server.py:1512
 #, python-brace-format
 msgid "界面语言已设置为 {}，重启后生效。"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:389
-#: modless_chat_trans/webui/server.py:1518
+#: modless_chat_trans/webui/server.py:390
+#: modless_chat_trans/webui/server.py:1522
 msgid "更新器未初始化"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:345
-#: modless_chat_trans/webui/server.py:1119
+#: modless_chat_trans/webui/server.py:346
+#: modless_chat_trans/webui/server.py:1123
 msgid "检查更新失败"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:346
-#: modless_chat_trans/webui/server.py:1119
+#: modless_chat_trans/webui/server.py:347
+#: modless_chat_trans/webui/server.py:1123
 #, python-brace-format
 msgid "错误: {}"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:343
-#: modless_chat_trans/webui/server.py:1136
+#: modless_chat_trans/webui/server.py:344
+#: modless_chat_trans/webui/server.py:1140
 msgid "您是最新的"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:344
-#: modless_chat_trans/webui/server.py:1137
+#: modless_chat_trans/webui/server.py:345
+#: modless_chat_trans/webui/server.py:1141
 #, python-brace-format
 msgid "当前版本 v{} 已是最新版本"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:373
+#: modless_chat_trans/webui/server.py:374
 msgid "下载完成"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:374
+#: modless_chat_trans/webui/server.py:375
 #, python-brace-format
 msgid ""
 "更新文件已下载到:\n"
@@ -722,11 +722,11 @@ msgid ""
 "请手动安装更新。"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:370
+#: modless_chat_trans/webui/server.py:371
 msgid "下载已取消"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:371
+#: modless_chat_trans/webui/server.py:372
 msgid "更新下载已取消"
 msgstr ""
 
@@ -746,78 +746,67 @@ msgstr ""
 msgid "术语表"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:92 modless_chat_trans/webui/server.py:315
+#: modless_chat_trans/webui/server.py:92 modless_chat_trans/webui/server.py:316
 msgid "关于"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:147
-#: modless_chat_trans/webui/server.py:976
+#: modless_chat_trans/webui/server.py:148
+#: modless_chat_trans/webui/server.py:980
 msgid "语言加载错误"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:148
-#: modless_chat_trans/webui/server.py:977
+#: modless_chat_trans/webui/server.py:149
+#: modless_chat_trans/webui/server.py:981
 #, python-brace-format
 msgid "获取支持语言失败 ({service_id}): {error_msg}"
 msgstr ""
 
 #: modless_chat_trans/message_processor.py:413
-#: modless_chat_trans/message_processor.py:523
 msgid "翻译失败：请求次数过多，请稍后重试。"
 msgstr ""
 
 #: modless_chat_trans/message_processor.py:415
-#: modless_chat_trans/message_processor.py:526
 msgid "翻译失败：服务器错误，请稍后重试。"
 msgstr ""
 
 #: modless_chat_trans/message_processor.py:417
-#: modless_chat_trans/message_processor.py:529
 msgid "翻译失败：发生HTTP错误。"
 msgstr ""
 
 #: modless_chat_trans/message_processor.py:419
-#: modless_chat_trans/message_processor.py:532
 msgid "翻译失败：网络问题或发生HTTP错误。"
 msgstr ""
 
 #: modless_chat_trans/message_processor.py:405
 #: modless_chat_trans/message_processor.py:408
 #: modless_chat_trans/message_processor.py:421
-#: modless_chat_trans/message_processor.py:500
-#: modless_chat_trans/message_processor.py:503
-#: modless_chat_trans/message_processor.py:514
-#: modless_chat_trans/message_processor.py:517
-#: modless_chat_trans/message_processor.py:535
 msgid "翻译失败：服务器响应无效，请检查网络连接。"
 msgstr ""
 
-#: main.py:212 main.py:234 main.py:284
-#: modless_chat_trans/message_processor.py:423
-#: modless_chat_trans/message_processor.py:538
+#: main.py:188 modless_chat_trans/message_processor.py:423
 msgid "翻译失败，错误："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:256
+#: modless_chat_trans/webui/server.py:257
 msgid "黑名单设置"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:257
+#: modless_chat_trans/webui/server.py:258
 msgid "用户黑名单"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:258
+#: modless_chat_trans/webui/server.py:259
 msgid "消息内容黑名单"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:259
+#: modless_chat_trans/webui/server.py:260
 msgid ""
 "用户黑名单中的玩家发送的消息将不会被翻译。\n"
 "支持批量添加，每行一个玩家名称。\n"
 "黑名单使用净化后的玩家名称进行完全匹配（区分大小写）。"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:262
+#: modless_chat_trans/webui/server.py:263
 msgid ""
 "请输入玩家名称，每行一个\n"
 "例如：\n"
@@ -826,158 +815,158 @@ msgid ""
 "Steve"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:263
+#: modless_chat_trans/webui/server.py:264
 msgid "添加用户"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:266
+#: modless_chat_trans/webui/server.py:267
 msgid "玩家名称"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:264
+#: modless_chat_trans/webui/server.py:265
 msgid "删除选中用户"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:265
+#: modless_chat_trans/webui/server.py:266
 msgid "清空所有用户"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:267
+#: modless_chat_trans/webui/server.py:268
 msgid ""
 "消息内容黑名单用于过滤特定内容的消息。\n"
 "如果选择\"使用正则表达式\"，则按正则表达式匹配；\n"
 "否则按关键词匹配（消息包含任意关键词即命中）。"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:270
+#: modless_chat_trans/webui/server.py:271
 msgid "规则："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:271
+#: modless_chat_trans/webui/server.py:272
 msgid "请输入正则表达式或关键词"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:272
+#: modless_chat_trans/webui/server.py:273
 msgid "使用正则表达式"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:273
+#: modless_chat_trans/webui/server.py:274
 msgid "添加规则"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:276
+#: modless_chat_trans/webui/server.py:277
 msgid "规则"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:277
+#: modless_chat_trans/webui/server.py:278
 msgid "类型"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:274
+#: modless_chat_trans/webui/server.py:275
 msgid "删除选中规则"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:275
+#: modless_chat_trans/webui/server.py:276
 msgid "清空所有规则"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:278
-#: modless_chat_trans/webui/server.py:1480
+#: modless_chat_trans/webui/server.py:279
+#: modless_chat_trans/webui/server.py:1484
 msgid "正则表达式"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:279
-#: modless_chat_trans/webui/server.py:1480
+#: modless_chat_trans/webui/server.py:280
+#: modless_chat_trans/webui/server.py:1484
 msgid "关键词"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:280
-#: modless_chat_trans/webui/server.py:1384
+#: modless_chat_trans/webui/server.py:281
+#: modless_chat_trans/webui/server.py:1388
 msgid "请输入玩家名称"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:1401
-#: modless_chat_trans/webui/server.py:1466
+#: modless_chat_trans/webui/server.py:1405
+#: modless_chat_trans/webui/server.py:1470
 msgid "添加成功"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:281
-#: modless_chat_trans/webui/server.py:1401
+#: modless_chat_trans/webui/server.py:282
+#: modless_chat_trans/webui/server.py:1405
 #, python-brace-format
 msgid "已添加 {} 个用户到黑名单"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:282
-#: modless_chat_trans/webui/server.py:1403
+#: modless_chat_trans/webui/server.py:283
+#: modless_chat_trans/webui/server.py:1407
 #, python-brace-format
 msgid "{} 个用户已在黑名单中"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:283
-#: modless_chat_trans/webui/server.py:1416
+#: modless_chat_trans/webui/server.py:284
+#: modless_chat_trans/webui/server.py:1420
 #, python-brace-format
 msgid "已将 \"{}\" 从黑名单移除"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:285
-#: modless_chat_trans/webui/server.py:1424
+#: modless_chat_trans/webui/server.py:286
+#: modless_chat_trans/webui/server.py:1428
 msgid "用户黑名单为空，无需清空"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:286
+#: modless_chat_trans/webui/server.py:287
 msgid "确定要清空所有用户黑名单吗？此操作不可恢复。"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:284
-#: modless_chat_trans/webui/server.py:1429
+#: modless_chat_trans/webui/server.py:285
+#: modless_chat_trans/webui/server.py:1433
 #, python-brace-format
 msgid "已清空 {} 个用户"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:287
-#: modless_chat_trans/webui/server.py:1439
+#: modless_chat_trans/webui/server.py:288
+#: modless_chat_trans/webui/server.py:1443
 msgid "请输入规则"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:288
-#: modless_chat_trans/webui/server.py:1446
+#: modless_chat_trans/webui/server.py:289
+#: modless_chat_trans/webui/server.py:1450
 msgid "正则表达式错误"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:289
-#: modless_chat_trans/webui/server.py:1446
+#: modless_chat_trans/webui/server.py:290
+#: modless_chat_trans/webui/server.py:1450
 #, python-brace-format
 msgid "无效的正则表达式：{}"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:290
-#: modless_chat_trans/webui/server.py:1460
+#: modless_chat_trans/webui/server.py:291
+#: modless_chat_trans/webui/server.py:1464
 msgid "该规则已存在"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:291
-#: modless_chat_trans/webui/server.py:1466
+#: modless_chat_trans/webui/server.py:292
+#: modless_chat_trans/webui/server.py:1470
 #, python-brace-format
 msgid "已添加规则：{}"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:292
-#: modless_chat_trans/webui/server.py:1481
+#: modless_chat_trans/webui/server.py:293
+#: modless_chat_trans/webui/server.py:1485
 #, python-brace-format
 msgid "已删除规则：{}（{}）"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:294
-#: modless_chat_trans/webui/server.py:1489
+#: modless_chat_trans/webui/server.py:295
+#: modless_chat_trans/webui/server.py:1493
 msgid "消息黑名单为空，无需清空"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:295
+#: modless_chat_trans/webui/server.py:296
 msgid "确定要清空所有消息黑名单规则吗？此操作不可恢复。"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:293
-#: modless_chat_trans/webui/server.py:1494
+#: modless_chat_trans/webui/server.py:294
+#: modless_chat_trans/webui/server.py:1498
 #, python-brace-format
 msgid "已清空 {} 个规则"
 msgstr ""
@@ -994,166 +983,166 @@ msgstr ""
 msgid "备用模型"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:137
+#: modless_chat_trans/webui/server.py:138
 msgid "备用模型策略："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:138
+#: modless_chat_trans/webui/server.py:139
 msgid "直接切换（主模型失败立即使用备用）"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:139
+#: modless_chat_trans/webui/server.py:140
 msgid "重试耗尽后切换（主模型重试全部失败后使用备用）"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:140
+#: modless_chat_trans/webui/server.py:141
 msgid "首次失败竞速（主模型首次失败后并发竞速）"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:141
+#: modless_chat_trans/webui/server.py:142
 msgid "始终竞速（始终并发请求两者取最快）"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:151
+#: modless_chat_trans/webui/server.py:152
 msgid "TTS 朗读设置"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:152
+#: modless_chat_trans/webui/server.py:153
 #, python-brace-format
 msgid "⚠️ TTS 模块导入失败，TTS 功能已禁用。错误信息：{}"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:1248
+#: modless_chat_trans/webui/server.py:1252
 msgid "unknown"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:153
+#: modless_chat_trans/webui/server.py:154
 msgid "启用朗读："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:154
+#: modless_chat_trans/webui/server.py:155
 msgid "朗读语音："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:155
+#: modless_chat_trans/webui/server.py:156
 msgid "加载中..."
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:156
+#: modless_chat_trans/webui/server.py:157
 msgid "不可用"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:160
+#: modless_chat_trans/webui/server.py:161
 msgid "朗读语速："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:161
+#: modless_chat_trans/webui/server.py:162
 msgid "很慢"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:162
+#: modless_chat_trans/webui/server.py:163
 msgid "较慢"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:163
+#: modless_chat_trans/webui/server.py:164
 msgid "正常"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:164
+#: modless_chat_trans/webui/server.py:165
 msgid "较快"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:165
+#: modless_chat_trans/webui/server.py:166
 msgid "很快"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:166
+#: modless_chat_trans/webui/server.py:167
 msgid "朗读玩家名："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:167
+#: modless_chat_trans/webui/server.py:168
 msgid "开启后朗读格式为\"玩家名 说：消息内容\"，关闭后只朗读消息内容"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:168
+#: modless_chat_trans/webui/server.py:169
 msgid "测试朗读"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:246
+#: modless_chat_trans/webui/server.py:247
 msgid "依赖库导入失败，TTS 功能不可用"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:157
+#: modless_chat_trans/webui/server.py:158
 msgid "自动（根据目标语言）"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:158
+#: modless_chat_trans/webui/server.py:159
 msgid "⚠ 语音列表加载失败，将使用默认语音"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:159
+#: modless_chat_trans/webui/server.py:160
 #, python-brace-format
 msgid "已加载 {} 种语音，保存设置后启动翻译生效"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:169
-#: modless_chat_trans/webui/server.py:1247
+#: modless_chat_trans/webui/server.py:170
+#: modless_chat_trans/webui/server.py:1251
 msgid "TTS 不可用"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:170
-#: modless_chat_trans/webui/server.py:1248
+#: modless_chat_trans/webui/server.py:171
+#: modless_chat_trans/webui/server.py:1252
 #, python-brace-format
 msgid "TTS 依赖库未安装或导入失败：{}"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:175
-#: modless_chat_trans/webui/server.py:995
+#: modless_chat_trans/webui/server.py:176
+#: modless_chat_trans/webui/server.py:999
 msgid "你好，这是一条来自ModlessChatTrans的TTS朗读测试消息。"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:171
+#: modless_chat_trans/webui/server.py:172
 msgid "测试完成"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:172
+#: modless_chat_trans/webui/server.py:173
 msgid "TTS 朗读测试已完成，请检查声音输出"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:173
+#: modless_chat_trans/webui/server.py:174
 msgid "测试失败"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:174
+#: modless_chat_trans/webui/server.py:175
 #, python-brace-format
 msgid "TTS 朗读测试失败：{}"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:341
+#: modless_chat_trans/webui/server.py:342
 msgid "⚠ 更新依赖不可用"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:208
+#: modless_chat_trans/webui/server.py:209
 msgid "上下文翻译设置"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:209
+#: modless_chat_trans/webui/server.py:210
 msgid "上下文分割策略："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:210
+#: modless_chat_trans/webui/server.py:211
 msgid "不启用"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:211
+#: modless_chat_trans/webui/server.py:212
 msgid "固定长度"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:212
+#: modless_chat_trans/webui/server.py:213
 msgid "基于时间跨度"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:213
+#: modless_chat_trans/webui/server.py:214
 msgid ""
 "配置如何管理上下文对话。\n"
 "- 不启用：不保存任何上下文\n"
@@ -1161,37 +1150,37 @@ msgid ""
 "- 基于时间跨度：在设定的时间跨度内视为同一对话"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:217
+#: modless_chat_trans/webui/server.py:218
 msgid "最大保留历史条数："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:218
+#: modless_chat_trans/webui/server.py:219
 msgid "最多保留的历史对话条数（0 表示无限制）"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:219
+#: modless_chat_trans/webui/server.py:220
 msgid "时间跨度阈值(秒)："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:220
+#: modless_chat_trans/webui/server.py:221
 msgid ""
 "超过此时长（秒）没有新消息，则视为新对话。\n"
 "仅在“基于时间跨度”策略下生效。"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:222
+#: modless_chat_trans/webui/server.py:223
 msgid "分块截断大小："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:223
+#: modless_chat_trans/webui/server.py:224
 msgid "自动"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:225
+#: modless_chat_trans/webui/server.py:226
 msgid "自定义"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:226
+#: modless_chat_trans/webui/server.py:227
 msgid ""
 "分块截断大小：\n"
 "- 自动：自动计算为最大保留历史条数的一半\n"
@@ -1199,61 +1188,61 @@ msgid ""
 "- 自定义：设置具体的截断大小"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:375
+#: modless_chat_trans/webui/server.py:376
 msgid "缓存管理"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:376
+#: modless_chat_trans/webui/server.py:377
 msgid "清除缓存："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:377
+#: modless_chat_trans/webui/server.py:378
 msgid "清理不常用缓存"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:196
-#: modless_chat_trans/webui/server.py:1309
+#: modless_chat_trans/webui/server.py:197
 #: modless_chat_trans/webui/server.py:1313
-#: modless_chat_trans/webui/server.py:1573
-#: modless_chat_trans/webui/server.py:1583
+#: modless_chat_trans/webui/server.py:1317
+#: modless_chat_trans/webui/server.py:1577
+#: modless_chat_trans/webui/server.py:1587
 msgid "清理失败"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:382
-#: modless_chat_trans/webui/server.py:1573
+#: modless_chat_trans/webui/server.py:383
+#: modless_chat_trans/webui/server.py:1577
 #, python-brace-format
 msgid "查询缓存时出错：{}"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:198
-#: modless_chat_trans/webui/server.py:1315
-#: modless_chat_trans/webui/server.py:1586
+#: modless_chat_trans/webui/server.py:199
+#: modless_chat_trans/webui/server.py:1319
+#: modless_chat_trans/webui/server.py:1590
 msgid "无需清理"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:378
-#: modless_chat_trans/webui/server.py:1586
+#: modless_chat_trans/webui/server.py:379
+#: modless_chat_trans/webui/server.py:1590
 msgid "没有不常用的缓存条目，所有缓存都曾被使用过。"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:194
-#: modless_chat_trans/webui/server.py:379
+#: modless_chat_trans/webui/server.py:195
+#: modless_chat_trans/webui/server.py:380
 msgid "确认清理"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:380
+#: modless_chat_trans/webui/server.py:381
 #, python-brace-format
 msgid "将清理 {} 条不常用缓存条目（从未被读取），总计 {} 条中保留 {} 条。此操作不可恢复。"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:200
-#: modless_chat_trans/webui/server.py:1317
-#: modless_chat_trans/webui/server.py:1588
+#: modless_chat_trans/webui/server.py:201
+#: modless_chat_trans/webui/server.py:1321
+#: modless_chat_trans/webui/server.py:1592
 msgid "清理成功"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:381
-#: modless_chat_trans/webui/server.py:1588
+#: modless_chat_trans/webui/server.py:382
+#: modless_chat_trans/webui/server.py:1592
 #, python-brace-format
 msgid "已清理 {} 条不常用缓存条目"
 msgstr ""
@@ -1278,117 +1267,117 @@ msgstr ""
 msgid "朗读"
 msgstr ""
 
-#: main.py:287 main.py:307 modless_chat_trans/webui/server.py:785
+#: main.py:191 main.py:211 modless_chat_trans/webui/server.py:789
 msgid "翻译失败，未生成翻译结果。"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:143
+#: modless_chat_trans/webui/server.py:144
 msgid "Yandex Folder ID："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:144
+#: modless_chat_trans/webui/server.py:145
 msgid "仅 Yandex Cloud 需要"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:145
+#: modless_chat_trans/webui/server.py:146
 msgid "Azure 区域（可选）："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:146
+#: modless_chat_trans/webui/server.py:147
 msgid "仅区域或多服务 Azure 资源需要"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:176
+#: modless_chat_trans/webui/server.py:177
 msgid "Pre-TTS："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:177
+#: modless_chat_trans/webui/server.py:178
 msgid "预合成热词音频"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:178
+#: modless_chat_trans/webui/server.py:179
 msgid "停止"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:179
+#: modless_chat_trans/webui/server.py:180
 msgid "清除音频"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:180
+#: modless_chat_trans/webui/server.py:181
 msgid ""
 "扫描翻译缓存中的热门译文并预合成音频，避免重复合成以减少加载时间。\n"
 "朗读时自动使用已预合成的音频，未命中则正常合成。\n"
 "开启\"朗读玩家名\"时不可用。"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:183
+#: modless_chat_trans/webui/server.py:184
 msgid "手动预合成热门音频，朗读时自动命中"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:187
+#: modless_chat_trans/webui/server.py:188
 msgid "开启\"朗读玩家名\"后，Pre-TTS 不可用"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:184
+#: modless_chat_trans/webui/server.py:185
 #, python-brace-format
 msgid "正在预合成 {}/{}..."
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:188
+#: modless_chat_trans/webui/server.py:189
 #, python-brace-format
 msgid "本次预合成 {} 条，跳过 {} 条；共 {} 条音频（{:.1f} MB）"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:189
-#: modless_chat_trans/webui/server.py:1281
-#: modless_chat_trans/webui/server.py:1285
-msgid "Pre-TTS 不可用"
-msgstr ""
-
 #: modless_chat_trans/webui/server.py:190
-#: modless_chat_trans/webui/server.py:1281
-msgid "Pre-TTS 引擎加载失败"
+#: modless_chat_trans/webui/server.py:1285
+#: modless_chat_trans/webui/server.py:1289
+msgid "Pre-TTS 不可用"
 msgstr ""
 
 #: modless_chat_trans/webui/server.py:191
 #: modless_chat_trans/webui/server.py:1285
-msgid "配置尚未初始化"
-msgstr ""
-
-#: modless_chat_trans/webui/server.py:193
-#: modless_chat_trans/webui/server.py:1290
-msgid "Pre-TTS 失败"
+msgid "Pre-TTS 引擎加载失败"
 msgstr ""
 
 #: modless_chat_trans/webui/server.py:192
-#: modless_chat_trans/webui/server.py:1290
+#: modless_chat_trans/webui/server.py:1289
+msgid "配置尚未初始化"
+msgstr ""
+
+#: modless_chat_trans/webui/server.py:194
+#: modless_chat_trans/webui/server.py:1294
+msgid "Pre-TTS 失败"
+msgstr ""
+
+#: modless_chat_trans/webui/server.py:193
+#: modless_chat_trans/webui/server.py:1294
 msgid "启动预合成失败（TTS 依赖不可用或已在运行）"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:185
+#: modless_chat_trans/webui/server.py:186
 msgid "正在扫描翻译缓存..."
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:186
+#: modless_chat_trans/webui/server.py:187
 msgid "正在停止..."
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:195
+#: modless_chat_trans/webui/server.py:196
 msgid "将清除所有已预合成的 Pre-TTS 音频。此操作不可恢复。"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:197
-#: modless_chat_trans/webui/server.py:1313
+#: modless_chat_trans/webui/server.py:198
+#: modless_chat_trans/webui/server.py:1317
 msgid "清除 Pre-TTS 音频时出错"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:199
-#: modless_chat_trans/webui/server.py:1315
+#: modless_chat_trans/webui/server.py:200
+#: modless_chat_trans/webui/server.py:1319
 msgid "尚未预合成任何 Pre-TTS 音频"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:201
-#: modless_chat_trans/webui/server.py:1317
+#: modless_chat_trans/webui/server.py:202
+#: modless_chat_trans/webui/server.py:1321
 #, python-brace-format
 msgid "已清除 {} 条 Pre-TTS 音频"
 msgstr ""
@@ -1399,4 +1388,8 @@ msgstr ""
 
 #: modless_chat_trans/webui/server.py:77
 msgid "确定"
+msgstr ""
+
+#: modless_chat_trans/webui/server.py:137
+msgid "最大输出Token数："
 msgstr ""

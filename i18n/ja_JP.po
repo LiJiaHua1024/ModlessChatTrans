@@ -1375,3 +1375,7 @@ msgstr "翻訳がタイムアウトしました。後でもう一度お試しく
 msgid "确定"
 msgstr "OK"
 
+#: modless_chat_trans/webui/server.py:137
+msgid "最大输出Token数："
+msgstr "最大出力トークン数："
+
