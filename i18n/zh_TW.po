@@ -1348,3 +1348,108 @@ msgstr "翻譯超時，請稍後重試。"
 msgid "最大输出Token数："
 msgstr "最大輸出Token數："
 
+#: modless_chat_trans/interface.py:3162
+msgid "消息分类设置"
+msgstr "訊息分類設定"
+
+#: modless_chat_trans/interface.py:3169
+msgid ""
+"决定每条聊天按玩家消息还是服务器消息处理。\n"
+"\n"
+"内置规则无法识别服务器自定义头衔：例如“OP Diamond II Steve”这类玩家消息会被当成服务器消息；\n"
+"此时若又开启了「消息捕获设置」中的“过滤服务器消息”，这些消息就不会被翻译。\n"
+"\n"
+"Jev 基于语义理解，规则难以识别的复杂情况都能正确判断。"
+msgstr ""
+"決定每條聊天按玩家訊息還是伺服器訊息處理。\n"
+"\n"
+"內建規則無法識別伺服器自訂頭銜：例如“OP Diamond II Steve”這類玩家訊息會被當成伺服器訊息；\n"
+"此時若又開啟了「訊息捕獲設定」中的“過濾伺服器訊息”，這些訊息就不會被翻譯。\n"
+"\n"
+"Jev 基於語意理解，規則難以識別的複雜情況都能正確判斷。"
+
+#: modless_chat_trans/interface.py:3189
+msgid "内置规则"
+msgstr "內建規則"
+
+#: modless_chat_trans/interface.py:3190
+msgid "不联网，不增加任何延迟"
+msgstr "不聯網，不增加任何延遲"
+
+#: modless_chat_trans/interface.py:3191
+msgid "Jev 模型判定"
+msgstr "Jev 模型判定"
+
+#: modless_chat_trans/interface.py:3192
+msgid "需要配置 Jev 服务，会增加少量延迟"
+msgstr "需要配置 Jev 服務，會增加少量延遲"
+
+#: modless_chat_trans/interface.py:3200
+#, python-brace-format
+msgid ""
+"内置规则：速度快、不联网\n"
+"规则难以识别的复杂情况会出错\n"
+"\n"
+"Jev 模型判定：\n"
+"基于语义理解，复杂情况也能正确判断\n"
+"需要配置服务，会增加少量延迟\n"
+"调用失败或超时回退到内置规则\n"
+"连续失败 {count} 次会暂停使用 Jev {seconds} 秒"
+msgstr ""
+"內建規則：速度快、不聯網\n"
+"規則難以識別的複雜情況會出錯\n"
+"\n"
+"Jev 模型判定：\n"
+"基於語意理解，複雜情況也能正確判斷\n"
+"需要配置服務，會增加少量延遲\n"
+"調用失敗或超時回退到內建規則\n"
+"連續失敗 {count} 次會暫停使用 Jev {seconds} 秒"
+
+#: modless_chat_trans/interface.py:3211
+msgid "分类方式"
+msgstr "分類方式"
+
+#: modless_chat_trans/interface.py:3220
+msgid "Jev 服务配置"
+msgstr "Jev 服務配置"
+
+#: modless_chat_trans/interface.py:3226
+msgid "服务商："
+msgstr "服務商："
+
+#: modless_chat_trans/interface.py:3228
+msgid "TypeSafe 官方"
+msgstr "TypeSafe 官方"
+
+#: modless_chat_trans/interface.py:3229
+msgid "OpenRouter"
+msgstr "OpenRouter"
+
+#: modless_chat_trans/interface.py:3237
+msgid "请输入 Jev 服务商的 API Key"
+msgstr "請輸入 Jev 服務商的 API Key"
+
+#: modless_chat_trans/interface.py:3244
+msgid "模型："
+msgstr "模型："
+
+#: modless_chat_trans/interface.py:3250
+msgid "端点："
+msgstr "端點："
+
+#: modless_chat_trans/interface.py:3258
+msgid "请求超时："
+msgstr "請求超時："
+
+#: modless_chat_trans/interface.py:3263
+msgid " 秒"
+msgstr " 秒"
+
+#: modless_chat_trans/interface.py:3384
+msgid "未填写 API Key：启动后将回退到内置规则判定。"
+msgstr "未填寫 API Key：啟動後將回退到內建規則判定。"
+
+#: modless_chat_trans/interface.py:5204
+msgid "消息分类"
+msgstr "訊息分類"
+
