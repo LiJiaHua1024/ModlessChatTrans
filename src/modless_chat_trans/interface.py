@@ -75,6 +75,22 @@ def set_tool_tip(widget, tip, duration=400, position=ToolTipPosition.TOP_LEFT):
     widget.installEventFilter(ToolTipFilter(widget, showDelay=duration, position=position))
 
 
+class NoHeightForWidthPropagation:
+    """阻止页面把 heightForWidth 传播给顶层窗口。
+
+    页面里的自动换行标签（QLabel.setWordWrap）会带来 heightForWidth，Qt 会把它逐层
+    传播到窗口，而页面所在的堆叠控件取的是所有页面中的最大值。结果是在这类页面里横向
+    拖动窗口时，窗口高度会被强制改成 heightForWidth(新宽度)（实测 700 → 808），而且
+    拖不回原来的高度。页面声明自己不参与高度协商即可断开这条链；页面内部布局仍然按
+    宽度计算每个控件的高度，显示效果不变。
+
+    凡是含有自动换行标签的页面都应继承本类。
+    """
+
+    def hasHeightForWidth(self) -> bool:
+        return False
+
+
 class TeachingTipManager:
     """全局TeachingTip管理器，确保同时只有一个TeachingTip显示"""
     _current_tip = None
@@ -1228,7 +1244,7 @@ class TranslationServiceInterface(QFrame):
         return None
 
 
-class MessagePresentationInterface(QFrame):
+class MessagePresentationInterface(NoHeightForWidthPropagation, QFrame):
     """翻译结果呈现界面组件"""
 
     def __init__(self, parent, config=None):
@@ -2508,7 +2524,7 @@ class GlossaryInterface(QFrame):
                 QTimer.singleShot(100, self._set_equal_column_widths)
 
 
-class BlacklistInterface(QFrame):
+class BlacklistInterface(NoHeightForWidthPropagation, QFrame):
     """黑名单配置界面组件"""
 
     def __init__(self, parent, config=None):
