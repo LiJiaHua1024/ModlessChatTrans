@@ -130,6 +130,7 @@ def start_translation(config):
     from modless_chat_trans.web_display import start_httpserver_thread, display_message, allocate_slot, fill_slot
     from modless_chat_trans.log_monitor import start_log_monitor
     from modless_chat_trans.message_processor import init_processor, init_blacklist, process_message
+    from modless_chat_trans.message_classifier import init_classifier
     from modless_chat_trans.translator import Translator
     from modless_chat_trans.clipboard_monitor import monitor_clipboard, modify_clipboard
     try:
@@ -254,6 +255,7 @@ def start_translation(config):
         config.glossary
     )
     init_blacklist(config.blacklist)
+    init_classifier(config.message_classification)
 
     monitor_thread = threading.Thread(
         target=start_log_monitor,

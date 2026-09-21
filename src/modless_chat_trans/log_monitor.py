@@ -112,7 +112,8 @@ class OrderedProcessor:
 
     def _run(self):
         from modless_chat_trans.web_display import allocate_slot, fill_slot
-        from modless_chat_trans.message_processor import prepare
+        from modless_chat_trans.message_processor import prepare, extract_chat_text
+        from modless_chat_trans.message_classifier import classify_lines
         from modless_chat_trans.context_buffer import ContextEntry, extract_log_time
 
         while not self._stop:
@@ -131,17 +132,23 @@ class OrderedProcessor:
                 except Empty:
                     break
 
-            # ========== 阶段1：单线程 prepare + allocate_slot + push ==========
+            # ========== 阶段1：单线程 分类 + prepare + allocate_slot + push ==========
             # 顺序执行，保证 context_buffer 顺序更新
             # 后面的消息必须等前面的消息 push 完才能动
-            items = []  # [(prepared, slot_id, log_time)]
+            chat_lines = []  # [(line, arrival_time, chat_text)]，非 CHAT 行不参与翻译，直接丢弃
             for line, arrival_time in batch:
-                # 非 CHAT 行（join/leave 等）不参与翻译，直接丢弃
                 if "[CHAT]" not in line:
                     continue
+                chat_lines.append((line, arrival_time, extract_chat_text(line, self._replace_garbled_chars)))
 
+            # 整批一起分类（内置规则或 Jev）；Jev 调用失败或超时的行由 classify_lines 回退规则。
+            # 放在这里是为了让一批消息只产生一次 HTTP 请求。
+            verdicts = classify_lines([chat_text for _, _, chat_text in chat_lines])
+
+            items = []  # [(prepared, slot_id, log_time)]
+            for (line, arrival_time, _chat_text), is_player in zip(chat_lines, verdicts):
                 # prepare（解析+过滤，极快）
-                prepared = prepare(line, "log", self._replace_garbled_chars)
+                prepared = prepare(line, "log", self._replace_garbled_chars, is_player=is_player)
                 if prepared is None:
                     # 被过滤掉，分配 slot 后立即清除
                     slot_id = allocate_slot(arrival_time=arrival_time)
