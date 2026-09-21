@@ -29,7 +29,7 @@ msgstr ""
 msgid "输入消息..."
 msgstr ""
 
-#: main.py:200 main.py:204
+#: main.py:201 main.py:205
 msgid "要发送的消息翻译完成，翻译结果已复制到剪切板"
 msgstr ""
 
@@ -761,29 +761,29 @@ msgstr ""
 msgid "获取支持语言失败 ({service_id}): {error_msg}"
 msgstr ""
 
-#: modless_chat_trans/message_processor.py:413
+#: modless_chat_trans/message_processor.py:419
 msgid "翻译失败：请求次数过多，请稍后重试。"
 msgstr ""
 
-#: modless_chat_trans/message_processor.py:415
+#: modless_chat_trans/message_processor.py:421
 msgid "翻译失败：服务器错误，请稍后重试。"
 msgstr ""
 
-#: modless_chat_trans/message_processor.py:417
+#: modless_chat_trans/message_processor.py:423
 msgid "翻译失败：发生HTTP错误。"
 msgstr ""
 
-#: modless_chat_trans/message_processor.py:419
+#: modless_chat_trans/message_processor.py:425
 msgid "翻译失败：网络问题或发生HTTP错误。"
 msgstr ""
 
-#: modless_chat_trans/message_processor.py:405
-#: modless_chat_trans/message_processor.py:408
-#: modless_chat_trans/message_processor.py:421
+#: modless_chat_trans/message_processor.py:411
+#: modless_chat_trans/message_processor.py:414
+#: modless_chat_trans/message_processor.py:427
 msgid "翻译失败：服务器响应无效，请检查网络连接。"
 msgstr ""
 
-#: main.py:188 modless_chat_trans/message_processor.py:423
+#: main.py:189 modless_chat_trans/message_processor.py:429
 msgid "翻译失败，错误："
 msgstr ""
 
@@ -1267,7 +1267,7 @@ msgstr ""
 msgid "朗读"
 msgstr ""
 
-#: main.py:191 main.py:211 modless_chat_trans/webui/server.py:789
+#: main.py:192 main.py:212 modless_chat_trans/webui/server.py:789
 msgid "翻译失败，未生成翻译结果。"
 msgstr ""
 
@@ -1386,10 +1386,10 @@ msgstr ""
 msgid "翻译超时，请稍后重试。"
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:77
-msgid "确定"
-msgstr ""
-
 #: modless_chat_trans/webui/server.py:137
 msgid "最大输出Token数："
+msgstr ""
+
+#: modless_chat_trans/webui/server.py:77
+msgid "确定"
 msgstr ""

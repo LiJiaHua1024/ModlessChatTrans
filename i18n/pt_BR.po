@@ -1382,3 +1382,116 @@ msgstr "OK"
 msgid "最大输出Token数："
 msgstr "Máximo de tokens de saída:"
 
+#: modless_chat_trans/interface.py:3162
+msgid "消息分类设置"
+msgstr "Configurações de classificação de mensagens"
+
+#: modless_chat_trans/interface.py:3169
+msgid ""
+"决定每条聊天按玩家消息还是服务器消息处理。\n"
+"\n"
+"内置规则无法识别服务器自定义头衔：例如“OP Diamond II Steve”这类玩家消息会被当成服务器消息；\n"
+"此时若又开启了「消息捕获设置」中的“过滤服务器消息”，这些消息就不会被翻译。\n"
+"\n"
+"Jev 基于语义理解，规则难以识别的复杂情况都能正确判断。"
+msgstr ""
+"Determina se cada mensagem do chat é processada como mensagem de jogador "
+"ou de servidor.\n"
+"\n"
+"As regras integradas não reconhecem títulos personalizados do servidor: "
+"por exemplo, mensagens de jogadores como \"OP Diamond II Steve\" serão "
+"tratadas como mensagens do servidor;\n"
+"Se \"Filtrar mensagens do servidor\" em \"Configurações de captura de "
+"mensagens\" também estiver ativado, essas mensagens não serão traduzidas."
+"\n"
+"\n"
+"O Jev é baseado em compreensão semântica e consegue determinar "
+"corretamente casos complexos difíceis de identificar por regras."
+
+#: modless_chat_trans/interface.py:3189
+msgid "内置规则"
+msgstr "Regras integradas"
+
+#: modless_chat_trans/interface.py:3190
+msgid "不联网，不增加任何延迟"
+msgstr "Offline, sem latência adicional"
+
+#: modless_chat_trans/interface.py:3191
+msgid "Jev 模型判定"
+msgstr "Avaliação por modelo Jev"
+
+#: modless_chat_trans/interface.py:3192
+msgid "需要配置 Jev 服务，会增加少量延迟"
+msgstr "Requer configuração do serviço Jev, adiciona uma pequena latência"
+
+#: modless_chat_trans/interface.py:3200
+#, python-brace-format
+msgid ""
+"内置规则：速度快、不联网\n"
+"规则难以识别的复杂情况会出错\n"
+"\n"
+"Jev 模型判定：\n"
+"基于语义理解，复杂情况也能正确判断\n"
+"需要配置服务，会增加少量延迟\n"
+"调用失败或超时回退到内置规则\n"
+"连续失败 {count} 次会暂停使用 Jev {seconds} 秒"
+msgstr ""
+"Regras integradas: Rápidas, offline\n"
+"Podem falhar em casos complexos difíceis de identificar por regras\n"
+"\n"
+"Avaliação por modelo Jev:\n"
+"Baseada em compreensão semântica, identifica corretamente situações "
+"complexas\n"
+"Requer configuração do serviço, adiciona uma pequena latência\n"
+"Retorna às regras integradas em caso de falha ou tempo limite\n"
+"Suspende o uso do Jev por {seconds} segundos após {count} falhas "
+"consecutivas"
+
+#: modless_chat_trans/interface.py:3211
+msgid "分类方式"
+msgstr "Método de classificação"
+
+#: modless_chat_trans/interface.py:3220
+msgid "Jev 服务配置"
+msgstr "Configuração do serviço Jev"
+
+#: modless_chat_trans/interface.py:3226
+msgid "服务商："
+msgstr "Provedor:"
+
+#: modless_chat_trans/interface.py:3228
+msgid "TypeSafe 官方"
+msgstr "TypeSafe oficial"
+
+#: modless_chat_trans/interface.py:3229
+msgid "OpenRouter"
+msgstr "OpenRouter"
+
+#: modless_chat_trans/interface.py:3237
+msgid "请输入 Jev 服务商的 API Key"
+msgstr "Insira a chave da API do provedor Jev"
+
+#: modless_chat_trans/interface.py:3244
+msgid "模型："
+msgstr "Modelo:"
+
+#: modless_chat_trans/interface.py:3250
+msgid "端点："
+msgstr "Endpoint:"
+
+#: modless_chat_trans/interface.py:3258
+msgid "请求超时："
+msgstr "Tempo limite da requisição:"
+
+#: modless_chat_trans/interface.py:3263
+msgid " 秒"
+msgstr " s"
+
+#: modless_chat_trans/interface.py:3384
+msgid "未填写 API Key：启动后将回退到内置规则判定。"
+msgstr "Chave da API não fornecida: retornará às regras integradas ao iniciar."
+
+#: modless_chat_trans/interface.py:5204
+msgid "消息分类"
+msgstr "Classificação de mensagens"
+

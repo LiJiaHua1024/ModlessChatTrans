@@ -298,7 +298,8 @@ def match_and_translate(original_chat_message: str) -> str | None:
     return None
 
 
-def should_skip_message(name: str, original_chat_message: str, message_type: MessageType, data_type: str) -> bool:
+def should_skip_message(name: str, original_chat_message: str, message_type: MessageType, data_type: str,
+                        core_name: str = "") -> bool:
     """
     检查消息是否应该被跳过（过滤逻辑）
 
@@ -306,13 +307,14 @@ def should_skip_message(name: str, original_chat_message: str, message_type: Mes
     :param original_chat_message: 原始聊天消息
     :param message_type: 消息类型
     :param data_type: 数据类型 ("log", "clipboard", "webui")
+    :param core_name: 剥离 [标签]/头衔后的玩家名，用于黑名单匹配；为空时回退到 name
     :return: True 如果消息应该被跳过
     """
     # 黑名单检查（PLAYER 和 SYSTEM 消息生效，SEND 不生效）
     if message_type != MessageType.SEND and original_chat_message:
         # 用户黑名单检查（仅对玩家消息，因为需要用户名）
         if name:
-            sanitized_name = sanitize_hypixel_name(name)
+            sanitized_name = sanitize_hypixel_name(core_name or name)
             if is_user_in_blacklist(sanitized_name):
                 logger.info(f"User '{sanitized_name}' in blacklist, discarding message")
                 return True
@@ -322,8 +324,8 @@ def should_skip_message(name: str, original_chat_message: str, message_type: Mes
             logger.info(f"Message blocked by content blacklist: {original_chat_message[:50]}...")
             return True
 
-    # 系统消息过滤
-    if data_type == "log" and filter_server_messages and not name:
+    # 服务器消息过滤：以消息类型为准（规则判定下 name 为空即服务器消息）
+    if data_type == "log" and filter_server_messages and message_type == MessageType.SYSTEM:
         return True
 
     return False
@@ -335,22 +337,26 @@ class PreparedMessage:
     name: str                    # 玩家名（可为空）
     original: str                # 原文
     message_type: MessageType    # 消息类型
+    core_name: str = ""          # 剥离 [标签]/头衔后的玩家名，用于黑名单匹配
 
 
-def prepare(data: str, data_type: str, replace_garbled: bool = False) -> PreparedMessage | None:
+def prepare(data: str, data_type: str, replace_garbled: bool = False,
+            is_player: bool | None = None) -> PreparedMessage | None:
     """
     解析 + 过滤，返回 PreparedMessage 或 None（应被丢弃）。
     此函数极快（纯 CPU，无 I/O），可在单线程中顺序调用。
+
+    :param is_player: 消息分类器给出的判定（True=玩家消息）；None 表示使用内置规则判定
     """
-    name, original, msg_type = parse_message(data, data_type, replace_garbled)
+    name, original, msg_type, core_name = parse_message(data, data_type, replace_garbled, is_player)
 
     if not original:
         return None
 
-    if should_skip_message(name, original, msg_type, data_type):
+    if should_skip_message(name, original, msg_type, data_type, core_name):
         return None
 
-    return PreparedMessage(name=name, original=original, message_type=msg_type)
+    return PreparedMessage(name=name, original=original, message_type=msg_type, core_name=core_name)
 
 
 def translate_prepared(
@@ -475,54 +481,116 @@ def process_message(data, data_type, translator, source_language, target_languag
     return False, translated, info
 
 
-def parse_message(data, data_type, replace_garbled_character=False):
+def extract_chat_text(data: str, replace_garbled_character: bool = False) -> str:
     """
-    解析日志文件中的一行（仅解析，不含翻译和过滤）
-    
-    :param data: 需要处理的数据
-    :param data_type: 数据类型 ("log", "clipboard", "webui")
-    :return: 元组 (玩家名称, 聊天内容, 消息类型)
+    取出日志行中 [CHAT] 之后的聊天原文。
+
+    规则判定与 Jev 分类共用此函数，保证两者看到的内容完全一致。
+    行内不含 [CHAT] 时返回空串（调用方据此丢弃该行）。
     """
+    parts = data.split("[CHAT]", 1)
+    if len(parts) < 2:
+        return ""
 
-    chat_message: str = ""
-    if data_type == "log":
-        chat_message = data.split("[CHAT]")[1].strip()
-    elif data_type in ("clipboard", "webui"):
-        return "", data.strip(), MessageType.SEND
-    else:
-        return "", "", MessageType.SYSTEM
-
+    chat_message = parts[1].strip()
     if replace_garbled_character:
         chat_message = chat_message.replace("\ufffd\ufffd", "\u00A7")
+    return chat_message
 
-    # 处理原版 Minecraft 聊天格式 <name>
+
+def rule_classify(chat_message: str) -> bool:
+    """
+    内置规则判定：这一行聊天是否由玩家发出。
+
+    判定依据：
+    - `<名字> 正文`：尖括号内是合法 Minecraft 玩家名
+    - `前缀: 正文`：前缀依次去掉 § 格式码、`[标签]`、`组织名 > `、`From/To ` 后，
+      剩余部分必须是合法玩家名（3-16 位字母、数字或下划线）
+
+    该规则无法处理服务器自定义头衔：`OP Diamond II Steve: hi` 里的 `OP Diamond II`
+    去不掉，因此这类玩家消息会被判为服务器消息。
+    """
     if chat_message.startswith("<"):
-        # 尝试提取 <name> 格式
+        gt_pos = chat_message.find(">", 1)
+        if gt_pos == -1:
+            return False
+        return _is_valid_minecraft_name(chat_message[1:gt_pos].strip())
+
+    colon_pos = chat_message.find(":")
+    if colon_pos == -1:
+        return False
+
+    return _is_valid_minecraft_name(sanitize_hypixel_name(chat_message[:colon_pos].strip()))
+
+
+def _last_name_token(prefix: str) -> str:
+    """取前缀中最后一个合法玩家名，用于剥离服务器自定义头衔（`OP Diamond II Steve` → `Steve`）"""
+    for token in reversed(prefix.split()):
+        if _is_valid_minecraft_name(token):
+            return token
+    return ""
+
+
+def extract_speaker(chat_message: str) -> tuple:
+    """
+    从聊天行中提取说话人，返回 (显示名, 核心名, 正文)。
+
+    - 显示名：原样的说话人前缀（保留 [MVP+]/头衔等装饰），用于展示与朗读
+    - 核心名：剥离装饰后的玩家名，用于黑名单匹配
+    - 无法确定说话人时返回 ("", "", chat_message)
+
+    比内置规则宽容：允许前缀带有头衔（取最后一个合法玩家名作为核心名），
+    第一个冒号不成立时继续尝试后续冒号。调用前应先确认该行是玩家消息。
+    """
+    if chat_message.startswith("<"):
         gt_pos = chat_message.find(">", 1)
         if gt_pos != -1:
             name = chat_message[1:gt_pos].strip()
-            # 对于尖括号格式，通常是原版聊天，直接验证即可
             if _is_valid_minecraft_name(name):
-                return name, chat_message[gt_pos + 1:].strip(), MessageType.PLAYER
+                return name, name, chat_message[gt_pos + 1:].strip()
 
-        return "", chat_message.strip(), MessageType.SYSTEM
-
-    else:
-        colon_pos = chat_message.find(":")
+    search_from = 0
+    while True:
+        colon_pos = chat_message.find(":", search_from)
         if colon_pos == -1:
-            return "", chat_message.strip(), MessageType.SYSTEM
+            return "", "", chat_message
 
-        # 尝试提取 name: 格式
-        name = chat_message[:colon_pos].strip()
-        text = chat_message[colon_pos + 1:]
+        prefix = chat_message[:colon_pos].strip()
+        text = chat_message[colon_pos + 1:].strip()
+        sanitized_name = sanitize_hypixel_name(prefix)
 
-        # 净化名称用于验证
-        sanitized_name = sanitize_hypixel_name(name)
-
-        # 验证净化后的名称是否符合 Minecraft 玩家名规则
         if _is_valid_minecraft_name(sanitized_name):
-            # 返回原始未净化的名称和消息内容
-            return name, text.strip(), MessageType.PLAYER
+            return prefix, sanitized_name, text
 
-        # 不符合规则,整条消息作为系统消息返回
-        return "", chat_message.strip(), MessageType.SYSTEM
+        core_name = _last_name_token(sanitized_name)
+        if core_name:
+            return prefix, core_name, text
+
+        search_from = colon_pos + 1
+
+
+def parse_message(data, data_type, replace_garbled_character=False, is_player=None):
+    """
+    解析日志文件中的一行（仅解析，不含翻译和过滤）
+
+    :param data: 需要处理的数据
+    :param data_type: 数据类型 ("log", "clipboard", "webui")
+    :param is_player: 消息分类器给出的判定（True=玩家消息）；None 表示使用内置规则判定
+    :return: 元组 (玩家名称, 聊天内容, 消息类型, 用于黑名单匹配的核心名)
+    """
+    if data_type == "log":
+        chat_message = extract_chat_text(data, replace_garbled_character)
+    elif data_type in ("clipboard", "webui"):
+        return "", data.strip(), MessageType.SEND, ""
+    else:
+        return "", "", MessageType.SYSTEM, ""
+
+    if is_player is None:
+        is_player = rule_classify(chat_message)
+
+    if is_player:
+        name, core_name, text = extract_speaker(chat_message)
+        return name, text, MessageType.PLAYER, core_name
+
+    # 不符合规则,整条消息作为系统消息返回
+    return "", chat_message.strip(), MessageType.SYSTEM, ""

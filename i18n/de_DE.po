@@ -1379,3 +1379,118 @@ msgstr "OK"
 msgid "最大输出Token数："
 msgstr "Maximale Ausgabe-Tokens:"
 
+#: modless_chat_trans/interface.py:3162
+msgid "消息分类设置"
+msgstr "Einstellungen zur Nachrichtenklassifizierung"
+
+#: modless_chat_trans/interface.py:3169
+msgid ""
+"决定每条聊天按玩家消息还是服务器消息处理。\n"
+"\n"
+"内置规则无法识别服务器自定义头衔：例如“OP Diamond II Steve”这类玩家消息会被当成服务器消息；\n"
+"此时若又开启了「消息捕获设置」中的“过滤服务器消息”，这些消息就不会被翻译。\n"
+"\n"
+"Jev 基于语义理解，规则难以识别的复杂情况都能正确判断。"
+msgstr ""
+"Bestimmt, ob jede Chat-Nachricht als Spielernachricht oder als "
+"Servernachricht verarbeitet wird.\n"
+"\n"
+"Integrierte Regeln können benutzerdefinierte Server-Titel nicht erkennen:"
+" Spielernachrichten wie z. B. „OP Diamond II Steve“ werden als "
+"Servernachrichten behandelt;\n"
+"Wenn zudem „Servernachrichten filtern“ in den „Einstellungen zur "
+"Nachrichtenerfassung“ aktiviert ist, werden diese Nachrichten nicht "
+"übersetzt.\n"
+"\n"
+"Jev basiert auf semantischem Verständnis und kann komplexe Fälle, die "
+"durch Regeln schwer zu erkennen sind, korrekt beurteilen."
+
+#: modless_chat_trans/interface.py:3189
+msgid "内置规则"
+msgstr "Integrierte Regeln"
+
+#: modless_chat_trans/interface.py:3190
+msgid "不联网，不增加任何延迟"
+msgstr "Funktioniert offline, keine zusätzliche Latenz"
+
+#: modless_chat_trans/interface.py:3191
+msgid "Jev 模型判定"
+msgstr "Jev-Modellprüfung"
+
+#: modless_chat_trans/interface.py:3192
+msgid "需要配置 Jev 服务，会增加少量延迟"
+msgstr "Erfordert Konfiguration des Jev-Dienstes, verursacht geringe Latenz"
+
+#: modless_chat_trans/interface.py:3200
+#, python-brace-format
+msgid ""
+"内置规则：速度快、不联网\n"
+"规则难以识别的复杂情况会出错\n"
+"\n"
+"Jev 模型判定：\n"
+"基于语义理解，复杂情况也能正确判断\n"
+"需要配置服务，会增加少量延迟\n"
+"调用失败或超时回退到内置规则\n"
+"连续失败 {count} 次会暂停使用 Jev {seconds} 秒"
+msgstr ""
+"Integrierte Regeln: Schnell, offline\n"
+"Kann bei komplexen, schwer erkennbaren Fällen Fehler machen\n"
+"\n"
+"Jev-Modellprüfung:\n"
+"Basiert auf semantischem Verständnis, beurteilt auch komplexe Fälle "
+"korrekt\n"
+"Erfordert Dienstkonfiguration, verursacht geringe Latenz\n"
+"Fällt bei Fehlern oder Zeitüberschreitung auf integrierte Regeln zurück\n"
+"Pausiert Jev für {seconds} Sekunden nach {count} aufeinanderfolgenden "
+"Fehlern"
+
+#: modless_chat_trans/interface.py:3211
+msgid "分类方式"
+msgstr "Klassifizierungsmethode"
+
+#: modless_chat_trans/interface.py:3220
+msgid "Jev 服务配置"
+msgstr "Jev-Dienstkonfiguration"
+
+#: modless_chat_trans/interface.py:3226
+msgid "服务商："
+msgstr "Anbieter:"
+
+#: modless_chat_trans/interface.py:3228
+msgid "TypeSafe 官方"
+msgstr "TypeSafe (offiziell)"
+
+#: modless_chat_trans/interface.py:3229
+msgid "OpenRouter"
+msgstr "OpenRouter"
+
+#: modless_chat_trans/interface.py:3237
+msgid "请输入 Jev 服务商的 API Key"
+msgstr "Bitte den API-Schlüssel des Jev-Anbieters eingeben"
+
+#: modless_chat_trans/interface.py:3244
+msgid "模型："
+msgstr "Modell:"
+
+#: modless_chat_trans/interface.py:3250
+msgid "端点："
+msgstr "Endpunkt:"
+
+#: modless_chat_trans/interface.py:3258
+msgid "请求超时："
+msgstr "Anforderungs-Timeout:"
+
+#: modless_chat_trans/interface.py:3263
+msgid " 秒"
+msgstr " s"
+
+#: modless_chat_trans/interface.py:3384
+msgid "未填写 API Key：启动后将回退到内置规则判定。"
+msgstr ""
+"Kein API-Schlüssel angegeben: Fällt beim Start auf integrierte Regeln "
+"zurück."
+
+#: modless_chat_trans/interface.py:5204
+msgid "消息分类"
+msgstr "Nachrichtenklassifizierung"
+
