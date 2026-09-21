@@ -55,6 +55,18 @@ class MonitorMode(Enum):
     COMPATIBLE = "compatible"
 
 
+class MessageClassifierType(str, Enum):
+    """消息分类方式"""
+    RULE = "rule"  # 内置规则
+    JEV = "jev"    # Jev 模型
+
+
+class JevProvider(str, Enum):
+    """Jev 服务商"""
+    TYPESAFE = "typesafe"      # TypeSafe 官方 API
+    OPENROUTER = "openrouter"  # OpenRouter
+
+
 class FallbackStrategy(str, Enum):
     """备用模型切换策略"""
     DIRECT = "direct"                     # 主模型失败 → 立即用备用
@@ -128,6 +140,17 @@ class BlacklistConfig(BaseConfigModel):
     message_blacklist: List[MessageBlacklistRule] = []  # 消息内容黑名单
 
 
+class MessageClassificationConfig(BaseConfigModel):
+    """消息分类配置：判定一条聊天行是玩家消息还是服务器消息"""
+    classifier: MessageClassifierType = MessageClassifierType.RULE
+    provider: JevProvider = JevProvider.TYPESAFE
+    api_key: str = ""
+    # 模型名与端点留空时使用对应服务商的默认值
+    model: str = ""
+    api_base: Optional[str] = None
+    timeout: float = 2.0  # 单次判定请求超时（秒）
+
+
 class ContextConfig(BaseConfigModel):
     """上下文翻译配置"""
     model_config = ConfigDict(
@@ -172,6 +195,7 @@ class ConfigV3FromInit(BaseSettings):
     settings: SettingConfig
     glossary: Dict[str, str]
     blacklist: BlacklistConfig = BlacklistConfig()
+    message_classification: MessageClassificationConfig = MessageClassificationConfig()
     context: ContextConfig = ContextConfig()
     tts: TTSConfig = TTSConfig()
 

@@ -43,7 +43,11 @@ from modless_chat_trans.i18n import supported_languages, _
 from modless_chat_trans.logger import logger
 from modless_chat_trans.config import (
     ServiceType, MonitorMode, FallbackStrategy, update_config, save_config,
-    TranslationServiceConfig, LLMServiceConfig, TraditionalServiceConfig
+    TranslationServiceConfig, LLMServiceConfig, TraditionalServiceConfig,
+    MessageClassificationConfig, MessageClassifierType, JevProvider
+)
+from modless_chat_trans.message_classifier import (
+    JEV_PROVIDER_DEFAULTS, FAILURE_THRESHOLD, PAUSE_SECONDS
 )
 from modless_chat_trans.translator import (
     service_supported_languages,
@@ -73,6 +77,22 @@ def _get_netifaces():
 def set_tool_tip(widget, tip, duration=400, position=ToolTipPosition.TOP_LEFT):
     widget.setToolTip(tip)
     widget.installEventFilter(ToolTipFilter(widget, showDelay=duration, position=position))
+
+
+class NoHeightForWidthPropagation:
+    """阻止页面把 heightForWidth 传播给顶层窗口。
+
+    页面里的自动换行标签（QLabel.setWordWrap）会带来 heightForWidth，Qt 会把它逐层
+    传播到窗口，而页面所在的堆叠控件取的是所有页面中的最大值。结果是在这类页面里横向
+    拖动窗口时，窗口高度会被强制改成 heightForWidth(新宽度)（实测 700 → 808），而且
+    拖不回原来的高度。页面声明自己不参与高度协商即可断开这条链；页面内部布局仍然按
+    宽度计算每个控件的高度，显示效果不变。
+
+    凡是含有自动换行标签的页面都应继承本类。
+    """
+
+    def hasHeightForWidth(self) -> bool:
+        return False
 
 
 class TeachingTipManager:
@@ -1228,7 +1248,7 @@ class TranslationServiceInterface(QFrame):
         return None
 
 
-class MessagePresentationInterface(QFrame):
+class MessagePresentationInterface(NoHeightForWidthPropagation, QFrame):
     """翻译结果呈现界面组件"""
 
     def __init__(self, parent, config=None):
@@ -2508,7 +2528,7 @@ class GlossaryInterface(QFrame):
                 QTimer.singleShot(100, self._set_equal_column_widths)
 
 
-class BlacklistInterface(QFrame):
+class BlacklistInterface(NoHeightForWidthPropagation, QFrame):
     """黑名单配置界面组件"""
 
     def __init__(self, parent, config=None):
@@ -3117,6 +3137,273 @@ class BlacklistInterface(QFrame):
             QTimer.singleShot(100, self._adjust_message_table_widths)
 
 
+class MessageClassificationInterface(NoHeightForWidthPropagation, QFrame):
+    """消息分类设置界面组件"""
+
+    def __init__(self, parent, config=None):
+        super().__init__(parent=parent)
+        self.setObjectName("messageClassification")
+        self.parent_ref = parent
+        self.config = config
+        self.init_ui()
+
+    def hideEvent(self, event):
+        """当界面隐藏时，关闭TeachingTip"""
+        TeachingTipManager.close_current()
+        super().hideEvent(event)
+
+    def init_ui(self):
+        # 主布局
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(30, 30, 30, 30)
+        self.main_layout.setSpacing(20)
+
+        # 标题
+        title = SubtitleLabel(_('消息分类设置'), self)
+        setFont(title, 24)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.main_layout.addWidget(title)
+
+        # 说明文字
+        desc_label = BodyLabel(
+            _('决定每条聊天按玩家消息还是服务器消息处理。\n'
+              '\n'
+              '内置规则无法识别服务器自定义头衔：例如“OP Diamond II Steve”这类玩家消息会被当成服务器消息；\n'
+              '此时若又开启了「消息捕获设置」中的“过滤服务器消息”，这些消息就不会被翻译。\n'
+              '\n'
+              'Jev 基于语义理解，规则难以识别的复杂情况都能正确判断。'),
+            self
+        )
+        desc_label.setWordWrap(True)
+        self.main_layout.addWidget(desc_label)
+
+        # 分类方式卡片
+        mode_card = SimpleCardWidget(self)
+        mode_layout = QVBoxLayout(mode_card)
+        mode_layout.setContentsMargins(20, 16, 20, 16)
+        mode_layout.setSpacing(12)
+
+        mode_row = QHBoxLayout()
+        mode_row.setSpacing(10)
+
+        self.rule_radio = RadioButton(_('内置规则'), mode_card)
+        set_tool_tip(self.rule_radio, _("不联网，不增加任何延迟"))
+        self.jev_radio = RadioButton(_('Jev 模型判定'), mode_card)
+        set_tool_tip(self.jev_radio, _("需要配置 Jev 服务，会增加少量延迟"))
+
+        self.classifier_group = QButtonGroup(self)
+        self.classifier_group.addButton(self.rule_radio)
+        self.classifier_group.addButton(self.jev_radio)
+
+        help_button_classifier = create_help_button(
+            self,
+            _("内置规则：速度快、不联网\n规则难以识别的复杂情况会出错\n\n"
+              "Jev 模型判定：\n基于语义理解，复杂情况也能正确判断\n需要配置服务，会增加少量延迟\n"
+              "调用失败或超时回退到内置规则\n连续失败 {count} 次会暂停使用 Jev {seconds} 秒").format(
+                count=FAILURE_THRESHOLD, seconds=int(PAUSE_SECONDS))
+        )
+
+        mode_row.addWidget(self.rule_radio)
+        mode_row.addWidget(self.jev_radio)
+        mode_row.addWidget(help_button_classifier)
+        mode_row.addStretch()
+
+        mode_layout.addWidget(CaptionLabel(_('分类方式'), mode_card))
+        mode_layout.addLayout(mode_row)
+        self.main_layout.addWidget(mode_card)
+
+        # Jev 服务配置卡片
+        self.jev_card = SimpleCardWidget(self)
+        jev_layout = QVBoxLayout(self.jev_card)
+        jev_layout.setContentsMargins(20, 16, 20, 16)
+        jev_layout.setSpacing(12)
+        jev_layout.addWidget(CaptionLabel(_('Jev 服务配置'), self.jev_card))
+
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(15)
+        grid.setVerticalSpacing(15)
+
+        provider_label = BodyLabel(_('服务商：'), self.jev_card)
+        self.provider_combo = ComboBox(self.jev_card)
+        self.provider_combo.addItem(_('TypeSafe 官方'), userData=JevProvider.TYPESAFE)
+        self.provider_combo.addItem(_('OpenRouter'), userData=JevProvider.OPENROUTER)
+        self.provider_combo.setFixedWidth(300)
+        self.provider_combo.currentIndexChanged.connect(self.on_provider_changed)
+        grid.addWidget(provider_label, 0, 0, Qt.AlignmentFlag.AlignRight)
+        grid.addWidget(self.provider_combo, 0, 1)
+
+        api_key_label = BodyLabel(_('API Key：'), self.jev_card)
+        self.api_key_edit = LineEdit(self.jev_card)
+        self.api_key_edit.setPlaceholderText(_("请输入 Jev 服务商的 API Key"))
+        self.api_key_edit.setClearButtonEnabled(True)
+        self.api_key_edit.setFixedWidth(300)
+        self.api_key_edit.textChanged.connect(self.update_warning)
+        grid.addWidget(api_key_label, 1, 0, Qt.AlignmentFlag.AlignRight)
+        grid.addWidget(self.api_key_edit, 1, 1)
+
+        model_label = BodyLabel(_('模型：'), self.jev_card)
+        self.model_combo = EditableComboBox(self.jev_card)
+        self.model_combo.setFixedWidth(300)
+        grid.addWidget(model_label, 2, 0, Qt.AlignmentFlag.AlignRight)
+        grid.addWidget(self.model_combo, 2, 1)
+
+        api_base_label = BodyLabel(_('端点：'), self.jev_card)
+        self.api_base_combo = EditableComboBox(self.jev_card)
+        self.api_base_combo.addItem(_("默认端点"), userData="default")
+        self.api_base_combo.setCurrentIndex(0)
+        self.api_base_combo.setFixedWidth(300)
+        grid.addWidget(api_base_label, 3, 0, Qt.AlignmentFlag.AlignRight)
+        grid.addWidget(self.api_base_combo, 3, 1)
+
+        timeout_label = BodyLabel(_('请求超时：'), self.jev_card)
+        self.timeout_spin = DoubleSpinBox(self.jev_card)
+        self.timeout_spin.setRange(0.5, 30.0)
+        self.timeout_spin.setSingleStep(0.5)
+        self.timeout_spin.setDecimals(1)
+        self.timeout_spin.setSuffix(_(" 秒"))
+        self.timeout_spin.setFixedWidth(300)
+        grid.addWidget(timeout_label, 4, 0, Qt.AlignmentFlag.AlignRight)
+        grid.addWidget(self.timeout_spin, 4, 1)
+        grid.setColumnStretch(2, 1)
+
+        jev_layout.addLayout(grid)
+
+        # 未填写 API Key 时的提示
+        self.warning_label = CaptionLabel('', self.jev_card)
+        self.warning_label.setWordWrap(True)
+        self.warning_label.setStyleSheet("color:#d83b01;")
+        self.warning_label.setVisible(False)
+        jev_layout.addWidget(self.warning_label)
+
+        self.main_layout.addWidget(self.jev_card)
+        self.main_layout.addStretch()
+
+        # 事件与初值
+        self.rule_radio.toggled.connect(self.on_classifier_changed)
+        self._load_from_config()
+
+    def _load_from_config(self):
+        """从配置初始化控件状态"""
+        cfg = self.get_config_section()
+        default_timeout = MessageClassificationConfig().timeout
+
+        if cfg is None:
+            self.rule_radio.setChecked(True)
+            provider = JevProvider.TYPESAFE
+            api_key, model, api_base = "", "", ""
+            timeout = default_timeout
+        else:
+            if cfg.classifier == MessageClassifierType.JEV:
+                self.jev_radio.setChecked(True)
+            else:
+                self.rule_radio.setChecked(True)
+            provider = cfg.provider
+            api_key = cfg.api_key or ""
+            model = cfg.model or ""
+            api_base = cfg.api_base or ""
+            timeout = cfg.timeout or default_timeout
+
+        self.provider_combo.setCurrentIndex(
+            1 if provider == JevProvider.OPENROUTER else 0
+        )
+
+        self.api_key_edit.setText(api_key)
+        self.apply_default_model_item(provider, model)
+        self.apply_api_base(api_base)
+        self.timeout_spin.setValue(timeout)
+
+        self.on_classifier_changed()
+
+    def get_config_section(self):
+        """取出配置中的消息分类配置段"""
+        if self.config and hasattr(self.config, 'message_classification'):
+            return self.config.message_classification
+        if hasattr(self.parent_ref, 'config') and hasattr(self.parent_ref.config, 'message_classification'):
+            return self.parent_ref.config.message_classification
+        return None
+
+    def on_classifier_changed(self, checked=None):
+        """切换分类方式时启用/禁用 Jev 服务配置"""
+        jev_selected = self.jev_radio.isChecked()
+        self.jev_card.setEnabled(jev_selected)
+        self.update_warning()
+
+    def on_provider_changed(self, index=None):
+        """切换服务商时同步默认模型项，用户自定义的模型名保持不变"""
+        self.apply_default_model_item(self.current_provider(), self.current_model())
+        self.update_warning()
+
+    def apply_default_model_item(self, provider, saved_model=""):
+        """模型下拉框：第一项是服务商默认模型，自定义模型作为第二项"""
+        default_model = JEV_PROVIDER_DEFAULTS.get(provider, {}).get('model', '')
+
+        self.model_combo.blockSignals(True)
+        self.model_combo.clear()
+        self.model_combo.addItem(default_model, userData="default")
+        if saved_model and saved_model != default_model:
+            self.model_combo.addItem(saved_model)
+            self.model_combo.setCurrentIndex(1)
+        else:
+            self.model_combo.setCurrentIndex(0)
+        self.model_combo.blockSignals(False)
+
+    def apply_api_base(self, saved_api_base=""):
+        """端点下拉框：选中“默认端点”即使用服务商默认端点"""
+        self.api_base_combo.blockSignals(True)
+        self.api_base_combo.setCurrentIndex(0)
+        if self.api_base_combo.count() > 1:
+            self.api_base_combo.removeItem(1)
+        if saved_api_base:
+            self.api_base_combo.addItem(saved_api_base)
+            self.api_base_combo.setCurrentIndex(1)
+        self.api_base_combo.blockSignals(False)
+
+    def current_model(self):
+        """选中默认项时返回空串，由程序按服务商解析默认模型"""
+        if self.model_combo.currentData():
+            return ""
+        return self.model_combo.currentText().strip()
+
+    def current_api_base(self):
+        """选中“默认端点”时返回 None，由程序按服务商解析默认端点"""
+        if self.api_base_combo.currentData():
+            return None
+        return self.api_base_combo.currentText().strip() or None
+
+    def update_warning(self, text=None):
+        """Jev 已选中但缺少 API Key 时给出提示（启动后会回退到内置规则）"""
+        if not self.jev_radio.isChecked():
+            self.warning_label.setVisible(False)
+            return
+
+        if self.api_key_edit.text().strip():
+            self.warning_label.setVisible(False)
+            return
+
+        self.warning_label.setText(
+            _("未填写 API Key：启动后将回退到内置规则判定。")
+        )
+        self.warning_label.setVisible(True)
+
+    def current_provider(self):
+        """当前选择的服务商"""
+        return self.provider_combo.currentData() or JevProvider.TYPESAFE
+
+    def get_message_classification_data(self):
+        """获取当前消息分类配置，供保存时使用"""
+        return MessageClassificationConfig(
+            classifier=(
+                MessageClassifierType.JEV if self.jev_radio.isChecked()
+                else MessageClassifierType.RULE
+            ),
+            provider=self.current_provider(),
+            api_key=self.api_key_edit.text().strip(),
+            model=self.current_model(),
+            api_base=self.current_api_base(),
+            timeout=self.timeout_spin.value(),
+        )
+
+
 class StartInterface(QFrame):
     """启动界面组件（卡片式布局）"""
 
@@ -3425,6 +3712,7 @@ class StartInterface(QFrame):
         context = main.context_translation_interface
         glossary = main.glossary_interface
         blacklist = main.blacklist_interface
+        classification = main.message_classification_interface
         setting = main.setting_interface
 
         # 1) 消息捕获
@@ -3571,6 +3859,9 @@ class StartInterface(QFrame):
 
         # 6) 黑名单
         cfg.blacklist = blacklist.get_blacklist_data()
+
+        # 6.5) 消息分类
+        cfg.message_classification = classification.get_message_classification_data()
 
         # 7) 设置
         lang_data = setting.language_combo.currentData()
@@ -4727,6 +5018,7 @@ class MainWindow(FluentWindow):
         self.context_translation_interface = ContextTranslationInterface(self, config)
         self.glossary_interface = GlossaryInterface(self, config)
         self.blacklist_interface = BlacklistInterface(self, config)
+        self.message_classification_interface = MessageClassificationInterface(self, config)
         self.start_interface = StartInterface(self)  # 已改为卡片式布局且提供启动/保存
         self.about_interface = AboutInterface(self)
         self.setting_interface = SettingInterface(self, config)
@@ -4909,6 +5201,7 @@ class MainWindow(FluentWindow):
         self.addSubInterface(self.context_translation_interface, FluentIcon.HISTORY, _('上下文翻译'))
         self.addSubInterface(self.glossary_interface, FluentIcon.DICTIONARY, _('术语表'))
         self.addSubInterface(self.blacklist_interface, FluentIcon.FILTER, _('黑名单'))
+        self.addSubInterface(self.message_classification_interface, FluentIcon.TAG, _('消息分类'))
         self.addSubInterface(self.start_interface, FluentIcon.POWER_BUTTON, _('启动'))
 
         # 添加底部设置界面

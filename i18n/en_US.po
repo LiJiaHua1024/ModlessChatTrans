@@ -1369,3 +1369,113 @@ msgstr "Translation timed out, please try again later."
 msgid "最大输出Token数："
 msgstr "Max output tokens:"
 
+#: modless_chat_trans/interface.py:3162
+msgid "消息分类设置"
+msgstr "Message Classification Settings"
+
+#: modless_chat_trans/interface.py:3169
+msgid ""
+"决定每条聊天按玩家消息还是服务器消息处理。\n"
+"\n"
+"内置规则无法识别服务器自定义头衔：例如“OP Diamond II Steve”这类玩家消息会被当成服务器消息；\n"
+"此时若又开启了「消息捕获设置」中的“过滤服务器消息”，这些消息就不会被翻译。\n"
+"\n"
+"Jev 基于语义理解，规则难以识别的复杂情况都能正确判断。"
+msgstr ""
+"Determines whether each chat message is processed as a player message or "
+"a server message.\n"
+"\n"
+"Built-in rules cannot recognize server-customized titles: for example, "
+"player messages like \"OP Diamond II Steve\" will be treated as server "
+"messages;\n"
+"If \"Filter server messages\" in \"Message Capture Settings\" is also "
+"enabled, these messages will not be translated.\n"
+"\n"
+"Jev is based on semantic understanding and can correctly identify complex"
+" cases that rules struggle with."
+
+#: modless_chat_trans/interface.py:3189
+msgid "内置规则"
+msgstr "Built-in rules"
+
+#: modless_chat_trans/interface.py:3190
+msgid "不联网，不增加任何延迟"
+msgstr "Offline, adds no latency"
+
+#: modless_chat_trans/interface.py:3191
+msgid "Jev 模型判定"
+msgstr "Jev model decision"
+
+#: modless_chat_trans/interface.py:3192
+msgid "需要配置 Jev 服务，会增加少量延迟"
+msgstr "Requires Jev service configuration, adds minor latency"
+
+#: modless_chat_trans/interface.py:3200
+#, python-brace-format
+msgid ""
+"内置规则：速度快、不联网\n"
+"规则难以识别的复杂情况会出错\n"
+"\n"
+"Jev 模型判定：\n"
+"基于语义理解，复杂情况也能正确判断\n"
+"需要配置服务，会增加少量延迟\n"
+"调用失败或超时回退到内置规则\n"
+"连续失败 {count} 次会暂停使用 Jev {seconds} 秒"
+msgstr ""
+"Built-in rules: Fast, offline\n"
+"May make errors in complex cases difficult for rules to identify\n"
+"\n"
+"Jev model decision:\n"
+"Based on semantic understanding, correctly handles complex cases\n"
+"Requires service configuration, adds minor latency\n"
+"Falls back to built-in rules on failure or timeout\n"
+"Pauses Jev for {seconds} seconds after {count} consecutive failures"
+
+#: modless_chat_trans/interface.py:3211
+msgid "分类方式"
+msgstr "Classification Method"
+
+#: modless_chat_trans/interface.py:3220
+msgid "Jev 服务配置"
+msgstr "Jev Service Configuration"
+
+#: modless_chat_trans/interface.py:3226
+msgid "服务商："
+msgstr "Provider:"
+
+#: modless_chat_trans/interface.py:3228
+msgid "TypeSafe 官方"
+msgstr "TypeSafe Official"
+
+#: modless_chat_trans/interface.py:3229
+msgid "OpenRouter"
+msgstr "OpenRouter"
+
+#: modless_chat_trans/interface.py:3237
+msgid "请输入 Jev 服务商的 API Key"
+msgstr "Please enter the API key for the Jev provider"
+
+#: modless_chat_trans/interface.py:3244
+msgid "模型："
+msgstr "Model:"
+
+#: modless_chat_trans/interface.py:3250
+msgid "端点："
+msgstr "Endpoint:"
+
+#: modless_chat_trans/interface.py:3258
+msgid "请求超时："
+msgstr "Request Timeout:"
+
+#: modless_chat_trans/interface.py:3263
+msgid " 秒"
+msgstr " s"
+
+#: modless_chat_trans/interface.py:3384
+msgid "未填写 API Key：启动后将回退到内置规则判定。"
+msgstr "API Key not provided: will fall back to built-in rules upon startup."
+
+#: modless_chat_trans/interface.py:5204
+msgid "消息分类"
+msgstr "Message Classification"
+

@@ -1361,3 +1361,109 @@ msgstr "번역 시간이 초과되었습니다. 나중에 다시 시도해 주�
 msgid "最大输出Token数："
 msgstr "최대 출력 토큰 수:"
 
+#: modless_chat_trans/interface.py:3162
+msgid "消息分类设置"
+msgstr "메시지 분류 설정"
+
+#: modless_chat_trans/interface.py:3169
+msgid ""
+"决定每条聊天按玩家消息还是服务器消息处理。\n"
+"\n"
+"内置规则无法识别服务器自定义头衔：例如“OP Diamond II Steve”这类玩家消息会被当成服务器消息；\n"
+"此时若又开启了「消息捕获设置」中的“过滤服务器消息”，这些消息就不会被翻译。\n"
+"\n"
+"Jev 基于语义理解，规则难以识别的复杂情况都能正确判断。"
+msgstr ""
+"각 채팅을 플레이어 메시지로 처리할지 서버 메시지로 처리할지 결정합니다.\n"
+"\n"
+"기본 규칙은 서버 커스텀 칭호를 인식하지 못합니다. 예를 들어 \"OP Diamond II Steve\"와 같은 플레이어 메시지는 "
+"서버 메시지로 취급됩니다.\n"
+"이때 「메시지 캡처 설정」의 「서버 메시지 필터링」이 켜져 있으면 이러한 메시지는 번역되지 않습니다.\n"
+"\n"
+"Jev는 의미론적 이해를 바탕으로 하여 규칙으로 식별하기 어려운 복잡한 상황도 정확하게 판단할 수 있습니다."
+
+#: modless_chat_trans/interface.py:3189
+msgid "内置规则"
+msgstr "기본 규칙"
+
+#: modless_chat_trans/interface.py:3190
+msgid "不联网，不增加任何延迟"
+msgstr "오프라인 작동, 지연 없음"
+
+#: modless_chat_trans/interface.py:3191
+msgid "Jev 模型判定"
+msgstr "Jev 모델 판정"
+
+#: modless_chat_trans/interface.py:3192
+msgid "需要配置 Jev 服务，会增加少量延迟"
+msgstr "Jev 서비스 설정 필요, 약간의 지연 발생"
+
+#: modless_chat_trans/interface.py:3200
+#, python-brace-format
+msgid ""
+"内置规则：速度快、不联网\n"
+"规则难以识别的复杂情况会出错\n"
+"\n"
+"Jev 模型判定：\n"
+"基于语义理解，复杂情况也能正确判断\n"
+"需要配置服务，会增加少量延迟\n"
+"调用失败或超时回退到内置规则\n"
+"连续失败 {count} 次会暂停使用 Jev {seconds} 秒"
+msgstr ""
+"기본 규칙: 빠름, 오프라인\n"
+"규칙으로 식별하기 어려운 복잡한 상황에서 오류가 발생할 수 있음\n"
+"\n"
+"Jev 모델 판정:\n"
+"의미론적 이해를 바탕으로 복잡한 상황도 정확하게 판단\n"
+"서비스 설정이 필요하며 약간의 지연 발생\n"
+"호출 실패 또는 시간 초과 시 기본 규칙으로 폴백\n"
+"연속 {count}회 실패 시 {seconds}초 동안 Jev 사용 일시 중지"
+
+#: modless_chat_trans/interface.py:3211
+msgid "分类方式"
+msgstr "분류 방식"
+
+#: modless_chat_trans/interface.py:3220
+msgid "Jev 服务配置"
+msgstr "Jev 서비스 설정"
+
+#: modless_chat_trans/interface.py:3226
+msgid "服务商："
+msgstr "제공자:"
+
+#: modless_chat_trans/interface.py:3228
+msgid "TypeSafe 官方"
+msgstr "TypeSafe 공식"
+
+#: modless_chat_trans/interface.py:3229
+msgid "OpenRouter"
+msgstr "OpenRouter"
+
+#: modless_chat_trans/interface.py:3237
+msgid "请输入 Jev 服务商的 API Key"
+msgstr "Jev 제공자의 API 키를 입력하세요"
+
+#: modless_chat_trans/interface.py:3244
+msgid "模型："
+msgstr "모델:"
+
+#: modless_chat_trans/interface.py:3250
+msgid "端点："
+msgstr "엔드포인트:"
+
+#: modless_chat_trans/interface.py:3258
+msgid "请求超时："
+msgstr "요청 시간 초과:"
+
+#: modless_chat_trans/interface.py:3263
+msgid " 秒"
+msgstr "초"
+
+#: modless_chat_trans/interface.py:3384
+msgid "未填写 API Key：启动后将回退到内置规则判定。"
+msgstr "API 키 미입력: 시작 시 기본 규칙 판정으로 폴백됩니다."
+
+#: modless_chat_trans/interface.py:5204
+msgid "消息分类"
+msgstr "메시지 분류"
+
