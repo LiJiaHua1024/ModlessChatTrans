@@ -24,7 +24,13 @@ from diskcache import Cache
 from modless_chat_trans.logger import logger
 
 base_path = os.path.dirname(os.path.dirname(__file__))
-cache = Cache("mct-cache", eviction_policy="least-frequently-used")
+
+# 统一缓存根目录：程序只产生这一个缓存文件夹，各缓存作为子目录放在里面——
+#   mct-cache/          翻译结果（本 Cache 的根目录）
+#   mct-cache/jev/      Jev 分类结果
+#   mct-cache/pre-tts/  Pre-TTS 音频
+CACHE_DIR = "mct-cache"
+cache = Cache(CACHE_DIR, eviction_policy="least-frequently-used")
 
 # Pre-TTS 音频缓存：懒创建，仅当手动触发 Pre-TTS 时才建立目录。
 # 固定 4 MB 限额，LRU 驱逐（新写入的条目最安全，长期未播放的旧音频先被淘汰）。
@@ -33,25 +39,61 @@ _pre_tts_cache: Optional[Cache] = None
 _pre_tts_cache_lock = threading.Lock()
 
 
+def _migrate_legacy_pre_tts_cache() -> None:
+    """旧版 Pre-TTS 音频放在独立的 mct-pre-tts/ 目录，统一缓存目录后搬进 mct-cache/"""
+    legacy_dir = "mct-pre-tts"
+    target = os.path.join(CACHE_DIR, "pre-tts")
+    if os.path.isdir(legacy_dir) and not os.path.exists(target):
+        try:
+            os.rename(legacy_dir, target)
+            logger.info(f"Migrated legacy pre-TTS cache to {target}")
+        except OSError as error:
+            logger.warning(f"Failed to migrate legacy pre-TTS cache: {error}")
+
+
 def get_pre_tts_cache() -> Cache:
     """获取 Pre-TTS 音频缓存；首次调用时创建缓存目录"""
     global _pre_tts_cache
     if _pre_tts_cache is None:
         with _pre_tts_cache_lock:
             if _pre_tts_cache is None:
+                _migrate_legacy_pre_tts_cache()
                 _pre_tts_cache = Cache(
-                    "mct-pre-tts",
+                    os.path.join(CACHE_DIR, "pre-tts"),
                     eviction_policy="least-recently-used",
                     size_limit=_PRE_TTS_SIZE_LIMIT,
                 )
     return _pre_tts_cache
 
 
+# Jev 分类结果缓存：聊天行文本 -> 是否玩家消息（True/False）。
+# 固定 1 MB 限额（单条 key 最长 400 字符，可存数千条），LFU 驱逐：
+# 反复命中的固定文本（系统命令、公告）留下，一次性怪文本先被淘汰。
+_JEV_CACHE_SIZE_LIMIT = 1 * 1024 * 1024
+_jev_cache: Optional[Cache] = None
+_jev_cache_lock = threading.Lock()
+
+
+def get_jev_cache() -> Cache:
+    """获取 Jev 分类结果缓存；首次调用时创建缓存目录"""
+    global _jev_cache
+    if _jev_cache is None:
+        with _jev_cache_lock:
+            if _jev_cache is None:
+                _jev_cache = Cache(
+                    os.path.join(CACHE_DIR, "jev"),
+                    eviction_policy="least-frequently-used",
+                    size_limit=_JEV_CACHE_SIZE_LIMIT,
+                )
+    return _jev_cache
+
+
 def pre_tts_cache_exists() -> bool:
     """Pre-TTS 缓存目录是否已存在（仅检查，不创建）"""
     if _pre_tts_cache is not None:
         return True
-    return os.path.isdir("mct-pre-tts")
+    # 兼容迁移前的旧目录：首次真正取缓存时才会搬进 mct-cache/
+    return os.path.isdir(os.path.join(CACHE_DIR, "pre-tts")) or os.path.isdir("mct-pre-tts")
 
 
 def clear_pre_tts_cache() -> int:

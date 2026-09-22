@@ -70,8 +70,13 @@ class MessageClassifierTestBase(unittest.TestCase):
         init_processor(SimpleNamespace(filter_server_messages=True, replace_garbled_chars=False), {})
         init_blacklist(SimpleNamespace(user_blacklist=[], message_blacklist=[]))
         classifier_module.init_classifier(None)
+        # 用内存 dict 打桩 Jev 分类缓存，避免测试落盘
+        self._real_get_jev_cache = classifier_module.get_jev_cache
+        self.jev_cache = {}
+        classifier_module.get_jev_cache = lambda: self.jev_cache
 
     def tearDown(self):
+        classifier_module.get_jev_cache = self._real_get_jev_cache
         classifier_module.init_classifier(None)
 
     def install_jev(self, provider=JevProvider.TYPESAFE, api_key="test-key", **overrides):
@@ -253,6 +258,8 @@ class JevTransportTest(MessageClassifierTestBase):
         self.install_jev()
         classifier_module._http = lambda: FakeHttp(FakeResponse(jev_payload(0.51)))
         self.assertEqual(classifier_module.classify_lines([TITLED_PLAYER_LINE]), [True])
+        # 换一个判定结果前先清缓存，否则第二次会命中上一次的缓存条目
+        self.jev_cache.clear()
         classifier_module._http = lambda: FakeHttp(FakeResponse(jev_payload(0.49)))
         self.assertEqual(classifier_module.classify_lines([TITLED_PLAYER_LINE]), [False])
 
@@ -345,6 +352,91 @@ class ParseAnswersTest(MessageClassifierTestBase):
         parsed = classifier_module.parse_answers(jev_payload(0.42), 1)
         self.assertEqual(parsed[0].is_player, False)
         self.assertEqual(parsed[0].probability, 0.42)
+
+
+class JevCacheTest(MessageClassifierTestBase):
+    """Jev 判定结果缓存：重复的固定文本直接命中，不再发起请求"""
+
+    def test_repeated_line_hits_cache_for_both_verdicts(self):
+        self.install_jev()
+        http = FakeHttp(FakeResponse(jev_payload(0.97, 0.03)))
+        classifier_module._http = lambda: http
+
+        self.assertEqual(
+            classifier_module.classify_lines([TITLED_PLAYER_LINE, "Welcome to the server"]),
+            [True, False],
+        )
+        self.assertEqual(
+            classifier_module.classify_lines([TITLED_PLAYER_LINE, "Welcome to the server"]),
+            [True, False],
+        )
+        # 两批共 4 行，但只发了一次请求：第二次全部命中缓存
+        self.assertEqual(len(http.calls), 1)
+
+    def test_format_code_line_shares_cache_entry(self):
+        """带色码的行与裸文本剥离后同键，共享缓存条目"""
+        self.install_jev()
+        http = FakeHttp(FakeResponse(jev_payload(0.99)))
+        classifier_module._http = lambda: http
+
+        self.assertEqual(classifier_module.classify_lines(["Steve: hi"]), [True])
+        self.assertEqual(classifier_module.classify_lines(["§6Steve§f: hi"]), [True])
+        self.assertEqual(len(http.calls), 1)
+
+    def test_mixed_batch_only_sends_misses(self):
+        self.install_jev()
+        classifier_module._http = lambda: FakeHttp(FakeResponse(jev_payload(0.03)))
+        classifier_module.classify_lines(["Welcome to the server"])
+
+        http = FakeHttp(FakeResponse(jev_payload(0.97)))
+        classifier_module._http = lambda: http
+        verdicts = classifier_module.classify_lines([TITLED_PLAYER_LINE, "Welcome to the server"])
+
+        # 请求体只含未命中的第一行；缓存里的第二行直接取值
+        self.assertEqual(verdicts, [True, False])
+        questions = http.calls[0][1]["json"]["questions"]
+        self.assertEqual(list(questions), ["line_0"])
+        self.assertEqual(questions["line_0"]["instructions"]["line"], TITLED_PLAYER_LINE)
+
+    def test_duplicate_lines_in_one_batch_send_once(self):
+        self.install_jev()
+        http = FakeHttp(FakeResponse(jev_payload(0.97)))
+        classifier_module._http = lambda: http
+
+        verdicts = classifier_module.classify_lines([TITLED_PLAYER_LINE, TITLED_PLAYER_LINE])
+
+        self.assertEqual(verdicts, [True, True])
+        self.assertEqual(len(http.calls[0][1]["json"]["questions"]), 1)
+
+    def test_failed_request_is_not_cached(self):
+        self.install_jev()
+        classifier_module._http = lambda: FakeHttp(error=TimeoutError("timed out"))
+        # 回退规则得到 False，且不写缓存
+        self.assertEqual(classifier_module.classify_lines([TITLED_PLAYER_LINE]), [False])
+        self.assertEqual(self.jev_cache, {})
+
+        http = FakeHttp(FakeResponse(jev_payload(0.97)))
+        classifier_module._http = lambda: http
+        self.assertEqual(classifier_module.classify_lines([TITLED_PLAYER_LINE]), [True])
+        self.assertEqual(len(http.calls), 1)
+
+    def test_missing_answer_is_not_cached(self):
+        self.install_jev()
+        classifier_module._http = lambda: FakeHttp(FakeResponse(jev_payload(None)))
+        self.assertEqual(classifier_module.classify_lines([TITLED_PLAYER_LINE]), [False])
+        self.assertEqual(self.jev_cache, {})
+
+        http = FakeHttp(FakeResponse(jev_payload(0.97)))
+        classifier_module._http = lambda: http
+        self.assertEqual(classifier_module.classify_lines([TITLED_PLAYER_LINE]), [True])
+        self.assertEqual(len(http.calls), 1)
+
+    def test_rule_mode_never_touches_cache(self):
+        def boom():
+            raise AssertionError("规则模式不该访问缓存")
+
+        classifier_module.get_jev_cache = boom
+        self.assertEqual(classifier_module.classify_lines(["Steve: hi"]), [True])
 
 
 if __name__ == "__main__":

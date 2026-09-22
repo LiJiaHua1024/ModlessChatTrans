@@ -24,6 +24,9 @@ Jev 的接口是「一次请求、多个独立问题」：整批聊天行各自�
 因此一批消息只产生一次 HTTP 请求。问题用 noul（yes/no）形式，返回的玩家概率按阈值
 0.5 取判定；概率只写进日志——概率低仍然采用 Jev 的判定，只有请求失败才回退规则。
 
+判定结果按聊天行文本缓存到磁盘（key 为剥离格式码后的正文，value 为 True/False，
+LFU 淘汰）：重复出现的固定文本（系统命令、公告）直接命中缓存，不再发起请求。
+
 两种调用方式（请求体与响应体一致，仅端点、模型名与鉴权不同）：
 
 - TypeSafe 官方：POST https://api.typesafe.ai/v1/systemone，模型 jev-latest
@@ -41,6 +44,7 @@ from modless_chat_trans.config import (
     MessageClassificationConfig,
     MessageClassifierType,
 )
+from modless_chat_trans.file_utils import get_jev_cache
 from modless_chat_trans.logger import logger
 from modless_chat_trans.message_processor import rule_classify
 
@@ -199,17 +203,16 @@ def classify_lines(chat_texts: Sequence[str]) -> List[bool]:
     :return: 与 chat_texts 等长的布尔列表，True 表示玩家消息
 
     Jev 判定失败时，失败的那一行（或整批）自动回退到内置规则。
+    启用 Jev 时先查磁盘缓存，只有未命中的行才会发起请求。
     """
     if not chat_texts:
         return []
 
     with _lock:
         _resume_if_paused()
-        answers = _classify_with_jev(list(chat_texts)) if is_jev_enabled() else None
-        verdicts = [
-            (answers[index].is_player if answers is not None and index < len(answers) else None)
-            for index in range(len(chat_texts))
-        ]
+        verdicts: List[Optional[bool]] = [None] * len(chat_texts)
+        if is_jev_enabled():
+            _classify_with_cache(chat_texts, verdicts)
         results = [
             rule_classify(text) if verdict is None else verdict
             for text, verdict in zip(chat_texts, verdicts)
@@ -218,6 +221,49 @@ def classify_lines(chat_texts: Sequence[str]) -> List[bool]:
             _remember_lines(chat_texts)
 
     return results
+
+
+def _cache_key(text: str) -> str:
+    """缓存键：与发送给 Jev 的文本一致（剥离格式化代码并截断），带不带色码都命中同一条"""
+    return _truncate(strip_format_codes(text), MAX_LINE_CHARS)
+
+
+def _classify_with_cache(chat_texts: Sequence[str], verdicts: List[Optional[bool]]) -> None:
+    """先查缓存，只把未命中的行发给 Jev，并把有效判定回填缓存。
+
+    失败或缺答案的行保持 None（由调用方回退规则），不写缓存，下次仍会请求。
+    """
+    cache = get_jev_cache()
+    miss_keys: List[str] = []                 # 未命中且去重后的键，顺序即请求里的问题顺序
+    miss_positions: Dict[str, List[int]] = {}  # 键 -> 等待该判定的 chat_texts 下标
+
+    for index, text in enumerate(chat_texts):
+        key = _cache_key(text)
+        if key in miss_positions:
+            miss_positions[key].append(index)
+            continue
+        cached = cache.get(key)
+        if cached is not None:
+            verdicts[index] = bool(cached)
+        else:
+            miss_keys.append(key)
+            miss_positions[key] = [index]
+
+    if not miss_keys:
+        return
+
+    miss_texts = [chat_texts[miss_positions[key][0]] for key in miss_keys]
+    answers = _classify_with_jev(miss_texts)
+    if answers is None:
+        return
+
+    for key, answer in zip(miss_keys, answers):
+        if answer.is_player is None:
+            continue
+        verdict = answer.is_player
+        cache[key] = verdict
+        for index in miss_positions[key]:
+            verdicts[index] = verdict
 
 
 def _resume_if_paused() -> None:
