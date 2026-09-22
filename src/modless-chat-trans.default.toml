@@ -79,7 +79,7 @@ provider = "typesafe"
 api-key = ""
 model = ""
 api-base = ""
-timeout = 2.0
+timeout = 3.0
 
 [context]
 # 上下文翻译策略: "disabled"（禁用上下文翻译）, "fixed"（固定长度）或 "time_based"（基于时间跨度）
