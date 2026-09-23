@@ -5044,11 +5044,11 @@ class MainWindow(FluentWindow):
                 initial_player_service_type = config.player_translation.service_type
 
             # 发送消息服务类型
-            if hasattr(config, 'send_translation') and config.send_translation:
-                initial_send_service_type = config.send_translation.service_type
-            elif not config.send_translation_independent:
-                # 如果没有独立设置，使用玩家消息服务的类型
+            if not config.send_translation_independent:
+                # 共用服务时，忽略持久化配置中残留的独立发送设置。
                 initial_send_service_type = initial_player_service_type
+            elif config.send_translation:
+                initial_send_service_type = config.send_translation.service_type
 
         # 创建各个界面，传入config
         self.message_capture_interface = MessageCaptureInterface(self, initial_player_service_type, config)
