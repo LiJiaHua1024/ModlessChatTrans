@@ -1483,3 +1483,63 @@ msgstr "API Key not provided: will fall back to built-in rules upon startup."
 msgid "消息分类"
 msgstr "Message Classification"
 
+#: modless_chat_trans/interface.py:3193
+msgid "混合模式"
+msgstr "Hybrid Mode"
+
+#: modless_chat_trans/interface.py:3194
+msgid "先用更宽松的规则初筛，减少 Jev 请求"
+msgstr "First screen with more permissive rules to reduce Jev requests"
+
+#: modless_chat_trans/interface.py:3203
+#, python-brace-format
+msgid ""
+"内置规则：速度快、不联网\n"
+"规则难以识别的复杂情况会出错\n"
+"\n"
+"Jev 模型判定：\n"
+"基于语义理解，复杂情况也能正确判断\n"
+"需要配置服务，会增加少量延迟\n"
+"调用失败或超时回退到内置规则\n"
+"连续失败 {count} 次会暂停使用 Jev {seconds} 秒\n"
+"\n"
+"混合模式：\n"
+"先用更宽松的规则初筛，识别大量系统消息\n"
+"减少不必要的 Jev 请求"
+msgstr ""
+"Built-in rules: fast and offline\n"
+"Complex cases that rules cannot recognize may be misclassified\n"
+"\n"
+"Jev model classification:\n"
+"Uses semantic understanding to handle complex cases accurately\n"
+"Requires a configured service and adds a small delay\n"
+"Falls back to built-in rules if a request fails or times out\n"
+"After {count} consecutive failures, Jev is paused for {seconds} seconds\n"
+"\n"
+"Hybrid mode:\n"
+"First screens with more permissive rules to identify many system messages\n"
+"Reduces unnecessary Jev requests"
+
+#: modless_chat_trans/interface.py:3232
+msgid "接口格式："
+msgstr "API format:"
+
+#: modless_chat_trans/interface.py:3234
+msgid "Jev 标准格式"
+msgstr "Jev Standard Format"
+
+#: modless_chat_trans/interface.py:3265
+msgid "账号 ID："
+msgstr "Account ID:"
+
+#: modless_chat_trans/interface.py:3267
+msgid "请输入 Cloudflare 账号 ID"
+msgstr "Enter your Cloudflare account ID"
+
+#: modless_chat_trans/interface.py:3286
+msgid "使用其他兼容接口时，请填写该平台的 API Key、模型和完整端点。"
+msgstr "For other compatible APIs, enter that provider's API key, model, and full endpoint."
+
+#: modless_chat_trans/interface.py:3414
+msgid "未填写 Cloudflare 账号 ID：启动后将回退到内置规则判定。"
+msgstr "Cloudflare account ID is missing: built-in rules will be used after startup."

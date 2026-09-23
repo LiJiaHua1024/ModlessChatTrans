@@ -490,7 +490,7 @@ msgstr ""
 msgid "最新版本："
 msgstr ""
 
-#: modless_chat_trans/webui/server.py:82
+#: modless_chat_trans/log_monitor.py:220 modless_chat_trans/webui/server.py:82
 msgid "未知"
 msgstr ""
 
