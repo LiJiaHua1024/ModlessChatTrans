@@ -15,10 +15,12 @@
 
 import time
 import json
+import socket
 import threading
 from collections import deque
 from itertools import count
 from flask import Flask, render_template, Response, request, jsonify
+from werkzeug.serving import make_server
 from datetime import datetime
 from modless_chat_trans.i18n import _
 from modless_chat_trans.file_utils import get_path
@@ -48,24 +50,54 @@ def clear_message_history():
 
 
 def start_httpserver_thread(**kwargs):
-    """启动HTTP服务器线程"""
+    """先同步绑定端口，再启动服务线程，让启动失败传回调用方。"""
+    app = create_http_app(kwargs["callback"], kwargs.get("tts_engine"),
+                          kwargs.get("target_language", ""))
+    server = _bind_httpserver(kwargs["http_port"], app)
     try:
         server_thread = threading.Thread(
-            target=start_httpserver,
-            args=(kwargs["http_port"], kwargs["callback"], kwargs.get("tts_engine"),
-                  kwargs.get("target_language", ""))
+            target=server.serve_forever, daemon=True
         )
-        server_thread.daemon = True
         server_thread.start()
         logger.info(f"HTTP server thread started on port {kwargs['http_port']}")
+        return server
     except Exception as e:
+        server.server_close()
         logger.error(f"Failed to start HTTP server thread: {str(e)}")
-        raise e
+        raise
+
+
+def _port_in_use(port, timeout=0.5):
+    """探测本机端口是否已有监听服务。
+
+    Windows 上 werkzeug 的 SO_REUSEADDR 允许与已占用端口静默双重绑定，
+    bind() 不会报错，端口冲突必须在绑定前显式探测。
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+        probe.settimeout(timeout)
+        return probe.connect_ex(('127.0.0.1', port)) == 0
+
+
+def _bind_httpserver(port, app):
+    if _port_in_use(port):
+        raise RuntimeError(
+            _("端口 {port} 已被其他程序占用，网页服务启动失败").format(port=port)
+        )
+    try:
+        return make_server('0.0.0.0', port, app, threaded=True)
+    except (OSError, SystemExit) as error:
+        # Werkzeug 的绑定失败可能抛出 SystemExit，必须转成可展示的启动错误。
+        raise RuntimeError(f"HTTP server could not bind port {port}: {error}") from error
 
 
 def start_httpserver(port, callback, tts_engine=None, target_language=""):
+    app = create_http_app(callback, tts_engine, target_language)
+    with _bind_httpserver(port, app) as server:
+        server.serve_forever()
+
+
+def create_http_app(callback, tts_engine=None, target_language=""):
     global http_messages, messages_by_id, message_id_counter, clear_revision, sse_clients
-    logger.info(f"Starting HTTP server on port {port}")
 
     try:
         template_dir = get_path("templates")
@@ -279,10 +311,10 @@ def start_httpserver(port, callback, tts_engine=None, target_language=""):
             response.headers["Connection"] = "keep-alive"
             return response
 
-        logger.info(f"HTTP server starting on 0.0.0.0:{port}")
-        flask_app.run(debug=False, host='0.0.0.0', port=port)
+        return flask_app
     except Exception as e:
         logger.error(f"Failed to start HTTP server: {str(e)}")
+        raise
 
 
 def display_message(name, message, info, duration=None, original=None):

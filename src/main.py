@@ -245,14 +245,18 @@ def start_translation(config):
     else:
         send_translator = player_translator
 
-    start_httpserver_thread(
-        http_port=config.message_presentation.web_port,
-        callback=lambda data, data_type="webui", rage_mode=False: callback(
-            data, time.time(), slot_id=allocate_slot(name="[INFO]", arrival_time=time.time()), data_type=data_type, rage_mode=rage_mode
-        ),
-        tts_engine=tts_engine,
-        target_language=config.message_capture.target_language,
-    )
+    try:
+        start_httpserver_thread(
+            http_port=config.message_presentation.web_port,
+            callback=lambda data, data_type="webui", rage_mode=False: callback(
+                data, time.time(), slot_id=allocate_slot(name="[INFO]", arrival_time=time.time()), data_type=data_type, rage_mode=rage_mode
+            ),
+            tts_engine=tts_engine,
+            target_language=config.message_capture.target_language,
+        )
+    except Exception:
+        tts_engine.stop()
+        raise
 
     init_processor(
         config.message_capture,

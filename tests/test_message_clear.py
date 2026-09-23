@@ -6,10 +6,7 @@ from modless_chat_trans import web_display as display
 
 class MessageClearTests(unittest.TestCase):
     def setUp(self):
-        apps = []
-        with patch('flask.Flask.run', lambda app, **kwargs: apps.append(app)):
-            display.start_httpserver(0, lambda *args, **kwargs: '')
-        self.client = apps[0].test_client()
+        self.client = display.create_http_app(lambda *args, **kwargs: '').test_client()
         self.addCleanup(display.clear_message_history)
 
     def test_old_task_cannot_overwrite_new_slot(self):
