@@ -1467,3 +1467,63 @@ msgstr "API 키 미입력: 시작 시 기본 규칙 판정으로 폴백됩니다
 msgid "消息分类"
 msgstr "메시지 분류"
 
+#: modless_chat_trans/interface.py:3193
+msgid "混合模式"
+msgstr "하이브리드 모드"
+
+#: modless_chat_trans/interface.py:3194
+msgid "先用更宽松的规则初筛，减少 Jev 请求"
+msgstr "먼저 더 유연한 규칙으로 선별해 Jev 요청을 줄입니다"
+
+#: modless_chat_trans/interface.py:3203
+#, python-brace-format
+msgid ""
+"内置规则：速度快、不联网\n"
+"规则难以识别的复杂情况会出错\n"
+"\n"
+"Jev 模型判定：\n"
+"基于语义理解，复杂情况也能正确判断\n"
+"需要配置服务，会增加少量延迟\n"
+"调用失败或超时回退到内置规则\n"
+"连续失败 {count} 次会暂停使用 Jev {seconds} 秒\n"
+"\n"
+"混合模式：\n"
+"先用更宽松的规则初筛，识别大量系统消息\n"
+"减少不必要的 Jev 请求"
+msgstr ""
+"내장 규칙: 빠르고 오프라인으로 작동\n"
+"규칙으로 식별하기 어려운 복잡한 경우에는 잘못 분류될 수 있습니다\n"
+"\n"
+"Jev 모델 판정:\n"
+"의미를 이해하므로 복잡한 경우도 정확하게 판정합니다\n"
+"서비스 설정이 필요하며 약간의 지연이 추가됩니다\n"
+"호출 실패 또는 시간 초과 시 내장 규칙으로 전환됩니다\n"
+"{count}회 연속 실패하면 Jev 사용을 {seconds}초 동안 중지합니다\n"
+"\n"
+"하이브리드 모드:\n"
+"먼저 더 유연한 규칙으로 선별해 많은 시스템 메시지를 식별합니다\n"
+"불필요한 Jev 요청을 줄입니다"
+
+#: modless_chat_trans/interface.py:3232
+msgid "接口格式："
+msgstr "API 형식:"
+
+#: modless_chat_trans/interface.py:3234
+msgid "Jev 标准格式"
+msgstr "Jev 표준 형식"
+
+#: modless_chat_trans/interface.py:3265
+msgid "账号 ID："
+msgstr "계정 ID:"
+
+#: modless_chat_trans/interface.py:3267
+msgid "请输入 Cloudflare 账号 ID"
+msgstr "Cloudflare 계정 ID를 입력하세요"
+
+#: modless_chat_trans/interface.py:3286
+msgid "使用其他兼容接口时，请填写该平台的 API Key、模型和完整端点。"
+msgstr "다른 호환 API를 사용할 때는 해당 서비스의 API 키, 모델, 전체 엔드포인트를 입력하세요."
+
+#: modless_chat_trans/interface.py:3414
+msgid "未填写 Cloudflare 账号 ID：启动后将回退到内置规则判定。"
+msgstr "Cloudflare 계정 ID가 없습니다. 시작 후 내장 규칙 판정으로 전환됩니다."

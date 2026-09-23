@@ -15,6 +15,7 @@ htmlcov/
 .antigravitycli/
 .claude/
 .commandcode/
+.zcode/
 
 build/
 dist/

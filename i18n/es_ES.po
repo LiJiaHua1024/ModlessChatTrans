@@ -1496,3 +1496,63 @@ msgstr "Clave API no proporcionada: se volverá a las reglas integradas al inici
 msgid "消息分类"
 msgstr "Clasificación de mensajes"
 
+#: modless_chat_trans/interface.py:3193
+msgid "混合模式"
+msgstr "Modo híbrido"
+
+#: modless_chat_trans/interface.py:3194
+msgid "先用更宽松的规则初筛，减少 Jev 请求"
+msgstr "Filtrar primero con reglas más flexibles para reducir las solicitudes a Jev"
+
+#: modless_chat_trans/interface.py:3203
+#, python-brace-format
+msgid ""
+"内置规则：速度快、不联网\n"
+"规则难以识别的复杂情况会出错\n"
+"\n"
+"Jev 模型判定：\n"
+"基于语义理解，复杂情况也能正确判断\n"
+"需要配置服务，会增加少量延迟\n"
+"调用失败或超时回退到内置规则\n"
+"连续失败 {count} 次会暂停使用 Jev {seconds} 秒\n"
+"\n"
+"混合模式：\n"
+"先用更宽松的规则初筛，识别大量系统消息\n"
+"减少不必要的 Jev 请求"
+msgstr ""
+"Reglas integradas: rápidas y sin conexión\n"
+"Los casos complejos que las reglas no reconocen pueden clasificarse mal\n"
+"\n"
+"Clasificación con el modelo Jev:\n"
+"Usa la comprensión semántica para clasificar bien incluso los casos complejos\n"
+"Requiere configurar un servicio y añade un pequeño retraso\n"
+"Si la solicitud falla o agota el tiempo, vuelve a las reglas integradas\n"
+"Tras {count} fallos consecutivos, Jev se pausa durante {seconds} segundos\n"
+"\n"
+"Modo híbrido:\n"
+"Filtra primero con reglas más flexibles para identificar muchos mensajes del sistema\n"
+"Reduce las solicitudes innecesarias a Jev"
+
+#: modless_chat_trans/interface.py:3232
+msgid "接口格式："
+msgstr "Formato de API:"
+
+#: modless_chat_trans/interface.py:3234
+msgid "Jev 标准格式"
+msgstr "Formato estándar de Jev"
+
+#: modless_chat_trans/interface.py:3265
+msgid "账号 ID："
+msgstr "ID de cuenta:"
+
+#: modless_chat_trans/interface.py:3267
+msgid "请输入 Cloudflare 账号 ID"
+msgstr "Introduce el ID de tu cuenta de Cloudflare"
+
+#: modless_chat_trans/interface.py:3286
+msgid "使用其他兼容接口时，请填写该平台的 API Key、模型和完整端点。"
+msgstr "Para otras API compatibles, introduce la clave API, el modelo y el endpoint completo de ese proveedor."
+
+#: modless_chat_trans/interface.py:3414
+msgid "未填写 Cloudflare 账号 ID：启动后将回退到内置规则判定。"
+msgstr "Falta el ID de cuenta de Cloudflare: al iniciar se usarán las reglas integradas."

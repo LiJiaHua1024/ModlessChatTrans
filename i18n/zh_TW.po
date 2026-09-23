@@ -1453,3 +1453,63 @@ msgstr "未填寫 API Key：啟動後將回退到內建規則判定。"
 msgid "消息分类"
 msgstr "訊息分類"
 
+#: modless_chat_trans/interface.py:3193
+msgid "混合模式"
+msgstr "混合模式"
+
+#: modless_chat_trans/interface.py:3194
+msgid "先用更宽松的规则初筛，减少 Jev 请求"
+msgstr "先用較寬鬆的規則初篩，減少 Jev 請求"
+
+#: modless_chat_trans/interface.py:3203
+#, python-brace-format
+msgid ""
+"内置规则：速度快、不联网\n"
+"规则难以识别的复杂情况会出错\n"
+"\n"
+"Jev 模型判定：\n"
+"基于语义理解，复杂情况也能正确判断\n"
+"需要配置服务，会增加少量延迟\n"
+"调用失败或超时回退到内置规则\n"
+"连续失败 {count} 次会暂停使用 Jev {seconds} 秒\n"
+"\n"
+"混合模式：\n"
+"先用更宽松的规则初筛，识别大量系统消息\n"
+"减少不必要的 Jev 请求"
+msgstr ""
+"內建規則：速度快、不連網\n"
+"規則難以識別的複雜情況可能判斷錯誤\n"
+"\n"
+"Jev 模型判定：\n"
+"基於語意理解，複雜情況也能正確判斷\n"
+"需要設定服務，會增加少量延遲\n"
+"呼叫失敗或逾時會回退到內建規則\n"
+"連續失敗 {count} 次會暫停使用 Jev {seconds} 秒\n"
+"\n"
+"混合模式：\n"
+"先用較寬鬆的規則初篩，識別大量系統訊息\n"
+"減少不必要的 Jev 請求"
+
+#: modless_chat_trans/interface.py:3232
+msgid "接口格式："
+msgstr "介面格式："
+
+#: modless_chat_trans/interface.py:3234
+msgid "Jev 标准格式"
+msgstr "Jev 標準格式"
+
+#: modless_chat_trans/interface.py:3265
+msgid "账号 ID："
+msgstr "帳號 ID："
+
+#: modless_chat_trans/interface.py:3267
+msgid "请输入 Cloudflare 账号 ID"
+msgstr "請輸入 Cloudflare 帳號 ID"
+
+#: modless_chat_trans/interface.py:3286
+msgid "使用其他兼容接口时，请填写该平台的 API Key、模型和完整端点。"
+msgstr "使用其他相容介面時，請填寫該平台的 API Key、模型和完整端點。"
+
+#: modless_chat_trans/interface.py:3414
+msgid "未填写 Cloudflare 账号 ID：启动后将回退到内置规则判定。"
+msgstr "未填寫 Cloudflare 帳號 ID：啟動後將回退到內建規則判定。"
