@@ -52,7 +52,8 @@ def start_httpserver_thread(**kwargs):
     try:
         server_thread = threading.Thread(
             target=start_httpserver,
-            args=(kwargs["http_port"], kwargs["callback"], kwargs.get("tts_engine"))
+            args=(kwargs["http_port"], kwargs["callback"], kwargs.get("tts_engine"),
+                  kwargs.get("target_language", ""))
         )
         server_thread.daemon = True
         server_thread.start()
@@ -62,7 +63,7 @@ def start_httpserver_thread(**kwargs):
         raise e
 
 
-def start_httpserver(port, callback, tts_engine=None):
+def start_httpserver(port, callback, tts_engine=None, target_language=""):
     global http_messages, messages_by_id, message_id_counter, clear_revision, sse_clients
     logger.info(f"Starting HTTP server on port {port}")
 
@@ -133,8 +134,7 @@ def start_httpserver(port, callback, tts_engine=None):
                 if not text:
                     return jsonify({'success': False, 'error': 'Empty text'}), 400
                     
-                target_lang = getattr(tts_engine._config, 'target_language', '') # fallback if possible
-                tts_engine.interrupt_and_read(text, target_lang)
+                tts_engine.interrupt_and_read(text, target_language)
                 return jsonify({'success': True})
             except Exception as e:
                 logger.error(f"Error in /read-aloud: {str(e)}")

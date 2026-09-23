@@ -247,7 +247,8 @@ def start_translation(config):
         callback=lambda data, data_type="webui", rage_mode=False: callback(
             data, time.time(), slot_id=allocate_slot(name="[INFO]", arrival_time=time.time()), data_type=data_type, rage_mode=rage_mode
         ),
-        tts_engine=tts_engine
+        tts_engine=tts_engine,
+        target_language=config.message_capture.target_language,
     )
 
     init_processor(
