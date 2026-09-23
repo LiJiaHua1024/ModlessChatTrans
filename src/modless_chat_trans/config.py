@@ -42,7 +42,7 @@ def kebab_to_snake(field_name: str) -> str:
 
 
 class BaseConfigModel(BaseModel):
-    model_config = ConfigDict(alias_generator=snake_to_kebab, populate_by_name=True)
+    model_config = ConfigDict(alias_generator=snake_to_kebab, populate_by_name=True, extra="ignore")
 
 
 class ServiceType(Enum):
@@ -205,6 +205,8 @@ class ConfigV3FromInit(BaseSettings):
     model_config = SettingsConfigDict(
         alias_generator=snake_to_kebab,
         populate_by_name=True,
+        # 与嵌套配置一致：忽略新版新增的字段和配置段，保留已识别的用户设置。
+        extra="ignore",
     )
     config_version: str
     message_capture: MessageCaptureConfig
@@ -426,7 +428,12 @@ def handle_v2_validation_error(error: ValidationError, config_dict: Dict[str, An
 
 
 # noinspection PyArgumentList
-def handle_v3_validation_error(error: ValidationError, config_dict: Dict[str, Any]) -> ConfigV3 | ConfigV3FromInit:
+def handle_v3_validation_error(
+        error: ValidationError,
+        config_dict: Dict[str, Any],
+        *,
+        fallback_to_defaults: bool = True,
+) -> ConfigV3FromInit:
     """处理V3配置的ValidationError"""
     missing_fields = [
         err for err in error.errors()
@@ -434,25 +441,22 @@ def handle_v3_validation_error(error: ValidationError, config_dict: Dict[str, An
     ]
 
     if missing_fields:
+        # 加载默认V3配置，补齐旧配置缺少的字段。
+        with open(get_path("modless-chat-trans.default.toml"), 'rb') as f:
+            default_dict = tomllib.load(f)
+
+        merged_dict = deep_merge(default_dict, config_dict)
+
         try:
-            # 加载默认V3配置
-            with open(get_path("modless-chat-trans.default.toml"), 'rb') as f:
-                default_dict = tomllib.load(f)
+            # 使用ConfigV3FromInit避免再次触发文件读取。
+            return ConfigV3FromInit(**merged_dict)
+        except ValidationError:
+            if not fallback_to_defaults:
+                raise
+    elif not fallback_to_defaults:
+        raise error
 
-            # 深合并
-            merged_dict = deep_merge(default_dict, config_dict)
-
-            try:
-                # 使用ConfigV3FromInit避免再次触发文件读取
-                return ConfigV3FromInit(**merged_dict)
-            except ValidationError:
-                # 如果还是失败，使用完整的默认配置
-                return ConfigV3FromInit(**default_dict)
-        except Exception:
-            # 如果无法读取默认配置，使用ConfigV3的默认值
-            return ConfigV3()
-    else:
-        return ConfigV3()
+    return load_default_v3_config()
 
 
 # noinspection PyArgumentList
@@ -470,15 +474,18 @@ def read_v2_config_safely() -> ConfigV2:
 
 
 # noinspection PyArgumentList
-def read_v3_config_safely() -> ConfigV3 | ConfigV3FromInit:
+def read_v3_config_safely(*, fallback_to_defaults: bool = True) -> ConfigV3 | ConfigV3FromInit:
+    """缺失字段用默认值补齐；写回前读取时可禁止整份配置回退为默认值。"""
     try:
         return ConfigV3()
     except ValidationError as e:
         try:
             with open("modless-chat-trans.toml", 'rb') as f:
                 config_dict = tomllib.load(f)
-            return handle_v3_validation_error(e, config_dict)
+            return handle_v3_validation_error(e, config_dict, fallback_to_defaults=fallback_to_defaults)
         except Exception:
+            if not fallback_to_defaults:
+                raise
             return load_default_v3_config()
 
 
@@ -501,7 +508,11 @@ def save_config(config: ConfigV3 | ConfigV3FromInit) -> bool:
 
 def update_config(**updates) -> bool:
     try:
-        config = read_config()
+        if is_file_exists("modless-chat-trans.toml"):
+            # 自动检查更新也会调用此函数；不能把读取失败后的默认配置写回原文件。
+            config = read_v3_config_safely(fallback_to_defaults=False)
+        else:
+            config = read_config()
         for path, value in updates.items():
             keys = path.split('__')
             obj = config
