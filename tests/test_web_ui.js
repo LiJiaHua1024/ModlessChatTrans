@@ -33,4 +33,33 @@ for (const name of ['', 'Steve']) {
     assert.equal(ctx.foldingGroup.messages.length, 3, 'A/B/A must all remain visible in the group');
     assert.equal(ctx.pendingMessages, 0);
 }
-console.log('Web UI regression checks passed');
+async function checkSendRequestOwnership() {
+    const ctx = messageContext();
+    const requests = [];
+    const timers = [];
+    Object.assign(ctx, {
+        messageInput: {value: 'first'}, sendButton: {},
+        translationIndicator: {classList: {add() {}, remove() {}}},
+        isRageMode: false, translationRequestId: 0,
+        setTimeout: callback => (timers.push(callback), timers.length),
+        clearTimeout() {}, console,
+        fetch: () => new Promise(resolve => requests.push(resolve)),
+    });
+    vm.runInContext(source.slice(source.indexOf('function sendMessage()'),
+                                 source.indexOf('sendButton.addEventListener("click"')), ctx);
+    ctx.sendMessage();
+    ctx.window.eventSource.onmessage({data: JSON.stringify({
+        name: '[INFO]', message: 'Other client finished', send_translation_complete: true,
+    })});
+    assert.equal(timers.length, 1, 'SSE must not schedule an unlock');
+    timers[0](); // First request times out, allowing another request.
+    ctx.messageInput.value = 'second';
+    ctx.sendMessage();
+    requests[0]({ok: true, json: async () => ({translated: 'first'})});
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(ctx.isTranslating, true, 'Late first response must not unlock second request');
+    requests[1]({ok: true, json: async () => ({translated: 'second'})});
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(ctx.isTranslating, false);
+}
+checkSendRequestOwnership().then(() => console.log('Web UI regression checks passed'));
