@@ -208,7 +208,10 @@ def start_translation(config):
 
             is_error, translated, info = processed_message
             if not is_error and translated:
-                modify_clipboard(translated)
+                if not modify_clipboard(translated):
+                    return finish_error(
+                        _("翻译完成，但复制到剪切板失败，请手动复制：") + "\n" + translated, info
+                    )
                 duration = time.time() - start_time
                 info = dict(info) if isinstance(info, dict) else {}
                 info["send_translation_complete"] = True
