@@ -146,7 +146,7 @@ class OrderedProcessor:
             # 放在这里是为了让一批消息只产生一次 HTTP 请求。
             verdicts = classify_lines([chat_text for _, _, chat_text in chat_lines])
 
-            items = []  # [(prepared, slot_id, log_time)]
+            items = []  # [(prepared, slot_id, context_messages)]
             for (line, arrival_time, _chat_text), is_player in zip(chat_lines, verdicts):
                 # prepare（解析+过滤，极快）
                 prepared = prepare(line, "log", self._replace_garbled_chars, is_player=is_player)
@@ -161,10 +161,10 @@ class OrderedProcessor:
                 try:
                     log_time = extract_log_time(line, arrival_time)
 
-                    # 立即 push 原文到 context_buffer（翻译前）
-                    # 这样后续消息的 context_messages 就能看到这条原文
-                    if self._context_buffer:
-                        self._context_buffer.push(ContextEntry(
+                    # 顺序取得历史快照，避免包含当前消息或并发到达的后续消息。
+                    ctx_messages = []
+                    if self._context_buffer is not None:
+                        ctx_messages = self._context_buffer.snapshot_and_push(ContextEntry(
                             original=prepared.original,
                             timestamp=log_time,
                             player_name=prepared.name or "",
@@ -174,19 +174,19 @@ class OrderedProcessor:
                     fill_slot(slot_id, "[ERROR]", f"翻译失败，错误： {error}", {}, original=prepared.original)
                     continue
 
-                items.append((prepared, slot_id, log_time))
+                items.append((prepared, slot_id, ctx_messages))
 
             if not items:
                 continue
 
             # ========== 阶段2：多线程 translate + fill_slot ==========
-            for prepared, slot_id, log_time in items:
+            for prepared, slot_id, ctx_messages in items:
                 self._executor.submit(
                     self._translate_and_fill,
-                    prepared, slot_id, log_time,
+                    prepared, slot_id, ctx_messages,
                 )
 
-    def _translate_and_fill(self, prepared, slot_id, log_time):
+    def _translate_and_fill(self, prepared, slot_id, ctx_messages):
         """在线程池中执行：翻译 + fill_slot + TTS"""
         from modless_chat_trans.web_display import fill_slot
         from modless_chat_trans.message_processor import MessageType, translate_prepared
@@ -195,11 +195,6 @@ class OrderedProcessor:
 
         # 重试/备用模型策略由 Translator 统一处理，避免调用层重复放大请求次数。
         try:
-            # 获取上下文（此时 context_buffer 已包含所有 prepare 阶段 push 的原文）
-            ctx_messages = []
-            if self._context_buffer:
-                ctx_messages = self._context_buffer.get_context_messages()
-
             name, translated, info = translate_prepared(
                 prepared,
                 translator=self._translator,
