@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union
 
 import tomli_w
-from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError, model_validator
 from pydantic_settings import (
     BaseSettings,
     JsonConfigSettingsSource,
@@ -62,9 +62,9 @@ class MessageClassifierType(str, Enum):
 
 
 class JevProvider(str, Enum):
-    """Jev 服务商"""
-    TYPESAFE = "typesafe"      # TypeSafe 官方 API
-    OPENROUTER = "openrouter"  # OpenRouter
+    """Jev 接口格式"""
+    SYSTEM_ONE = "systemone"   # TypeSafe System One 兼容格式
+    CLOUDFLARE = "cloudflare"  # Cloudflare AI
 
 
 class FallbackStrategy(str, Enum):
@@ -143,12 +143,32 @@ class BlacklistConfig(BaseConfigModel):
 class MessageClassificationConfig(BaseConfigModel):
     """消息分类配置：判定一条聊天行是玩家消息还是服务器消息"""
     classifier: MessageClassifierType = MessageClassifierType.RULE
-    provider: JevProvider = JevProvider.TYPESAFE
+    provider: JevProvider = JevProvider.SYSTEM_ONE
     api_key: str = ""
     # 模型名与端点留空时使用对应服务商的默认值
     model: str = ""
     api_base: Optional[str] = None
+    account_id: str = ""  # Cloudflare 账号 ID，用于构造默认端点
     timeout: float = 2.0  # 单次判定请求超时（秒）
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_legacy_jev_provider(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        data = data.copy()
+        provider = data.get("provider")
+        if provider == "typesafe":
+            data["provider"] = JevProvider.SYSTEM_ONE
+        elif provider == "openrouter":
+            # 旧配置允许模型和端点留空；迁移时补上原来的 OpenRouter 默认值。
+            data["provider"] = JevProvider.SYSTEM_ONE
+            if not data.get("model"):
+                data["model"] = "typesafe/jev-latest"
+            api_base_key = "api-base" if "api-base" in data else "api_base"
+            if not data.get(api_base_key):
+                data[api_base_key] = "https://openrouter.ai/api/alpha/decisions"
+        return data
 
 
 class ContextConfig(BaseConfigModel):

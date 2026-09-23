@@ -3223,10 +3223,10 @@ class MessageClassificationInterface(NoHeightForWidthPropagation, QFrame):
         grid.setHorizontalSpacing(15)
         grid.setVerticalSpacing(15)
 
-        provider_label = BodyLabel(_('服务商：'), self.jev_card)
+        provider_label = BodyLabel(_('接口格式：'), self.jev_card)
         self.provider_combo = ComboBox(self.jev_card)
-        self.provider_combo.addItem(_('TypeSafe 官方'), userData=JevProvider.TYPESAFE)
-        self.provider_combo.addItem(_('OpenRouter'), userData=JevProvider.OPENROUTER)
+        self.provider_combo.addItem(_('Jev 标准格式'), userData=JevProvider.SYSTEM_ONE)
+        self.provider_combo.addItem('Cloudflare AI', userData=JevProvider.CLOUDFLARE)
         self.provider_combo.setFixedWidth(300)
         self.provider_combo.currentIndexChanged.connect(self.on_provider_changed)
         grid.addWidget(provider_label, 0, 0, Qt.AlignmentFlag.AlignRight)
@@ -3249,11 +3249,20 @@ class MessageClassificationInterface(NoHeightForWidthPropagation, QFrame):
 
         api_base_label = BodyLabel(_('端点：'), self.jev_card)
         self.api_base_combo = EditableComboBox(self.jev_card)
-        self.api_base_combo.addItem(_("默认端点"), userData="default")
+        self.api_base_combo.addItem(_('TypeSafe 官方'), userData="default")
         self.api_base_combo.setCurrentIndex(0)
         self.api_base_combo.setFixedWidth(300)
+        self.api_base_combo.currentTextChanged.connect(self.update_warning)
         grid.addWidget(api_base_label, 3, 0, Qt.AlignmentFlag.AlignRight)
         grid.addWidget(self.api_base_combo, 3, 1)
+
+        self.account_id_label = BodyLabel(_('账号 ID：'), self.jev_card)
+        self.account_id_edit = LineEdit(self.jev_card)
+        self.account_id_edit.setPlaceholderText(_('请输入 Cloudflare 账号 ID'))
+        self.account_id_edit.setFixedWidth(300)
+        self.account_id_edit.textChanged.connect(self.update_warning)
+        grid.addWidget(self.account_id_label, 4, 0, Qt.AlignmentFlag.AlignRight)
+        grid.addWidget(self.account_id_edit, 4, 1)
 
         timeout_label = BodyLabel(_('请求超时：'), self.jev_card)
         self.timeout_spin = DoubleSpinBox(self.jev_card)
@@ -3262,11 +3271,15 @@ class MessageClassificationInterface(NoHeightForWidthPropagation, QFrame):
         self.timeout_spin.setDecimals(1)
         self.timeout_spin.setSuffix(_(" 秒"))
         self.timeout_spin.setFixedWidth(300)
-        grid.addWidget(timeout_label, 4, 0, Qt.AlignmentFlag.AlignRight)
-        grid.addWidget(self.timeout_spin, 4, 1)
+        grid.addWidget(timeout_label, 5, 0, Qt.AlignmentFlag.AlignRight)
+        grid.addWidget(self.timeout_spin, 5, 1)
         grid.setColumnStretch(2, 1)
 
         jev_layout.addLayout(grid)
+        jev_layout.addWidget(CaptionLabel(
+            _('使用其他兼容接口时，请填写该平台的 API Key、模型和完整端点。'),
+            self.jev_card,
+        ))
 
         # 未填写 API Key 时的提示
         self.warning_label = CaptionLabel('', self.jev_card)
@@ -3289,8 +3302,8 @@ class MessageClassificationInterface(NoHeightForWidthPropagation, QFrame):
 
         if cfg is None:
             self.rule_radio.setChecked(True)
-            provider = JevProvider.TYPESAFE
-            api_key, model, api_base = "", "", ""
+            provider = JevProvider.SYSTEM_ONE
+            api_key, model, api_base, account_id = "", "", "", ""
             timeout = default_timeout
         else:
             if cfg.classifier == MessageClassifierType.JEV:
@@ -3301,17 +3314,18 @@ class MessageClassificationInterface(NoHeightForWidthPropagation, QFrame):
             api_key = cfg.api_key or ""
             model = cfg.model or ""
             api_base = cfg.api_base or ""
+            account_id = cfg.account_id or ""
             timeout = cfg.timeout or default_timeout
 
-        self.provider_combo.setCurrentIndex(
-            1 if provider == JevProvider.OPENROUTER else 0
-        )
+        self.provider_combo.setCurrentIndex(self.provider_combo.findData(provider))
 
         self.api_key_edit.setText(api_key)
         self.apply_default_model_item(provider, model)
         self.apply_api_base(api_base)
+        self.account_id_edit.setText(account_id)
         self.timeout_spin.setValue(timeout)
 
+        self.on_provider_changed()
         self.on_classifier_changed()
 
     def get_config_section(self):
@@ -3329,8 +3343,16 @@ class MessageClassificationInterface(NoHeightForWidthPropagation, QFrame):
         self.update_warning()
 
     def on_provider_changed(self, index=None):
-        """切换服务商时同步默认模型项，用户自定义的模型名保持不变"""
+        """切换接口格式时同步默认端点标签和模型，保留自定义配置。"""
         self.apply_default_model_item(self.current_provider(), self.current_model())
+        is_cloudflare = self.current_provider() == JevProvider.CLOUDFLARE
+        self.api_base_combo.blockSignals(True)
+        self.api_base_combo.setItemText(
+            0, 'Cloudflare AI' if is_cloudflare else _('TypeSafe 官方')
+        )
+        self.api_base_combo.blockSignals(False)
+        self.account_id_label.setVisible(is_cloudflare)
+        self.account_id_edit.setVisible(is_cloudflare)
         self.update_warning()
 
     def apply_default_model_item(self, provider, saved_model=""):
@@ -3348,7 +3370,7 @@ class MessageClassificationInterface(NoHeightForWidthPropagation, QFrame):
         self.model_combo.blockSignals(False)
 
     def apply_api_base(self, saved_api_base=""):
-        """端点下拉框：选中“默认端点”即使用服务商默认端点"""
+        """端点下拉框：第一项使用当前接口格式的默认端点。"""
         self.api_base_combo.blockSignals(True)
         self.api_base_combo.setCurrentIndex(0)
         if self.api_base_combo.count() > 1:
@@ -3365,7 +3387,7 @@ class MessageClassificationInterface(NoHeightForWidthPropagation, QFrame):
         return self.model_combo.currentText().strip()
 
     def current_api_base(self):
-        """选中“默认端点”时返回 None，由程序按服务商解析默认端点"""
+        """选中第一项时返回 None，由程序解析默认端点。"""
         if self.api_base_combo.currentData():
             return None
         return self.api_base_combo.currentText().strip() or None
@@ -3377,6 +3399,14 @@ class MessageClassificationInterface(NoHeightForWidthPropagation, QFrame):
             return
 
         if self.api_key_edit.text().strip():
+            if (self.current_provider() == JevProvider.CLOUDFLARE
+                    and not self.current_api_base()
+                    and not self.account_id_edit.text().strip()):
+                self.warning_label.setText(
+                    _('未填写 Cloudflare 账号 ID：启动后将回退到内置规则判定。')
+                )
+                self.warning_label.setVisible(True)
+                return
             self.warning_label.setVisible(False)
             return
 
@@ -3387,7 +3417,7 @@ class MessageClassificationInterface(NoHeightForWidthPropagation, QFrame):
 
     def current_provider(self):
         """当前选择的服务商"""
-        return self.provider_combo.currentData() or JevProvider.TYPESAFE
+        return self.provider_combo.currentData() or JevProvider.SYSTEM_ONE
 
     def get_message_classification_data(self):
         """获取当前消息分类配置，供保存时使用"""
@@ -3400,6 +3430,7 @@ class MessageClassificationInterface(NoHeightForWidthPropagation, QFrame):
             api_key=self.api_key_edit.text().strip(),
             model=self.current_model(),
             api_base=self.current_api_base(),
+            account_id=self.account_id_edit.text().strip(),
             timeout=self.timeout_spin.value(),
         )
 

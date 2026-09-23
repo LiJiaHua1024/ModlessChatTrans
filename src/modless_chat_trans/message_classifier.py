@@ -27,10 +27,11 @@ Jev 的接口是「一次请求、多个独立问题」：整批聊天行各自�
 判定结果按聊天行文本缓存到磁盘（key 为剥离格式码后的正文，value 为 True/False，
 LFU 淘汰）：重复出现的固定文本（系统命令、公告）直接命中缓存，不再发起请求。
 
-两种调用方式（请求体与响应体一致，仅端点、模型名与鉴权不同）：
+支持两类接口。Cloudflare AI 的请求体使用 input 包装：
 
-- TypeSafe 官方：POST https://api.typesafe.ai/v1/systemone，模型 jev-latest
-- OpenRouter：POST https://openrouter.ai/api/alpha/decisions，模型 typesafe/jev-latest
+- Jev 标准格式：默认使用 TypeSafe 官方 POST https://api.typesafe.ai/v1/systemone，模型 jev-latest；
+  OpenRouter、Command Code 等兼容接口可分别填写其端点、模型和 API Key
+- Cloudflare AI：POST https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run，模型 typesafe/jev
 """
 
 import re
@@ -61,13 +62,13 @@ _RE_FORMAT_CODE = re.compile(r"§.")
 
 # 各服务商的默认端点与模型；配置里留空时使用
 JEV_PROVIDER_DEFAULTS: Dict[JevProvider, Dict[str, str]] = {
-    JevProvider.TYPESAFE: {
+    JevProvider.SYSTEM_ONE: {
         "api_base": "https://api.typesafe.ai/v1/systemone",
         "model": "jev-latest",
     },
-    JevProvider.OPENROUTER: {
-        "api_base": "https://openrouter.ai/api/alpha/decisions",
-        "model": "typesafe/jev-latest",
+    JevProvider.CLOUDFLARE: {
+        "api_base": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run",
+        "model": "typesafe/jev",
     },
 }
 
@@ -157,6 +158,13 @@ def init_classifier(classification_config: Optional[MessageClassificationConfig]
             )
             return
 
+        if (provider == JevProvider.CLOUDFLARE
+                and not (classification_config.api_base or "").strip()
+                and not (classification_config.account_id or "").strip()):
+            _jev_enabled = False
+            logger.warning("[Classifier] Cloudflare AI 未配置账号 ID，已回退到内置规则判定。")
+            return
+
         _jev_enabled = True
         logger.info(
             f"[Classifier] 消息分类方式：Jev"
@@ -178,7 +186,12 @@ def resolve_endpoint() -> str:
     if _config is None:
         return ""
     default = JEV_PROVIDER_DEFAULTS.get(_config.provider, {}).get("api_base", "")
-    return (_config.api_base or "").strip() or default
+    custom = (_config.api_base or "").strip()
+    if custom:
+        return custom
+    if _config.provider == JevProvider.CLOUDFLARE:
+        return default.format(account_id=(_config.account_id or "").strip())
+    return default
 
 
 def resolve_model() -> str:
@@ -364,6 +377,10 @@ def _classify_with_jev(chat_texts: List[str]) -> Optional[List[JevAnswer]]:
     api_key = (_config.api_key or "").strip()
     timeout = _request_timeout()
     body = build_request_body(chat_texts, list(_recent_lines))
+    if _config.provider == JevProvider.CLOUDFLARE:
+        body = {"model": body["model"], "input": {
+            "state": body["state"], "questions": body["questions"]
+        }}
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
@@ -380,6 +397,10 @@ def _classify_with_jev(chat_texts: List[str]) -> Optional[List[JevAnswer]]:
     except Exception as error:
         _on_failure(f"{type(error).__name__}: {error}")
         return None
+
+    if _config.provider == JevProvider.CLOUDFLARE and isinstance(payload, dict):
+        # Cloudflare 的通用 REST API 可能将模型结果包在 result 中。
+        payload = payload.get("result", payload)
 
     answers = parse_answers(payload, len(chat_texts))
     if answers is None:

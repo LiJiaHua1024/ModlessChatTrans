@@ -73,10 +73,12 @@ message-blacklist = []
 [message-classification]
 # 分类方式: "rule"（内置规则）或 "jev"（Jev 模型判定）
 classifier = "rule"
-# Jev 服务商: "typesafe"（TypeSafe 官方）或 "openrouter"
-provider = "typesafe"
+# Jev 接口格式: "systemone"（默认 TypeSafe，兼容 OpenRouter 等）或 "cloudflare"
+provider = "systemone"
 # 留空则回退到内置规则
 api-key = ""
+# Cloudflare AI 账号 ID；填写后自动生成默认端点
+account-id = ""
 model = ""
 api-base = ""
 timeout = 3.0
