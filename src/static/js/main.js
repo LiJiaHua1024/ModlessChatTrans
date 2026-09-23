@@ -866,6 +866,11 @@ function initializeEventSource() {
             var prevMessage = foldingGroup.messages[foldingGroup.messages.length - 1];
 
             if (shouldFoldMessages(currentType, foldingGroup.type, messageText, prevMessage.message)) {
+                // 折叠后由分组维护消息；旧单条 DOM 不能继续接收重复计数。
+                lastUserMessageText = null;
+                lastUserMessageElement = null;
+                lastMergeableMessageText = null;
+                lastMergeableMessageElement = null;
                 // If this is the first fold (elements not created yet), convert single message to group
                 if (!foldingGroup.elements) {
                     // Create folding group wrapper
