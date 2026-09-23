@@ -299,9 +299,12 @@ class Translator:
         :param context_messages: 历史上下文（单条汇总 user 消息，将嵌入 user prompt），为 None/[] 则退化为无上下文
         """
         context_messages = context_messages or []
+        llm_config = self.translation_service_config.llm
+        mode = (TranslationMode.DEEP if llm_config and llm_config.deep_translate
+                else TranslationMode.NORMAL)
         return self._dispatch_translation(
             text, source_language, target_language,
-            mode=TranslationMode.NORMAL,
+            mode=mode,
             message_type=message_type,
             context_messages=context_messages,
         )
@@ -436,6 +439,14 @@ class Translator:
         context_messages = context_messages or []
         # 选择有效的 LLM 配置（备用模型配置或主模型配置）
         llm_cfg = llm_config_override or self.translation_service_config.llm
+        # 备用模型有独立的深度翻译开关；红温模式不受该开关影响。
+        if llm_config_override is not None and include_terms:
+            mode = self._get_effective_mode(
+                TranslationMode.DEEP if llm_cfg.deep_translate else TranslationMode.NORMAL,
+                message_type,
+            )
+            system_prompt = self._build_system_prompt(mode, message_type, bool(context_messages))
+            expect_json = mode == TranslationMode.DEEP
         if source_language.lower() == "auto":
             source_language = ""
 
