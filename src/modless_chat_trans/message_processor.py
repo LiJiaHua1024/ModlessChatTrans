@@ -378,15 +378,16 @@ def translate_prepared(
 
     translated: str = ""
     info: dict = {}
+    cache_key = (original, target_language)
 
     # 术语表匹配
     if matched := match_and_translate(original):
         logger.debug(f"Using custom glossary: {original} -> {matched}")
         translated = matched
         info["glossary_match"] = True
-    elif not rage_mode and original in cache:
+    elif not rage_mode and cache_key in cache:
         logger.debug(f"Translation cache hit: {original}")
-        translated = cache[original]
+        translated = cache[cache_key]
         info["cache_hit"] = True
     else:
         try:
@@ -439,7 +440,7 @@ def translate_prepared(
                     f"Translation successful, caching result:"
                     f" {original} -> {translated}"
                 )
-                cache[original] = translated
+                cache[cache_key] = translated
 
     return name or "", translated, info
 
