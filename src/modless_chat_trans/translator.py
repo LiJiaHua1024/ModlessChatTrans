@@ -27,6 +27,7 @@ from urllib.parse import quote
 import lazy_loader as lazy
 from modless_chat_trans.logger import logger
 from modless_chat_trans.config import ServiceType, FallbackStrategy
+from modless_chat_trans.glossary_patterns import VARIABLE_PATTERN
 
 
 def _http():
@@ -260,7 +261,7 @@ class Translator:
         # 单个请求和整条翻译链路都不能超过 10 秒；备用策略会在此预算内分配时间。
         self.timeout = self.MAX_TRANSLATION_SECONDS
         self.translation_deadline = self.MAX_TRANSLATION_SECONDS
-        self._variable_pattern = re.compile(r"\{\{([a-zA-Z0-9_-]+)(?::[^}]+)?\}\}")
+        self._variable_pattern = VARIABLE_PATTERN
         self._literal_glossary = {
             k: v for k, v in self.glossary.items()
             if not self._variable_pattern.search(str(k))

@@ -21,6 +21,7 @@ from modless_chat_trans.file_utils import cache
 from dataclasses import dataclass
 from modless_chat_trans.translator import MessageType
 from modless_chat_trans.logger import logger
+from modless_chat_trans.glossary_patterns import VARIABLE_PATTERN
 
 # 预编译的正则表达式常量
 _RE_FORMAT_CODE = re.compile(r'§.')
@@ -28,7 +29,7 @@ _RE_BRACKETS = re.compile(r'\[.*?\]')
 _RE_ORG_PREFIX = re.compile(r'\w+\s*>\s*')
 _RE_MSG_PREFIX = re.compile(r'(?:From|To)\s+')
 _RE_MINECRAFT_NAME = re.compile(r'^[a-zA-Z0-9_]{3,16}$')
-_RE_VARIABLE_PATTERN = re.compile(r"\{\{([a-zA-Z0-9_-]+)(?::([^}]+))?\}\}")
+_RE_VARIABLE_PATTERN = VARIABLE_PATTERN
 _RE_VALUE_VARIABLE = re.compile(r"\{\{([a-zA-Z0-9_-]+)\}\}")
 
 filter_server_messages = True
@@ -159,11 +160,12 @@ def _compile_glossary_patterns():
         key_vars_found = set()  # 用于记录key中实际出现的变量名
 
         # --- 构建正则表达式和处理重复变量 ---
-        variables = []  # 按捕获组顺序存储变量名 (只存首次出现的)
+        variables = {}  # 变量名 -> 专用命名组，不受自定义正则内部捕获组影响
         regex_parts = []
         last_pos = 0
-        variable_to_group_index = {}
-        current_group_index = 1
+        group_prefix = "mct_var_"
+        while f"?P<{group_prefix}" in key:
+            group_prefix = "_" + group_prefix
 
         # 初始化 full_regex_str
         full_regex_str = None
@@ -178,19 +180,12 @@ def _compile_glossary_patterns():
                 regex_parts.append(re.escape(key[last_pos:match.start()]))
 
                 # 2. 处理变量: 新变量 or 重复变量?
-                if var_name in variable_to_group_index:
-                    # 重复变量: 使用反向引用
-                    group_index = variable_to_group_index[var_name]
-                    regex_parts.append(f"\\{group_index}")  # 添加反向引用 \N
-                    logger.debug(
-                        f"  Key '{key}': Variable '{{{{{var_name}}}}}' repeated, using backreference \\{group_index}")
+                if var_name in variables:
+                    regex_parts.append(f"(?P={variables[var_name]})")
                 else:
-                    # 新变量: 创建捕获组
-                    capture_group = f"({custom_regex})" if custom_regex else "(.+?)"
-                    regex_parts.append(capture_group)
-                    variable_to_group_index[var_name] = current_group_index  # 记录名称和组索引
-                    variables.append(var_name)  # 将新变量名按顺序添加到列表
-                    current_group_index += 1  # 为下一个新捕获组增加索引
+                    group_name = f"{group_prefix}{len(variables)}"
+                    regex_parts.append(f"(?P<{group_name}>{custom_regex or '.+?'})")
+                    variables[var_name] = group_name
 
                 last_pos = match.end()
 
@@ -211,7 +206,7 @@ def _compile_glossary_patterns():
             compiled_regex = re.compile(full_regex_str)
             temp_patterns[key] = {
                 "regex": compiled_regex,
-                "variables": variables,  # 只包含实际捕获组对应的变量名 (无重复)
+                "variables": variables,
                 "original_value": value
             }
             logger.debug(f"Compiled: '{key}' -> Regex: '{full_regex_str}', Capture Vars: {variables}")
@@ -243,39 +238,18 @@ def match_and_translate(original_chat_message: str) -> str | None:
         match = compiled_regex.match(original_chat_message)
 
         if match:
-            variables = pattern_data["variables"]  # 这些是按捕获组顺序的变量名
+            variables = pattern_data["variables"]
             original_value = pattern_data["original_value"]
-            captured_values = match.groups()  # 捕获到的内容
-
-            # 安全检查: 捕获组数量应与记录的变量数一致
-            if len(variables) != len(captured_values):
-                logger.error(
-                    f"Internal Error: Mismatch between expected variables {variables} ({len(variables)}) and captured groups {captured_values} ({len(captured_values)}) for key '{pattern_key}' and message '{original_chat_message}'. Skipping.")
-                continue  # 理论上不应发生
-
-            # 创建变量名到捕获值的映射
-            variable_map = dict(zip(variables, captured_values))
+            variable_map = {name: match.group(group) for name, group in variables.items()}
 
             logger.debug(
                 f"Glossary match found for '{original_chat_message}' using key '{pattern_key}'. Variables captured: {variable_map}")
 
             # 在 value 中替换变量占位符
-            translated_message = original_value
-            # 使用预编译的正则表达式匹配 value 中的变量
-            placeholders_found_in_value = _RE_VALUE_VARIABLE.findall(translated_message)
-
-            for var_name in placeholders_found_in_value:
-                if var_name in variable_map:
-                    # 执行替换
-                    placeholder = f"{{{{{var_name}}}}}"
-                    translated_message = translated_message.replace(placeholder, variable_map[var_name])
-                else:
-                    # 这个变量在 key 中存在但未在 value 中使用 (或者 key 中的重复变量导致它不在 variable_map 中)
-                    # 这种情况是允许的（如丢弃变量），但如果 value 真的需要它，编译阶段应该已警告
-                    # 如果是因为反向引用匹配失败，这里也不会有对应的 key
-                    logger.warning(
-                        f"Variable '{{{{{var_name}}}}}' found in value '{original_value}' but not in captured variables map {variable_map} for key '{pattern_key}'. It might be intentionally discarded or indicate an issue.")
-                    # 保留原样或根据需要处理
+            translated_message = _RE_VALUE_VARIABLE.sub(
+                lambda placeholder: variable_map.get(placeholder.group(1), placeholder.group(0)),
+                original_value,
+            )
 
             logger.debug(f"Substituting variables in value: '{original_value}' -> '{translated_message}'")
             return translated_message
