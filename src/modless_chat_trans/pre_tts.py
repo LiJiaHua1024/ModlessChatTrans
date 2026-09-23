@@ -136,7 +136,7 @@ class PreTTSEngine:
         with self._lock:
             self._progress_done += 1
 
-    def _scan_and_rank(self, now: float) -> list:
+    def _scan_and_rank(self, now: float, target_language: str) -> list:
         """扫描翻译缓存，按译文聚合热度（count / age）降序返回前 PRE_TTS_BUDGET 条"""
         # 解码规则（diskcache 存储格式）：
         # - key 列：str/int/float 键原样存储（raw 标记为 1），其余类型为 pickle（raw 标记为 0）
@@ -153,7 +153,8 @@ class PreTTSEngine:
                     original = pickle.loads(key_blob)
                 except Exception:
                     continue
-            if not isinstance(original, str):
+            if (not isinstance(original, tuple) or len(original) != 2
+                    or not isinstance(original[0], str) or original[1] != target_language):
                 continue
             if mode == 1:  # MODE_RAW
                 translated = value_blob
@@ -206,7 +207,7 @@ class PreTTSEngine:
         speed = tts_cfg.speed
         pitch = tts_cfg.pitch
 
-        candidates = self._scan_and_rank(time.time())
+        candidates = self._scan_and_rank(time.time(), target_language)
         if not candidates:
             logger.debug("[Pre-TTS] No candidates from translation cache")
             return {"synthesized": 0, "skipped": 0, "total": 0, "size_bytes": 0}
