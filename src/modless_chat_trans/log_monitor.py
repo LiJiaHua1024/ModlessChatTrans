@@ -41,6 +41,7 @@ except ImportError as _wd_exc:
     )
 
 from modless_chat_trans.file_utils import find_latest_log
+from modless_chat_trans.i18n import _
 from modless_chat_trans.logger import logger
 from modless_chat_trans.config import MonitorMode, MessageCaptureConfig
 
@@ -188,7 +189,7 @@ class OrderedProcessor:
     def _translate_and_fill(self, prepared, slot_id, log_time):
         """在线程池中执行：翻译 + fill_slot + TTS"""
         from modless_chat_trans.web_display import fill_slot
-        from modless_chat_trans.message_processor import translate_prepared
+        from modless_chat_trans.message_processor import MessageType, translate_prepared
 
         start_time = time.time()
 
@@ -216,7 +217,8 @@ class OrderedProcessor:
             fill_slot(slot_id, name, translated or "翻译失败", info, duration=duration)
             return
 
-        fill_slot(slot_id, name or "", translated or "", info, duration=duration, original=prepared.original)
+        display_name = name or (_("未知") if prepared.message_type == MessageType.PLAYER else "")
+        fill_slot(slot_id, display_name, translated or "", info, duration=duration, original=prepared.original)
 
         # TTS
         if self._tts_engine and self._tts_engine.enabled and translated:
