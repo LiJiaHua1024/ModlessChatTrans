@@ -221,7 +221,7 @@ class OrderedProcessor:
         # TTS
         if self._tts_engine and self._tts_engine.enabled and translated:
             self._tts_engine.enqueue(
-                name or "", translated,
+                prepared.core_name, translated,
                 self._target_language,
             )
 

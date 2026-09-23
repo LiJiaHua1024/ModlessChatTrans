@@ -337,7 +337,7 @@ class PreparedMessage:
     name: str                    # 玩家名（可为空）
     original: str                # 原文
     message_type: MessageType    # 消息类型
-    core_name: str = ""          # 剥离 [标签]/头衔后的玩家名，用于黑名单匹配
+    core_name: str = ""          # 剥离 [标签]/头衔后的玩家名，用于黑名单匹配和朗读
 
 
 def prepare(data: str, data_type: str, replace_garbled: bool = False,
@@ -535,8 +535,8 @@ def extract_speaker(chat_message: str) -> tuple:
     """
     从聊天行中提取说话人，返回 (显示名, 核心名, 正文)。
 
-    - 显示名：原样的说话人前缀（保留 [MVP+]/头衔等装饰），用于展示与朗读
-    - 核心名：剥离装饰后的玩家名，用于黑名单匹配
+    - 显示名：原样的说话人前缀（保留 [MVP+]/头衔等装饰），用于展示
+    - 核心名：剥离装饰后的玩家名，用于黑名单匹配和朗读
     - 无法确定说话人时返回 ("", "", chat_message)
 
     比内置规则宽容：允许前缀带有头衔（取最后一个合法玩家名作为核心名），
