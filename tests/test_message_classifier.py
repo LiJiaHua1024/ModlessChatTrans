@@ -79,9 +79,10 @@ class MessageClassifierTestBase(unittest.TestCase):
         classifier_module.get_jev_cache = self._real_get_jev_cache
         classifier_module.init_classifier(None)
 
-    def install_jev(self, provider=JevProvider.TYPESAFE, api_key="test-key", **overrides):
+    def install_jev(self, provider=JevProvider.SYSTEM_ONE, api_key="test-key",
+                    classifier=MessageClassifierType.JEV, **overrides):
         config = MessageClassificationConfig(
-            classifier=MessageClassifierType.JEV,
+            classifier=classifier,
             provider=provider,
             api_key=api_key,
             **overrides,
@@ -201,13 +202,14 @@ class PrepareWithVerdictTest(MessageClassifierTestBase):
 
 class JevRequestTest(MessageClassifierTestBase):
     def test_defaults_per_provider(self):
-        self.install_jev(provider=JevProvider.TYPESAFE)
+        self.install_jev(provider=JevProvider.SYSTEM_ONE)
         self.assertEqual(classifier_module.resolve_model(), "jev-latest")
         self.assertEqual(classifier_module.resolve_endpoint(), "https://api.typesafe.ai/v1/systemone")
 
-        self.install_jev(provider=JevProvider.OPENROUTER)
-        self.assertEqual(classifier_module.resolve_model(), "typesafe/jev-latest")
-        self.assertEqual(classifier_module.resolve_endpoint(), "https://openrouter.ai/api/alpha/decisions")
+        self.install_jev(provider=JevProvider.CLOUDFLARE, account_id="test-account")
+        self.assertEqual(classifier_module.resolve_model(), "typesafe/jev")
+        self.assertEqual(classifier_module.resolve_endpoint(),
+                         "https://api.cloudflare.com/client/v4/accounts/test-account/ai/run")
 
     def test_custom_model_and_endpoint_win(self):
         self.install_jev(model="jev-1.13.0", api_base="http://127.0.0.1:8080/systemone")
@@ -315,6 +317,52 @@ class JevTransportTest(MessageClassifierTestBase):
         classifier_module._http = lambda: calls_http
         self.assertEqual(classifier_module.classify_lines(["Steve: hi"]), [True])
         self.assertEqual(calls_http.calls, [])
+
+
+class HybridClassificationTest(MessageClassifierTestBase):
+    def test_prefilter_sends_only_possible_player_messages(self):
+        self.install_jev(classifier=MessageClassifierType.HYBRID)
+        http = FakeHttp(FakeResponse(jev_payload(0.99, 0.98, 0.02)))
+        classifier_module._http = lambda: http
+
+        lines = [
+            "Welcome to the server",
+            TITLED_PLAYER_LINE,
+            "<Steve> hi",
+            "<incomplete",
+            "Server: restarting soon",
+            "incomplete>",
+            ">reversed<",
+        ]
+        self.assertEqual(
+            classifier_module.classify_lines(lines),
+            [False, True, True, False, False, False, False],
+        )
+        questions = http.calls[0][1]["json"]["questions"]
+        self.assertEqual(
+            [question["instructions"]["line"] for question in questions.values()],
+            [TITLED_PLAYER_LINE, "<Steve> hi", "Server: restarting soon"],
+        )
+        self.assertNotIn("Welcome to the server", self.jev_cache)
+
+    def test_all_filtered_lines_skip_jev_and_cache(self):
+        self.install_jev(classifier=MessageClassifierType.HYBRID)
+        classifier_module._http = lambda: FakeHttp(error=AssertionError("不该发起网络请求"))
+
+        self.assertEqual(
+            classifier_module.classify_lines(["Welcome", "<incomplete", "incomplete>"]),
+            [False, False, False],
+        )
+        self.assertEqual(self.jev_cache, {})
+
+    def test_jev_failure_falls_back_to_strict_rule(self):
+        self.install_jev(classifier=MessageClassifierType.HYBRID)
+        classifier_module._http = lambda: FakeHttp(error=TimeoutError("timed out"))
+
+        self.assertEqual(
+            classifier_module.classify_lines(["Welcome", TITLED_PLAYER_LINE, "Steve: hi"]),
+            [False, False, True],
+        )
 
 
 class JevActivationTest(MessageClassifierTestBase):

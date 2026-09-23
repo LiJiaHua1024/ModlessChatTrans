@@ -59,6 +59,7 @@ class MessageClassifierType(str, Enum):
     """消息分类方式"""
     RULE = "rule"  # 内置规则
     JEV = "jev"    # Jev 模型
+    HYBRID = "hybrid"  # 宽松规则预筛后使用 Jev
 
 
 class JevProvider(str, Enum):

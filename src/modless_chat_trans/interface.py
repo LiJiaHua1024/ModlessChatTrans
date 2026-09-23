@@ -3190,21 +3190,27 @@ class MessageClassificationInterface(NoHeightForWidthPropagation, QFrame):
         set_tool_tip(self.rule_radio, _("不联网，不增加任何延迟"))
         self.jev_radio = RadioButton(_('Jev 模型判定'), mode_card)
         set_tool_tip(self.jev_radio, _("需要配置 Jev 服务，会增加少量延迟"))
+        self.hybrid_radio = RadioButton(_('混合模式'), mode_card)
+        set_tool_tip(self.hybrid_radio, _("先用更宽松的规则初筛，减少 Jev 请求"))
 
         self.classifier_group = QButtonGroup(self)
         self.classifier_group.addButton(self.rule_radio)
         self.classifier_group.addButton(self.jev_radio)
+        self.classifier_group.addButton(self.hybrid_radio)
 
         help_button_classifier = create_help_button(
             self,
             _("内置规则：速度快、不联网\n规则难以识别的复杂情况会出错\n\n"
               "Jev 模型判定：\n基于语义理解，复杂情况也能正确判断\n需要配置服务，会增加少量延迟\n"
-              "调用失败或超时回退到内置规则\n连续失败 {count} 次会暂停使用 Jev {seconds} 秒").format(
+              "调用失败或超时回退到内置规则\n连续失败 {count} 次会暂停使用 Jev {seconds} 秒\n\n"
+              "混合模式：\n先用更宽松的规则初筛，识别大量系统消息\n"
+              "减少不必要的 Jev 请求").format(
                 count=FAILURE_THRESHOLD, seconds=int(PAUSE_SECONDS))
         )
 
         mode_row.addWidget(self.rule_radio)
         mode_row.addWidget(self.jev_radio)
+        mode_row.addWidget(self.hybrid_radio)
         mode_row.addWidget(help_button_classifier)
         mode_row.addStretch()
 
@@ -3308,6 +3314,8 @@ class MessageClassificationInterface(NoHeightForWidthPropagation, QFrame):
         else:
             if cfg.classifier == MessageClassifierType.JEV:
                 self.jev_radio.setChecked(True)
+            elif cfg.classifier == MessageClassifierType.HYBRID:
+                self.hybrid_radio.setChecked(True)
             else:
                 self.rule_radio.setChecked(True)
             provider = cfg.provider
@@ -3338,7 +3346,7 @@ class MessageClassificationInterface(NoHeightForWidthPropagation, QFrame):
 
     def on_classifier_changed(self, checked=None):
         """切换分类方式时启用/禁用 Jev 服务配置"""
-        jev_selected = self.jev_radio.isChecked()
+        jev_selected = self.jev_radio.isChecked() or self.hybrid_radio.isChecked()
         self.jev_card.setEnabled(jev_selected)
         self.update_warning()
 
@@ -3394,7 +3402,7 @@ class MessageClassificationInterface(NoHeightForWidthPropagation, QFrame):
 
     def update_warning(self, text=None):
         """Jev 已选中但缺少 API Key 时给出提示（启动后会回退到内置规则）"""
-        if not self.jev_radio.isChecked():
+        if not (self.jev_radio.isChecked() or self.hybrid_radio.isChecked()):
             self.warning_label.setVisible(False)
             return
 
@@ -3424,6 +3432,7 @@ class MessageClassificationInterface(NoHeightForWidthPropagation, QFrame):
         return MessageClassificationConfig(
             classifier=(
                 MessageClassifierType.JEV if self.jev_radio.isChecked()
+                else MessageClassifierType.HYBRID if self.hybrid_radio.isChecked()
                 else MessageClassifierType.RULE
             ),
             provider=self.current_provider(),

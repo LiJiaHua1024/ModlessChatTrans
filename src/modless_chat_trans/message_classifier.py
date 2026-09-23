@@ -15,10 +15,11 @@
 
 """消息分类：判定一条聊天行是玩家消息还是服务器消息。
 
-两种模式（由配置 message-classification.classifier 决定）：
+三种模式（由配置 message-classification.classifier 决定）：
 
 - rule：内置规则（在 message_processor.rule_classify 中实现），不联网、零额外延迟
 - jev：由 Jev（TypeSafe 的 System One 决策模型）判定，调用失败或超时自动回退规则
+- hybrid：先用宽松格式规则排除明显的系统消息，其余交给 Jev 判定
 
 Jev 的接口是「一次请求、多个独立问题」：整批聊天行各自作为一个 question 并行判定，
 因此一批消息只产生一次 HTTP 请求。问题用 noul（yes/no）形式，返回的玩家概率按阈值
@@ -144,7 +145,7 @@ def init_classifier(classification_config: Optional[MessageClassificationConfig]
             logger.info("[Classifier] 未提供消息分类配置，使用内置规则判定")
             return
 
-        if classification_config.classifier != MessageClassifierType.JEV:
+        if classification_config.classifier == MessageClassifierType.RULE:
             _jev_enabled = False
             logger.info("[Classifier] 消息分类方式：内置规则")
             return
@@ -167,7 +168,7 @@ def init_classifier(classification_config: Optional[MessageClassificationConfig]
 
         _jev_enabled = True
         logger.info(
-            f"[Classifier] 消息分类方式：Jev"
+            f"[Classifier] 消息分类方式：{'宽松预筛 + Jev' if classification_config.classifier == MessageClassifierType.HYBRID else 'Jev'}"
             f"（服务商 {provider.value}，模型 {resolve_model() or '?'}，"
             f"端点 {resolve_endpoint() or '?'}，"
             f"超时 {_request_timeout()}s）"
@@ -216,7 +217,7 @@ def classify_lines(chat_texts: Sequence[str]) -> List[bool]:
     :return: 与 chat_texts 等长的布尔列表，True 表示玩家消息
 
     Jev 判定失败时，失败的那一行（或整批）自动回退到内置规则。
-    启用 Jev 时先查磁盘缓存，只有未命中的行才会发起请求。
+    混合模式先排除缺少玩家消息基本格式的行，再查缓存并请求 Jev。
     """
     if not chat_texts:
         return []
@@ -225,7 +226,22 @@ def classify_lines(chat_texts: Sequence[str]) -> List[bool]:
         _resume_if_paused()
         verdicts: List[Optional[bool]] = [None] * len(chat_texts)
         if is_jev_enabled():
-            _classify_with_cache(chat_texts, verdicts)
+            if _config.classifier == MessageClassifierType.HYBRID:
+                candidate_positions = []
+                for index, text in enumerate(chat_texts):
+                    if _may_be_player_message(text):
+                        candidate_positions.append(index)
+                    else:
+                        verdicts[index] = False
+                candidate_verdicts: List[Optional[bool]] = [None] * len(candidate_positions)
+                if candidate_positions:
+                    _classify_with_cache(
+                        [chat_texts[index] for index in candidate_positions], candidate_verdicts
+                    )
+                for index, verdict in zip(candidate_positions, candidate_verdicts):
+                    verdicts[index] = verdict
+            else:
+                _classify_with_cache(chat_texts, verdicts)
         results = [
             rule_classify(text) if verdict is None else verdict
             for text, verdict in zip(chat_texts, verdicts)
@@ -234,6 +250,14 @@ def classify_lines(chat_texts: Sequence[str]) -> List[bool]:
             _remember_lines(chat_texts)
 
     return results
+
+
+def _may_be_player_message(text: str) -> bool:
+    """宽松预筛：保留带冒号或成对尖括号的行，供 Jev 判断。"""
+    if ":" in text:
+        return True
+    left = text.find("<")
+    return left >= 0 and text.find(">", left + 1) >= 0
 
 
 def _cache_key(text: str) -> str:
