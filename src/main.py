@@ -193,7 +193,10 @@ def start_translation(config):
 
             is_error, translated, info = processed_message
             if not is_error and translated:
-                modify_clipboard(translated)
+                if not modify_clipboard(translated):
+                    return finish_error(
+                        _("翻译完成，但复制到剪切板失败，请手动复制：") + "\n" + translated, info
+                    )
                 duration = time.time() - start_time
                 info = dict(info) if isinstance(info, dict) else {}
                 info["send_translation_complete"] = True
@@ -227,13 +230,18 @@ def start_translation(config):
     else:
         send_translator = player_translator
 
-    start_httpserver_thread(
-        http_port=config.message_presentation.web_port,
-        callback=lambda data, data_type="webui", rage_mode=False: callback(
-            data, time.time(), slot_id=allocate_slot(name="[INFO]", arrival_time=time.time()), data_type=data_type, rage_mode=rage_mode
-        ),
-        tts_engine=tts_engine
-    )
+    try:
+        start_httpserver_thread(
+            http_port=config.message_presentation.web_port,
+            callback=lambda data, data_type="webui", rage_mode=False: callback(
+                data, time.time(), slot_id=allocate_slot(name="[INFO]", arrival_time=time.time()), data_type=data_type, rage_mode=rage_mode
+            ),
+            tts_engine=tts_engine,
+            target_language=config.message_capture.target_language,
+        )
+    except Exception:
+        tts_engine.stop()
+        raise
 
     init_processor(
         config.message_capture,
@@ -289,6 +297,7 @@ def run_scheduled_update_check(update_check_func, cfg):
     now = datetime.now()
     luct_date = datetime.fromisoformat(luct)
     if (
+            acuf == "startup" or
             (acuf == "daily" and now.date() > luct_date.date()) or
             (acuf == "weekly" and (now - luct_date).days >= 7) or
             (acuf == "monthly" and (now - luct_date).days >= 30)

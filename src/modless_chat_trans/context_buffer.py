@@ -14,6 +14,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import re
+import threading
+import time
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, time as dt_time
@@ -116,6 +118,7 @@ class ContextBuffer:
             self._history: deque[ContextEntry] = deque()          # 无限制
 
         self._last_timestamp: Optional[float] = None
+        self._lock = threading.RLock()
 
     # ------------------------------------------------------------------
     # 内部辅助
@@ -158,6 +161,19 @@ class ContextBuffer:
     # ------------------------------------------------------------------
 
     def push(self, entry: ContextEntry) -> None:
+        with self._lock:
+            self._push(entry)
+
+    def snapshot_and_push(self, entry: ContextEntry) -> list[dict]:
+        """取得当前消息之前的历史，再原子地写入当前消息。"""
+        with self._lock:
+            if self.should_reset(entry.timestamp):
+                self.clear()
+            history = self.get_context_messages()
+            self._push(entry)
+            return history
+
+    def _push(self, entry: ContextEntry) -> None:
         """
         添加一条已翻译记录。
         如果 strategy == "disabled" 则无操作。
@@ -179,9 +195,10 @@ class ContextBuffer:
         self._history.append(entry)
         self._last_timestamp = entry.timestamp
 
-        # 分块截断：达到阈值时一次性剔除开头 block_size 条
-        if self._use_block_truncation and len(self._history) >= self.context_length:
-            del self._history[:self._block_size]
+        # 分块截断：超过阈值时一次性剔除开头 block_size 条；
+        # 任何配置下都至少保留一条，避免 context_length=1 被截空
+        if self._use_block_truncation and len(self._history) > self.context_length:
+            del self._history[:min(self._block_size, len(self._history) - 1)]
 
     # ------------------------------------------------------------------
     # 读取
@@ -194,12 +211,22 @@ class ContextBuffer:
         无历史时返回空列表。
 
         注意：此返回值会被 translator 注入到 user message 中。
+        发送端读取时也按当前时间检查过期，避免聊天停止很久后仍用旧上下文。
         """
-        if self.strategy == "disabled" or not self._history:
+        with self._lock:
+            if self.should_reset(time.time()):
+                logger.debug(
+                    f"[ContextBuffer] Context expired before read "
+                    f"({time.time() - (self._last_timestamp or 0):.1f}s > "
+                    f"{self.context_timeout}s), clearing."
+                )
+                self.clear()
+            history = list(self._history)
+        if self.strategy == "disabled" or not history:
             return []
 
         lines = []
-        for entry in self._history:
+        for entry in history:
             time_str = datetime.fromtimestamp(entry.timestamp).strftime("%H:%M")
             name = entry.player_name if entry.player_name else "[SYSTEM]"
             lines.append(f"{time_str} | [{name}] {entry.original}")
@@ -226,8 +253,9 @@ class ContextBuffer:
 
     def clear(self) -> None:
         """清空上下文缓冲区"""
-        self._history.clear()
-        self._last_timestamp = None
+        with self._lock:
+            self._history.clear()
+            self._last_timestamp = None
 
     def __len__(self) -> int:
         return len(self._history)

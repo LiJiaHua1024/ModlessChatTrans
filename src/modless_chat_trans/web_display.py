@@ -15,10 +15,12 @@
 
 import time
 import json
+import socket
 import threading
 from collections import deque
 from itertools import count
 from flask import Flask, render_template, Response, request, jsonify
+from werkzeug.serving import make_server
 from datetime import datetime
 from modless_chat_trans.i18n import _
 from modless_chat_trans.file_utils import get_path
@@ -31,27 +33,71 @@ message_id_counter = count(1)
 MAX_HTTP_MESSAGES = 2000
 PENDING_SLOT_TIMEOUT = 10.0
 clear_revision = 0
+cleared_through_id = 0
 sse_clients = []
 
 
+def clear_message_history():
+    """清空展示记录，并使此前分配的任务 ID 失效。"""
+    global clear_revision, cleared_through_id
+    with message_condition:
+        http_messages.clear()
+        messages_by_id.clear()
+        # ID 单调递增；保留一个边界 ID，区分清空与容量淘汰。
+        cleared_through_id = next(message_id_counter)
+        clear_revision += 1
+        message_condition.notify_all()
+
+
 def start_httpserver_thread(**kwargs):
-    """启动HTTP服务器线程"""
+    """先同步绑定端口，再启动服务线程，让启动失败传回调用方。"""
+    app = create_http_app(kwargs["callback"], kwargs.get("tts_engine"),
+                          kwargs.get("target_language", ""))
+    server = _bind_httpserver(kwargs["http_port"], app)
     try:
         server_thread = threading.Thread(
-            target=start_httpserver,
-            args=(kwargs["http_port"], kwargs["callback"], kwargs.get("tts_engine"))
+            target=server.serve_forever, daemon=True
         )
-        server_thread.daemon = True
         server_thread.start()
         logger.info(f"HTTP server thread started on port {kwargs['http_port']}")
+        return server
     except Exception as e:
+        server.server_close()
         logger.error(f"Failed to start HTTP server thread: {str(e)}")
-        raise e
+        raise
 
 
-def start_httpserver(port, callback, tts_engine=None):
+def _port_in_use(port, timeout=0.5):
+    """探测本机端口是否已有监听服务。
+
+    Windows 上 werkzeug 的 SO_REUSEADDR 允许与已占用端口静默双重绑定，
+    bind() 不会报错，端口冲突必须在绑定前显式探测。
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+        probe.settimeout(timeout)
+        return probe.connect_ex(('127.0.0.1', port)) == 0
+
+
+def _bind_httpserver(port, app):
+    if _port_in_use(port):
+        raise RuntimeError(
+            _("端口 {port} 已被其他程序占用，网页服务启动失败").format(port=port)
+        )
+    try:
+        return make_server('0.0.0.0', port, app, threaded=True)
+    except (OSError, SystemExit) as error:
+        # Werkzeug 的绑定失败可能抛出 SystemExit，必须转成可展示的启动错误。
+        raise RuntimeError(f"HTTP server could not bind port {port}: {error}") from error
+
+
+def start_httpserver(port, callback, tts_engine=None, target_language=""):
+    app = create_http_app(callback, tts_engine, target_language)
+    with _bind_httpserver(port, app) as server:
+        server.serve_forever()
+
+
+def create_http_app(callback, tts_engine=None, target_language=""):
     global http_messages, messages_by_id, message_id_counter, clear_revision, sse_clients
-    logger.info(f"Starting HTTP server on port {port}")
 
     try:
         template_dir = get_path("templates")
@@ -67,11 +113,7 @@ def start_httpserver(port, callback, tts_engine=None):
         logger.debug(f"Template folder set to: {template_dir}")
         logger.debug(f"Static folder set to: {static_dir}")
 
-        with message_condition:
-            http_messages.clear()
-            messages_by_id.clear()
-            message_id_counter = count(1)
-            clear_revision = 0
+        clear_message_history()
         sse_clients = []
 
         @flask_app.route('/')
@@ -107,12 +149,7 @@ def start_httpserver(port, callback, tts_engine=None):
         def clear_messages():
             global http_messages, messages_by_id, message_id_counter, clear_revision
             try:
-                with message_condition:
-                    http_messages.clear()
-                    messages_by_id.clear()
-                    message_id_counter = count(1)
-                    clear_revision += 1
-                    message_condition.notify_all()
+                clear_message_history()
                 logger.debug("Cleared all messages from server queue")
                 return jsonify({'success': True})
             except Exception as e:
@@ -129,8 +166,7 @@ def start_httpserver(port, callback, tts_engine=None):
                 if not text:
                     return jsonify({'success': False, 'error': 'Empty text'}), 400
                     
-                target_lang = getattr(tts_engine._config, 'target_language', '') # fallback if possible
-                tts_engine.interrupt_and_read(text, target_lang)
+                tts_engine.interrupt_and_read(text, target_language)
                 return jsonify({'success': True})
             except Exception as e:
                 logger.error(f"Error in /read-aloud: {str(e)}")
@@ -163,6 +199,7 @@ def start_httpserver(port, callback, tts_engine=None):
 
                 with message_condition:
                     current_clear_revision = clear_revision
+                    first_valid_id = cleared_through_id + 1
                     if http_messages:
                         lowest_available_id = http_messages[0]['id']
                     else:
@@ -172,12 +209,12 @@ def start_httpserver(port, callback, tts_engine=None):
                     if lowest_available_id is not None:
                         next_event_id = lowest_available_id
                     else:
-                        next_event_id = 1
+                        next_event_id = first_valid_id
                 else:
                     if lowest_available_id is not None and last_event_id + 1 < lowest_available_id:
                         next_event_id = lowest_available_id
                     else:
-                        next_event_id = last_event_id + 1
+                        next_event_id = max(last_event_id + 1, first_valid_id)
 
                 try:
                     while True:
@@ -189,7 +226,7 @@ def start_httpserver(port, callback, tts_engine=None):
                             if clear_revision != current_clear_revision:
                                 current_clear_revision = clear_revision
                                 send_clear_signal = True
-                                next_event_id = http_messages[0]['id'] if http_messages else 1
+                                next_event_id = http_messages[0]['id'] if http_messages else cleared_through_id + 1
 
                             while True:
                                 if http_messages and next_event_id < http_messages[0]['id']:
@@ -274,10 +311,10 @@ def start_httpserver(port, callback, tts_engine=None):
             response.headers["Connection"] = "keep-alive"
             return response
 
-        logger.info(f"HTTP server starting on 0.0.0.0:{port}")
-        flask_app.run(debug=False, host='0.0.0.0', port=port)
+        return flask_app
     except Exception as e:
         logger.error(f"Failed to start HTTP server: {str(e)}")
+        raise
 
 
 def display_message(name, message, info, duration=None, original=None):
@@ -303,9 +340,7 @@ def display_message(name, message, info, duration=None, original=None):
     try:
         current_time = datetime.now().strftime("%H:%M")
         info_payload = dict(info) if isinstance(info, dict) else {}
-        message_id = next(message_id_counter)
         message_record = {
-            "id": message_id,
             "name": name,
             "message": message,
             "time": current_time,
@@ -315,6 +350,8 @@ def display_message(name, message, info, duration=None, original=None):
         }
 
         with message_condition:
+            message_id = next(message_id_counter)
+            message_record['id'] = message_id
             http_messages.append(message_record)
             messages_by_id[message_id] = message_record
 
@@ -340,10 +377,8 @@ def allocate_slot(name="", arrival_time=None):
     global http_messages, messages_by_id, message_id_counter
 
     current_time = datetime.now().strftime("%H:%M")
-    message_id = next(message_id_counter)
 
     record = {
-        "id": message_id,
         "name": name,
         "message": None,
         "time": current_time,
@@ -354,6 +389,8 @@ def allocate_slot(name="", arrival_time=None):
     }
 
     with message_condition:
+        message_id = next(message_id_counter)
+        record['id'] = message_id
         http_messages.append(record)
         messages_by_id[message_id] = record
 
@@ -369,7 +406,7 @@ def allocate_slot(name="", arrival_time=None):
 
 def fill_slot(message_id: int, name: str, message: str, info: dict, duration=None, original=None):
     """
-    填充已预分配的 slot。若 slot 已被淘汰则降级为 display_message。
+    填充已预分配的 slot。清空前的任务被丢弃，容量淘汰的任务追加显示。
 
     :param message_id: allocate_slot() 返回的 id
     :param name: 发送者名
@@ -394,6 +431,9 @@ def fill_slot(message_id: int, name: str, message: str, info: dict, duration=Non
 
     late_result = False
     with message_condition:
+        if message_id <= cleared_through_id:
+            logger.debug(f"Ignoring cleared message slot: id={message_id}")
+            return
         record = messages_by_id.get(message_id)
         if record is None:
             logger.warning(f"fill_slot: id={message_id} not found, falling back to display_message")
@@ -411,8 +451,9 @@ def fill_slot(message_id: int, name: str, message: str, info: dict, duration=Non
             record["original"] = original
             message_condition.notify_all()
 
-    if late_result:
-        display_message(name, message, info, duration, original)
-        return
+        if late_result:
+            # 与清空操作保持原子性，避免检查后清空、随后又追加旧结果。
+            display_message(name, message, info, duration, original)
+            return
 
     logger.debug(f"Slot filled: id={message_id} name={name or 'System'} msg={message[:30] if message else ''}")

@@ -823,11 +823,6 @@ function initializeEventSource() {
         var usage = jsonData.usage;
         var original = jsonData.original;
 
-        if (isTranslating && jsonData.send_translation_complete) {
-            setTimeout(resetTranslationUI, 500);
-        }
-
-
         // 检查是否为可合并的消息类型（System, Error, Info）
         var currentType = !name ? 'system' : (name === "[ERROR]" ? 'error' : (name === "[INFO]" ? 'info' : 'user'));
 
@@ -866,6 +861,11 @@ function initializeEventSource() {
             var prevMessage = foldingGroup.messages[foldingGroup.messages.length - 1];
 
             if (shouldFoldMessages(currentType, foldingGroup.type, messageText, prevMessage.message)) {
+                // 折叠后由分组维护消息；旧单条 DOM 不能继续接收重复计数。
+                lastUserMessageText = null;
+                lastUserMessageElement = null;
+                lastMergeableMessageText = null;
+                lastMergeableMessageElement = null;
                 // If this is the first fold (elements not created yet), convert single message to group
                 if (!foldingGroup.elements) {
                     // Create folding group wrapper
@@ -1118,6 +1118,7 @@ var messageInput = document.getElementById("message-input");
 var sendButton = document.getElementById("send-button");
 var translationIndicator = document.querySelector(".translation-indicator");
 var isTranslating = false;
+var translationRequestId = 0;
 var isRageMode = false;
 var previousThemeHref = '';
 
@@ -1126,6 +1127,7 @@ function sendMessage() {
     if (message === "" || isTranslating) return;
 
     isTranslating = true;
+    var requestId = ++translationRequestId;
     messageInput.disabled = true;
     sendButton.disabled = true;
     translationIndicator.classList.add("active");
@@ -1136,7 +1138,7 @@ function sendMessage() {
     // 后端翻译任务有 10 秒硬上限，给 HTTP/SSE 传播留出少量余量。
     translationTimeoutId = setTimeout(function() {
         if (isTranslating) {
-            resetTranslationUI();
+            resetTranslationUI(requestId);
         }
     }, 15000);
 
@@ -1162,17 +1164,19 @@ function sendMessage() {
             console.log("收到翻译:", data.translated);
         }
         // HTTP 请求在服务端完成后才返回；成功和失败都必须解除发送锁定。
-        resetTranslationUI();
+        resetTranslationUI(requestId);
     })
     .catch(function(error) {
         console.error("发送翻译请求失败:", error);
-        resetTranslationUI();
+        resetTranslationUI(requestId);
     });
 
     messageInput.value = "";
 }
 
-function resetTranslationUI() {
+function resetTranslationUI(requestId) {
+    // 超时后的旧 HTTP 响应不能结束后续请求。
+    if (requestId !== translationRequestId) return;
     if (translationTimeoutId) {
         clearTimeout(translationTimeoutId);
         translationTimeoutId = null;

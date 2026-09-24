@@ -15,7 +15,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: templates/index.html:8
 msgid "消息翻译结果"
@@ -29,7 +29,7 @@ msgstr ""
 msgid "输入消息..."
 msgstr ""
 
-#: main.py:201 main.py:205
+#: main.py:204 main.py:208
 msgid "要发送的消息翻译完成，翻译结果已复制到剪切板"
 msgstr ""
 
@@ -490,7 +490,7 @@ msgstr ""
 msgid "最新版本："
 msgstr ""
 
-#: modless_chat_trans/log_monitor.py:220 modless_chat_trans/webui/server.py:82
+#: modless_chat_trans/log_monitor.py:215 modless_chat_trans/webui/server.py:82
 msgid "未知"
 msgstr ""
 
@@ -761,29 +761,29 @@ msgstr ""
 msgid "获取支持语言失败 ({service_id}): {error_msg}"
 msgstr ""
 
-#: modless_chat_trans/message_processor.py:419
+#: modless_chat_trans/message_processor.py:394
 msgid "翻译失败：请求次数过多，请稍后重试。"
 msgstr ""
 
-#: modless_chat_trans/message_processor.py:421
+#: modless_chat_trans/message_processor.py:396
 msgid "翻译失败：服务器错误，请稍后重试。"
 msgstr ""
 
-#: modless_chat_trans/message_processor.py:423
+#: modless_chat_trans/message_processor.py:398
 msgid "翻译失败：发生HTTP错误。"
 msgstr ""
 
-#: modless_chat_trans/message_processor.py:425
+#: modless_chat_trans/message_processor.py:400
 msgid "翻译失败：网络问题或发生HTTP错误。"
 msgstr ""
 
-#: modless_chat_trans/message_processor.py:411
-#: modless_chat_trans/message_processor.py:414
-#: modless_chat_trans/message_processor.py:427
+#: modless_chat_trans/message_processor.py:386
+#: modless_chat_trans/message_processor.py:389
+#: modless_chat_trans/message_processor.py:402
 msgid "翻译失败：服务器响应无效，请检查网络连接。"
 msgstr ""
 
-#: main.py:189 modless_chat_trans/message_processor.py:429
+#: main.py:189 modless_chat_trans/message_processor.py:404
 msgid "翻译失败，错误："
 msgstr ""
 
@@ -1267,7 +1267,7 @@ msgstr ""
 msgid "朗读"
 msgstr ""
 
-#: main.py:192 main.py:212 modless_chat_trans/webui/server.py:789
+#: main.py:192 main.py:215 modless_chat_trans/webui/server.py:789
 msgid "翻译失败，未生成翻译结果。"
 msgstr ""
 
@@ -1382,12 +1382,21 @@ msgstr ""
 msgid "已清除 {} 条 Pre-TTS 音频"
 msgstr ""
 
-#: modless_chat_trans/web_display.py:209
+#: modless_chat_trans/web_display.py:246
 msgid "翻译超时，请稍后重试。"
 msgstr ""
 
 #: modless_chat_trans/webui/server.py:137
 msgid "最大输出Token数："
+msgstr ""
+
+#: main.py:198
+msgid "翻译完成，但复制到剪切板失败，请手动复制："
+msgstr ""
+
+#: modless_chat_trans/web_display.py:84
+#, python-brace-format
+msgid "端口 {port} 已被其他程序占用，网页服务启动失败"
 msgstr ""
 
 #: modless_chat_trans/webui/server.py:77

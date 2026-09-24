@@ -32,6 +32,18 @@ base_path = os.path.dirname(os.path.dirname(__file__))
 CACHE_DIR = "mct-cache"
 cache = Cache(CACHE_DIR, eviction_policy="least-frequently-used")
 
+
+def remove_legacy_translation_entries(translation_cache: Cache) -> int:
+    """旧字符串键缺少目标语言，无法迁移；只清理根缓存中的旧译文。"""
+    removed = 0
+    for key in translation_cache.iterkeys():
+        if isinstance(key, str):
+            removed += translation_cache.delete(key)
+    return removed
+
+
+remove_legacy_translation_entries(cache)
+
 # Pre-TTS 音频缓存：懒创建，仅当手动触发 Pre-TTS 时才建立目录。
 # 固定 4 MB 限额，LRU 驱逐（新写入的条目最安全，长期未播放的旧音频先被淘汰）。
 _PRE_TTS_SIZE_LIMIT = 4 * 1024 * 1024
@@ -141,8 +153,8 @@ def prune_stale_cache(*, dry_run: bool = False) -> tuple[int, int]:
         (stale_count, total): dry_run 模式返回待清理数和总数；
                               实际删除后返回已清理数和清理前总数。
     """
-    rows = cache._sql('SELECT key FROM Cache WHERE access_count = 0')
-    stale_keys = [row[0] for row in rows]
+    rows = cache._sql('SELECT key, raw FROM Cache WHERE access_count = 0')
+    stale_keys = [cache.disk.get(key, raw) for key, raw in rows]
 
     if dry_run or not stale_keys:
         total = len(cache)

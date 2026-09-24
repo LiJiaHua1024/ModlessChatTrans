@@ -1545,3 +1545,13 @@ msgstr "他の互換 API を使用する場合は、そのサービスの API �
 #: modless_chat_trans/interface.py:3414
 msgid "未填写 Cloudflare 账号 ID：启动后将回退到内置规则判定。"
 msgstr "Cloudflare のアカウント ID が未入力です：起動後は組み込みルール判定にフォールバックします。"
+
+#: main.py:213
+msgid "翻译完成，但复制到剪切板失败，请手动复制："
+msgstr "翻訳は完了しましたが、クリップボードへのコピーに失敗しました。手動でコピーしてください："
+
+#: modless_chat_trans/web_display.py:84
+#, python-brace-format
+msgid "端口 {port} 已被其他程序占用，网页服务启动失败"
+msgstr "ポート {port} は他のプログラムによって既に使用されているため、Web サービスの起動に失敗しました"
+
