@@ -28,6 +28,7 @@ from modless_chat_trans.logger import logger
 from modless_chat_trans.config import ServiceType, FallbackStrategy
 # 内置轻量 LLM 网关（litellm.completion 兼容子集，模块本身很轻，直接导入）
 from modless_chat_trans import llm_gateway as litellm
+from modless_chat_trans.glossary_patterns import VARIABLE_PATTERN
 
 
 def _http():
@@ -57,8 +58,27 @@ MESSAGE_TYPE_MODES: Dict[MessageType, Set[TranslationMode]] = {
     MessageType.SEND: {TranslationMode.NORMAL, TranslationMode.DEEP, TranslationMode.RAGE},
 }
 
-_OPENROUTER_NATIVE_SUFFIXES = frozenset({"nitro", "floor"})
-_OPENROUTER_SORT_KEYWORDS = frozenset({"price", "throughput", "latency"})
+_OPENROUTER_NATIVE_SUFFIXES = frozenset({
+    "free", "nitro", "floor", "exacto", "online", "extended", "thinking",
+})
+_OPENROUTER_SUFFIX_ALIASES = {"price": "floor", "throughput": "nitro"}
+
+
+def _openrouter_model_options(model: str) -> tuple[str, dict | None]:
+    """保留官方模型变体，提取末尾的自定义 Provider 或延迟排序。"""
+    if ":" not in model:
+        return model, None
+    base_model, suffix = model.rsplit(":", 1)
+    suffix = suffix.strip()
+    lowered = suffix.lower()
+    if lowered in _OPENROUTER_NATIVE_SUFFIXES:
+        return model, None
+    if lowered in _OPENROUTER_SUFFIX_ALIASES:
+        return base_model + ":" + _OPENROUTER_SUFFIX_ALIASES[lowered], None
+    if lowered == "latency":
+        return base_model, {"provider": {"sort": "latency"}}
+    order = [item.strip() for item in suffix.split(",") if item.strip()]
+    return (base_model, {"provider": {"order": order}}) if order else (model, None)
 
 # 新增支持的 LLM 服务商
 LLM_PROVIDERS_PREFIXES = {
@@ -260,7 +280,7 @@ class Translator:
         # 单个请求和整条翻译链路都不能超过 10 秒；备用策略会在此预算内分配时间。
         self.timeout = self.MAX_TRANSLATION_SECONDS
         self.translation_deadline = self.MAX_TRANSLATION_SECONDS
-        self._variable_pattern = re.compile(r"\{\{([a-zA-Z0-9_-]+)(?::[^}]+)?\}\}")
+        self._variable_pattern = VARIABLE_PATTERN
         self._literal_glossary = {
             k: v for k, v in self.glossary.items()
             if not self._variable_pattern.search(str(k))
@@ -299,9 +319,12 @@ class Translator:
         :param context_messages: 历史上下文（单条汇总 user 消息，将嵌入 user prompt），为 None/[] 则退化为无上下文
         """
         context_messages = context_messages or []
+        llm_config = self.translation_service_config.llm
+        mode = (TranslationMode.DEEP if llm_config and llm_config.deep_translate
+                else TranslationMode.NORMAL)
         return self._dispatch_translation(
             text, source_language, target_language,
-            mode=TranslationMode.NORMAL,
+            mode=mode,
             message_type=message_type,
             context_messages=context_messages,
         )
@@ -436,6 +459,14 @@ class Translator:
         context_messages = context_messages or []
         # 选择有效的 LLM 配置（备用模型配置或主模型配置）
         llm_cfg = llm_config_override or self.translation_service_config.llm
+        # 备用模型有独立的深度翻译开关；红温模式不受该开关影响。
+        if llm_config_override is not None and include_terms:
+            mode = self._get_effective_mode(
+                TranslationMode.DEEP if llm_cfg.deep_translate else TranslationMode.NORMAL,
+                message_type,
+            )
+            system_prompt = self._build_system_prompt(mode, message_type, bool(context_messages))
+            expect_json = mode == TranslationMode.DEEP
         if source_language.lower() == "auto":
             source_language = ""
 
@@ -480,30 +511,9 @@ class Translator:
             # 针对部分 provider 做模型名前缀映射，保持与旧版调用兼容
             provider = provider or "OpenAI"
 
-            # ── OpenRouter 扩展 Model ID 语法解析 ──────────────────────────
-            # 官方原生后缀: :nitro, :floor -> 保持原样，由 OpenRouter 自行处理
-            # 扩展排序后缀: :price, :throughput, :latency -> 通过 extra_body 传递 provider.sort
-            # 自定义 Provider: :amazon-bedrock 或 :amazon-bedrock,google-vertex -> 通过 extra_body 传递 provider.order
-
             extra_body = None
-
-            if provider == "OpenRouter" and ":" in model:
-                base_model, suffix = model.split(":", 1)
-                suffix_stripped = suffix.strip()
-                suffix_lower = suffix_stripped.lower()
-
-                if suffix_lower in _OPENROUTER_NATIVE_SUFFIXES:
-                    # 官方原生后缀，保持 model 不变，无需额外处理
-                    pass
-                elif suffix_lower in _OPENROUTER_SORT_KEYWORDS:
-                    # 扩展排序语法 -> provider.sort
-                    model = base_model
-                    extra_body = {"provider": {"sort": suffix_lower}}
-                else:
-                    # 自定义 Provider 指定（支持逗号分隔多个）-> provider.order
-                    model = base_model
-                    provider_order = [s for p in suffix_stripped.split(",") if (s := p.strip())]
-                    extra_body = {"provider": {"order": provider_order}}
+            if provider == "OpenRouter":
+                model, extra_body = _openrouter_model_options(model)
 
             # Gemini 3 系列是原生思考模型，思考无法关闭且默认消耗大量输出 token
             # 显式降级 reasoning 到 low effort，避免译文被思考 token 截断。

@@ -15,10 +15,14 @@
 
 import os
 import json
-import tomllib
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python < 3.11
+    import tomli as tomllib
 
 import tomli_w
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError, model_validator

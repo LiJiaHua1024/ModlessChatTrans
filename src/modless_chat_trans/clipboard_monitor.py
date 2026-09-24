@@ -73,15 +73,17 @@ def monitor_clipboard(callback):
             time.sleep(1)  # Longer delay after error
 
 
-def modify_clipboard(data):
+def modify_clipboard(data) -> bool:
     if not CLIPBOARD_AVAILABLE:
         logger.warning("[Clipboard] pyperclip not available, cannot modify clipboard")
-        return
+        return False
     logger.debug(f"Modifying clipboard with new content (length: {len(data)})")
     global previous_clipboard_content
     try:
         pyperclip.copy(data)
         previous_clipboard_content = data
         logger.debug("Clipboard content updated successfully")
+        return True
     except Exception as e:
         logger.error(f"Failed to modify clipboard: {str(e)}")
+        return False

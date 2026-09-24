@@ -146,7 +146,7 @@ class OrderedProcessor:
             # 放在这里是为了让一批消息只产生一次 HTTP 请求。
             verdicts = classify_lines([chat_text for _, _, chat_text in chat_lines])
 
-            items = []  # [(prepared, slot_id, log_time)]
+            items = []  # [(prepared, slot_id, context_messages)]
             for (line, arrival_time, _chat_text), is_player in zip(chat_lines, verdicts):
                 # prepare（解析+过滤，极快）
                 prepared = prepare(line, "log", self._replace_garbled_chars, is_player=is_player)
@@ -161,10 +161,10 @@ class OrderedProcessor:
                 try:
                     log_time = extract_log_time(line, arrival_time)
 
-                    # 立即 push 原文到 context_buffer（翻译前）
-                    # 这样后续消息的 context_messages 就能看到这条原文
-                    if self._context_buffer:
-                        self._context_buffer.push(ContextEntry(
+                    # 顺序取得历史快照，避免包含当前消息或并发到达的后续消息。
+                    ctx_messages = []
+                    if self._context_buffer is not None:
+                        ctx_messages = self._context_buffer.snapshot_and_push(ContextEntry(
                             original=prepared.original,
                             timestamp=log_time,
                             player_name=prepared.name or "",
@@ -174,19 +174,19 @@ class OrderedProcessor:
                     fill_slot(slot_id, "[ERROR]", f"翻译失败，错误： {error}", {}, original=prepared.original)
                     continue
 
-                items.append((prepared, slot_id, log_time))
+                items.append((prepared, slot_id, ctx_messages))
 
             if not items:
                 continue
 
             # ========== 阶段2：多线程 translate + fill_slot ==========
-            for prepared, slot_id, log_time in items:
+            for prepared, slot_id, ctx_messages in items:
                 self._executor.submit(
                     self._translate_and_fill,
-                    prepared, slot_id, log_time,
+                    prepared, slot_id, ctx_messages,
                 )
 
-    def _translate_and_fill(self, prepared, slot_id, log_time):
+    def _translate_and_fill(self, prepared, slot_id, ctx_messages):
         """在线程池中执行：翻译 + fill_slot + TTS"""
         from modless_chat_trans.web_display import fill_slot
         from modless_chat_trans.message_processor import MessageType, translate_prepared
@@ -195,11 +195,6 @@ class OrderedProcessor:
 
         # 重试/备用模型策略由 Translator 统一处理，避免调用层重复放大请求次数。
         try:
-            # 获取上下文（此时 context_buffer 已包含所有 prepare 阶段 push 的原文）
-            ctx_messages = []
-            if self._context_buffer:
-                ctx_messages = self._context_buffer.get_context_messages()
-
             name, translated, info = translate_prepared(
                 prepared,
                 translator=self._translator,
@@ -339,6 +334,46 @@ def _sniff_encoding(file_path: str, sample_size: int = 262144) -> str:
 # 高效模式（watchdog 事件驱动）
 # ------------------------------
 
+def _file_state_changed(identity, previous_size, stat_result):
+    """两种监控模式共用的文件替换/截断判断。"""
+    return (
+        identity != (stat_result.st_dev, stat_result.st_ino)
+        or stat_result.st_size < previous_size
+    )
+
+
+def _open_log(path, encoding, errors):
+    """Windows 读取句柄允许游戏删除/替换日志，其他平台使用普通 open。"""
+    if os.name != "nt":
+        return open(path, "r", encoding=encoding, errors=errors)
+
+    import ctypes
+    import msvcrt
+    from ctypes import wintypes
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    create_file = kernel32.CreateFileW
+    create_file.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+                           ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+    create_file.restype = wintypes.HANDLE
+    close_handle = kernel32.CloseHandle
+    close_handle.argtypes = [wintypes.HANDLE]
+    close_handle.restype = wintypes.BOOL
+
+    def opener(filename, flags):
+        # GENERIC_READ; FILE_SHARE_READ | WRITE | DELETE; OPEN_EXISTING.
+        handle = create_file(filename, 0x80000000, 0x7, None, 3, 0x80, None)
+        if handle == wintypes.HANDLE(-1).value:
+            raise ctypes.WinError(ctypes.get_last_error())
+        try:
+            return msvcrt.open_osfhandle(handle, os.O_RDONLY | os.O_BINARY)
+        except Exception:
+            close_handle(handle)
+            raise
+
+    return open(path, "r", encoding=encoding, errors=errors, opener=opener)
+
+
 class EfficientLogMonitor(FileSystemEventHandler):
     """
     事件驱动监控：适合能触发文件修改事件的环境
@@ -367,6 +402,8 @@ class EfficientLogMonitor(FileSystemEventHandler):
 
         self.fp = None
         self.line_count = 0
+        self.current_identity = None
+        self.last_size = 0
 
         self._resolve_initial_file()
         self._open_file(start_at_end=True)
@@ -394,7 +431,7 @@ class EfficientLogMonitor(FileSystemEventHandler):
         self.decided_encoding = enc
         return enc, "strict"
 
-    def _open_file(self, start_at_end: bool):
+    def _open_file(self, start_at_end: bool, retry: bool = True):
         if self.fp:
             try:
                 self.fp.close()
@@ -405,17 +442,28 @@ class EfficientLogMonitor(FileSystemEventHandler):
         try:
             enc, errors = self._decide_open_params(self.current_file)
             self.errors_mode = errors
-            self.fp = open(self.current_file, "r", encoding=enc, errors=errors)
+            self.fp = _open_log(self.current_file, encoding=enc, errors=errors)
             if start_at_end:
                 self.fp.seek(0, os.SEEK_END)
+            stat_result = os.fstat(self.fp.fileno())
+            self.current_identity = (stat_result.st_dev, stat_result.st_ino)
+            self.last_size = stat_result.st_size
             self.line_count = 0
             logger.info(f"[Efficient] Opened {self.current_file} with encoding={enc}, errors={errors}")
         except (FileNotFoundError, PermissionError) as e:
+            if not retry:
+                self.close()
+                logger.debug(f"[Efficient] File temporarily unavailable: {e}")
+                return
             logger.warning(f"[Efficient] Cannot open {self.current_file}: {e}. Retry in 2s...")
             time.sleep(2)
             self._resolve_initial_file()
             self._open_file(start_at_end=start_at_end)
         except Exception as e:
+            if not retry:
+                self.close()
+                logger.warning(f"[Efficient] Cannot reopen log: {e}")
+                return
             logger.exception(f"[Efficient] Unexpected error opening {self.current_file}: {e}")
             time.sleep(2)
             self._open_file(start_at_end=start_at_end)
@@ -436,12 +484,12 @@ class EfficientLogMonitor(FileSystemEventHandler):
             try:
                 if self.fp:
                     self.fp.close()
-                self.fp = open(self.current_file, "r", encoding=target, errors="strict")
+                self.fp = _open_log(self.current_file, encoding=target, errors="strict")
                 self.fp.seek(0, os.SEEK_END)  # 跳过问题行，继续追新
                 self.errors_mode = "strict"
             except Exception as e:
                 logger.warning(f"[Efficient] Failed to switch to {target}: {e}. Using replace fallback.")
-                self.fp = open(self.current_file, "r", encoding=target, errors="replace")
+                self.fp = _open_log(self.current_file, encoding=target, errors="replace")
                 self.fp.seek(0, os.SEEK_END)
                 self.errors_mode = "replace"
         else:
@@ -450,23 +498,35 @@ class EfficientLogMonitor(FileSystemEventHandler):
             try:
                 if self.fp:
                     self.fp.close()
-                self.fp = open(self.current_file, "r", encoding=target, errors="replace")
+                self.fp = _open_log(self.current_file, encoding=target, errors="replace")
                 self.fp.seek(0, os.SEEK_END)
                 self.errors_mode = "replace"
             except Exception as e:
                 logger.error(f"[Efficient] Fallback replace failed: {e}")
 
     def _read_new_lines(self):
-        if not self.fp:
-            logger.warning("[Efficient] File pointer is None; cannot read.")
-            return
         try:
-            for line in self.fp:
+            stat_result = os.stat(self.current_file)
+        except (FileNotFoundError, PermissionError):
+            self.close()
+            return
+        if self.fp is None or _file_state_changed(
+                self.current_identity, self.last_size, stat_result):
+            self._open_file(start_at_end=False, retry=False)
+        if self.fp is None:
+            return
+        self.last_size = stat_result.st_size
+        try:
+            while True:
+                line = self.fp.readline()
+                if not line:
+                    break
                 if "[CHAT]" not in line:
                     continue
                 self.line_count += 1
                 arrival_time = time.time()
                 self._queue.put((line, arrival_time))
+            self.last_size = max(self.last_size, self.fp.tell())
         except UnicodeDecodeError:
             self._switch_encoding_after_error()
         except Exception as e:
@@ -481,18 +541,31 @@ class EfficientLogMonitor(FileSystemEventHandler):
             logger.debug(f"[Efficient] on_modified exception: {e}")
 
     def on_created(self, event):
-        # 跟随最新 .log
-        if not self.follow_latest:
-            return
+        self._handle_created_path(event.src_path)
+
+    def _handle_created_path(self, path):
         try:
-            if event.src_path.endswith(".log"):
-                latest = find_latest_log(self.base_dir) or event.src_path
+            if self.follow_latest and path.endswith(".log"):
+                latest = find_latest_log(self.base_dir) or path
                 if latest and os.path.abspath(latest) != os.path.abspath(self.current_file):
                     logger.info(f"[Efficient] Newer log detected: {latest}. Switching.")
+                    self.close()
                     self.current_file = latest
-                    self._open_file(start_at_end=False)
+                self._read_new_lines()
+            elif os.path.abspath(path) == os.path.abspath(self.current_file):
+                self._read_new_lines()
         except Exception as e:
             logger.debug(f"[Efficient] on_created exception: {e}")
+
+    def on_deleted(self, event):
+        if os.path.abspath(event.src_path) == os.path.abspath(self.current_file):
+            self.close()
+
+    def on_moved(self, event):
+        if os.path.abspath(event.src_path) == os.path.abspath(self.current_file):
+            self.close()
+            self._read_new_lines()
+        self._handle_created_path(event.dest_path)
 
     def close(self):
         """关闭资源：文件句柄"""
@@ -530,7 +603,7 @@ class CompatiblePollingMonitor:
 
         # 文件状态
         self.fp = None
-        self.current_inode = None
+        self.current_identity = None
         self.last_size = 0
         self._stop = False
 
@@ -563,11 +636,11 @@ class CompatiblePollingMonitor:
         try:
             enc, errors = self._decide_open_params(self.current_file)
             self.errors_mode = errors
-            self.fp = open(self.current_file, "r", encoding=enc, errors=errors)
+            self.fp = _open_log(self.current_file, encoding=enc, errors=errors)
             if start_at_end:
                 self.fp.seek(0, os.SEEK_END)
             st = os.stat(self.current_file)
-            self.current_inode = getattr(st, "st_ino", None)
+            self.current_identity = (st.st_dev, st.st_ino)
             self.last_size = st.st_size
             logger.info(f"[Compat] Opened {self.current_file} with encoding={enc}, errors={errors}")
         except (FileNotFoundError, PermissionError) as e:
@@ -594,12 +667,12 @@ class CompatiblePollingMonitor:
             try:
                 if self.fp:
                     self.fp.close()
-                self.fp = open(self.current_file, "r", encoding=target, errors="strict")
+                self.fp = _open_log(self.current_file, encoding=target, errors="strict")
                 self.fp.seek(0, os.SEEK_END)
                 self.errors_mode = "strict"
             except Exception as e:
                 logger.warning(f"[Compat] Failed to switch to {target}: {e}. Using replace fallback.")
-                self.fp = open(self.current_file, "r", encoding=target, errors="replace")
+                self.fp = _open_log(self.current_file, encoding=target, errors="replace")
                 self.fp.seek(0, os.SEEK_END)
                 self.errors_mode = "replace"
         else:
@@ -608,7 +681,7 @@ class CompatiblePollingMonitor:
             try:
                 if self.fp:
                     self.fp.close()
-                self.fp = open(self.current_file, "r", encoding=target, errors="replace")
+                self.fp = _open_log(self.current_file, encoding=target, errors="replace")
                 self.fp.seek(0, os.SEEK_END)
                 self.errors_mode = "replace"
             except Exception as e:
@@ -624,16 +697,9 @@ class CompatiblePollingMonitor:
             self._open_file(start_at_end=False)
             return True
 
-        inode = getattr(st, "st_ino", None)
-        size = st.st_size
-        rotated = False
-        if self.current_inode is not None and inode is not None and inode != self.current_inode:
-            rotated = True
-        if size < self.last_size:
-            rotated = True
-
-        self.current_inode = inode
-        self.last_size = size
+        rotated = _file_state_changed(self.current_identity, self.last_size, st)
+        self.current_identity = (st.st_dev, st.st_ino)
+        self.last_size = st.st_size
 
         if rotated:
             logger.info(f"[Compat] Log rotated or truncated: {self.current_file}. Reopening from start.")

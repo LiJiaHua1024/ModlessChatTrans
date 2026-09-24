@@ -16,6 +16,7 @@ htmlcov/
 .claude/
 .commandcode/
 .zcode/
+.zcodeignore
 
 build/
 dist/

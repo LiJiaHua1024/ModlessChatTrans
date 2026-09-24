@@ -105,6 +105,36 @@ LANGUAGE_VOICE_MAP: dict[str, str] = {
     "portuguese": "pt-BR-FranciscaNeural",
 }
 
+# 大小写不敏感索引，键均为小写
+_VOICE_MAP_LOWER: dict[str, str] = {key.lower(): voice for key, voice in LANGUAGE_VOICE_MAP.items()}
+
+# 语言代码/别名 → LANGUAGE_VOICE_MAP 中的规范键（小写）。
+# 只做显式映射，不做任意子串匹配。
+_LANGUAGE_ALIASES: dict[str, str] = {
+    # 简体中文
+    "zh": "zh-cn",
+    "zh-hans": "zh-cn",
+    "zh-chs": "zh-cn",
+    "zh-sg": "zh-cn",
+    "zh-hans-cn": "zh-cn",
+    # 繁体中文
+    "zh-hant": "zh-tw",
+    "zh-cht": "zh-tw",
+    "zh-hk": "zh-tw",
+    "zh-mo": "zh-tw",
+    "zh-mc": "zh-tw",
+    "zh-hant-tw": "zh-tw",
+    # 裸语言码按主语言子标签归一到默认区域
+    "ja": "ja-jp",
+    "en": "en-us",
+    "ko": "ko-kr",
+    "fr": "fr-fr",
+    "de": "de-de",
+    "es": "es-es",
+    "ru": "ru-ru",
+    "pt": "pt-br",
+}
+
 # 获取所有可用语音的缓存（首次调用时从 Edge 拉取）
 _voice_list_cache: Optional[List[dict]] = None
 _voice_cache_lock = threading.Lock()
@@ -191,15 +221,24 @@ def infer_voice(target_language: str, configured_voice: str) -> str:
         return LANGUAGE_VOICE_MAP[target_language]
 
     # 不区分大小写匹配
-    target_lower = target_language.lower()
-    for key, voice in LANGUAGE_VOICE_MAP.items():
-        if key.lower() == target_lower:
-            return voice
+    target_lower = target_language.strip().lower()
+    if target_lower in _VOICE_MAP_LOWER:
+        return _VOICE_MAP_LOWER[target_lower]
 
-    # 模糊匹配（检查 key 是否包含在 target_language 中或反之）
-    for key, voice in LANGUAGE_VOICE_MAP.items():
-        if key.lower() in target_lower or target_lower in key.lower():
-            return voice
+    # 别名归一化（zh-Hant、zh-CHT、裸语言码 es/ja 等）
+    canonical = _LANGUAGE_ALIASES.get(target_lower)
+    if canonical and canonical in _VOICE_MAP_LOWER:
+        return _VOICE_MAP_LOWER[canonical]
+
+    # 逐级去掉末尾子标签重试（es-MX → es，zh-Hant-HK → zh-Hant）
+    candidate = target_lower
+    while "-" in candidate:
+        candidate = candidate.rsplit("-", 1)[0]
+        if candidate in _VOICE_MAP_LOWER:
+            return _VOICE_MAP_LOWER[candidate]
+        canonical = _LANGUAGE_ALIASES.get(candidate)
+        if canonical and canonical in _VOICE_MAP_LOWER:
+            return _VOICE_MAP_LOWER[canonical]
 
     # 兜底：简体中文
     logger.debug(f"[TTS] No voice mapping for language '{target_language}', falling back to zh-CN")
