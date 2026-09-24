@@ -1527,3 +1527,13 @@ msgstr "다른 호환 API를 사용할 때는 해당 서비스의 API 키, 모�
 #: modless_chat_trans/interface.py:3414
 msgid "未填写 Cloudflare 账号 ID：启动后将回退到内置规则判定。"
 msgstr "Cloudflare 계정 ID가 없습니다. 시작 후 내장 규칙 판정으로 전환됩니다."
+
+#: main.py:213
+msgid "翻译完成，但复制到剪切板失败，请手动复制："
+msgstr "번역이 완료되었으나 클립보드 복사에 실패했습니다. 수동으로 복사해 주세요:"
+
+#: modless_chat_trans/web_display.py:84
+#, python-brace-format
+msgid "端口 {port} 已被其他程序占用，网页服务启动失败"
+msgstr "포트 {port}이(가) 이미 다른 프로그램에서 사용 중이므로 웹 서비스 시작에 실패했습니다"
+

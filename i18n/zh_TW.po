@@ -1513,3 +1513,13 @@ msgstr "使用其他相容介面時，請填寫該平台的 API Key、模型和�
 #: modless_chat_trans/interface.py:3414
 msgid "未填写 Cloudflare 账号 ID：启动后将回退到内置规则判定。"
 msgstr "未填寫 Cloudflare 帳號 ID：啟動後將回退到內建規則判定。"
+
+#: main.py:213
+msgid "翻译完成，但复制到剪切板失败，请手动复制："
+msgstr "翻譯完成，但複製到剪貼簿失敗，請手動複製："
+
+#: modless_chat_trans/web_display.py:84
+#, python-brace-format
+msgid "端口 {port} 已被其他程序占用，网页服务启动失败"
+msgstr "連接埠 {port} 已被其他程式佔用，網頁服務啟動失敗"
+
