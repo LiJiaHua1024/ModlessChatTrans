@@ -45,6 +45,17 @@ class ContextProcessingTests(unittest.TestCase):
         self.assertEqual(context.snapshot_and_push(ContextEntry('new', 120)), [])
         self.assertEqual(len(context), 1)
 
+    def test_stale_context_is_cleared_on_read(self):
+        context = ContextBuffer(strategy='time_based', context_timeout=10)
+        context.push(ContextEntry('old', time.time() - 100))
+        self.assertEqual(context.get_context_messages(), [])
+        self.assertEqual(len(context), 0)
+
+    def test_fresh_context_survives_read(self):
+        context = ContextBuffer(strategy='time_based', context_timeout=10)
+        context.push(ContextEntry('recent', time.time() - 5))
+        self.assertIn('recent', context.get_context_messages()[0]['content'])
+
     def test_disabled_context_stays_empty(self):
         context = ContextBuffer(strategy='disabled')
         self.assertEqual(context.snapshot_and_push(ContextEntry('message', 100)), [])

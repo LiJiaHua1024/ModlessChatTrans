@@ -15,6 +15,7 @@
 
 import re
 import threading
+import time
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, time as dt_time
@@ -210,8 +211,16 @@ class ContextBuffer:
         无历史时返回空列表。
 
         注意：此返回值会被 translator 注入到 user message 中。
+        发送端读取时也按当前时间检查过期，避免聊天停止很久后仍用旧上下文。
         """
         with self._lock:
+            if self.should_reset(time.time()):
+                logger.debug(
+                    f"[ContextBuffer] Context expired before read "
+                    f"({time.time() - (self._last_timestamp or 0):.1f}s > "
+                    f"{self.context_timeout}s), clearing."
+                )
+                self.clear()
             history = list(self._history)
         if self.strategy == "disabled" or not history:
             return []
