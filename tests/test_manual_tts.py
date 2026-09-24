@@ -27,6 +27,17 @@ class ManualTTSTests(unittest.TestCase):
             with self.subTest(language=language):
                 self.assertEqual(self.read(language), voice)
 
+    def test_language_codes_map_to_matching_voices(self):
+        for language, voice in [('es', 'es-ES-ElviraNeural'),
+                                ('es-MX', 'es-ES-ElviraNeural'),
+                                ('zh-Hant', 'zh-TW-HsiaoChenNeural'),
+                                ('zh-CHT', 'zh-TW-HsiaoChenNeural'),
+                                ('zh-Hant-HK', 'zh-TW-HsiaoChenNeural'),
+                                ('zh-Hans', 'zh-CN-XiaoxiaoNeural'),
+                                ('ja', 'ja-JP-NanamiNeural')]:
+            with self.subTest(language=language):
+                self.assertEqual(infer_voice(language, 'auto'), voice)
+
     def test_explicit_voice_still_takes_precedence(self):
         self.assertEqual(self.read('Japanese', 'en-US-JennyNeural'), 'en-US-JennyNeural')
 
