@@ -49,3 +49,10 @@ class ContextProcessingTests(unittest.TestCase):
         context = ContextBuffer(strategy='disabled')
         self.assertEqual(context.snapshot_and_push(ContextEntry('message', 100)), [])
         self.assertEqual(len(context), 0)
+
+    def test_block_truncation_keeps_single_entry_history(self):
+        context = ContextBuffer(strategy='fixed', context_length=1, block_truncation_size='auto')
+        for index in range(3):
+            context.push(ContextEntry(f'message {index}', 100 + index))
+            self.assertEqual(len(context), 1)
+        self.assertIn('message 2', context.get_context_messages()[0]['content'])

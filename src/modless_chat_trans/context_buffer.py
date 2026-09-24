@@ -194,9 +194,10 @@ class ContextBuffer:
         self._history.append(entry)
         self._last_timestamp = entry.timestamp
 
-        # 分块截断：达到阈值时一次性剔除开头 block_size 条
-        if self._use_block_truncation and len(self._history) >= self.context_length:
-            del self._history[:self._block_size]
+        # 分块截断：超过阈值时一次性剔除开头 block_size 条；
+        # 任何配置下都至少保留一条，避免 context_length=1 被截空
+        if self._use_block_truncation and len(self._history) > self.context_length:
+            del self._history[:min(self._block_size, len(self._history) - 1)]
 
     # ------------------------------------------------------------------
     # 读取
