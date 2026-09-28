@@ -62,6 +62,19 @@ _OPENROUTER_NATIVE_SUFFIXES = frozenset({
 })
 _OPENROUTER_SUFFIX_ALIASES = {"price": "floor", "throughput": "nitro"}
 
+# 官方直连且确认支持 JSON mode 的 provider。使用中转站时用户通常也选这些
+# provider 并填自定义 api_base，故名单内 provider 不区分官方/中转，一律乐观
+# 启用，被拒绝时由运行时降级 + 会话记忆兜底。
+_JSON_MODE_PROVIDERS = frozenset({
+    "OpenAI", "Azure", "Gemini", "Google Vertex AI", "DeepSeek",
+    "Moonshot AI", "Mistral AI", "xAI", "Groq", "vLLM",
+    "Together AI", "NVIDIA NIM", "LM Studio",
+})
+
+# 上游拒绝请求参数（含 response_format）时返回的状态码；
+# 超时/鉴权/限流不在其列，不应触发降级。
+_PARAM_REJECTION_STATUSES = frozenset({400, 404, 422})
+
 
 def _openrouter_model_options(model: str) -> tuple[str, dict | None]:
     """保留官方模型变体，提取末尾的自定义 Provider 或延迟排序。"""
@@ -183,6 +196,47 @@ import threading
 ts = lazy.load("translators")
 litellm = lazy.load("litellm")
 
+# 进程级会话记忆：已确认拒绝 JSON mode 的端点不再重试，
+# 避免每条消息都多付一次"先失败再降级"的网络往返。
+# 仅存内存，不持久化——重启后重新探测一次，代价只有一条消息的降级往返。
+_json_mode_lock = threading.Lock()
+_json_mode_disabled = set()          # {(provider, api_base, model)}
+_openrouter_models_cache = None      # OpenRouter models API 全量能力表，{id: [params]}
+
+
+def _is_param_rejection(error) -> bool:
+    """判断异常是否为上游拒绝了请求参数，而非网络/鉴权/限流问题。"""
+    status = getattr(error, "status_code", None)
+    try:
+        return int(status) in _PARAM_REJECTION_STATUSES
+    except (TypeError, ValueError):
+        return False
+
+
+def _openrouter_supports_json(model: str) -> bool:
+    """
+    通过 OpenRouter 公开 models API 查询模型能力（supported_parameters），
+    属于免补全请求的元信息探测，不消耗 token。
+    查询失败按不支持处理并缓存，避免拖慢翻译主链路。
+    """
+    global _openrouter_models_cache
+    if _openrouter_models_cache is None:
+        try:
+            response = _http().get("https://openrouter.ai/api/v1/models", timeout=5)
+            entries = response.json().get("data", [])
+            _openrouter_models_cache = {
+                entry.get("id"): (entry.get("supported_parameters") or [])
+                for entry in entries
+            }
+        except Exception as error:
+            logger.warning(f"OpenRouter model capability lookup failed: {error}")
+            _openrouter_models_cache = {}
+    params = _openrouter_models_cache.get(model)
+    if params is None:
+        # :free 等变体后缀可能让 id 不完全一致，退回基础 id 再试一次
+        params = _openrouter_models_cache.get(model.rsplit(":", 1)[0], [])
+    return "response_format" in params
+
 # 独立锁：litellm 与 translators 可并行预加载，互不阻塞
 _llm_import_lock = threading.Lock()
 _ts_import_lock = threading.Lock()
@@ -286,16 +340,8 @@ class Translator:
             if not self._variable_pattern.search(str(k))
         }
 
-        # 判断是否为 Anthropic 模型
-        provider = getattr(translation_service_config.llm, 'provider', None) or ""
-        model = getattr(translation_service_config.llm, 'model', None) or ""
-        self._is_anthropic = (
-                provider.lower() == "anthropic"
-                or "claude" in model.lower()
-                or "anthropic" in model.lower()
-        )
-
         # 判断是否为 Gemini 3 系列模型
+        model = getattr(translation_service_config.llm, 'model', None) or ""
         self._is_gemini3 = "gemini-3" in model.lower()
 
         logger.info(f"Initialized Translator")
@@ -436,6 +482,26 @@ class Translator:
         # 兜底：返回该消息类型的第一个可用模式
         return next(iter(available_modes))
 
+    @staticmethod
+    def _json_mode_enabled(provider: str, model: str, api_base) -> bool:
+        """
+        判断当前请求是否应携带 response_format（Deep 模式 JSON 约束）。
+
+        判定顺序：会话记忆（已被拒过的端点）→ Anthropic 官方直连（原生
+        不支持，必被拒）→ 已知支持的白名单 provider → OpenRouter 能力表
+        查询 → 其余中转/自建端点乐观启用。
+        """
+        with _json_mode_lock:
+            if (provider, api_base or "", model) in _json_mode_disabled:
+                return False
+        if provider == "Anthropic" and not (api_base or "").strip():
+            return False
+        if provider in _JSON_MODE_PROVIDERS:
+            return True
+        if provider == "OpenRouter" and not (api_base or "").strip():
+            return _openrouter_supports_json(model)
+        return True
+
     def _execute_llm_translation(self, text, model, source_language, target_language, provider, system_prompt,
                                  expect_json, include_terms, message_type: MessageType = MessageType.PLAYER,
                                  context_messages: list = None,
@@ -470,11 +536,6 @@ class Translator:
         if source_language.lower() == "auto":
             source_language = ""
 
-        if source_language:
-            base_prompt = f"Translate the following text from {source_language} to {target_language}"
-        else:
-            base_prompt = f"Translate the following text to {target_language}"
-
         matched_terms = []
         if include_terms:
             try:
@@ -485,26 +546,31 @@ class Translator:
         else:
             logger.debug("Skipping terminology collection for this translation mode.")
 
-        is_provider_anthropic = provider == "Anthropic"
-
-        # 构建 user message
-        # 如果有历史上下文，先拼接历史，再拼接翻译指令
+        # 构建 user message：历史块 → 翻译指令 → 分隔的原文 → 术语表 → 结尾锚定。
+        # 所有 provider 统一用 XML 风格分隔符；关键指令在结尾再锚定一次，
+        # 防止渠道附加的其他 system 内容稀释输出契约的权重。
         if context_messages:
             history_content = context_messages[0].get("content", "")
-            if self._is_anthropic:
-                # Anthropic 使用 XML 标签
-                history_block = f"<recent_chat_history>\n{history_content}\n</recent_chat_history>\n\n"
-            else:
-                history_block = f"=== Recent Chat History ===\n{history_content}\n=== End of History ===\n\n---\n\n"
+            history_block = f"<recent_chat_history>\n{history_content}\n</recent_chat_history>\n\n"
         else:
             history_block = ""
 
-        if is_provider_anthropic:
-            base_prompt += f".\n<text_to_translate>{text}</text_to_translate>\n\n"
+        if source_language:
+            instruction = f"Translate the text in <text_to_translate> from {source_language} to {target_language}."
         else:
-            base_prompt += f":\n{text}\n\n"
+            instruction = f"Translate the text in <text_to_translate> to {target_language}."
 
-        message = history_block + base_prompt + self._terminology_block(matched_terms, self._is_anthropic)
+        closing = (
+            "Respond with only the JSON object."
+            if expect_json
+            else "Reply with only the final translation."
+        )
+        message = (
+            f"{history_block}{instruction}\n\n"
+            f"<text_to_translate>\n{text}\n</text_to_translate>\n\n"
+            + self._terminology_block(matched_terms)
+            + closing
+        )
 
         # 使用 litellm 统一调用各类大模型
         try:
@@ -564,7 +630,27 @@ class Translator:
             if extra_body:
                 llm_params["extra_body"] = extra_body
 
-            response = litellm.completion(**llm_params)
+            # Deep 模式的 JSON 契约优先交给采样层约束：官方直连按已知能力启用；
+            # OpenRouter 查其 models API 能力表；中转站/自建端点乐观启用。
+            # 若被上游拒绝（400/404/422），降级重试本次请求并写入会话记忆，
+            # 后续消息直接跳过 JSON mode，不再重复支付探测往返。
+            if expect_json and self._json_mode_enabled(provider, model, llm_cfg.api_base):
+                llm_params["response_format"] = {"type": "json_object"}
+                llm_params.setdefault("drop_params", True)
+
+            try:
+                response = litellm.completion(**llm_params)
+            except Exception as error:
+                if "response_format" not in llm_params or not _is_param_rejection(error):
+                    raise
+                with _json_mode_lock:
+                    _json_mode_disabled.add((provider, llm_cfg.api_base or "", model))
+                logger.warning(
+                    f"JSON mode rejected by {provider} ({error}); "
+                    "retrying without response_format and disabling it for this session"
+                )
+                llm_params.pop("response_format")
+                response = litellm.completion(**llm_params)
 
             # litellm 的返回对象与 OpenAI SDK 高度兼容
             content_str = response.choices[0].message.content or ""
@@ -813,11 +899,11 @@ class Translator:
     def _context_awareness_block() -> str:
         """公共的上下文感知指导文本"""
         return (
-            "\n## Context Awareness\n\n"
-            "A recent chat history is provided in the user message. "
-            "Use it to understand ongoing conversations and maintain translation consistency.\n"
-            "Note: Messages closer to the end are more likely to be relevant. "
-            "Earlier messages may be unrelated to the current one — use your judgment.\n"
+            "- Recent history: The user message opens with a <recent_chat_history> block — "
+            "background context only, never translation material. Each line is "
+            "\"HH:MM | [sender] text\" (send time; [SYSTEM] marks server messages). "
+            "Use it to resolve pronouns, ellipsis, and running topics; ignore it when it "
+            "has no bearing on the current message. Later lines matter more than earlier ones.\n"
         )
 
     def _build_system_prompt(self, mode: TranslationMode, message_type: MessageType,
@@ -851,19 +937,23 @@ class Translator:
         利用LLM默认的正式语气，仅针对格式安全和术语进行硬性约束。
         """
         prompt = (
-            "You are a Minecraft server localization engine. "
-            "Translate server announcements, game notifications, and plugin messages.\n"
+            "You translate Minecraft server messages — announcements, plugin output, "
+            "game notifications — for real-time chat display.\n"
+            "\nRules:\n"
         )
 
         if has_context:
             prompt += self._context_awareness_block()
 
         prompt += (
-            "\nRules:\n"
-            "1. Priority: You MUST use mappings from `Custom Terms` if provided.\n"
-            "2. Safety: STRICTLY preserve all formatting codes (e.g., `§a`, `§l`) and "
-            "symbols. Do NOT translate command syntax (e.g., `/help`).\n"
-            "3. Output: Output ONLY the translation result."
+            "- Custom Terms: Mappings listed under `Custom Terms` in the user message are "
+            "mandatory and override everything else.\n"
+            "- Formatting codes: Preserve Minecraft formatting codes (`§a`, `§l`, `§k`) "
+            "exactly as written. Never translate command syntax like `/help`.\n"
+            "- Terminology: Use the target language's established game localization when one exists.\n"
+            "- Tone: Match the formality of the original announcement.\n"
+            "- Garbled input: Keyboard mashing or corrupted text passes through unchanged.\n"
+            "\nReply with the translation only.\n"
         )
         return prompt
 
@@ -872,42 +962,29 @@ class Translator:
         Player/Send消息专用的Normal prompt（口语化风格）。
         """
         prompt = (
-            "You are a Minecraft-specific intelligent translation engine, focused on providing "
-            "high-quality localization transformations in terms of cultural adaptation and "
-            "language naturalization.\n"
+            "You translate Minecraft chat messages for real-time display. The translation "
+            "appears directly in the chat window, so it must read like something a real "
+            "player would type.\n"
+            "\nRules:\n"
         )
 
         if has_context:
             prompt += self._context_awareness_block()
 
         prompt += (
-            "\n## Translation Guidelines\n\n"
-            "1. Custom Term Priority: If a `Custom Terms` section is provided in the user's "
-            "prompt, its mappings are mandatory and take the highest priority. You MUST use "
-            "the specified translation for any term found in this section, overriding all "
-            "other guidelines or your own knowledge.\n"
-            "2. Cultural Adaptability: Identify culture-specific elements in the source text "
-            "(memes, allusions, puns, etc.) and find culturally equivalent expressions in "
-            "the target language.\n"
-            "3. Language Modernization: Use the latest slang in the target language.\n"
-            "4. Natural Language Processing:\n"
-            "    - Maintain spoken sentence structures.\n"
-            "    - Consider that player messages during gameplay will not be too long or have "
-            "complex grammatical structures.\n"
-            "    - Avoid formal language structures such as capitalization of initial letters/"
-            "proper nouns and ending punctuation marks.\n"
-            "    - Simulate human conversation characteristics (add appropriate filler words, "
-            "reasonable repetition).\n"
-            "5. Formatting Code Preservation (CRITICAL): Minecraft formatting codes (e.g., "
-            "`§l`, `§c`, `§1`, `§k`) must be preserved exactly as they appear in the source "
-            "text. These codes must NEVER be translated, modified, or removed.\n"
-            "6. Proper Nouns and Player Names: Do not translate player IDs, server names, or "
-            "non-standard game terms without a widely accepted translation.\n"
-            "7. Untranslatable Content: For meaningless keyboard mashing (e.g., \"asdasd\") "
-            "or garbled text, keep the original text as is.\n\n"
-            "## Output Requirement\n\n"
-            "Your response MUST ONLY contain the final translated text. Do not add any "
-            "prefixes, suffixes, explanations, or notes."
+            "- Custom Terms: Mappings listed under `Custom Terms` in the user message are "
+            "mandatory and override everything else.\n"
+            "- Formatting codes: Preserve Minecraft formatting codes (`§a`, `§l`, `§k`) "
+            "exactly as written. Never translate command syntax like `/help`.\n"
+            "- Names: Keep player names, server names, and brands unchanged.\n"
+            "- Slang, memes, and wordplay: Render them as the wording players of the "
+            "target language would actually type. Never define, explain, or annotate a word.\n"
+            "- Register: Casual chat style — no capitalization at sentence start, no ending "
+            "punctuation, no surrounding quotes.\n"
+            "- Garbled input: Keyboard mashing or corrupted text passes through unchanged.\n"
+            "- Ambiguity: When several readings are possible, translate the one players "
+            "would most likely intend. Never output alternative versions.\n"
+            "\nReply with the translation only: a single line, nothing else.\n"
         )
         return prompt
 
@@ -916,83 +993,35 @@ class Translator:
         Deep mode prompt（CoT思维链模式）。
         """
         prompt = (
-            "You are a Minecraft-specific intelligent translation engine, focused on providing "
-            "high-quality localization transformations in terms of cultural adaptation and "
-            "language naturalization.\n"
+            "You translate Minecraft chat messages for real-time display. The translation "
+            "appears directly in the chat window, so it must read like something a real "
+            "player would type.\n"
+            "\nRules:\n"
         )
 
         if has_context:
             prompt += self._context_awareness_block()
 
         prompt += (
-            "\n## Translation Guidelines\n\n"
-            "1. Custom Term Priority: If a `Custom Terms` section is provided in the user's "
-            "prompt, its mappings are mandatory and take the highest priority. You MUST use "
-            "the specified translation for any term found in this section, overriding all "
-            "other guidelines or your own knowledge.\n"
-            "2. Cultural Adaptability: Identify culture-specific elements in the source text "
-            "(memes, allusions, puns, etc.) and find culturally equivalent expressions in "
-            "the target language.\n"
-            "3. Language Modernization: Use the latest slang in the target language.\n"
-            "4. Natural Language Processing:\n"
-            "    - Maintain spoken sentence structures.\n"
-            "    - Consider that player messages during gameplay will not be too long or have "
-            "complex grammatical structures.\n"
-            "    - Avoid formal language structures such as capitalization of initial letters/"
-            "proper nouns and ending punctuation marks.\n"
-            "    - Simulate human conversation characteristics (add appropriate filler words, "
-            "reasonable repetition).\n"
-            "5. Formatting Code Preservation (CRITICAL): Minecraft formatting codes (e.g., "
-            "`§l`, `§c`, `§1`, `§k`) must be preserved exactly as they appear in the source "
-            "text. These codes must NEVER be translated, modified, or removed.\n"
-            "6. Proper Nouns and Player Names: Do not translate player IDs, server names, or "
-            "non-standard game terms without a widely accepted translation.\n"
-            "7. Untranslatable Content: For meaningless keyboard mashing (e.g., \"asdasd\") "
-            "or garbled text, keep the original text as is.\n\n"
-            "## Output Specifications\n\n"
-            "Strictly return a valid JSON object that conforms EXACTLY to the following "
-            "TypeScript interface. Do not wrap the output in Markdown code blocks (e.g., ```json), "
-            "and do not output any explanations or additional text.\n\n"
+            "- Custom Terms: Mappings listed under `Custom Terms` in the user message are "
+            "mandatory and override everything else.\n"
+            "- Formatting codes: Preserve Minecraft formatting codes (`§a`, `§l`, `§k`) "
+            "exactly as written. Never translate command syntax like `/help`.\n"
+            "- Names: Keep player names, server names, and brands unchanged.\n"
+            "- Slang, memes, and wordplay: Render them as the wording players of the "
+            "target language would actually type. Never define, explain, or annotate a word.\n"
+            "- Register: Casual chat style — no capitalization at sentence start, no ending "
+            "punctuation, no surrounding quotes.\n"
+            "- Garbled input: Keyboard mashing or corrupted text passes through unchanged.\n"
+            "- Ambiguity: When several readings are possible, translate the one players "
+            "would most likely intend. Never output alternative versions.\n"
+            "\nBefore translating, identify only the words a translator could get wrong "
+            "(slang, memes, ambiguous references) and note them in `terms`: at most 3 "
+            "entries, each meaning under 10 words. Use an empty array when there are none.\n"
+            "\nRespond with a single JSON object and nothing else, in this exact shape:\n"
+            '{"terms": [{"term": "...", "meaning": "..."}], "result": "..."}\n'
+            "The `result` value must follow all rules above.\n"
         )
-
-        if has_context:
-            prompt += (
-                "interface TranslationOutput {\n"
-                "  // Analysis of the recent chat history and how it relates to the current message\n"
-                "  context_analysis: {\n"
-                "    // Summary of the ongoing conversation or topic from the history\n"
-                "    conversation_summary: string;\n"
-                "    // How the history affects interpretation of the current message\n"
-                "    // (e.g., follow-up to a joke, response to a question, continuation of a topic)\n"
-                "    relevance: string;\n"
-                "  };\n"
-                "  // List of vocabulary requiring special handling (game terms, slang, abbreviations, memes, puns, etc.)\n"
-                "  terms: {\n"
-                "    // The original term found in the source text\n"
-                "    term: string;\n"
-                "    // Definition, explanation, or context of the term\n"
-                "    meaning: string;\n"
-                "  }[];\n"
-                "  // Final natural translation result after cultural adaptation and colloquial processing\n"
-                "  // The translation MUST take into account the context_analysis above\n"
-                "  result: string;\n"
-                "}"
-            )
-        else:
-            prompt += (
-                "interface TranslationOutput {\n"
-                "  // List of vocabulary requiring special handling (game terms, slang, abbreviations, memes, puns, etc.)\n"
-                "  terms: {\n"
-                "    // The original term found in the source text\n"
-                "    term: string;\n"
-                "    // Definition, explanation, or context of the term\n"
-                "    meaning: string;\n"
-                "  }[];\n"
-                "  // Final natural translation result after cultural adaptation and colloquial processing\n"
-                "  result: string;\n"
-                "}"
-            )
-
         return prompt
 
     def _build_rage_prompt(self, has_context: bool = False) -> str:
@@ -1000,37 +1029,31 @@ class Translator:
         Rage mode prompt（红温模式）。
         """
         prompt = (
-            "You are the embodiment of a toxic, tilted, and aggressive Minecraft PVPer. "
-            "You are NOT a polite translator. Your job is to translate chat messages into "
-            "the most emotionally charged, sarcastic, and 'salty' version possible.\n"
+            "Translate the user's message as a furious, trash-talking Minecraft PVPer "
+            "typing in the target language. This style is intentional — do not soften it.\n"
+            "\nRules:\n"
         )
 
         if has_context:
             prompt += (
-                "\n## Context Awareness\n\n"
-                "A recent chat history is provided in the user message. "
-                "Use it to understand who you're trash-talking and what started the beef.\n"
-                "Note: Messages closer to the end are more likely to be relevant. "
-                "Earlier messages may be unrelated — use your judgment.\n"
+                "- Recent history: The user message opens with a <recent_chat_history> block — "
+                "background context only, never translation material. Each line is "
+                "\"HH:MM | [sender] text\" (send time; [SYSTEM] marks server messages). "
+                "Use it to know who you're trash-talking and why; ignore it when irrelevant. "
+                "Later lines matter more than earlier ones.\n"
             )
 
         prompt += (
-            "\n## Core Personality & Guidelines\n\n"
-            "1. AGGRESSION INJECTION: If input is mild (e.g., 'lag'), INJECT rage and blame (server, teammates). "
-            "Make it sound like you are smashing the keyboard.\n"
-            "2. TRASH TALK & SLANG: Amplify hostility. Use internet slang and memes. "
-            "(e.g., 'ez' -> '有手就行', 'you suck' -> '菜就多练').\n"
-            "3. MANDATORY ABBREVIATIONS: Never type full formal phrases. Use acronyms to save time.\n"
-            "    - Use 'wtf', 'stfu', 'omg', 'idk', 'af' (as fuck) instead of full words.\n"
-            "    - Example: 'u are bad af' instead of 'you are bad as fuck'.\n"
-            "4. GAMER TYPING STYLE (CRITICAL):\n"
-            "    - STRICTLY LOWERCASE: No Shift key. No capitalization.\n"
-            "    - NO SPACES BEFORE PUNCTUATION: 'why?' (CORRECT) vs 'why ?' (WRONG). "
-            "Attach punctuation directly to the last letter.\n"
-            "    - NO MARKDOWN: No bold (**), no italics. Just raw text.\n"
-            "5. NO CENSORSHIP: Do NOT filter profanity. Use the most stinging vocabulary.\n\n"
-            "## Output Requirement\n\n"
-            "Your response MUST ONLY contain the final translated text. No explanations."
+            "- Amplify emotion: mild gripes become rage and blame aimed at teammates, "
+            "the server, or lag.\n"
+            "- Slang: Use the target language's gamer slang and abbreviations instead of "
+            "full formal phrases.\n"
+            "- Typing style: All lowercase. No markdown. Punctuation glued directly to "
+            "the last word.\n"
+            "- Formatting codes: Preserve Minecraft formatting codes (`§a`, `§l`, `§k`) "
+            "exactly as written. Never translate command syntax like `/help`.\n"
+            "- Profanity: Never censor; pick the most stinging wording available.\n"
+            "\nReply with the message only.\n"
         )
         return prompt
 
@@ -1066,37 +1089,26 @@ class Translator:
                 break
         return result
 
-    def _terminology_block(self, matched_terms, is_provider_anthropic=False):
+    def _terminology_block(self, matched_terms):
         """
-        根据匹配到的术语列表，生成用于Prompt的XML格式术语块。
+        根据匹配到的术语列表生成术语块，所有 provider 统一格式。
 
         Args:
             matched_terms: 一个元组列表，每个元组包含 (source_term, target_term)
                            例如: [("gg", "打得不错"), ("afk", "挂机")]
-            is_provider_anthropic: 是否为Anthropic模型
 
         Returns:
-            一个格式化好的Markdown列表格式术语块，格式为: - "source": "target"
-            如果为Anthropic模型，返回XML格式
+            格式为 'Custom Terms (mandatory mappings):\n- "src": "tgt"' 的术语块，
+            无匹配术语时返回空串。
         """
         if not matched_terms:
             return ""
 
-        if is_provider_anthropic:
-            entries_str = "".join(
-                f"<entry><source>{src}</source><target>{tgt}</target></entry>"
-                for src, tgt in matched_terms
-            )
-            return f"<custom_terms>{entries_str}</custom_terms>"
-        else:
-            entries_str = "\n".join(
-                f'- "{src}": "{tgt}"'
-                for src, tgt in matched_terms
-            )
-            return (
-                "Custom Terms:\n"
-                f"{entries_str}"
-            )
+        entries_str = "\n".join(
+            f'- "{src}": "{tgt}"'
+            for src, tgt in matched_terms
+        )
+        return f"Custom Terms (mandatory mappings):\n{entries_str}\n\n"
 
     def _execute_traditional_translation(self, text, service, source_language, target_language):
         """
