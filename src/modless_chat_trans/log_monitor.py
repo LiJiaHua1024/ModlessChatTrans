@@ -146,7 +146,7 @@ class OrderedProcessor:
             # 放在这里是为了让一批消息只产生一次 HTTP 请求。
             verdicts = classify_lines([chat_text for _, _, chat_text in chat_lines])
 
-            items = []  # [(prepared, slot_id, context_messages)]
+            items = []  # [(prepared, slot_id, context_text)]
             for (line, arrival_time, _chat_text), is_player in zip(chat_lines, verdicts):
                 # prepare（解析+过滤，极快）
                 prepared = prepare(line, "log", self._replace_garbled_chars, is_player=is_player)
@@ -162,9 +162,9 @@ class OrderedProcessor:
                     log_time = extract_log_time(line, arrival_time)
 
                     # 顺序取得历史快照，避免包含当前消息或并发到达的后续消息。
-                    ctx_messages = []
+                    context_text = ""
                     if self._context_buffer is not None:
-                        ctx_messages = self._context_buffer.snapshot_and_push(ContextEntry(
+                        context_text = self._context_buffer.snapshot_and_push(ContextEntry(
                             original=prepared.original,
                             timestamp=log_time,
                             player_name=prepared.name or "",
@@ -174,19 +174,19 @@ class OrderedProcessor:
                     fill_slot(slot_id, "[ERROR]", f"翻译失败，错误： {error}", {}, original=prepared.original)
                     continue
 
-                items.append((prepared, slot_id, ctx_messages))
+                items.append((prepared, slot_id, context_text))
 
             if not items:
                 continue
 
             # ========== 阶段2：多线程 translate + fill_slot ==========
-            for prepared, slot_id, ctx_messages in items:
+            for prepared, slot_id, context_text in items:
                 self._executor.submit(
                     self._translate_and_fill,
-                    prepared, slot_id, ctx_messages,
+                    prepared, slot_id, context_text,
                 )
 
-    def _translate_and_fill(self, prepared, slot_id, ctx_messages):
+    def _translate_and_fill(self, prepared, slot_id, context_text):
         """在线程池中执行：翻译 + fill_slot + TTS"""
         from modless_chat_trans.web_display import fill_slot
         from modless_chat_trans.message_processor import MessageType, translate_prepared
@@ -200,7 +200,7 @@ class OrderedProcessor:
                 translator=self._translator,
                 source_language=self._source_language,
                 target_language=self._target_language,
-                context_messages=ctx_messages,
+                context_text=context_text,
             )
         except Exception as error:
             logger.exception(f"[Log] Unexpected translation failure: {error}")

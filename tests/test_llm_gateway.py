@@ -767,7 +767,7 @@ class TranslatorIntegrationTests(unittest.TestCase):
         record = self.server.recorded[-1]
         self.assertEqual(record["body_json"]["model"], "gpt-4o")
         self.assertEqual(record["body_json"]["max_tokens"], 256)
-        self.assertIn("Translate the following text to zh-CN",
+        self.assertIn("Translate the text in <text_to_translate> to zh-CN",
                       record["body_json"]["messages"][1]["content"])
 
     def test_translator_fallback_strategy_direct(self):

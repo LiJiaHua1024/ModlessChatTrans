@@ -2095,78 +2095,23 @@ class ContextTranslationInterface(QFrame):
         self.grid_layout.addWidget(timeout_label, 2, 0)
         self.grid_layout.addLayout(timeout_layout, 2, 1)
 
-        # 4. 分块截断大小
-        truncation_label = BodyLabel(_('分块截断大小：'), self)
-        
-        self.block_truncation_combo = ComboBox(self)
-        self.block_truncation_combo.addItem(_('自动'), userData="auto")
-        self.block_truncation_combo.addItem(_('关闭'), userData="disabled")
-        self.block_truncation_combo.addItem(_('自定义'), userData="custom")
-        
-        self.block_truncation_spin = SpinBox(self)
-        self.block_truncation_spin.setRange(1, 999)
-        self.block_truncation_spin.hide()
-        
-        self.block_truncation_combo.currentIndexChanged.connect(self._on_truncation_mode_changed)
-        
-        help_button_trunc = create_help_button(
-            self,
-            _("分块截断大小：\n- 自动：自动计算为最大保留历史条数的一半\n- 关闭：传统逐条滑动窗口\n- 自定义：设置具体的截断大小"),
-            self.block_truncation_combo
-        )
-        
-        trunc_layout = QHBoxLayout()
-        trunc_layout.setSpacing(5)
-        trunc_layout.addWidget(self.block_truncation_combo)
-        trunc_layout.addWidget(self.block_truncation_spin)
-        trunc_layout.addWidget(help_button_trunc)
-        trunc_layout.addStretch()
-
-        self.grid_layout.addWidget(truncation_label, 3, 0)
-        self.grid_layout.addLayout(trunc_layout, 3, 1)
-
         self.main_layout.addLayout(self.grid_layout)
         self.main_layout.addStretch()
 
         # 加载初始值
         if self.config and hasattr(self.config, 'context'):
             ctx = self.config.context
-            
+
             # strategy
             idx = self.strategy_combo.findData(ctx.strategy)
             if idx >= 0:
                 self.strategy_combo.setCurrentIndex(idx)
-                
+
             # context_length
             self.context_length_spin.setValue(ctx.context_length)
-            
+
             # context_timeout
             self.context_timeout_spin.setValue(ctx.context_timeout)
-            
-            # block_truncation_size
-            trunc_val = str(ctx.block_truncation_size)
-            if trunc_val in ["disabled", "auto"]:
-                idx = self.block_truncation_combo.findData(trunc_val)
-                if idx >= 0:
-                    self.block_truncation_combo.setCurrentIndex(idx)
-            else:
-                idx = self.block_truncation_combo.findData("custom")
-                if idx >= 0:
-                    self.block_truncation_combo.setCurrentIndex(idx)
-                try:
-                    self.block_truncation_spin.setValue(int(trunc_val))
-                except ValueError:
-                    self.block_truncation_spin.setValue(1)
-            
-            # 触发一次以更新数字框的可见性
-            self._on_truncation_mode_changed(self.block_truncation_combo.currentIndex())
-
-    def _on_truncation_mode_changed(self, index):
-        data = self.block_truncation_combo.itemData(index)
-        if data == "custom":
-            self.block_truncation_spin.show()
-        else:
-            self.block_truncation_spin.hide()
 
 
 class GlossaryInterface(QFrame):
@@ -3888,11 +3833,6 @@ class StartInterface(QFrame):
         cfg.context.strategy = context.strategy_combo.currentData()
         cfg.context.context_length = context.context_length_spin.value()
         cfg.context.context_timeout = context.context_timeout_spin.value()
-        trunc_mode = context.block_truncation_combo.currentData()
-        if trunc_mode == "custom":
-            cfg.context.block_truncation_size = str(context.block_truncation_spin.value())
-        else:
-            cfg.context.block_truncation_size = str(trunc_mode)
 
         # 5) 术语表
         cfg.glossary = glossary.get_glossary_data()

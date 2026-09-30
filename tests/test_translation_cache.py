@@ -30,9 +30,9 @@ class TranslationCacheTests(unittest.TestCase):
         self.assertEqual(self.translator.translate_with_context.call_count, 2)
 
     def test_context_and_service_changes_still_reuse_translation(self):
-        self.translate('zh', context_messages=[{'content': 'first context'}])
+        self.translate('zh', context_text='first context')
         self.translator = Mock()
-        result = self.translate('zh', context_messages=[{'content': 'another context'}])
+        result = self.translate('zh', context_text='another context')
         self.assertEqual(result[1], 'zh:hello')
         self.assertTrue(result[2]['cache_hit'])
         self.translator.translate_with_context.assert_not_called()

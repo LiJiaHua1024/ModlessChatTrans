@@ -30,7 +30,16 @@ base_path = os.path.dirname(os.path.dirname(__file__))
 #   mct-cache/jev/      Jev 分类结果
 #   mct-cache/pre-tts/  Pre-TTS 音频
 CACHE_DIR = "mct-cache"
-cache = Cache(CACHE_DIR, eviction_policy="least-frequently-used")
+try:
+    cache = Cache(CACHE_DIR, eviction_policy="least-frequently-used")
+except Exception as cache_error:
+    # 缓存目录不可写（例如程序放在只读目录里启动）不能让整个程序在导入阶段崩掉：
+    # 退化为系统临时目录，本次会话照常翻译，只是重启后不再命中缓存。
+    logger.warning(
+        f"Failed to open translation cache at {CACHE_DIR!r}: {cache_error}; "
+        "falling back to a temporary cache directory for this session."
+    )
+    cache = Cache()
 
 
 def remove_legacy_translation_entries(translation_cache: Cache) -> int:
