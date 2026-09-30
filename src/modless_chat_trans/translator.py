@@ -429,6 +429,7 @@ class Translator:
                 include_terms,
                 message_type,
                 context_text=context_text,  # 传入 user prompt
+                rage_mode=effective_mode == TranslationMode.RAGE,
             )
 
         elif self.translation_service_config.service_type == ServiceType.TRADITIONAL:
@@ -503,7 +504,8 @@ class Translator:
     def _execute_llm_translation(self, text, model, source_language, target_language, provider, system_prompt,
                                  expect_json, include_terms, message_type: MessageType = MessageType.PLAYER,
                                  context_text: str = "",
-                                 llm_config_override=None, request_timeout=None):
+                                 llm_config_override=None, request_timeout=None,
+                                 rage_mode: bool = False):
         """
         Execution Engine: Handles API calls and response parsing.
 
@@ -519,11 +521,12 @@ class Translator:
         :param context_text: 历史上下文文本，空串表示无上下文
         :param llm_config_override: 可选的 LLMS erviceConfig 覆盖（用于备用模型）
         :param request_timeout: 当前请求剩余的超时时间（秒）
+        :param rage_mode: 本次请求是否为红温模式（红温模式忽略备用模型的深度翻译开关）
         """
         # 选择有效的 LLM 配置（备用模型配置或主模型配置）
         llm_cfg = llm_config_override or self.translation_service_config.llm
-        # 备用模型有独立的深度翻译开关；红温模式不受该开关影响。
-        if llm_config_override is not None and include_terms:
+        # 备用模型有独立的深度翻译开关；红温模式的 prompt 契约固定，不受该开关影响。
+        if llm_config_override is not None and not rage_mode:
             mode = self._get_effective_mode(
                 TranslationMode.DEEP if llm_cfg.deep_translate else TranslationMode.NORMAL,
                 message_type,
@@ -697,7 +700,7 @@ class Translator:
     def _execute_with_fallback(self, text, model, source_language, target_language,
                                provider, system_prompt, expect_json, include_terms,
                                message_type: MessageType = MessageType.PLAYER,
-                               context_text: str = ""):
+                               context_text: str = "", rage_mode: bool = False):
         """
         带备用模型策略的 LLM 翻译执行。
 
@@ -736,6 +739,7 @@ class Translator:
                 system_prompt, expect_json, include_terms, message_type,
                 context_text=context_text,
                 request_timeout=request_timeout,
+                rage_mode=rage_mode,
             )
 
         def call_fallback(request_timeout):
@@ -747,6 +751,7 @@ class Translator:
                 message_type, context_text=context_text,
                 llm_config_override=self.fallback_llm_config,
                 request_timeout=request_timeout,
+                rage_mode=rage_mode,
             )
 
         # Strategy D: Always race — 始终并发竞速
@@ -755,7 +760,8 @@ class Translator:
             return self._race_primary_fallback(
                 text, source_language, target_language, provider,
                 system_prompt, expect_json, include_terms,
-                message_type, context_text, deadline
+                message_type, context_text, deadline,
+                rage_mode=rage_mode,
             )
 
         # Strategy B: Retry exhausted — 在总预算内平均分配每次尝试的时间。
@@ -816,7 +822,8 @@ class Translator:
                 return self._race_primary_fallback(
                     text, source_language, target_language, provider,
                     system_prompt, expect_json, include_terms,
-                    message_type, context_text, deadline
+                    message_type, context_text, deadline,
+                    rage_mode=rage_mode,
                 )
 
             raise  # 未知策略，不应到达
@@ -825,7 +832,7 @@ class Translator:
                                provider, system_prompt, expect_json, include_terms,
                                message_type: MessageType = MessageType.PLAYER,
                                context_text: str = "",
-                               deadline: float = None):
+                               deadline: float = None, rage_mode: bool = False):
         """
         并发请求主模型和备用模型，返回最先成功的结果。
         如果两者都失败，抛出异常。
@@ -860,6 +867,7 @@ class Translator:
                 message_type, context_text=context_text,
                 llm_config_override=self.fallback_llm_config,
                 request_timeout=request_timeout,
+                rage_mode=rage_mode,
             )
 
         executor = ThreadPoolExecutor(max_workers=2)
