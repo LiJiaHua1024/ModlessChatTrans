@@ -287,8 +287,10 @@ class _LazyLanguageDict(dict):
                 lang_list = get_supported_languages(key)
                 lang_list.insert(0, "auto")
             except Exception as e:
+                # 失败结果不写缓存：否则 "[ERROR]" 会被当成语言项塞进下拉框，
+                # 且用户在重启程序前无法重试；同时向上抛出，让界面能提示错误。
                 logger.error(f"Failed to get supported languages for {key}: {str(e)}")
-                lang_list = ["[ERROR]", str(e)]
+                raise
             super().__setitem__(key, lang_list)
         return super().__getitem__(key)
 
