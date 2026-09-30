@@ -673,6 +673,12 @@ class Translator:
                     logger.warning("Failed to parse optimized translation JSON even after cleaning")
                     raise ValueError("Failed to parse optimized translation JSON") from e2
 
+            if not isinstance(content_dict, dict):
+                raise ValueError(
+                    "Optimized translation JSON must be an object, "
+                    f"got {type(content_dict).__name__}"
+                )
+
             translated_message = content_dict.get("result", None)
         else:
             translated_message = content_str
