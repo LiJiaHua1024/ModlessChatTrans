@@ -1112,8 +1112,11 @@ class Translator:
         if not matched_terms:
             return ""
 
+        # 术语由用户自由输入：用 JSON 转义引号、反斜杠与换行，
+        # 避免条目内容撑破术语块结构、伪造出额外指令行。
         entries_str = "\n".join(
-            f'- "{src}": "{tgt}"'
+            f"- {json.dumps(str(src), ensure_ascii=False)}: "
+            f"{json.dumps(str(tgt), ensure_ascii=False)}"
             for src, tgt in matched_terms
         )
         return f"Custom Terms (mandatory mappings):\n{entries_str}\n\n"
