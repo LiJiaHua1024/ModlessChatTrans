@@ -342,10 +342,6 @@ class Translator:
             if not self._variable_pattern.search(str(k))
         }
 
-        # 判断是否为 Gemini 3 系列模型
-        model = getattr(translation_service_config.llm, 'model', None) or ""
-        self._is_gemini3 = "gemini-3" in model.lower()
-
         logger.info(f"Initialized Translator")
         logger.debug(f"Literal glossary terms loaded: {len(self._literal_glossary)}")
 
@@ -527,6 +523,8 @@ class Translator:
         """
         # 选择有效的 LLM 配置（备用模型配置或主模型配置）
         llm_cfg = llm_config_override or self.translation_service_config.llm
+        # 按本次实际调用的模型判定 Gemini 3：备用模型未必与主模型同系列。
+        is_gemini3 = "gemini-3" in (llm_cfg.model or "").lower()
         # 备用模型有独立的深度翻译开关；红温模式的 prompt 契约固定，不受该开关影响。
         if llm_config_override is not None and not rage_mode:
             mode = self._get_effective_mode(
@@ -585,7 +583,7 @@ class Translator:
             # Gemini 3 系列是原生思考模型，思考无法关闭且默认消耗大量输出 token
             # 显式降级 reasoning 到 low effort，避免译文被思考 token 截断。
             # 注意：部分型号（如 gemini-3.7-flash）不支持 minimal 档，low 是全系可用的最低档
-            if self._is_gemini3 and provider == "OpenRouter":
+            if is_gemini3 and provider == "OpenRouter":
                 # OpenRouter 通过 extra_body 透传 reasoning 参数
                 extra_body = {**{"reasoning": {"effort": "low"}}, **(extra_body or {})}
                 logger.debug(
@@ -614,7 +612,7 @@ class Translator:
                 "num_retries": 0,
             }
 
-            if self._is_gemini3 and provider != "OpenRouter":
+            if is_gemini3 and provider != "OpenRouter":
                 llm_params["reasoning_effort"] = "low"
                 llm_params["drop_params"] = True
                 logger.debug(
