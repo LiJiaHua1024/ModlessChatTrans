@@ -353,7 +353,7 @@ class Translator:
             source_language: str,
             target_language: str,
             message_type: MessageType = MessageType.PLAYER,
-            context_messages: list = None,
+            context_text: str = "",
     ) -> dict | None:
         """
         Public API: 带历史上下文的单条翻译。
@@ -362,9 +362,8 @@ class Translator:
         :param source_language: 源语言
         :param target_language: 目标语言
         :param message_type: 消息类型
-        :param context_messages: 历史上下文（单条汇总 user 消息，将嵌入 user prompt），为 None/[] 则退化为无上下文
+        :param context_text: 历史上下文文本，将嵌入 user prompt；空串表示无上下文
         """
-        context_messages = context_messages or []
         llm_config = self.translation_service_config.llm
         mode = (TranslationMode.DEEP if llm_config and llm_config.deep_translate
                 else TranslationMode.NORMAL)
@@ -372,7 +371,7 @@ class Translator:
             text, source_language, target_language,
             mode=mode,
             message_type=message_type,
-            context_messages=context_messages,
+            context_text=context_text,
         )
 
     def translate_with_profanity(self, text, source_language, target_language,
@@ -392,7 +391,7 @@ class Translator:
         )
 
     def _dispatch_translation(self, text, source_language, target_language, mode: TranslationMode,
-                              message_type: MessageType, context_messages: list = None):
+                              message_type: MessageType, context_text: str = ""):
         """
         Internal Dispatcher: Coordinates prompt building and execution.
 
@@ -401,9 +400,8 @@ class Translator:
         :param target_language: 目标语言
         :param mode: 请求的翻译模式
         :param message_type: 消息类型，用于验证可用模式并选择正确的prompt
-        :param context_messages: 历史上下文 messages（将内嵌入 LLM 请求）
+        :param context_text: 历史上下文文本（将内嵌入 user prompt）
         """
-        context_messages = context_messages or []
         if self.translation_service_config.service_type == ServiceType.LLM:
             # 1. 验证模式是否对当前消息类型可用，如果不可用则降级
             effective_mode = self._get_effective_mode(mode, message_type)
@@ -411,7 +409,7 @@ class Translator:
             # 2. Prompt Factory - 构建 system prompt（含上下文指导）
             system_prompt = self._build_system_prompt(
                 effective_mode, message_type,
-                has_context=bool(context_messages)
+                has_context=bool(context_text)
             )
 
             # 3. Execution Engine Configuration
@@ -430,7 +428,7 @@ class Translator:
                 expect_json,
                 include_terms,
                 message_type,
-                context_messages=context_messages,  # 传入 user prompt
+                context_text=context_text,  # 传入 user prompt
             )
 
         elif self.translation_service_config.service_type == ServiceType.TRADITIONAL:
@@ -504,7 +502,7 @@ class Translator:
 
     def _execute_llm_translation(self, text, model, source_language, target_language, provider, system_prompt,
                                  expect_json, include_terms, message_type: MessageType = MessageType.PLAYER,
-                                 context_messages: list = None,
+                                 context_text: str = "",
                                  llm_config_override=None, request_timeout=None):
         """
         Execution Engine: Handles API calls and response parsing.
@@ -518,11 +516,10 @@ class Translator:
         :param expect_json: 是否期望JSON格式输出
         :param include_terms: 是否包含术语表
         :param message_type: 消息类型
-        :param context_messages: 历史上下文 messages
+        :param context_text: 历史上下文文本，空串表示无上下文
         :param llm_config_override: 可选的 LLMS erviceConfig 覆盖（用于备用模型）
         :param request_timeout: 当前请求剩余的超时时间（秒）
         """
-        context_messages = context_messages or []
         # 选择有效的 LLM 配置（备用模型配置或主模型配置）
         llm_cfg = llm_config_override or self.translation_service_config.llm
         # 备用模型有独立的深度翻译开关；红温模式不受该开关影响。
@@ -531,7 +528,7 @@ class Translator:
                 TranslationMode.DEEP if llm_cfg.deep_translate else TranslationMode.NORMAL,
                 message_type,
             )
-            system_prompt = self._build_system_prompt(mode, message_type, bool(context_messages))
+            system_prompt = self._build_system_prompt(mode, message_type, bool(context_text))
             expect_json = mode == TranslationMode.DEEP
         if source_language.lower() == "auto":
             source_language = ""
@@ -549,9 +546,8 @@ class Translator:
         # 构建 user message：历史块 → 翻译指令 → 分隔的原文 → 术语表 → 结尾锚定。
         # 所有 provider 统一用 XML 风格分隔符；关键指令在结尾再锚定一次，
         # 防止渠道附加的其他 system 内容稀释输出契约的权重。
-        if context_messages:
-            history_content = context_messages[0].get("content", "")
-            history_block = f"<recent_chat_history>\n{history_content}\n</recent_chat_history>\n\n"
+        if context_text:
+            history_block = f"<recent_chat_history>\n{context_text}\n</recent_chat_history>\n\n"
         else:
             history_block = ""
 
@@ -701,7 +697,7 @@ class Translator:
     def _execute_with_fallback(self, text, model, source_language, target_language,
                                provider, system_prompt, expect_json, include_terms,
                                message_type: MessageType = MessageType.PLAYER,
-                               context_messages: list = None):
+                               context_text: str = ""):
         """
         带备用模型策略的 LLM 翻译执行。
 
@@ -711,7 +707,6 @@ class Translator:
         - RACE_ON_FAILURE: 主模型首次失败 → 并发竞速主模型和备用模型
         - ALWAYS_RACE: 始终并发请求两者，取最快返回结果
         """
-        context_messages = context_messages or []
         has_fallback = (
                 self.fallback_llm_config is not None
                 and bool((self.fallback_llm_config.provider or "").strip())
@@ -739,7 +734,7 @@ class Translator:
             return self._execute_llm_translation(
                 text, model, source_language, target_language, provider,
                 system_prompt, expect_json, include_terms, message_type,
-                context_messages=context_messages,
+                context_text=context_text,
                 request_timeout=request_timeout,
             )
 
@@ -749,7 +744,7 @@ class Translator:
                 source_language, target_language,
                 self.fallback_llm_config.provider,
                 system_prompt, expect_json, include_terms,
-                message_type, context_messages=context_messages,
+                message_type, context_text=context_text,
                 llm_config_override=self.fallback_llm_config,
                 request_timeout=request_timeout,
             )
@@ -760,7 +755,7 @@ class Translator:
             return self._race_primary_fallback(
                 text, source_language, target_language, provider,
                 system_prompt, expect_json, include_terms,
-                message_type, context_messages, deadline
+                message_type, context_text, deadline
             )
 
         # Strategy B: Retry exhausted — 在总预算内平均分配每次尝试的时间。
@@ -821,7 +816,7 @@ class Translator:
                 return self._race_primary_fallback(
                     text, source_language, target_language, provider,
                     system_prompt, expect_json, include_terms,
-                    message_type, context_messages, deadline
+                    message_type, context_text, deadline
                 )
 
             raise  # 未知策略，不应到达
@@ -829,15 +824,13 @@ class Translator:
     def _race_primary_fallback(self, text, source_language, target_language,
                                provider, system_prompt, expect_json, include_terms,
                                message_type: MessageType = MessageType.PLAYER,
-                               context_messages: list = None,
+                               context_text: str = "",
                                deadline: float = None):
         """
         并发请求主模型和备用模型，返回最先成功的结果。
         如果两者都失败，抛出异常。
         """
         from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError as FuturesTimeoutError
-
-        context_messages = context_messages or []
 
         if deadline is None:
             deadline = time.monotonic() + self.translation_deadline
@@ -854,7 +847,7 @@ class Translator:
                 text, self.translation_service_config.llm.model,
                 source_language, target_language, provider,
                 system_prompt, expect_json, include_terms,
-                message_type, context_messages=context_messages,
+                message_type, context_text=context_text,
                 request_timeout=request_timeout,
             )
 
@@ -864,7 +857,7 @@ class Translator:
                 source_language, target_language,
                 self.fallback_llm_config.provider,
                 system_prompt, expect_json, include_terms,
-                message_type, context_messages=context_messages,
+                message_type, context_text=context_text,
                 llm_config_override=self.fallback_llm_config,
                 request_timeout=request_timeout,
             )

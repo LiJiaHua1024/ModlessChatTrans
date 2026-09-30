@@ -146,7 +146,6 @@ def start_translation(config):
         strategy=ctx_cfg.strategy,
         context_length=ctx_cfg.context_length,
         context_timeout=ctx_cfg.context_timeout,
-        block_truncation_size=ctx_cfg.block_truncation_size,
     )
 
     # 初始化 TTS 朗读引擎（若依赖库不可用则使用 no-op stub）
@@ -189,7 +188,7 @@ def start_translation(config):
 
         if data_type in ("clipboard", "webui"):
             try:
-                ctx_messages = context_buffer.get_context_messages()
+                context_text = context_buffer.get_context_messages()
                 processed_message = process_message(
                     line,
                     data_type,
@@ -197,7 +196,7 @@ def start_translation(config):
                     source_language=config.message_send.source_language,
                     target_language=config.message_send.target_language,
                     rage_mode=rage_mode,
-                    context_messages=ctx_messages,
+                    context_text=context_text,
                 )
             except Exception as error:
                 logger.exception(f"[Clipboard/WebUI] Unexpected translation failure: {error}")

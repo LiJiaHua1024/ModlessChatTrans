@@ -189,9 +189,6 @@ class ContextConfig(BaseConfigModel):
     context_length: int = 10
     # 时间跨度阈值（秒），超过则视为新对话，仅 time_based 生效
     context_timeout: float = 120.0
-    # 分块截断大小: "disabled"（传统逐条滑动窗口）, "auto"（自动计算为 context-length 的一半）,
-    # 或正整数字符串（如 "5"）。仅在 context-length > 0 且 strategy != "disabled" 时生效
-    block_truncation_size: str = "disabled"
 
 
 class TTSConfig(BaseConfigModel):
