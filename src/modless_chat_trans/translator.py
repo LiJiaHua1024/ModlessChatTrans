@@ -767,7 +767,8 @@ class Translator:
         # Strategy B: Retry exhausted — 在总预算内平均分配每次尝试的时间。
         if strategy == FallbackStrategy.RETRY_EXHAUSTED:
             # 生产环境最多尝试两次：首次请求失败后只再重试一次。
-            primary_attempts = 2
+            # 没有备用模型时重试只会把总预算切成两半，反而更容易双双超时。
+            primary_attempts = 2 if has_fallback else 1
             last_primary_error = None
             for attempt in range(primary_attempts):
                 attempts_left = primary_attempts - attempt + (1 if has_fallback else 0)
