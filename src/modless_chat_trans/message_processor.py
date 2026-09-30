@@ -338,7 +338,7 @@ def translate_prepared(
     translator,
     source_language: str,
     target_language: str,
-    context_messages: list[dict] | None = None,
+    context_text: str = "",
     rage_mode: bool = False,
 ) -> tuple[str, str, dict]:
     """
@@ -348,7 +348,6 @@ def translate_prepared(
     name = prepared.name
     original = prepared.original
     msg_type = prepared.message_type
-    context_messages = context_messages or []
 
     translated: str = ""
     info: dict = {}
@@ -378,7 +377,7 @@ def translate_prepared(
                     source_language=source_language,
                     target_language=target_language,
                     message_type=msg_type,
-                    context_messages=context_messages,
+                    context_text=context_text,
                 )
             if result:
                 translated = result.get("result") or ""
@@ -420,7 +419,7 @@ def translate_prepared(
 
 
 def process_message(data, data_type, translator, source_language, target_language,
-                    rage_mode=False, context_messages=None):
+                    rage_mode=False, context_text=""):
     """
     处理一条待发送消息（剪贴板 / WebUI 输入，含解析、过滤和翻译）
 
@@ -430,7 +429,7 @@ def process_message(data, data_type, translator, source_language, target_languag
     :param source_language: 源语言
     :param target_language: 目标语言
     :param rage_mode: 是否启用红温模式
-    :param context_messages: 历史上下文（单条汇总消息，将嵌入 user prompt）
+    :param context_text: 历史上下文文本，将嵌入 user prompt；空串表示无上下文
     :return:
         - None：应被丢弃的数据
         - 长度为3的元组：
@@ -447,7 +446,7 @@ def process_message(data, data_type, translator, source_language, target_languag
         translator=translator,
         source_language=source_language,
         target_language=target_language,
-        context_messages=context_messages,
+        context_text=context_text,
         rage_mode=rage_mode,
     )
 

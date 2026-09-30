@@ -74,10 +74,8 @@ class ContextBuffer:
     - "fixed"     : 固定保留最近 context_length 条，不基于时间分割
     - "time_based": 同时检测时间跨度，超过 context_timeout 秒则清空缓冲区
 
-    支持分块截断（Block Truncation）以提升 LLM prefix-cache 命中率：
-    当 block_truncation_size 非 "disabled" 且 context_length > 0 时，使用 list
-    代替 deque，在缓冲达到 context_length 时一次性剔除开头 block_size 条，
-    使前缀在后续 block_size 条消息中保持稳定，从而被 LLM 缓存命中。
+    历史以滑动窗口保存：context_length > 0 时用 deque(maxlen=context_length)
+    自动淘汰最旧的记录，context_length = 0 表示不限制条数。
     """
 
     def __init__(
@@ -85,13 +83,11 @@ class ContextBuffer:
         strategy: str = "time_based",
         context_length: int = 10,
         context_timeout: float = 120.0,
-        block_truncation_size: str = "disabled",
     ):
         """
-        :param strategy:              "disabled", "fixed" 或 "time_based"
-        :param context_length:        最多保留的历史条数（0 = 无限制）
-        :param context_timeout:       时间跨度阈值（秒），仅 time_based 策略生效
-        :param block_truncation_size: "disabled", "auto", 或正整数字符串（如 "5"）
+        :param strategy:        "disabled", "fixed" 或 "time_based"
+        :param context_length:  最多保留的历史条数（0 = 无限制）
+        :param context_timeout: 时间跨度阈值（秒），仅 time_based 策略生效
         """
         if strategy not in ("disabled", "fixed", "time_based"):
             logger.warning(
@@ -103,58 +99,13 @@ class ContextBuffer:
         self.context_length = context_length       # 0 = 无限制
         self.context_timeout = max(0.0, context_timeout)
 
-        # 解析分块截断大小
-        self._block_size: Optional[int] = None
-        if strategy != "disabled" and context_length > 0:
-            self._block_size = self._resolve_block_size(block_truncation_size)
-        self._use_block_truncation = self._block_size is not None
-
-        # 选择底层存储
-        if self._use_block_truncation:
-            self._history: list[ContextEntry] = []                # list 用于分块截断
-        elif context_length > 0:
-            self._history: deque[ContextEntry] = deque(maxlen=context_length)  # 传统滑动窗口
-        else:
-            self._history: deque[ContextEntry] = deque()          # 无限制
+        # 滑动窗口：有上限时交给 deque 的 maxlen 淘汰，无上限时用普通 deque
+        self._history: deque[ContextEntry] = (
+            deque(maxlen=context_length) if context_length > 0 else deque()
+        )
 
         self._last_timestamp: Optional[float] = None
         self._lock = threading.RLock()
-
-    # ------------------------------------------------------------------
-    # 内部辅助
-    # ------------------------------------------------------------------
-
-    def _resolve_block_size(self, value: str) -> Optional[int]:
-        """
-        解析 block_truncation_size 配置值。
-
-        :param value: "disabled", "auto", 或正整数字符串
-        :return: 整型 block_size，或 None（表示禁用分块截断）
-        """
-        if value == "disabled":
-            return None
-        if value == "auto":
-            return max(1, self.context_length // 2)
-        try:
-            size = int(value)
-            if size <= 0:
-                logger.warning(
-                    f"[ContextBuffer] block_truncation_size must be positive, "
-                    f"got {value!r}, falling back to disabled."
-                )
-                return None
-            return size
-        except ValueError:
-            logger.warning(
-                f"[ContextBuffer] Invalid block_truncation_size {value!r}, "
-                f"falling back to disabled."
-            )
-            return None
-
-    @property
-    def block_size(self) -> Optional[int]:
-        """已解析的分块截断大小，None 表示未启用"""
-        return self._block_size
 
     # ------------------------------------------------------------------
     # 写入
@@ -164,7 +115,7 @@ class ContextBuffer:
         with self._lock:
             self._push(entry)
 
-    def snapshot_and_push(self, entry: ContextEntry) -> list[dict]:
+    def snapshot_and_push(self, entry: ContextEntry) -> str:
         """取得当前消息之前的历史，再原子地写入当前消息。"""
         with self._lock:
             if self.should_reset(entry.timestamp):
@@ -178,7 +129,7 @@ class ContextBuffer:
         添加一条已翻译记录。
         如果 strategy == "disabled" 则无操作。
         如果 time_based 策略判断需要重置，先清空再添加。
-        如果启用了分块截断且缓冲达到上限，移除最早的一个数据块。
+        超出 context_length 时由 deque(maxlen=...) 淘汰最旧的一条。
         """
         # 禁用策略：不维护任何历史
         if self.strategy == "disabled":
@@ -195,22 +146,16 @@ class ContextBuffer:
         self._history.append(entry)
         self._last_timestamp = entry.timestamp
 
-        # 分块截断：超过阈值时一次性剔除开头 block_size 条；
-        # 任何配置下都至少保留一条，避免 context_length=1 被截空
-        if self._use_block_truncation and len(self._history) > self.context_length:
-            del self._history[:min(self._block_size, len(self._history) - 1)]
-
     # ------------------------------------------------------------------
     # 读取
     # ------------------------------------------------------------------
 
-    def get_context_messages(self) -> list[dict]:
+    def get_context_messages(self) -> str:
         """
-        返回一条汇总的 user 消息，包含最近聊天历史。
-        格式：[{"role": "user", "content": "14:30 | [PlayerA] 你好\n14:31 | [SYSTEM] 服务器消息"}]
-        无历史时返回空列表。
+        返回汇总后的历史文本，供调用方嵌入翻译请求；无历史时返回空串。
+        格式：14:30 | [PlayerA] 你好
+             14:31 | [SYSTEM] 服务器消息
 
-        注意：此返回值会被 translator 注入到 user message 中。
         发送端读取时也按当前时间检查过期，避免聊天停止很久后仍用旧上下文。
         """
         with self._lock:
@@ -223,7 +168,7 @@ class ContextBuffer:
                 self.clear()
             history = list(self._history)
         if self.strategy == "disabled" or not history:
-            return []
+            return ""
 
         lines = []
         for entry in history:
@@ -231,8 +176,7 @@ class ContextBuffer:
             name = entry.player_name if entry.player_name else "[SYSTEM]"
             lines.append(f"{time_str} | [{name}] {entry.original}")
 
-        content = "\n".join(lines)
-        return [{"role": "user", "content": content}]
+        return "\n".join(lines)
 
     # ------------------------------------------------------------------
     # 控制

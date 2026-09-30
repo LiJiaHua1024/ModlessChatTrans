@@ -22,7 +22,7 @@ class ClipboardDeliveryTests(unittest.TestCase):
         callback = next(n for n in start.body if isinstance(n, ast.FunctionDef) and n.name == 'callback')
         output = Mock()
         namespace = dict(time=time, logger=Mock(), _=lambda text: text,
-                         context_buffer=SimpleNamespace(get_context_messages=lambda: []),
+                         context_buffer=SimpleNamespace(get_context_messages=lambda: ''),
                          config=SimpleNamespace(message_send=SimpleNamespace(source_language='en', target_language='zh')),
                          send_translator=Mock(), process_message=lambda *a, **kw: (False, '译文', {}),
                          modify_clipboard=lambda text: False, display_message=output, fill_slot=output)

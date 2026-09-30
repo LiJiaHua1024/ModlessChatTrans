@@ -220,14 +220,6 @@ def build_i18n():
         "contextTimeout": _("时间跨度阈值(秒)："),
         "contextTimeoutHelp": _("超过此时长（秒）没有新消息，则视为新对话。\n"
                                 "仅在“基于时间跨度”策略下生效。"),
-        "contextTruncation": _("分块截断大小："),
-        "contextTruncAuto": _("自动"),
-        "contextTruncDisabled": _("关闭"),
-        "contextTruncCustom": _("自定义"),
-        "contextTruncHelp": _("分块截断大小：\n"
-                              "- 自动：自动计算为最大保留历史条数的一半\n"
-                              "- 关闭：传统逐条滑动窗口\n"
-                              "- 自定义：设置具体的截断大小"),
         # ── 术语表 ──
         "glossaryTitle": _("术语表管理"),
         "glossarySrc": _("源术语："),
@@ -669,23 +661,10 @@ def build_state_snapshot(state):
             "lang_options": send_langs,
         }
 
-        trunc_val = str(cfg.context.block_truncation_size)
-        if trunc_val in ("disabled", "auto"):
-            trunc_mode = trunc_val
-            trunc_spin = 1
-        else:
-            trunc_mode = "custom"
-            try:
-                trunc_spin = int(trunc_val)
-            except ValueError:
-                trunc_spin = 1
-
         snapshot["context"] = {
             "strategy": cfg.context.strategy,
             "context_length": cfg.context.context_length,
             "context_timeout": cfg.context.context_timeout,
-            "truncation_mode": trunc_mode,
-            "truncation_value": trunc_spin,
         }
 
         glossary_items = [[src, tgt] for src, tgt in sorted(cfg.glossary.items())]
@@ -843,11 +822,6 @@ def _gather_config(state, form):
     cfg.context.strategy = context.get("strategy") or "disabled"
     cfg.context.context_length = int(context.get("context_length") or 0)
     cfg.context.context_timeout = float(context.get("context_timeout") or 0.0)
-    trunc_mode = context.get("truncation_mode") or "disabled"
-    if trunc_mode == "custom":
-        cfg.context.block_truncation_size = str(int(context.get("truncation_value") or 1))
-    else:
-        cfg.context.block_truncation_size = str(trunc_mode)
 
     # 6) 术语表 / 7) 黑名单：由后端权威状态直接使用（前端仅展示）
     # 8) 设置

@@ -1598,12 +1598,6 @@ $("#seClearCacheBtn").addEventListener("click", async () => {
   post("/api/cache/clear", {});
 });
 
-/* ═══════════════════════════ 上下文翻译 ═══════════════════════════ */
-
-$("#ctxTruncMode").addEventListener("change", () => {
-  $("#ctxTruncValue").hidden = $("#ctxTruncMode").value !== "custom";
-});
-
 /* ═══════════════════════════ 表单收集 ═══════════════════════════ */
 
 function gatherService(kind) {
@@ -1687,8 +1681,6 @@ function gatherForm() {
       strategy: $("#ctxStrategy").value || "disabled",
       context_length: $("#ctxLength").getValue(),
       context_timeout: $("#ctxTimeout").getValue(),
-      truncation_mode: $("#ctxTruncMode").value || "disabled",
-      truncation_value: $("#ctxTruncValue").getValue(),
     },
     settings: {
       interface_language: $("#seLangSelect").value || "",
@@ -1784,13 +1776,6 @@ function populateContextPage() {
   ], ctx.strategy || "disabled");
   $("#ctxLength").setValue(ctx.context_length !== undefined ? ctx.context_length : 10);
   $("#ctxTimeout").setValue(ctx.context_timeout !== undefined ? ctx.context_timeout : 120);
-  setSelectOptions($("#ctxTruncMode"), [
-    { label: t("contextTruncAuto"), value: "auto" },
-    { label: t("contextTruncDisabled"), value: "disabled" },
-    { label: t("contextTruncCustom"), value: "custom" },
-  ], ctx.truncation_mode || "disabled");
-  $("#ctxTruncValue").setValue(ctx.truncation_value || 1);
-  $("#ctxTruncValue").hidden = (ctx.truncation_mode || "disabled") !== "custom";
 }
 
 function populatePresentationPage() {
