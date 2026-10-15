@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ModlessChatTrans"
-version = "3.3.4"
+version = "3.3.5"
 description = "A tool that provides real-time chat translation for Minecraft players without requiring any mods."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -29,7 +29,7 @@ dependencies = [
     "netifaces>=0.11.0",
     "diskcache>=5.6.3",
     "pywebview>=6.0",
-    "edge-tts>=7.2.8",
+    "edge-tts>=7.3.1",
     "miniaudio>=1.71",
 ]
 
