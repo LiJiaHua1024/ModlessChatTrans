@@ -33,7 +33,7 @@ dependencies = [
     "diskcache>=5.6.3",
     "pyside6-fluent-widgets>=1.8.6",
     "lazy-loader>=0.4",
-    "edge-tts>=7.2.8",
+    "edge-tts>=7.3.1",
     "miniaudio>=1.71",
     "google-auth>=2.20.0",
 ]
