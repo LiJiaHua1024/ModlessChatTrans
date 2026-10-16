@@ -54,7 +54,8 @@ jobs:
         }
         for ($i = 1; $i -le $maxRetries; $i++) {
           Write-Host "::group::uv add nuitka zstandard (attempt $i / $maxRetries)"
-          uv add nuitka zstandard
+          # Nuitka 4.3 存在 PySide6 启动段错误回归（Nuitka/Nuitka#4081），暂锁 4.2.2；4.3.1 上 PyPI 后可升
+          uv add "nuitka==4.2.2" zstandard
           if ($LASTEXITCODE -eq 0) { Write-Host "::endgroup::"; break }
           Write-Host "::endgroup::"
           Write-Host "::warning::uv add failed (attempt $i / $maxRetries)"
