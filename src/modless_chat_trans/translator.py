@@ -75,6 +75,21 @@ _JSON_MODE_PROVIDERS = frozenset({
 # 超时/鉴权/限流不在其列，不应触发降级。
 _PARAM_REJECTION_STATUSES = frozenset({400, 404, 422})
 
+def _collapse_to_single_line(text: str) -> str:
+    """
+    输出契约是单行译文。模型把斟酌过程写进正文时按惯例把结论放在最后，
+    多行即违约，直接取最后一个非空行——不依赖任何措辞特征，
+    单行原样返回，不会误伤正常输出。
+    """
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if len(lines) < 2:
+        return text
+    collapsed = re.sub(r"</?br\s*/?>", "", lines[-1]).strip().strip("*").strip()
+    logger.warning(
+        f"Multi-line LLM output ({len(lines)} lines) collapsed to final line"
+    )
+    return collapsed or text
+
 
 def _openrouter_model_options(model: str) -> tuple[str, dict | None]:
     """保留官方模型变体，提取末尾的自定义 Provider 或延迟排序。"""
@@ -681,7 +696,7 @@ class Translator:
 
             translated_message = content_dict.get("result", None)
         else:
-            translated_message = content_str
+            translated_message = _collapse_to_single_line(content_str)
 
         if not translated_message:
             raise ValueError("LLM returned an empty translation")
@@ -992,6 +1007,11 @@ class Translator:
             "- Garbled input: Keyboard mashing or corrupted text passes through unchanged.\n"
             "- Ambiguity: When several readings are possible, translate the one players "
             "would most likely intend. Never output alternative versions.\n"
+            "\nDo not think aloud — this is a hard rule. The reply is pasted into the "
+            "chat window and read aloud by TTS, so every word you output is shown and "
+            "spoken. Resolve ambiguity, misspellings, and candidate readings silently; "
+            "the reply contains the chosen wording only — never your reasoning, "
+            "options, notes, or corrections.\n"
             "\nReply with the translation only: a single line, nothing else.\n"
         )
         return prompt
