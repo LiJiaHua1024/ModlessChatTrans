@@ -50,3 +50,4 @@ mct-pre-tts/
 .DS_Store
 Thumbs.db
 
+_eval_results.jsonl
